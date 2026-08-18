@@ -1,0 +1,14 @@
+id: 31
+name:
+  ru: "&4Сжатие"
+  en: "&4Implode"
+description:
+  ru: "Притягивает врагов при блоке, +50% ХП"
+  en: "Pull enemies on block, +50% HP"
+material: MAGMA_CREAM
+custom-model-data: 10031
+rarity: RARE
+enabled: true
+effects:
+  implode: 1
+  hp: 0.5

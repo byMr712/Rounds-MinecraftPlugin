@@ -1,0 +1,15 @@
+id: 46
+name:
+  ru: "&bРикошет"
+  en: "&bRicochet"
+description:
+  ru: "+2 отскока, +25% скорость атаки, +10% перезарядки"
+  en: "+2 Bounces, +25% ATKSPD, +10% Reload time"
+material: DIAMOND
+custom-model-data: 10046
+rarity: RARE
+enabled: true
+effects:
+  bounce: 2
+  attack_speed: 0.25
+  reload: 1

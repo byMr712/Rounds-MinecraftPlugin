@@ -1,0 +1,14 @@
+id: 43
+name:
+  ru: "&6Сияние"
+  en: "&6Radiance"
+description:
+  ru: "Волны урона при перезарядке, +50% ХП"
+  en: "Damaging waves on reload, +50% HP"
+material: LIGHT
+custom-model-data: 10043
+rarity: RARE
+enabled: true
+effects:
+  radiance: 1
+  hp: 0.5

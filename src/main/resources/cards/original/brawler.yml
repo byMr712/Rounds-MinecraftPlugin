@@ -1,0 +1,13 @@
+id: 6
+name:
+  ru: "&cБоец"
+  en: "&cBrawler"
+description:
+  ru: "+200% ХП после нанесения урона"
+  en: "+200% HP after dealing damage"
+material: IRON_SWORD
+custom-model-data: 10006
+rarity: RARE
+enabled: true
+effects:
+  hp_boost_on_hit: 2.0

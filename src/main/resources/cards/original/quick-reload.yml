@@ -1,0 +1,13 @@
+id: 40
+name:
+  ru: "&eБыстрая перезарядка"
+  en: "&eQuick Reload"
+description:
+  ru: "-70% времени перезарядки"
+  en: "-70% Reload time"
+material: REDSTONE
+custom-model-data: 10040
+rarity: COMMON
+enabled: true
+effects:
+  reload_speed: 0.7

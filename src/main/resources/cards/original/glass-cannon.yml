@@ -1,0 +1,14 @@
+id: 26
+name:
+  ru: "&fСтеклянная пушка"
+  en: "&fGlass Cannon"
+description:
+  ru: "+100% урона, -100% ХП"
+  en: "+100% DMG, -100% HP"
+material: GLASS
+custom-model-data: 10026
+rarity: RARE
+enabled: true
+effects:
+  damage: 1.0
+  hp: -1.0

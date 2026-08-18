@@ -1,0 +1,14 @@
+id: 20
+name:
+  ru: "&cЭМИ"
+  en: "&cEMP"
+description:
+  ru: "Кольцо замедления при блоке, +50% ХП"
+  en: "Slowing ring on block, +50% HP"
+material: COMPARATOR
+custom-model-data: 10020
+rarity: RARE
+enabled: true
+effects:
+  emp: 1
+  hp: 0.5

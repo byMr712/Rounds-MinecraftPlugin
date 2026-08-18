@@ -1,0 +1,37 @@
+# PlaceholderAPI
+# Version: 2.12.3
+# Created by: extended_clip
+# Contributors: https://github.com/PlaceholderAPI/PlaceholderAPI/graphs/contributors
+# Issues: https://github.com/PlaceholderAPI/PlaceholderAPI/issues
+# Expansions: https://placeholderapi.com/ecloud
+# Wiki: https://wiki.placeholderapi.com/
+# Discord: https://helpch.at/discord
+# If you're seeing performance issues with plugins that use component replacement, or things don't look quite right,
+# switch to the replacer provided by adventure itself by changing use_adventure_provided_replacer to true
+# No placeholders are provided with this plugin by default.
+# Download placeholders: /papi ecloud
+check_updates: true
+cloud_enabled: true
+cloud_sorting: "name"
+boolean:
+  'true': 'yes'
+  'false': 'no'
+date_format: MM/dd/yy HH:mm:ss
+detect_malicious_expansions: true
+use_adventure_provided_replacer: false
+debug: false
+
+# Список загруженных расширений: /papi list
+# Наш плагин регистрирует расширение rounds автоматически при наличии PlaceholderAPI
+# Доступные плейсхолдеры:
+#   %rounds_round%          - текущий раунд
+#   %rounds_rounds_to_win%  - раундов до победы
+#   %rounds_round_display%  - "3/5"
+#   %rounds_state%          - PLAYING / CARDS / ROUND_END / WAITING / GAME_END
+#   %rounds_team%           - команда игрока
+#   %rounds_team_wins%      - победы команды игрока
+#   %rounds_team_color%     - цвет команды (&a, &c и т.д.)
+#   %rounds_blue_wins%      - победы синих
+#   %rounds_red_wins%       - победы красных
+#   %rounds_yellow_wins%    - победы жёлтых
+#   %rounds_green_wins%     - победы зелёных

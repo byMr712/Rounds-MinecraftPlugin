@@ -1,0 +1,16 @@
+id: 8
+name:
+  ru: "&aОчередь"
+  en: "&aBurst"
+description:
+  ru: "+2 пули, +3 патрона, -60% урона, +10% перезарядки"
+  en: "+2 Bullets, +3 Ammo, -60% DMG, +10% Reload time"
+material: ARROW
+custom-model-data: 10008
+rarity: COMMON
+enabled: true
+effects:
+  bullets: 2
+  ammo: 3
+  damage: -0.6
+  reload: 1

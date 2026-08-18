@@ -1,0 +1,14 @@
+id: 55
+name:
+  ru: "&eСтатическое поле"
+  en: "&eStatic Field"
+description:
+  ru: "Поле замедления и урона при блоке"
+  en: "Slow + damage field on block"
+material: CHAIN
+custom-model-data: 10055
+rarity: RARE
+enabled: true
+effects:
+  emp: 1
+  saw: 1

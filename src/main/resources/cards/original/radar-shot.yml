@@ -1,0 +1,14 @@
+id: 42
+name:
+  ru: "&eРадарный выстрел"
+  en: "&eRadar Shot"
+description:
+  ru: "Авто-прицеливание при блоке, +50% ХП"
+  en: "Auto-aim on block, +50% HP"
+material: COMPASS
+custom-model-data: 10042
+rarity: RARE
+enabled: true
+effects:
+  homing: 1
+  hp: 0.5

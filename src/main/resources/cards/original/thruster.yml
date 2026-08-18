@@ -1,0 +1,14 @@
+id: 63
+name:
+  ru: "&eУскоритель"
+  en: "&eThruster"
+description:
+  ru: "Пули отталкивают цели, +10% перезарядки"
+  en: "Bullets push targets, +10% Reload time"
+material: PISTON
+custom-model-data: 10063
+rarity: COMMON
+enabled: true
+effects:
+  truster: 1
+  reload: 1

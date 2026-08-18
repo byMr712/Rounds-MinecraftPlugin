@@ -1,0 +1,14 @@
+id: 61
+name:
+  ru: "&4Вкус крови"
+  en: "&4Taste of Blood"
+description:
+  ru: "+50% скорости после удара, +30% вампиризм"
+  en: "+50% speed after hit, +30% Lifesteal"
+material: BEEF
+custom-model-data: 10061
+rarity: COMMON
+enabled: true
+effects:
+  speed_boost: 0.5
+  leech: 0.6

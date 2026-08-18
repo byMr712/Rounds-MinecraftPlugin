@@ -1,0 +1,19 @@
+name: RoundsPlugin
+version: '${version}'
+main: com.rounds.RoundsPlugin
+api-version: '1.20'
+description: Rounds minigame plugin
+authors: [Ifrit]
+softdepend: [PlaceholderAPI]
+commands:
+  rdebug:
+    description: Debug tools for testing
+    usage: /rdebug <subcommand>
+    permission: rounds.admin
+permissions:
+  rounds.admin:
+    description: Admin permission for rounds commands
+    default: op
+  rounds.join:
+    description: Permission to join teams
+    default: true

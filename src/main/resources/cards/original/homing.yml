@@ -1,0 +1,15 @@
+id: 29
+name:
+  ru: "&dСамонаведение"
+  en: "&dHoming"
+description:
+  ru: "Пули летят к цели, -30% урона, -30% скорость атаки"
+  en: "Bullets home to targets, -30% DMG, -30% ATKSPD"
+material: EYE_OF_ENDER
+custom-model-data: 10029
+rarity: RARE
+enabled: true
+effects:
+  homing: 1
+  damage: -0.3
+  attack_speed: -0.3

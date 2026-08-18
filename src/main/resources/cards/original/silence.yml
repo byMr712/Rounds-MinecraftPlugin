@@ -1,0 +1,14 @@
+id: 52
+name:
+  ru: "&8Тишина"
+  en: "&8Silence"
+description:
+  ru: "Блокирует способности врагов при блоке, +25% ХП"
+  en: "Silence enemies on block, +25% HP"
+material: OBSIDIAN
+custom-model-data: 10052
+rarity: RARE
+enabled: true
+effects:
+  silence: 1
+  hp: 0.25

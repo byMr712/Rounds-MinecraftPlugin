@@ -1,0 +1,33 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Java sources
+*.java text diff=java
+*.kt text diff=kotlin
+
+# Gradle
+*.gradle.kts text
+*.gradle text
+gradle.properties text
+
+# Config
+*.yml text
+*.yaml text
+*.json text
+*.jsonc text
+*.xml text
+*.toml text
+
+# Markdown
+*.md text diff=markdown
+
+# Shell scripts
+*.sh text eol=lf
+*.bat text eol=crlf
+
+# Properties
+*.properties text
+
+# Ensure Gradle wrapper scripts use correct line endings
+gradlew text eol=lf
+gradlew.bat text eol=crlf

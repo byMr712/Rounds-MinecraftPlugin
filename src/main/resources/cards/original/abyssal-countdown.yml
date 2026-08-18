@@ -1,0 +1,13 @@
+id: 1
+name:
+  ru: "&5Бездонный обратный отсчёт"
+  en: "&5Abyssal Countdown"
+description:
+  ru: "Стой на месте 30 сек, чтобы призвать фантома"
+  en: "Stand still for 30s to summon a phantom"
+material: ENDER_EYE
+custom-model-data: 10001
+rarity: RARE
+enabled: true
+effects:
+  abyssal: 1.0

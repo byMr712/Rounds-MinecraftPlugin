@@ -1,0 +1,14 @@
+id: 45
+name:
+  ru: "&5Дистанционное управление"
+  en: "&5Remote"
+description:
+  ru: "Управляй пулями, -40% скорость пули"
+  en: "Steer bullets, -40% Bullet speed"
+material: LEAD
+custom-model-data: 10045
+rarity: RARE
+enabled: true
+effects:
+  remote: 1
+  bullet_speed: -0.4

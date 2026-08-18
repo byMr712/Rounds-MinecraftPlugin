@@ -1,0 +1,14 @@
+id: 47
+name:
+  ru: "&8Пила"
+  en: "&8Saw"
+description:
+  ru: "Вращающаяся пила при блоке, +50% ХП"
+  en: "Spinning saw on block, +50% HP"
+material: IRON_AXE
+custom-model-data: 10047
+rarity: RARE
+enabled: true
+effects:
+  saw: 1
+  hp: 0.5

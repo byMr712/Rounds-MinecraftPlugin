@@ -1,0 +1,16 @@
+id: 2
+name:
+  ru: "&cБараж"
+  en: "&cBarrage"
+description:
+  ru: "+4 пули, +5 патронов, -70% урона, +10% перезарядки"
+  en: "+4 Bullets, +5 Ammo, -70% DMG, +10% Reload time"
+material: ARROW
+custom-model-data: 10002
+rarity: COMMON
+enabled: true
+effects:
+  bullets: 4
+  ammo: 5
+  damage: -0.7
+  reload: 1

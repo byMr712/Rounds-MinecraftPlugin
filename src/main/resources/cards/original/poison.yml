@@ -1,0 +1,17 @@
+id: 38
+name:
+  ru: "&aЯд"
+  en: "&aPoison"
+description:
+  ru: "Урон во времени 3с, +70% урона, +10% перезарядки, -1 пуля"
+  en: "DOT over 3s, +70% DMG, +10% Reload time, -1 Bullet"
+material: FERMENTED_SPIDER_EYE
+custom-model-data: 10038
+rarity: COMMON
+enabled: true
+effects:
+  poison: 1
+  poison_lvl: 1
+  damage: 0.7
+  reload: 1
+  ammo: -1

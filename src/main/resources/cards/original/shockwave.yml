@@ -1,0 +1,14 @@
+id: 51
+name:
+  ru: "&cУдарная волна"
+  en: "&cShockwave"
+description:
+  ru: "Отбрасывает врагов при блоке, +50% ХП"
+  en: "Push enemies on block, +50% HP"
+material: BREWING_STAND
+custom-model-data: 10051
+rarity: RARE
+enabled: true
+effects:
+  shockwave: 1
+  hp: 0.5

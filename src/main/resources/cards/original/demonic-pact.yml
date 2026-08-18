@@ -1,0 +1,16 @@
+id: 17
+name:
+  ru: "&4Демонический пакт"
+  en: "&4Demonic Pact"
+description:
+  ru: "+9 пуль, +2 разброса, -10% ХП за выстрел"
+  en: "+9 Bullets, +2 Splash, -10% HP per shot"
+material: WITHER_SKELETON_SKULL
+custom-model-data: 10017
+rarity: LEGENDARY
+enabled: true
+effects:
+  bullets: 9
+  ammo: 9
+  splash: 2
+  hp: -0.1

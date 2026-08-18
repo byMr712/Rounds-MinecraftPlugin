@@ -1,0 +1,14 @@
+id: 37
+name:
+  ru: "&cФеникс"
+  en: "&cPhoenix"
+description:
+  ru: "Возрождение один раз после смерти, -35% ХП"
+  en: "Respawn once on death, -35% HP"
+material: FIRE
+custom-model-data: 10037
+rarity: LEGENDARY
+enabled: true
+effects:
+  phoenix: 1
+  hp: -0.35

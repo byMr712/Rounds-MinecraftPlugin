@@ -1,0 +1,61 @@
+# Rounds Plugin Configuration
+
+# Language: "ru" or "en"
+language: ru
+
+game:
+  default-rounds: 5
+  max-rounds: 20
+  card-selection-time: 200
+  respawn-delay: 5
+
+teams:
+  enabled:
+    - BLUE
+    - RED
+    - YELLOW
+    - GREEN
+
+gun:
+  material: STICK
+  custom-model-data: 9999
+  base-cooldown: 20
+
+resource-pack:
+  auto-send: true
+  port: 41071
+  url: ""
+  hash: ""
+  prompt: "Download Rounds resource pack for custom textures?"
+
+cards:
+  selection-count: 5
+  weighted-rarity: true
+
+# ============================================
+# SCOREBOARD
+# ============================================
+# ВАРИАНТ 1 (РЕКОМЕНДУЕМЫЙ): Плагин TAB
+# Установите плагин TAB + PlaceholderAPI.
+# Используйте плейсхолдеры в конфиге TAB:
+#   %rounds_round%          - текущий раунд
+#   %rounds_rounds_to_win%  - раундов до победы
+#   %rounds_round_display%  - "3/5"
+#   %rounds_state%          - состояние игры
+#   %rounds_team%           - название команды игрока
+#   %rounds_team_wins%      - победы команды игрока
+#   %rounds_team_color%     - цвет команды (&a, &c и т.д.)
+#   %rounds_blue_wins%      - победы синих
+#   %rounds_red_wins%       - победы красных
+#   %rounds_yellow_wins%    - победы жёлтых
+#   %rounds_green_wins%     - победы зелёных
+#
+# ВАРИАНТ 2: Встроенный scoreboard (ниже)
+# ⚠️  ВНИМАНИЕ: Встроенный SB конфликтует с TAB и другими
+#     плагинами, которые управляют scoreboard'ом игроков!
+#     Если у вас стоит TAB — НЕ включайте этот вариант!
+#     Также встроенный SB не поддерживает цвета команд
+#     в именах игроков и кастомные форматы.
+builtin-scoreboard:
+  enabled: false
+  title: "&6&lROUNDS"

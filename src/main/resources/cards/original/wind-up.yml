@@ -1,0 +1,15 @@
+id: 67
+name:
+  ru: "&fЗаводной"
+  en: "&fWind Up"
+description:
+  ru: "+100% скорость пули, +60% урона, -100% скорость атаки"
+  en: "+100% Bullet speed, +60% DMG, -100% ATKSPD"
+material: FLOWER
+custom-model-data: 10067
+rarity: RARE
+enabled: true
+effects:
+  bullet_speed: 1.0
+  damage: 0.6
+  attack_speed: -1.0

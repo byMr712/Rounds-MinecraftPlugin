@@ -1,0 +1,14 @@
+id: 24
+name:
+  ru: "&fБыстрый мяч"
+  en: "&fFastball"
+description:
+  ru: "+250% скорость пули, -50% скорость атаки"
+  en: "+250% Bullet speed, -50% ATKSPD"
+material: SNOWBALL
+custom-model-data: 10024
+rarity: COMMON
+enabled: true
+effects:
+  bullet_speed: 2.5
+  attack_speed: -0.5

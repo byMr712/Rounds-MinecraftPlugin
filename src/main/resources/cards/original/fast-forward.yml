@@ -1,0 +1,14 @@
+id: 23
+name:
+  ru: "&aУскорение"
+  en: "&aFast Forward"
+description:
+  ru: "+100% скорость снарядов, +30% скорость перезарядки"
+  en: "+100% Proj speed, +30% Reload speed"
+material: SUGAR
+custom-model-data: 10023
+rarity: COMMON
+enabled: true
+effects:
+  bullet_speed: 1.0
+  reload_speed: 0.3

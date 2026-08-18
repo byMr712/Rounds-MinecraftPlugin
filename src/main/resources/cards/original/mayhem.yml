@@ -1,0 +1,15 @@
+id: 34
+name:
+  ru: "&dХаос"
+  en: "&dMayhem"
+description:
+  ru: "+5 отскоков, -15% урона, +10% перезарядки"
+  en: "+5 Bounces, -15% DMG, +10% Reload time"
+material: FIREWORK_ROCKET
+custom-model-data: 10034
+rarity: COMMON
+enabled: true
+effects:
+  bounce: 5
+  damage: -0.15
+  reload: 1

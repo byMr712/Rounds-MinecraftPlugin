@@ -1,0 +1,14 @@
+id: 16
+name:
+  ru: "&9Защитник"
+  en: "&9Defender"
+description:
+  ru: "-КД блока, +30% ХП"
+  en: "-Block CD, +30% HP"
+material: SHIELD
+custom-model-data: 10016
+rarity: COMMON
+enabled: true
+effects:
+  block_cd: -0.5
+  hp: 0.3

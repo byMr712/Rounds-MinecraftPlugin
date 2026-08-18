@@ -1,0 +1,15 @@
+id: 54
+name:
+  ru: "&cОчередь"
+  en: "&cSpray"
+description:
+  ru: "+1000% скорость атаки, +12 патронов, -75% урона"
+  en: "+1000% ATKSPD, +12 Ammo, -75% DMG"
+material: FIREWORK_ROCKET
+custom-model-data: 10054
+rarity: RARE
+enabled: true
+effects:
+  attack_speed: 10.0
+  ammo: 12
+  damage: -0.75

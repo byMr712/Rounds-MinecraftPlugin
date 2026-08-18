@@ -1,0 +1,13 @@
+id: 30
+name:
+  ru: "&6Огромный"
+  en: "&6Huge"
+description:
+  ru: "+80% ХП"
+  en: "+80% HP"
+material: GOLDEN_CARROT
+custom-model-data: 10030
+rarity: COMMON
+enabled: true
+effects:
+  hp: 0.8

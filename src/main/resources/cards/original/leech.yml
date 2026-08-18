@@ -1,0 +1,14 @@
+id: 32
+name:
+  ru: "&2Пиявка"
+  en: "&2Leech"
+description:
+  ru: "+75% вампиризма, +30% ХП"
+  en: "+75% Life steal, +30% HP"
+material: RED_DYE
+custom-model-data: 10032
+rarity: COMMON
+enabled: true
+effects:
+  leech: 0.75
+  hp: 0.3

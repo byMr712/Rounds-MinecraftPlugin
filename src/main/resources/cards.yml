@@ -1,0 +1,742 @@
+# Rounds Plugin - Card Configuration (67 cards from original ROUNDS by Landfall)
+# Each card has:
+#   name: Display name (supports color codes with &)
+#   description: Short description shown in GUI
+#   material: Bukkit Material name
+#   custom-model-data: CustomModelData number
+#   rarity: COMMON, UNCOMMON, RARE, EPIC, LEGENDARY
+#   enabled: true/false
+#   effects: stat modifiers
+#   commands: list of commands to run on player when card is applied
+#
+# Available effect keys:
+#   damage, attack-speed, attack-range, bullets, ammo, bullet-speed,
+#   bounce, hp, cold, cold-level, poison, poison-level, homing, leech,
+#   empower, empower-charge, dark-strength, barage, big-bullet,
+#   bomb-bullet, explode-bullets, target-bounce, shield, truster,
+#   grow, attack-speed-reload, parazit, parazit-level
+cards:
+  1:
+    name: '&5Abyssal Countdown'
+    description: 'Stand still to summon dark powers'
+    material: ENDER_EYE
+    custom-model-data: 10001
+    rarity: RARE
+    enabled: true
+    effects:
+      dark-strength: 2.0
+      truster: 1.0
+  2:
+    name: '&cBarrage'
+    description: '+4 Bullets, +5 Ammo, -70% DMG, +Reload'
+    material: ARROW
+    custom-model-data: 10002
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      bullets: 4.0
+      ammo: 5.0
+      damage: -2.0
+      attack-speed-reload: 5.0
+  3:
+    name: '&fBig Bullets'
+    description: 'Bigger bullets, slower reload'
+    material: SLIME_BALL
+    custom-model-data: 10003
+    rarity: COMMON
+    enabled: true
+    effects:
+      big-bullet: 1.0
+      attack-speed-reload: 5.0
+  4:
+    name: '&eBombs Away'
+    description: 'Spawn bombs around you, +HP'
+    material: TNT
+    custom-model-data: 10004
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      bomb-bullet: 1.0
+      hp: 6.0
+      attack-speed-reload: 5.0
+  5:
+    name: '&bBouncy'
+    description: '+2 Bounces, +25% DMG, +Reload'
+    material: SLIME_BLOCK
+    custom-model-data: 10005
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      bounce: 2.0
+      damage: 0.75
+      attack-speed-reload: 5.0
+  6:
+    name: '&cBrawler'
+    description: '+200% HP after dealing damage'
+    material: IRON_SWORD
+    custom-model-data: 10006
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      hp: 4.0
+      leech: 0.5
+  7:
+    name: '&eBuckshot'
+    description: '+4 Bullets, +5 Ammo, -60% DMG, +Reload'
+    material: GUNPOWDER
+    custom-model-data: 10007
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      bullets: 4.0
+      ammo: 5.0
+      damage: -1.8
+      attack-speed-reload: 5.0
+  8:
+    name: '&aBurst'
+    description: '+2 Bullets, +3 Ammo, -60% DMG, +Reload'
+    material: FIREWORK_ROCKET
+    custom-model-data: 10008
+    rarity: COMMON
+    enabled: true
+    effects:
+      bullets: 2.0
+      ammo: 3.0
+      damage: -1.8
+      attack-speed-reload: 5.0
+  9:
+    name: '&6Careful Planning'
+    description: '+100% DMG, -150% ATKSPD, +Reload'
+    material: BOW
+    custom-model-data: 10009
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      damage: 3.0
+      attack-speed: 30.0
+      attack-speed-reload: 10.0
+  10:
+    name: '&aChase'
+    description: '+60% move speed towards enemy, +HP'
+    material: FEATHER
+    custom-model-data: 10010
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      truster: 1.0
+      hp: 6.0
+  11:
+    name: '&bChilling Presence'
+    description: 'Slow nearby enemies, +25% HP'
+    material: PACKED_ICE
+    custom-model-data: 10011
+    rarity: RARE
+    enabled: true
+    effects:
+      cold: 2.0
+      cold-level: 1.0
+      hp: 5.0
+  12:
+    name: '&bCold Bullets'
+    description: '+70% Bullet slow, +Reload'
+    material: ICE
+    custom-model-data: 10012
+    rarity: COMMON
+    enabled: true
+    effects:
+      cold: 2.0
+      cold-level: 2.0
+      attack-speed-reload: 5.0
+  13:
+    name: '&4Combine'
+    description: '+100% DMG, -2 Ammo, +Reload'
+    material: NETHER_STAR
+    custom-model-data: 10013
+    rarity: COMMON
+    enabled: true
+    effects:
+      damage: 3.0
+      ammo: -2.0
+      attack-speed-reload: 10.0
+  14:
+    name: '&dDazzle'
+    description: 'Bullets stun enemies, +Reload'
+    material: DIAMOND
+    custom-model-data: 10014
+    rarity: COMMON
+    enabled: true
+    effects:
+      poison: 1.0
+      poison-level: 3.0
+      attack-speed-reload: 5.0
+  15:
+    name: '&2Decay'
+    description: 'Damage over time, +50% HP'
+    material: WITHER_SKELETON_SKULL
+    custom-model-data: 10015
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      parazit: 2.0
+      parazit-level: 2.0
+      hp: 10.0
+  16:
+    name: '&9Defender'
+    description: '-Block CD, +30% HP'
+    material: SHIELD
+    custom-model-data: 10016
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      shield: -3.0
+      hp: 6.0
+  17:
+    name: '&4Demonic Pact'
+    description: '+9 Bullets, +2 Splash, -HP per shot'
+    material: END_CRYSTAL
+    custom-model-data: 10017
+    rarity: RARE
+    enabled: true
+    effects:
+      bullets: 9.0
+      explode-bullets: 2.0
+      attack-speed-reload: 5.0
+  18:
+    name: '&7Drill Ammo'
+    description: 'Bullets drill through walls, +Reload'
+    material: IRON_PICKAXE
+    custom-model-data: 10018
+    rarity: RARE
+    enabled: true
+    effects:
+      bounce: 3.0
+      attack-speed-reload: 5.0
+  19:
+    name: '&eEcho'
+    description: 'Double block, +HP, +Block CD'
+    material: REPEATER
+    custom-model-data: 10019
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      shield: 1.0
+      hp: 6.0
+      attack-speed-reload: 5.0
+  20:
+    name: '&cEMP'
+    description: 'Slowing ring on block, +HP'
+    material: REDSTONE
+    custom-model-data: 10020
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      cold: 2.0
+      hp: 6.0
+      attack-speed-reload: 5.0
+  21:
+    name: '&6Empower'
+    description: 'Block boosts next shot damage'
+    material: NETHER_STAR
+    custom-model-data: 10021
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      empower: 1.0
+      empower-charge: 1.0
+      attack-speed-reload: 5.0
+  22:
+    name: '&6Explosive Bullet'
+    description: 'Bullet explodes on impact, -ATKSPD'
+    material: FIRE_CHARGE
+    custom-model-data: 10022
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      explode-bullets: 1.0
+      attack-speed: 10.0
+      attack-speed-reload: 5.0
+  23:
+    name: '&fFastball'
+    description: '+250% Bullet speed, -50% ATKSPD'
+    material: ARROW
+    custom-model-data: 10023
+    rarity: COMMON
+    enabled: true
+    effects:
+      bullet-speed: 2.5
+      attack-speed: 10.0
+      attack-speed-reload: 5.0
+  24:
+    name: '&aFast Forward'
+    description: '+100% Proj speed, +30% Reload speed'
+    material: QUARTZ
+    custom-model-data: 10024
+    rarity: COMMON
+    enabled: true
+    effects:
+      bullet-speed: 1.0
+      attack-speed-reload: -6.0
+  25:
+    name: '&bFrost Slam'
+    description: 'Slow enemies on block, +HP'
+    material: BLUE_ICE
+    custom-model-data: 10025
+    rarity: COMMON
+    enabled: true
+    effects:
+      cold: 3.0
+      cold-level: 1.0
+      hp: 6.0
+      attack-speed-reload: 5.0
+  26:
+    name: '&fGlass Cannon'
+    description: '+100% DMG, -100% HP'
+    material: GLASS
+    custom-model-data: 10026
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      damage: 3.0
+      hp: -20.0
+      attack-speed-reload: 5.0
+  27:
+    name: '&aGrow'
+    description: 'Bullets gain damage over distance'
+    material: BONE_MEAL
+    custom-model-data: 10027
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      grow: 1.0
+      attack-speed-reload: 5.0
+  28:
+    name: '&aHealing Field'
+    description: 'Healing aura, +HP'
+    material: BEACON
+    custom-model-data: 10028
+    rarity: COMMON
+    enabled: true
+    effects:
+      leech: 1.0
+      hp: 6.0
+      attack-speed-reload: 5.0
+  29:
+    name: '&dHoming'
+    description: 'Bullets home to targets, -DMG, -ATKSPD'
+    material: ENDER_PEARL
+    custom-model-data: 10029
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      homing: 1.0
+      damage: -0.75
+      attack-speed: 10.0
+      attack-speed-reload: 5.0
+  30:
+    name: '&6Huge'
+    description: '+80% HP'
+    material: GOLDEN_APPLE
+    custom-model-data: 10030
+    rarity: COMMON
+    enabled: true
+    effects:
+      hp: 16.0
+  31:
+    name: '&4Implode'
+    description: 'Pull enemies on block, +HP'
+    material: ENDER_EYE
+    custom-model-data: 10031
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      truster: 2.0
+      hp: 10.0
+      attack-speed-reload: 5.0
+  32:
+    name: '&2Leech'
+    description: '+75% Life steal, +30% HP'
+    material: FERMENTED_SPIDER_EYE
+    custom-model-data: 10032
+    rarity: COMMON
+    enabled: true
+    effects:
+      leech: 1.5
+      hp: 6.0
+  33:
+    name: '&4Lifestealer'
+    description: 'Steal HP when near enemy, +25% HP'
+    material: REDSTONE
+    custom-model-data: 10033
+    rarity: RARE
+    enabled: true
+    effects:
+      leech: 2.0
+      hp: 5.0
+  34:
+    name: '&dMayhem'
+    description: '+5 Bounces, -15% DMG, +Reload'
+    material: MAGMA_CREAM
+    custom-model-data: 10034
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      bounce: 5.0
+      damage: -0.5
+      attack-speed-reload: 10.0
+  35:
+    name: '&cOverpower'
+    description: 'Deal max HP % to enemies on block'
+    material: BLAZE_POWDER
+    custom-model-data: 10035
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      dark-strength: 2.0
+      hp: 6.0
+      attack-speed-reload: 5.0
+  36:
+    name: '&2Parasite'
+    description: 'DOT, +50% Lifesteal, +25% HP, +25% DMG'
+    material: SPIDER_EYE
+    custom-model-data: 10036
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      parazit: 1.0
+      parazit-level: 2.0
+      leech: 1.5
+      hp: 5.0
+      damage: 0.75
+      attack-speed-reload: 5.0
+  37:
+    name: '&cPhoenix'
+    description: 'Respawn once on death, -35% HP'
+    material: TOTEM_OF_UNDYING
+    custom-model-data: 10037
+    rarity: RARE
+    enabled: true
+    effects:
+      hp: -7.0
+      leech: 1.0
+  38:
+    name: '&aPoison'
+    description: 'DOT over 3s, +70% DMG, +Reload, -1 Bullet'
+    material: SPIDER_EYE
+    custom-model-data: 10038
+    rarity: COMMON
+    enabled: true
+    effects:
+      poison: 1.0
+      poison-level: 1.0
+      damage: 2.0
+      attack-speed-reload: -6.0
+      bullets: -1.0
+  39:
+    name: '&dPristine Perseverance'
+    description: '+400% HP when above 90% HP'
+    material: GOLDEN_CARROT
+    custom-model-data: 10039
+    rarity: RARE
+    enabled: true
+    effects:
+      hp: 12.0
+  40:
+    name: '&eQuick Reload'
+    description: '-70% Reload time'
+    material: STRING
+    custom-model-data: 10040
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      attack-speed-reload: -14.0
+  41:
+    name: '&fQuick Shot'
+    description: '+150% Bullet speed, +Reload'
+    material: SPECTRAL_ARROW
+    custom-model-data: 10041
+    rarity: COMMON
+    enabled: true
+    effects:
+      bullet-speed: 1.5
+      attack-speed-reload: 5.0
+  42:
+    name: '&eRadar Shot'
+    description: 'Auto-aim on block, +HP'
+    material: ECHO_SHARD
+    custom-model-data: 10042
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      homing: 1.0
+      hp: 6.0
+      attack-speed-reload: 5.0
+  43:
+    name: '&6Radiance'
+    description: 'Damaging waves on reload, +HP'
+    material: SUNFLOWER
+    custom-model-data: 10043
+    rarity: RARE
+    enabled: true
+    effects:
+      dark-strength: 1.0
+      hp: 6.0
+  44:
+    name: '&bRefresh'
+    description: 'Dealing damage resets block CD'
+    material: COPPER_INGOT
+    custom-model-data: 10044
+    rarity: RARE
+    enabled: true
+    effects:
+      shield: 2.0
+  45:
+    name: '&5Remote'
+    description: 'Steer bullets, -40% Bullet speed'
+    material: COMPASS
+    custom-model-data: 10045
+    rarity: RARE
+    enabled: true
+    effects:
+      homing: 1.0
+      bullet-speed: -0.4
+      attack-speed-reload: 5.0
+  46:
+    name: '&bRicochet'
+    description: '+2 Bounces, +25% ATKSPD, +Reload'
+    material: SLIME_BALL
+    custom-model-data: 10046
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      bounce: 2.0
+      attack-speed: -5.0
+      attack-speed-reload: 5.0
+  47:
+    name: '&8Saw'
+    description: 'Spinning saw on block, +HP'
+    material: IRON_SWORD
+    custom-model-data: 10047
+    rarity: RARE
+    enabled: true
+    effects:
+      dark-strength: 1.0
+      hp: 6.0
+      attack-speed-reload: 5.0
+  48:
+    name: '&eScavenger'
+    description: 'Dealing damage reloads weapon, +Reload'
+    material: HOPPER
+    custom-model-data: 10048
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      attack-speed-reload: -10.0
+  49:
+    name: '&9Shield Charge'
+    description: 'Launch forward on block, second block'
+    material: SHIELD
+    custom-model-data: 10049
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      truster: 1.0
+      shield: 1.0
+      attack-speed-reload: 5.0
+  50:
+    name: '&9Shields Up'
+    description: 'Last bullet triggers block, disable auto-reload'
+    material: IRON_INGOT
+    custom-model-data: 10050
+    rarity: RARE
+    enabled: true
+    effects:
+      shield: 1.0
+      bullets: -1.0
+      attack-speed-reload: 10.0
+  51:
+    name: '&cShockwave'
+    description: 'Push enemies on block, +50% HP'
+    material: GUNPOWDER
+    custom-model-data: 10051
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      truster: 2.0
+      hp: 10.0
+      attack-speed-reload: 5.0
+  52:
+    name: '&8Silence'
+    description: 'Silence enemies on block, +25% HP'
+    material: OBSIDIAN
+    custom-model-data: 10052
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      cold: 1.0
+      cold-level: 2.0
+      hp: 5.0
+      attack-speed-reload: 5.0
+  53:
+    name: '&7Sneaky'
+    description: 'Bullets avoid the ground'
+    material: FEATHER
+    custom-model-data: 10053
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      bounce: 1.0
+      attack-speed-reload: 5.0
+  54:
+    name: '&cSpray'
+    description: '+1000% ATKSPD, +12 Ammo, -75% DMG'
+    material: FLINT
+    custom-model-data: 10054
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      attack-speed: -18.0
+      ammo: 12.0
+      damage: -2.25
+      attack-speed-reload: 5.0
+  55:
+    name: '&eStatic Field'
+    description: 'Slow + damage field on block'
+    material: LIGHTNING_ROD
+    custom-model-data: 10055
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      cold: 2.0
+      poison: 1.0
+      attack-speed-reload: 5.0
+  56:
+    name: '&fSteady Shot'
+    description: '+40% HP, +100% Bullet speed, +Reload'
+    material: BOW
+    custom-model-data: 10056
+    rarity: COMMON
+    enabled: true
+    effects:
+      hp: 8.0
+      bullet-speed: 1.0
+      attack-speed-reload: 5.0
+  57:
+    name: '&dSupernova'
+    description: 'Pull + stun enemies, +50% HP'
+    material: END_CRYSTAL
+    custom-model-data: 10057
+    rarity: RARE
+    enabled: true
+    effects:
+      truster: 2.0
+      dark-strength: 2.0
+      hp: 10.0
+      attack-speed-reload: 10.0
+  58:
+    name: '&eTactical Reload'
+    description: 'Block reloads weapon, +Block CD'
+    material: REDSTONE_TORCH
+    custom-model-data: 10058
+    rarity: RARE
+    enabled: true
+    effects:
+      attack-speed-reload: -10.0
+  59:
+    name: '&7Tank'
+    description: '+100% HP, -25% ATKSPD, +Reload'
+    material: ANVIL
+    custom-model-data: 10059
+    rarity: COMMON
+    enabled: true
+    effects:
+      hp: 20.0
+      attack-speed: 5.0
+      attack-speed-reload: 10.0
+  60:
+    name: '&eTarget Bounce'
+    description: 'Bullets seek on bounce, +1 Bounce, -20% DMG'
+    material: SPECTRAL_ARROW
+    custom-model-data: 10060
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      target-bounce: 1.0
+      bounce: 1.0
+      damage: -0.6
+      attack-speed-reload: 5.0
+  61:
+    name: '&4Taste of Blood'
+    description: '+50% speed after hit, +30% Lifesteal'
+    material: NETHER_WART
+    custom-model-data: 10061
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      leech: 1.5
+      truster: 1.0
+  62:
+    name: '&5Teleport'
+    description: 'Teleport forward on block, -Block CD'
+    material: ENDER_PEARL
+    custom-model-data: 10062
+    rarity: RARE
+    enabled: true
+    effects:
+      truster: 1.0
+      shield: -3.0
+  63:
+    name: '&eThruster'
+    description: 'Bullets push targets, +Reload'
+    material: FIREWORK_ROCKET
+    custom-model-data: 10063
+    rarity: UNCOMMON
+    enabled: true
+    effects:
+      truster: 1.0
+      attack-speed-reload: 5.0
+  64:
+    name: '&6Timed Detonation'
+    description: 'Bullets spawn bombs, -15% DMG'
+    material: TNT
+    custom-model-data: 10064
+    rarity: COMMON
+    enabled: true
+    effects:
+      bomb-bullet: 1.0
+      damage: -0.5
+      attack-speed-reload: 5.0
+  65:
+    name: '&2Toxic Cloud'
+    description: 'Poison cloud on impact, -ATKSPD'
+    material: COBWEB
+    custom-model-data: 10065
+    rarity: RARE
+    enabled: true
+    effects:
+      poison: 2.0
+      poison-level: 1.0
+      cold: 1.0
+      attack-speed-reload: 10.0
+  66:
+    name: '&dTrickster'
+    description: '+80% DMG per bounce, +2 Bounces, -20% DMG'
+    material: JIGSAW
+    custom-model-data: 10066
+    rarity: RARE
+    enabled: true
+    effects:
+      bounce: 2.0
+      damage: 2.4
+      attack-speed-reload: 10.0
+  67:
+    name: '&fWind Up'
+    description: '+100% Bullet speed, +60% DMG, -100% ATKSPD'
+    material: PISTON
+    custom-model-data: 10067
+    rarity: COMMON
+    enabled: true
+    effects:
+      bullet-speed: 1.0
+      damage: 1.8
+      attack-speed: 20.0
+      attack-speed-reload: 10.0

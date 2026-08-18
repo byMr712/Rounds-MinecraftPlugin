@@ -1,0 +1,14 @@
+id: 48
+name:
+  ru: "&eМародёр"
+  en: "&eScavenger"
+description:
+  ru: "Нанесение урона перезаряжает оружие, +10% перезарядки"
+  en: "Dealing damage reloads weapon, +10% Reload time"
+material: HOPPER
+custom-model-data: 10048
+rarity: COMMON
+enabled: true
+effects:
+  ammo-per-hit: 1
+  reload: 1

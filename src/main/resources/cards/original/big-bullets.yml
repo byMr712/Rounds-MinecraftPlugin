@@ -1,0 +1,14 @@
+id: 3
+name:
+  ru: "&fБольшие пули"
+  en: "&fBig Bullets"
+description:
+  ru: "Пули больше, перезарядка медленнее"
+  en: "Bigger bullets, slower reload"
+material: IRON_NUGGET
+custom-model-data: 10003
+rarity: COMMON
+enabled: true
+effects:
+  big_bullet: 1
+  reload: -0.3

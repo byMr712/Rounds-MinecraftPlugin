@@ -1,0 +1,14 @@
+id: 10
+name:
+  ru: "&aПогоня"
+  en: "&aChase"
+description:
+  ru: "+30% скорости к врагу, +50% ХП"
+  en: "+30% move speed towards enemy, +50% HP"
+material: FEATHER
+custom-model-data: 10010
+rarity: RARE
+enabled: true
+effects:
+  speed: 0.3
+  hp: 0.5

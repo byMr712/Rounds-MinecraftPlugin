@@ -1,0 +1,15 @@
+id: 13
+name:
+  ru: "&4Объединение"
+  en: "&4Combine"
+description:
+  ru: "+100% урона, -2 патрона, +10% перезарядки"
+  en: "+100% DMG, -2 Ammo, +10% Reload time"
+material: REDSTONE
+custom-model-data: 10013
+rarity: RARE
+enabled: true
+effects:
+  damage: 1.0
+  ammo: -2
+  reload: 1

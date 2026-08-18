@@ -1,0 +1,14 @@
+id: 15
+name:
+  ru: "&2Распад"
+  en: "&2Decay"
+description:
+  ru: "Урон во времени, +50% ХП"
+  en: "Damage over time, +50% HP"
+material: POISONOUS_POTATO
+custom-model-data: 10015
+rarity: COMMON
+enabled: true
+effects:
+  poison: 1
+  hp: 0.5

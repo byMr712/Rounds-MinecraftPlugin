@@ -1,0 +1,13 @@
+id: 21
+name:
+  ru: "&6Усиление"
+  en: "&6Empower"
+description:
+  ru: "Блок усиливает урон следующего выстрела"
+  en: "Block boosts next shot damage"
+material: GLOWSTONE_DUST
+custom-model-data: 10021
+rarity: COMMON
+enabled: true
+effects:
+  empower: 1

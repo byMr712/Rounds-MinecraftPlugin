@@ -1,0 +1,14 @@
+id: 18
+name:
+  ru: "&7Буровые патроны"
+  en: "&7Drill Ammo"
+description:
+  ru: "Пули пробивают стены, -40% перезарядки"
+  en: "Bullets drill through walls, -40% Reload time"
+material: IRON_PICKAXE
+custom-model-data: 10018
+rarity: RARE
+enabled: true
+effects:
+  drill: 1
+  reload: -4

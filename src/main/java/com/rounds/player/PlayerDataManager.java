@@ -32,15 +32,15 @@ public class PlayerDataManager implements Listener {
 
     static {
         String[] stats = {
-            "dmg", "atks", "atkr", "bounce", "ammo", "bullets",
-            "cold", "poison", "leech", "tg_bounce", "homing",
+            "dmg", "atks", "atk-speed", "atkr", "bounce", "ammo", "bullets",
+            "cold", "poison", "toxic_cloud", "leech", "tg_bounce", "homing",
             "poison_lvl", "cold_lvl", "parazit_lvl", "parazit",
             "hp", "shield_cooldown", "bomb_bullet", "bomb_on_block", "explode_bullets",
             "bullet_speed", "empower", "empower_charge", "dark_strength",
             "barage", "big_bullet", "grow", "truster_lvl", "dark",
             "card_select_1", "card_select_2", "card_select_3",
             "card_select_4", "card_select_5", "card_uses", "rare_card",
-            "player_use", "atks_reload"
+            "player_use", "atks_reload", "pristine_perseverance"
         };
         for (String s : stats) {
             STAT_KEYS.put(s, new NamespacedKey("rounds", s));
@@ -99,6 +99,7 @@ public class PlayerDataManager implements Listener {
         yml.set(path + ".stats.bullets", data.bullets);
         yml.set(path + ".stats.cold", data.cold);
         yml.set(path + ".stats.poison", data.poison);
+        yml.set(path + ".stats.toxic-cloud", data.toxicCloud);
         yml.set(path + ".stats.leech", data.leech);
         yml.set(path + ".stats.tg-bounce", data.tgBounce);
         yml.set(path + ".stats.homing", data.homing);
@@ -120,6 +121,7 @@ public class PlayerDataManager implements Listener {
         yml.set(path + ".stats.truster-lvl", data.trusterLvl);
         yml.set(path + ".stats.dark", data.dark);
         yml.set(path + ".stats.atks-reload", data.atksReload);
+        yml.set(path + ".stats.pristine-perseverance", data.pristinePerseverance);
 
         List<Integer> ownedCards = new ArrayList<>();
         for (int i = 1; i <= 43; i++) {
@@ -176,6 +178,7 @@ public class PlayerDataManager implements Listener {
         data.bullets = saved.stats.getOrDefault("bullets", 1.0);
         data.cold = saved.stats.getOrDefault("cold", 0.0);
         data.poison = saved.stats.getOrDefault("poison", 0.0);
+        data.toxicCloud = saved.stats.getOrDefault("toxic_cloud", 0.0);
         data.leech = saved.stats.getOrDefault("leech", 0.0);
         data.tgBounce = saved.stats.getOrDefault("tg_bounce", 0.0);
         data.homing = saved.stats.getOrDefault("homing", 0.0);
@@ -196,6 +199,7 @@ public class PlayerDataManager implements Listener {
         data.trusterLvl = saved.stats.getOrDefault("truster_lvl", 0.0);
         data.dark = saved.stats.getOrDefault("dark", 0.0);
         data.atksReload = saved.stats.getOrDefault("atks_reload", 0.0);
+        data.pristinePerseverance = saved.stats.getOrDefault("pristine_perseverance", 0.0);
 
         for (int cardId : saved.ownedCards) {
             data.setCard(cardId, true);
@@ -228,6 +232,7 @@ public class PlayerDataManager implements Listener {
         yml.set(path + ".stats.bullets", data.bullets);
         yml.set(path + ".stats.cold", data.cold);
         yml.set(path + ".stats.poison", data.poison);
+        yml.set(path + ".stats.toxic-cloud", data.toxicCloud);
         yml.set(path + ".stats.leech", data.leech);
         yml.set(path + ".stats.tg-bounce", data.tgBounce);
         yml.set(path + ".stats.homing", data.homing);
@@ -249,6 +254,7 @@ public class PlayerDataManager implements Listener {
         yml.set(path + ".stats.truster-lvl", data.trusterLvl);
         yml.set(path + ".stats.dark", data.dark);
         yml.set(path + ".stats.atks-reload", data.atksReload);
+        yml.set(path + ".stats.pristine-perseverance", data.pristinePerseverance);
 
         List<Integer> ownedCards = new ArrayList<>();
         for (int i = 1; i <= 43; i++) {
@@ -351,6 +357,10 @@ public class PlayerDataManager implements Listener {
                 applySavedData(uuid, saved);
 
                 if (!saved.pendingCardIds.isEmpty()) {
+                    player.setInvulnerable(true);
+                    player.setFoodLevel(20);
+                    player.setSaturation(5.0f);
+                    player.setExhaustion(0f);
                     Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                         plugin.getCardManager().restorePendingPick(uuid, saved.pendingCardIds);
                     }, 5L);
@@ -359,6 +369,9 @@ public class PlayerDataManager implements Listener {
                         giveGunPlayer(player);
                         applyHP(player);
                         player.setGameMode(GameMode.SURVIVAL);
+                        player.setFoodLevel(20);
+                        player.setSaturation(5.0f);
+                        player.setExhaustion(0f);
                     }, 5L);
                 }
             }
@@ -372,7 +385,14 @@ public class PlayerDataManager implements Listener {
 
     private void applyHP(Player player) {
         PlayerData data = getData(player);
-        double maxHP = data.getMaxHealth();
+        double baseMaxHP = data.getMaxHealth();
+        if (data.grow > 0) {
+            baseMaxHP += data.grow * 0.2 * 10;
+        }
+        double maxHP = baseMaxHP;
+        if (data.pristinePerseverance > 0) {
+            maxHP = baseMaxHP * (1.0 + data.pristinePerseverance);
+        }
         var attr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
         if (attr != null) attr.setBaseValue(maxHP);
         player.setHealth(Math.min(player.getHealth(), maxHP));
@@ -416,6 +436,7 @@ public class PlayerDataManager implements Listener {
         setStat(pdc, "bullets", data.bullets);
         setStat(pdc, "cold", data.cold);
         setStat(pdc, "poison", data.poison);
+        setStat(pdc, "toxic_cloud", data.toxicCloud);
         setStat(pdc, "leech", data.leech);
         setStat(pdc, "tg_bounce", data.tgBounce);
         setStat(pdc, "homing", data.homing);
@@ -435,6 +456,7 @@ public class PlayerDataManager implements Listener {
         setStat(pdc, "grow", data.grow);
         setStat(pdc, "truster_lvl", data.trusterLvl);
         setStat(pdc, "dark", data.dark);
+        setStat(pdc, "pristine_perseverance", data.pristinePerseverance);
         setStat(pdc, "card_select_1", data.cardSelect1);
         setStat(pdc, "card_select_2", data.cardSelect2);
         setStat(pdc, "card_select_3", data.cardSelect3);
@@ -466,6 +488,7 @@ public class PlayerDataManager implements Listener {
         data.bullets = getStat(pdc, "bullets", 1);
         data.cold = getStat(pdc, "cold", 0);
         data.poison = getStat(pdc, "poison", 0);
+        data.toxicCloud = getStat(pdc, "toxic_cloud", 0);
         data.leech = getStat(pdc, "leech", 0);
         data.tgBounce = getStat(pdc, "tg_bounce", 0);
         data.homing = getStat(pdc, "homing", 0);
@@ -485,6 +508,7 @@ public class PlayerDataManager implements Listener {
         data.grow = getStat(pdc, "grow", 0);
         data.trusterLvl = getStat(pdc, "truster_lvl", 0);
         data.dark = getStat(pdc, "dark", 0);
+        data.pristinePerseverance = getStat(pdc, "pristine_perseverance", 0);
         data.cardSelect1 = getStat(pdc, "card_select_1", 0);
         data.cardSelect2 = getStat(pdc, "card_select_2", 0);
         data.cardSelect3 = getStat(pdc, "card_select_3", 0);

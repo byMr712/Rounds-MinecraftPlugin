@@ -8,6 +8,7 @@ import com.rounds.player.PlayerDataManager.GunCooldowns;
 import com.rounds.util.Messages;
 import com.rounds.teams.TeamManager.GameTeam;
 import org.bukkit.*;
+import org.bukkit.block.Block;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
@@ -35,7 +36,9 @@ public class GunItem implements Listener {
     private static final Set<UUID> activeShields = new HashSet<>();
     private static final Map<UUID, Integer> shieldCharges = new HashMap<>();
     private static final Set<UUID> silencedPlayers = new HashSet<>();
+    private static final Set<UUID> reloadingPlayers = new HashSet<>();
     private static final Set<UUID> activeSaws = new HashSet<>();
+    private static final Set<UUID> shotThisTick = new HashSet<>();
 
     private static final double SHIELD_DURATION_TICKS = 20;
     private static final long SHIELD_COOLDOWN_MS = 10000;
@@ -94,6 +97,7 @@ public class GunItem implements Listener {
 
         if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
             event.setCancelled(true);
+            shotThisTick.add(player.getUniqueId());
             doShoot(player);
         } else if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
             event.setCancelled(true);
@@ -110,6 +114,10 @@ public class GunItem implements Listener {
         }
 
         if (isReloading(uuid)) {
+            return;
+        }
+
+        if (reloadingPlayers.contains(uuid)) {
             return;
         }
 
@@ -133,19 +141,24 @@ public class GunItem implements Listener {
         Location eyeLoc = player.getEyeLocation();
 
         for (int i = 0; i < bulletCount; i++) {
-            Vector vel = direction.clone();
-            double spread = 0.05;
-            vel.setX(vel.getX() + (Math.random() - 0.5) * spread);
-            vel.setY(vel.getY() + (Math.random() - 0.5) * spread);
-            vel.setZ(vel.getZ() + (Math.random() - 0.5) * spread);
+            final int idx = i;
+            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                if (!player.isOnline() || !player.isValid()) return;
+                Vector vel = direction.clone();
+                double spread = 0.05;
+                vel.setX(vel.getX() + (Math.random() - 0.5) * spread);
+                vel.setY(vel.getY() + (Math.random() - 0.5) * spread);
+                vel.setZ(vel.getZ() + (Math.random() - 0.5) * spread);
 
-            double speed = 3.0 * Math.max(data.bulletSpeed, 0.1);
-            vel = vel.normalize().multiply(speed);
+                double speed = 3.0 * Math.max(data.bulletSpeed, 0.1);
+                vel = vel.normalize().multiply(speed);
 
-            RoundsEntities.spawnBullet(player, eyeLoc, vel, data);
+                RoundsEntities.spawnBullet(player, eyeLoc, vel, data);
+            }, idx * 3L);
         }
 
         if (data.echo > 0) {
+            int echoDelay = bulletCount * 3;
             Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                 if (player.isOnline()) {
                     for (int i = 0; i < bulletCount; i++) {
@@ -159,7 +172,7 @@ public class GunItem implements Listener {
                         RoundsEntities.spawnBullet(player, player.getEyeLocation(), vel, data);
                     }
                 }
-            }, 5L);
+            }, echoDelay + 5L);
         }
 
         data.ammo -= 1;
@@ -224,19 +237,32 @@ public class GunItem implements Listener {
 
         spawnShield(player);
 
+        player.addPotionEffect(new org.bukkit.potion.PotionEffect(
+            PotionEffectType.DAMAGE_RESISTANCE, 20, 255, true, false, false));
+
         if (data.bombOnBlock > 0) {
             Location bombCenter = player.getLocation();
             int bombCount = Math.max((int) data.bombOnBlock, 1);
             for (int i = 0; i < bombCount; i++) {
                 double angle = 2 * Math.PI * i / bombCount;
                 Location bombLoc = bombCenter.clone().add(Math.cos(angle) * 3.0, 0.5, Math.sin(angle) * 3.0);
-                RoundsEntities.spawnBomb(bombLoc, uuid);
+                RoundsEntities.spawnBomb(bombLoc, uuid, 1.0);
             }
         }
 
         if (data.teleport > 0) {
-            Vector teleportDir = player.getLocation().getDirection().multiply(3.0);
-            player.teleport(player.getLocation().add(teleportDir));
+            Location from = player.getLocation();
+            Vector dir = from.getDirection().multiply(5.0);
+            Location target = from.clone().add(dir);
+            target.setY(target.getY() + 1.0);
+            Block blockBelow = target.clone().subtract(0, 1, 0).getBlock();
+            if (blockBelow.getType().isSolid()) {
+                target.setY(blockBelow.getY() + 1.0);
+            }
+            if (!target.getBlock().getType().isSolid()) {
+                player.teleport(target);
+                player.setVelocity(new Vector(0, 0.3, 0));
+            }
         }
 
         if (data.shieldCharge > 0) {
@@ -265,7 +291,7 @@ public class GunItem implements Listener {
                         return;
                     }
                     Location sawLoc = p.getLocation();
-                    for (Entity entity : sawLoc.getNearbyEntities(3.0, 3.0, 3.0)) {
+                    for (Entity entity : sawLoc.getNearbyEntities(5.0, 5.0, 5.0)) {
                         if (entity instanceof LivingEntity target && !target.getUniqueId().equals(uuid)) {
                             GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(uuid);
                             GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(target.getUniqueId());
@@ -292,6 +318,9 @@ public class GunItem implements Listener {
                     }
                 }
             }
+            Location empCenter = blockLoc.clone().add(0, 0.5, 0);
+            empCenter.getWorld().spawnParticle(Particle.SMOKE_LARGE, empCenter,
+                40, 2.5, 0.5, 2.5, 0.03);
             player.getWorld().playSound(blockLoc, Sound.BLOCK_BEACON_POWER_SELECT, 1.0f, 0.5f);
         }
 
@@ -326,6 +355,15 @@ public class GunItem implements Listener {
                     GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(target.getUniqueId());
                     if (myTeam != null && targetTeam != null && myTeam != targetTeam && target instanceof Player silenceTarget) {
                         silencePlayer(silenceTarget.getUniqueId());
+                        activeShields.remove(silenceTarget.getUniqueId());
+                        for (Entity e : silenceTarget.getNearbyEntities(3.0, 3.0, 3.0)) {
+                            if (isShield(e)) {
+                                UUID shieldOwner = getShieldOwner(e);
+                                if (shieldOwner != null && shieldOwner.equals(silenceTarget.getUniqueId())) {
+                                    e.remove();
+                                }
+                            }
+                        }
                         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                             unsilencePlayer(silenceTarget.getUniqueId());
                         }, (long) (data.silence * 40));
@@ -336,13 +374,14 @@ public class GunItem implements Listener {
         }
 
         if (data.overpower > 0) {
+            double playerHP = player.getHealth();
             for (Entity entity : blockLoc.getNearbyEntities(5.0, 5.0, 5.0)) {
                 if (entity instanceof LivingEntity target && !target.getUniqueId().equals(uuid)) {
                     GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(uuid);
                     GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(target.getUniqueId());
                     if (myTeam != null && targetTeam != null && myTeam != targetTeam) {
-                        double maxHP = target.getMaxHealth();
-                        double dmg = maxHP * data.overpower * 0.2;
+                        double dmg = playerHP * data.overpower * 0.15;
+                        target.setNoDamageTicks(0);
                         target.damage(dmg);
                     }
                 }
@@ -415,7 +454,8 @@ public class GunItem implements Listener {
 
     private void startReload(Player player, PlayerData data) {
         UUID uuid = player.getUniqueId();
-        double reloadDurationTicks = Math.max(20 + (data.atksReload - data.reloadSpeed) * 2, 4);
+        reloadingPlayers.add(uuid);
+        double reloadDurationTicks = Math.max(60 * (1.0 - Math.min(data.reloadSpeed, 0.95)) + data.atksReload * 2, 4);
 
         ReloadTask task = new ReloadTask(player, data, (int) reloadDurationTicks);
         reloadTasks.put(uuid, task);
@@ -423,6 +463,7 @@ public class GunItem implements Listener {
     }
 
     public static void cancelReload(UUID uuid) {
+        reloadingPlayers.remove(uuid);
         ReloadTask task = reloadTasks.remove(uuid);
         if (task != null) task.cancel();
     }
@@ -443,12 +484,21 @@ public class GunItem implements Listener {
     public static void resetBlockCooldown(UUID uuid) {
         shieldCooldowns.remove(uuid);
     }
+    public static void resetShieldActive(UUID uuid) {
+        activeShields.remove(uuid);
+    }
     public static void resetRoundState() {
         activeShields.clear();
         shieldCooldowns.clear();
         shieldCharges.clear();
         silencedPlayers.clear();
+        reloadingPlayers.clear();
         activeSaws.clear();
+        shotThisTick.clear();
+    }
+
+    public static boolean consumeShotThisTick(UUID uuid) {
+        return shotThisTick.remove(uuid);
     }
 
     public static class ReloadTask {
@@ -486,6 +536,7 @@ public class GunItem implements Listener {
 
                 if (currentTick >= totalTicks) {
                     data.ammo = data.maxAmmo;
+                    reloadingPlayers.remove(uuid);
                     player.sendActionBar(ChatColor.GREEN + Messages.get("gun.reloaded", (int) data.ammo));
                     player.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_LOADING_END, 1f, 1.2f);
                     cancel();
@@ -498,6 +549,7 @@ public class GunItem implements Listener {
 
         void cancel() {
             running = false;
+            reloadingPlayers.remove(uuid);
             if (taskId != -1) {
                 Bukkit.getScheduler().cancelTask(taskId);
                 taskId = -1;

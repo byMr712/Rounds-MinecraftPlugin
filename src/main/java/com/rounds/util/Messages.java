@@ -21,12 +21,17 @@ public class Messages {
 
     public static void init(RoundsPlugin pl) {
         plugin = pl;
-        language = pl.getConfig().getString("language", "ru");
+        language = pl.getConfig().getString("language", "en");
         loadMessages();
     }
 
     public static void reload() {
-        language = plugin.getConfig().getString("language", "ru");
+        language = plugin.getConfig().getString("language", "en");
+        loadMessages();
+    }
+
+    public static void reload(String newLanguage) {
+        language = newLanguage;
         loadMessages();
     }
 

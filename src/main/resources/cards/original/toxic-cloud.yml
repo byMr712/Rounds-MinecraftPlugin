@@ -10,6 +10,6 @@ custom-model-data: 10065
 rarity: RARE
 enabled: true
 effects:
-  poison: 1
+  toxic_cloud: 1
   poison_lvl: 1
   attack_speed: -0.3

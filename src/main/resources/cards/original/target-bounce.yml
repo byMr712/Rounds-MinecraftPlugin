@@ -3,12 +3,13 @@ name:
   ru: "&eЦель-рикошет"
   en: "&eTarget Ricochet"
 description:
-  ru: "Пули ищут цель при отскоке, -40% урона"
-  en: "Bullets seek target on bounce, -40% DMG"
+  ru: "Пули ищут цель при отскоке, +1 отскок, -40% урона"
+  en: "Bullets seek target on bounce, +1 bounce, -40% DMG"
 material: ARROW
 custom-model-data: 10060
 rarity: RARE
 enabled: true
 effects:
-  homing: 1
+  tg-bounce: 1
+  bounce: 1
   damage: -0.4

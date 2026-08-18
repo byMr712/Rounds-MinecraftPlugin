@@ -30,7 +30,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     private final RoundsPlugin plugin;
     private static final List<String> STATS = Arrays.asList(
         "dmg", "atks", "atk_speed", "atkr", "bounce", "ammo", "bullets", "cold", "poison",
-        "leech", "homing", "poison_lvl", "cold_lvl", "parazit", "hp",
+        "toxic_cloud", "leech", "homing", "poison_lvl", "cold_lvl", "parazit", "hp",
         "bomb_bullet", "bomb_on_block", "explode_bullets", "bullet_speed", "empower",
         "empower_charge", "dark_strength", "barage", "big_bullet", "grow",
         "truster_lvl", "dark", "atks_reload"
@@ -46,6 +46,70 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
     public DebugCommands(RoundsPlugin plugin) {
         this.plugin = plugin;
+    }
+
+    // ═══ Box drawing helpers ═══
+
+    private static final String B = "\u00A76"; // ChatColor.GOLD
+    private static final String W = "\u00A7f"; // ChatColor.WHITE
+    private static final String G = "\u00A7a"; // ChatColor.GREEN
+    private static final String Y = "\u00A7e"; // ChatColor.YELLOW
+    private static final String A = "\u00A7b"; // ChatColor.AQUA
+    private static final String R = "\u00A7c"; // ChatColor.RED
+    private static final String GR = "\u00A77"; // ChatColor.GRAY
+    private static final String BOLD = "\u00A7l";
+    private static final String RESET = "\u00A7r";
+
+    private void boxHeader(CommandSender sender, String title) {
+        sender.sendMessage(B + "\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
+        sender.sendMessage(B + "\u2551 " + BOLD + RESET + B + "\u2502 " + BOLD + title);
+        sender.sendMessage(B + "\u2560\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
+    }
+
+    private void boxHeader(CommandSender sender, String title, String subtitle) {
+        sender.sendMessage(B + "\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
+        sender.sendMessage(B + "\u2551 " + BOLD + RESET + B + "\u2502 " + BOLD + title);
+        if (subtitle != null) {
+            sender.sendMessage(B + "\u2551   " + Y + subtitle);
+        }
+        sender.sendMessage(B + "\u2560\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
+    }
+
+    private void boxLine(CommandSender sender, String text) {
+        sender.sendMessage(B + "\u2551 " + RESET + text);
+    }
+
+    private void boxLine(CommandSender sender, String colorPrefix, String text) {
+        sender.sendMessage(B + "\u2551 " + RESET + colorPrefix + text);
+    }
+
+    private void boxLine(CommandSender sender, ChatColor color, String text) {
+        sender.sendMessage(B + "\u2551 " + RESET + color + text);
+    }
+
+    private void boxSection(CommandSender sender, String title) {
+        String filler = "\u2550".repeat(Math.max(0, 28 - title.length()));
+        sender.sendMessage(B + "\u2560\u2550\u2550 " + A + title + " " + B + filler);
+    }
+
+    private void boxKv(CommandSender sender, String text) {
+        sender.sendMessage(B + "\u2551   " + text);
+    }
+
+    private void boxKv(CommandSender sender, String key, String value) {
+        sender.sendMessage(B + "\u2551   " + GR + key + ": " + G + value);
+    }
+
+    private void boxKv(CommandSender sender, String key, String value, ChatColor valueColor) {
+        sender.sendMessage(B + "\u2551   " + GR + key + ": " + valueColor + value);
+    }
+
+    private void boxFooter(CommandSender sender) {
+        sender.sendMessage(B + "\u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
+    }
+
+    private void boxStat(CommandSender sender, String key, double value) {
+        boxKv(sender, Messages.get("debug." + key), String.valueOf(PlayerData.round2(value)));
     }
 
     public static void register(RoundsPlugin plugin) {
@@ -66,7 +130,13 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
         switch (args[0].toLowerCase()) {
             case "help" -> sendHelp(sender);
-            case "start" -> plugin.getGameManager().startGame();
+            case "start" -> {
+                if (plugin.getGameManager().isGameStarted()) {
+                    sender.sendMessage(ChatColor.RED + Messages.get("debug.game-already-started"));
+                } else {
+                    plugin.getGameManager().startGame();
+                }
+            }
             case "status", "state" -> handleState(sender);
             case "stop" -> handleStop(sender);
             case "rounds" -> handleRounds(sender, args);
@@ -76,6 +146,8 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "givegun" -> handleGiveGun(sender, args);
             case "giveall" -> handleGiveAll(sender);
             case "setstat" -> handleSetStat(sender, args);
+            case "setteam" -> handleSetTeam(sender, args);
+            case "setlanguage" -> handleSetLanguage(sender, args);
             case "effect" -> handleEffect(sender, args);
             case "heal" -> handleHeal(sender, args);
             case "spawnbomb" -> handleSpawnBomb(sender);
@@ -98,23 +170,25 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     }
 
     private void sendHelp(CommandSender sender) {
-        sender.sendMessage(ChatColor.GOLD + "=== " + Messages.get("debug.title") + " ===");
+        boxHeader(sender, Messages.get("debug.title"));
         String[][] help = {
             {"/rdebug start", "debug.help-start"},
             {"/rdebug stop", "debug.help-stop"},
             {"/rdebug status", "debug.help-status"},
-            {"/rdebug rounds <число>", "debug.help-rounds"},
+            {"/rdebug rounds <\u0447\u0438\u0441\u043B\u043E>", "debug.help-rounds"},
             {"/rdebug info", "debug.help-info"},
             {"/rdebug test", "debug.help-test"},
-            {"/rdebug givegun [игрок|@a]", "debug.help-givegun"},
+            {"/rdebug givegun [\u0438\u0433\u0440\u043E\u043A|@a]", "debug.help-givegun"},
             {"/rdebug giveall", "debug.help-giveall"},
             {"/rdebug cards reload", "debug.help-cards-reload"},
             {"/rdebug cards test [id]", "debug.help-cards-test"},
             {"/rdebug giveblocks", "debug.help-giveblocks"},
-            {"/rdebug stats [игрок]", "debug.help-stats"},
-            {"/rdebug setstat <стат> <значение>", "debug.help-setstat"},
-            {"/rdebug effect <тип> <ур> <длит>", "debug.help-effect"},
-            {"/rdebug heal [кол-во]", "debug.help-heal"},
+            {"/rdebug stats [\u0438\u0433\u0440\u043E\u043A]", "debug.help-stats"},
+            {"/rdebug setstat <\u0441\u0442\u0430\u0442> <\u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435> [\u0438\u0433\u0440\u043E\u043A]", "debug.help-setstat"},
+            {"/rdebug setteam <\u0426\u0412\u0415\u0422> [\u0438\u0433\u0440\u043E\u043A]", "debug.help-setteam"},
+            {"/rdebug setlanguage <ru|en>", "debug.help-setlanguage"},
+            {"/rdebug effect <\u0442\u0438\u043F> <\u0443\u0440> <\u0434\u043B\u0438\u0442>", "debug.help-effect"},
+            {"/rdebug heal [\u043A\u043E\u043B-\u0432\u043E]", "debug.help-heal"},
             {"/rdebug spawnbomb/heal/toxic/shield", "debug.help-spawn"},
             {"/rdebug entities", "debug.help-entities"},
             {"/rdebug applycard <name>", "debug.help-applycard"},
@@ -123,11 +197,12 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             {"/rdebug version", "debug.help-version"},
             {"/rdebug killround", "debug.help-killround"},
             {"/rdebug iteminfo", "debug.help-iteminfo"},
-            {"/rdebug wheel on|off", "Вкл/выкл прокрутку карточек"}
+            {"/rdebug wheel on|off", "debug.help-wheel"}
         };
         for (String[] h : help) {
-            sender.sendMessage(ChatColor.YELLOW + h[0] + ChatColor.GRAY + " - " + Messages.get(h[1]));
+            boxKv(sender, h[0], Messages.get(h[1]));
         }
+        boxFooter(sender);
     }
 
     // === GAME MANAGEMENT ===
@@ -135,14 +210,16 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     private void handleState(CommandSender sender) {
         GameManager gm = plugin.getGameManager();
         TeamManager tm = plugin.getTeamManager();
-        sender.sendMessage(ChatColor.GOLD + "=== " + Messages.get("debug.state-title") + " ===");
-        sender.sendMessage(ChatColor.YELLOW + Messages.get("command.state", gm.getState()));
-        sender.sendMessage(ChatColor.YELLOW + Messages.get("command.rounds-to-win-cmd", (int) gm.getRounds()));
-        sender.sendMessage(ChatColor.YELLOW + Messages.get("command.current-round", (int) gm.getCurrentRound()));
+        boxHeader(sender, Messages.get("debug.state-title"));
+        boxKv(sender, Messages.get("command.state", gm.getState()));
+        boxKv(sender, Messages.get("command.rounds-to-win-cmd", (int) gm.getRounds()));
+        boxKv(sender, Messages.get("command.current-round", (int) gm.getCurrentRound()));
+        boxSection(sender, "Teams");
         for (GameTeam team : GameTeam.values()) {
             String teamName = Messages.get("team." + team.name().toLowerCase());
-            sender.sendMessage(team.getColor() + Messages.get("command.team-info", teamName, (int) tm.getWins(team), tm.getPlayerCount(team)));
+            boxLine(sender, team.getColor(), Messages.get("command.team-info", teamName, (int) tm.getWins(team), tm.getPlayerCount(team)));
         }
+        boxFooter(sender);
     }
 
     private void handleStop(CommandSender sender) {
@@ -180,15 +257,18 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     private void handleInfo(CommandSender sender) {
         GameManager gm = plugin.getGameManager();
         TeamManager tm = plugin.getTeamManager();
-        sender.sendMessage(ChatColor.GOLD + "=== " + Messages.get("command.info-title") + " ===");
-        sender.sendMessage(ChatColor.YELLOW + Messages.get("command.version", plugin.getDescription().getVersion()));
-        sender.sendMessage(ChatColor.YELLOW + Messages.get("command.state", gm.getState()));
-        sender.sendMessage(ChatColor.YELLOW + Messages.get("command.rounds-to-win-cmd", (int) gm.getRounds()));
+        boxHeader(sender, Messages.get("command.info-title"));
+        boxKv(sender, Messages.get("command.version", plugin.getDescription().getVersion()));
+        boxKv(sender, Messages.get("command.state", gm.getState()));
+        boxKv(sender, Messages.get("command.rounds-to-win-cmd", (int) gm.getRounds()));
+        boxSection(sender, "Teams");
         for (GameTeam team : GameTeam.values()) {
             String teamName = Messages.get("team." + team.name().toLowerCase());
-            sender.sendMessage(team.getColor() + Messages.get("command.team-info", teamName, (int) tm.getWins(team), tm.getPlayerCount(team)));
+            boxLine(sender, team.getColor(), Messages.get("command.team-info", teamName, (int) tm.getWins(team), tm.getPlayerCount(team)));
         }
-        sender.sendMessage(ChatColor.YELLOW + Messages.get("command.cards-loaded", plugin.getCardManager().getRegistry().getAllCards().size()));
+        boxSection(sender, "Cards");
+        boxKv(sender, Messages.get("command.cards-loaded", plugin.getCardManager().getRegistry().getAllCards().size()));
+        boxFooter(sender);
     }
 
     // === GUN ===
@@ -280,33 +360,55 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
 
         PlayerData data = plugin.getPlayerDataManager().getData(target);
-        sender.sendMessage(ChatColor.GOLD + "=== " + Messages.get("debug.stats-title", target.getName()) + " ===");
-        sender.sendMessage(ChatColor.YELLOW + Messages.get("debug.team-label", getTeamDisplay(target)));
-        sender.sendMessage(ChatColor.YELLOW + Messages.get("debug.cards-label", countCards(data)));
-        sender.sendMessage(ChatColor.AQUA + Messages.get("debug.combat-section"));
-        sender.sendMessage(ChatColor.WHITE + "  dmg=" + data.dmg + " atks=" + data.atks + " atk_speed=" + data.atkSpeed + " atkr=" + data.atkr);
-        sender.sendMessage(ChatColor.WHITE + "  ammo=" + data.ammo + " atks_reload=" + data.atksReload + " bullets=" + data.bullets);
-        sender.sendMessage(ChatColor.WHITE + "  bullet_speed=" + data.bulletSpeed + " bounce=" + data.bouncePl + " homing=" + data.homing);
-        sender.sendMessage(ChatColor.WHITE + "  big_bullet=" + data.bigBullet);
-        sender.sendMessage(ChatColor.AQUA + Messages.get("debug.effects-section"));
-        sender.sendMessage(ChatColor.WHITE + "  cold=" + data.cold + " cold_lvl=" + data.coldLvl);
-        sender.sendMessage(ChatColor.WHITE + "  poison=" + data.poison + " poison_lvl=" + data.poisonLvl);
-        sender.sendMessage(ChatColor.WHITE + "  parazit=" + data.parazit + " parazit_lvl=" + data.parazitLvl);
-        sender.sendMessage(ChatColor.WHITE + "  leech=" + data.leech + " truster=" + data.trusterLvl);
-        sender.sendMessage(ChatColor.AQUA + Messages.get("debug.special-section"));
-        sender.sendMessage(ChatColor.WHITE + "  hp=" + data.hp + " grow=" + data.grow);
-        sender.sendMessage(ChatColor.WHITE + "  empower=" + data.empower + " empower_charge=" + data.empowerCharge);
-        sender.sendMessage(ChatColor.WHITE + "  dark_strength=" + data.darkStrength + " dark=" + data.dark);
-        sender.sendMessage(ChatColor.WHITE + "  bomb_bullet=" + data.bombBullet + " bomb_on_block=" + data.bombOnBlock);
-        sender.sendMessage(ChatColor.AQUA + Messages.get("debug.shield-section"));
-        sender.sendMessage(ChatColor.WHITE + "  active=" + data.shieldActive + " hp=" + data.shieldHp + " cd=" + data.shieldCooldown);
-        sender.sendMessage(ChatColor.AQUA + Messages.get("debug.misc-section"));
-        sender.sendMessage(ChatColor.WHITE + "  card_uses=" + data.cardUses + " rare_card=" + data.rareCard);
+        boxHeader(sender, Messages.get("debug.stats-title", target.getName()), Messages.get("debug.team-label", getTeamDisplay(target)) + " | " + Messages.get("debug.cards-label", countCards(data)));
+
+        boxSection(sender, Messages.get("debug.combat-section"));
+        boxStat(sender, "stat-dmg", data.dmg);
+        boxStat(sender, "stat-atks", data.atks);
+        boxStat(sender, "stat-atk-speed", data.atkSpeed);
+        boxStat(sender, "stat-atkr", data.atkr);
+        boxStat(sender, "stat-ammo", data.ammo);
+        boxStat(sender, "stat-atks-reload", data.atksReload);
+        boxStat(sender, "stat-bullets", data.bullets);
+        boxStat(sender, "stat-bullet-speed", data.bulletSpeed);
+        boxStat(sender, "stat-bounce", data.bouncePl);
+        boxStat(sender, "stat-homing", data.homing);
+        boxStat(sender, "stat-big-bullet", data.bigBullet);
+
+        boxSection(sender, Messages.get("debug.effects-section"));
+        boxStat(sender, "stat-cold", data.cold);
+        boxStat(sender, "stat-cold-lvl", data.coldLvl);
+        boxStat(sender, "stat-poison", data.poison);
+        boxStat(sender, "stat-poison-lvl", data.poisonLvl);
+        boxStat(sender, "stat-parazit", data.parazit);
+        boxStat(sender, "stat-parazit-lvl", data.parazitLvl);
+        boxStat(sender, "stat-leech", data.leech);
+        boxStat(sender, "stat-truster", data.trusterLvl);
+
+        boxSection(sender, Messages.get("debug.special-section"));
+        boxStat(sender, "stat-hp", data.hp);
+        boxStat(sender, "stat-grow", data.grow);
+        boxStat(sender, "stat-empower", data.empower);
+        boxStat(sender, "stat-empower-charge", data.empowerCharge);
+        boxStat(sender, "stat-dark-strength", data.darkStrength);
+        boxStat(sender, "stat-dark", data.dark);
+        boxStat(sender, "stat-bomb-bullet", data.bombBullet);
+        boxStat(sender, "stat-bomb-on-block", data.bombOnBlock);
+
+        boxSection(sender, Messages.get("debug.shield-section"));
+        boxKv(sender, Messages.get("debug.stat-shield-active"), data.shieldActive ? "ON" : "OFF");
+        boxStat(sender, "stat-shield-hp", data.shieldHp);
+        boxStat(sender, "stat-shield-cd", data.shieldCooldown);
+
+        boxSection(sender, Messages.get("debug.misc-section"));
+        boxStat(sender, "stat-card-uses", data.cardUses);
+        boxStat(sender, "stat-rare-card", data.rareCard);
+
+        boxFooter(sender);
     }
 
     private void handleSetStat(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
-        if (args.length < 3) { sender.sendMessage(ChatColor.RED + "Usage: /rdebug setstat <stat> <value>"); return; }
+        if (args.length < 3) { sender.sendMessage(ChatColor.RED + Messages.get("debug.usage-setstat")); return; }
 
         String stat = args[1].toLowerCase();
         double value;
@@ -316,7 +418,17 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage(ChatColor.RED + Messages.get("command.invalid-number", args[2])); return;
         }
 
-        PlayerData data = plugin.getPlayerDataManager().getData(player);
+        Player target;
+        if (args.length >= 4) {
+            target = Bukkit.getPlayer(args[3]);
+            if (target == null) { sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[3])); return; }
+        } else if (sender instanceof Player p) {
+            target = p;
+        } else {
+            sender.sendMessage(ChatColor.RED + Messages.get("debug.specify-player")); return;
+        }
+
+        PlayerData data = plugin.getPlayerDataManager().getData(target);
         switch (stat) {
             case "dmg" -> data.dmg = value;
             case "atks" -> data.atks = value;
@@ -327,6 +439,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "bullets" -> data.bullets = value;
             case "cold" -> data.cold = value;
             case "poison" -> data.poison = value;
+            case "toxic_cloud" -> data.toxicCloud = value;
             case "leech" -> data.leech = value;
             case "homing" -> data.homing = value;
             case "poison_lvl" -> data.poisonLvl = value;
@@ -335,9 +448,9 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "parazit_lvl" -> data.parazitLvl = value;
             case "hp" -> {
                 data.hp = value;
-                var attr = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+                var attr = target.getAttribute(Attribute.GENERIC_MAX_HEALTH);
                 if (attr != null) attr.setBaseValue(Math.max(value, 2));
-                player.setHealth(Math.min(player.getHealth(), Math.max(value, 2)));
+                target.setHealth(Math.min(target.getHealth(), Math.max(value, 2)));
             }
             case "bomb_bullet" -> data.bombBullet = value;
             case "bomb_on_block" -> data.bombOnBlock = value;
@@ -352,7 +465,48 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "atks_reload" -> data.atksReload = value;
             default -> { sender.sendMessage(ChatColor.RED + Messages.get("debug.unknown-stat", stat)); return; }
         }
-        sender.sendMessage(ChatColor.GREEN + Messages.get("debug.stat-set", stat, value));
+        sender.sendMessage(ChatColor.GREEN + Messages.get("debug.setstat-done", stat, PlayerData.round2(value), target.getName()));
+    }
+
+    private void handleSetTeam(CommandSender sender, String[] args) {
+        if (args.length < 2) { sender.sendMessage(ChatColor.RED + Messages.get("debug.usage-setteam")); return; }
+
+        String colorName = args[1].toUpperCase();
+        GameTeam team;
+        try {
+            team = GameTeam.valueOf(colorName);
+        } catch (IllegalArgumentException e) {
+            sender.sendMessage(ChatColor.RED + Messages.get("debug.unknown-color", colorName));
+            return;
+        }
+
+        Player target;
+        if (args.length >= 3) {
+            target = Bukkit.getPlayer(args[2]);
+            if (target == null) { sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[2])); return; }
+        } else if (sender instanceof Player p) {
+            target = p;
+        } else {
+            sender.sendMessage(ChatColor.RED + Messages.get("debug.specify-player")); return;
+        }
+
+        plugin.getTeamManager().joinTeam(target.getUniqueId(), team);
+        sender.sendMessage(ChatColor.GREEN + Messages.get("debug.team-set", target.getName(), team.getColor() + team.getName()));
+    }
+
+    private void handleSetLanguage(CommandSender sender, String[] args) {
+        if (args.length < 2) { sender.sendMessage(ChatColor.RED + Messages.get("debug.usage-setlanguage")); return; }
+
+        String lang = args[1].toLowerCase();
+        if (!lang.equals("ru") && !lang.equals("en")) {
+            sender.sendMessage(ChatColor.RED + Messages.get("debug.language-invalid", lang));
+            return;
+        }
+
+        plugin.getConfig().set("language", lang);
+        plugin.saveConfig();
+        Messages.reload(lang);
+        sender.sendMessage(ChatColor.GREEN + Messages.get("debug.language-set", lang));
     }
 
     private void handleEffect(CommandSender sender, String[] args) {
@@ -412,7 +566,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     private void handleEntities(CommandSender sender) {
         if (!(sender instanceof Player player)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
         List<Entity> nearby = player.getNearbyEntities(20, 20, 20);
-        int count = 0;
+        List<String> found = new ArrayList<>();
         for (Entity e : nearby) {
             PersistentDataContainer pdc = e.getPersistentDataContainer();
             if (pdc.has(RoundsKeys.IS_BULLET, PersistentDataType.BYTE) ||
@@ -420,11 +574,17 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 pdc.has(RoundsKeys.IS_HEAL_RING, PersistentDataType.BYTE) ||
                 pdc.has(RoundsKeys.IS_TOXIC_RING, PersistentDataType.BYTE) ||
                 pdc.has(RoundsKeys.IS_SHIELD_BOMB, PersistentDataType.BYTE)) {
-                sender.sendMessage(ChatColor.YELLOW + "  " + e.getType() + " at " + formatLoc(e.getLocation()));
-                count++;
+                found.add(Messages.get("debug.entity-at", e.getType(), formatLoc(e.getLocation())));
             }
         }
-        sender.sendMessage(ChatColor.GOLD + Messages.get("debug.entities-found", count));
+        boxHeader(sender, Messages.get("debug.entities-found", found.size()));
+        for (String line : found) {
+            boxLine(sender, Y, line);
+        }
+        if (found.isEmpty()) {
+            boxLine(sender, GR, "...");
+        }
+        boxFooter(sender);
     }
 
     private void handleApplyCard(CommandSender sender, String[] args) {
@@ -456,7 +616,6 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     }
 
     private void handleReload(CommandSender sender) {
-        plugin.reloadConfig();
         Messages.reload();
         plugin.getRoundsConfig().reload();
         plugin.getCardManager().reload();
@@ -464,11 +623,12 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     }
 
     private void handleVersion(CommandSender sender) {
-        sender.sendMessage(ChatColor.GOLD + Messages.get("debug.plugin-version", plugin.getDescription().getVersion()));
-        sender.sendMessage(ChatColor.YELLOW + Messages.get("debug.server-version", Bukkit.getVersion()));
-        sender.sendMessage(ChatColor.YELLOW + Messages.get("debug.online-players", Bukkit.getOnlinePlayers().size()));
-        sender.sendMessage(ChatColor.YELLOW + Messages.get("command.cards-loaded", plugin.getCardManager().getRegistry().getAllCards().size()));
-        sender.sendMessage(ChatColor.YELLOW + Messages.get("debug.game-state") + ": " + plugin.getGameManager().getState());
+        boxHeader(sender, Messages.get("debug.plugin-version", plugin.getDescription().getVersion()));
+        boxKv(sender, Messages.get("debug.server-version", Bukkit.getVersion()));
+        boxKv(sender, Messages.get("debug.online-players", Bukkit.getOnlinePlayers().size()));
+        boxKv(sender, Messages.get("command.cards-loaded", plugin.getCardManager().getRegistry().getAllCards().size()));
+        boxKv(sender, Messages.get("debug.game-state"), String.valueOf(plugin.getGameManager().getState()));
+        boxFooter(sender);
     }
 
     private void handleKillRound(CommandSender sender) {
@@ -496,18 +656,21 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         if (item.getType() == Material.AIR) { sender.sendMessage(ChatColor.RED + Messages.get("debug.holding-nothing")); return; }
 
         ItemMeta meta = item.getItemMeta();
-        sender.sendMessage(ChatColor.GOLD + "=== " + Messages.get("debug.item-title") + " ===");
-        sender.sendMessage(ChatColor.YELLOW + Messages.get("debug.material", item.getType()));
-        sender.sendMessage(ChatColor.YELLOW + Messages.get("debug.amount", item.getAmount()));
-        sender.sendMessage(ChatColor.YELLOW + Messages.get("debug.display", (meta != null && meta.hasDisplayName() ? meta.getDisplayName() : Messages.get("debug.none"))));
+        boxHeader(sender, Messages.get("debug.item-title"));
+        boxKv(sender, Messages.get("debug.material", item.getType()));
+        boxKv(sender, Messages.get("debug.amount", item.getAmount()));
+        boxKv(sender, Messages.get("debug.display", (meta != null && meta.hasDisplayName() ? meta.getDisplayName() : Messages.get("debug.none"))));
 
         if (meta != null) {
             PersistentDataContainer pdc = meta.getPersistentDataContainer();
-            sender.sendMessage(ChatColor.YELLOW + Messages.get("debug.pdc-keys"));
-            for (org.bukkit.NamespacedKey key : pdc.getKeys()) {
-                sender.sendMessage(ChatColor.WHITE + "  " + key + " = " + pdc.get(key, PersistentDataType.STRING));
+            if (!pdc.getKeys().isEmpty()) {
+                boxSection(sender, Messages.get("debug.pdc-keys"));
+                for (org.bukkit.NamespacedKey key : pdc.getKeys()) {
+                    boxKv(sender, key.toString(), pdc.get(key, PersistentDataType.STRING));
+                }
             }
         }
+        boxFooter(sender);
     }
 
     private void handleBlocks(CommandSender sender, String[] args) {
@@ -546,55 +709,110 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
     private void handleWheel(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage(ChatColor.RED + "Использование: /rdebug wheel on|off");
+            sender.sendMessage(ChatColor.RED + Messages.get("debug.wheel-usage"));
             return;
         }
         GameManager gm = plugin.getGameManager();
         switch (args[1].toLowerCase()) {
             case "on" -> {
                 gm.setWheelEnabled(true);
-                sender.sendMessage(ChatColor.GREEN + "Прокрутка карточек ВКЛЮЧЕНА");
+                sender.sendMessage(ChatColor.GREEN + Messages.get("debug.wheel-enabled"));
             }
             case "off" -> {
                 gm.setWheelEnabled(false);
-                sender.sendMessage(ChatColor.RED + "Прокрутка карточек ВЫКЛЮЧЕНА");
+                sender.sendMessage(ChatColor.RED + Messages.get("debug.wheel-disabled"));
             }
-            default -> sender.sendMessage(ChatColor.RED + "Использование: /rdebug wheel on|off");
+            default -> sender.sendMessage(ChatColor.RED + Messages.get("debug.wheel-usage"));
         }
     }
 
+    private static final List<String> SUBCOMMANDS = Arrays.asList(
+        "help", "start", "stop", "status", "rounds", "info", "test",
+        "givegun", "giveall", "cards", "giveblocks",
+        "stats", "setstat", "setteam", "setlanguage", "effect", "heal",
+        "spawnbomb", "spawnheal", "spawntoxic", "spawnshield",
+        "entities", "applycard", "resetstats", "reload",
+        "version", "killround", "iteminfo", "wheel"
+    );
+    private static final List<String> TEAM_COLORS = Arrays.asList("BLUE", "RED", "YELLOW", "GREEN");
+
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        List<String> completions = new ArrayList<>();
-        if (!sender.hasPermission("rounds.admin")) return completions;
+        if (!sender.hasPermission("rounds.admin")) return Collections.emptyList();
+
+        String input = args[args.length - 1].toLowerCase();
 
         if (args.length == 1) {
-            completions.addAll(Arrays.asList("help", "start", "stop", "status",
-                "rounds", "info", "test", "givegun", "giveall", "cards", "giveblocks",
-                "stats", "setstat", "effect", "heal", "spawnbomb", "spawnheal", "spawntoxic", "spawnshield",
-                "entities", "applycard", "resetstats", "reload", "version", "killround", "iteminfo", "wheel"));
-        } else if (args.length == 2) {
-            switch (args[0].toLowerCase()) {
-                case "givegun", "giveblocks" -> {
-                    completions.add("@a");
-                    Bukkit.getOnlinePlayers().forEach(p -> completions.add(p.getName()));
-                }
-                case "stats" -> Bukkit.getOnlinePlayers().forEach(p -> completions.add(p.getName()));
-                case "setstat" -> completions.addAll(STATS);
-                case "effect" -> completions.addAll(EFFECTS);
-                case "applycard" -> completions.addAll(plugin.getCardManager().getRegistry().getCardNameSuggestions());
-                case "cards" -> completions.addAll(Arrays.asList("reload", "test", "giveall"));
-                case "rounds" -> completions.addAll(Arrays.asList("1", "5", "10", "15", "20"));
-                case "wheel" -> completions.addAll(Arrays.asList("on", "off"));
-            }
-        } else if (args.length == 3) {
-            if (args[0].equalsIgnoreCase("cards") && args[1].equalsIgnoreCase("test")) {
-                for (int i = 1; i <= 43; i++) completions.add(String.valueOf(i));
-            } else if (args[0].equalsIgnoreCase("effect")) {
-                completions.addAll(Arrays.asList("1", "2", "3", "4"));
-            }
+            return filterStartsWith(SUBCOMMANDS, input);
         }
 
-        return completions;
+        return switch (args[0].toLowerCase()) {
+            case "givegun", "giveblocks" -> {
+                List<String> list = new ArrayList<>();
+                list.add("@a");
+                Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
+                yield filterStartsWith(list, input);
+            }
+            case "stats" -> {
+                List<String> list = new ArrayList<>();
+                Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
+                yield filterStartsWith(list, input);
+            }
+            case "setstat" -> {
+                if (args.length == 2) yield filterStartsWith(STATS, input);
+                if (args.length == 4) {
+                    List<String> list = new ArrayList<>();
+                    Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
+                    yield filterStartsWith(list, input);
+                }
+                yield Collections.emptyList();
+            }
+            case "setteam" -> {
+                if (args.length == 2) yield filterStartsWith(TEAM_COLORS, input);
+                if (args.length == 3) {
+                    List<String> list = new ArrayList<>();
+                    Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
+                    yield filterStartsWith(list, input);
+                }
+                yield Collections.emptyList();
+            }
+            case "setlanguage" -> {
+                if (args.length == 2) yield filterStartsWith(Arrays.asList("ru", "en"), input);
+                yield Collections.emptyList();
+            }
+            case "effect" -> {
+                if (args.length == 2) yield filterStartsWith(EFFECTS, input);
+                if (args.length == 3) yield filterStartsWith(Arrays.asList("0", "1", "2", "3", "4"), input);
+                if (args.length == 4) yield filterStartsWith(Arrays.asList("10", "20", "40", "60", "100", "200"), input);
+                yield Collections.emptyList();
+            }
+            case "applycard" -> {
+                List<String> cards = plugin.getCardManager().getRegistry().getCardNameSuggestions();
+                yield filterStartsWith(cards, input);
+            }
+            case "cards" -> {
+                if (args.length == 2) yield filterStartsWith(Arrays.asList("reload", "test", "giveall"), input);
+                if (args.length == 3 && args[1].equalsIgnoreCase("test")) {
+                    List<String> list = new ArrayList<>();
+                    for (int i = 1; i <= 43; i++) list.add(String.valueOf(i));
+                    yield filterStartsWith(list, input);
+                }
+                yield Collections.emptyList();
+            }
+            case "rounds" -> filterStartsWith(Arrays.asList("1", "5", "10", "15", "20"), input);
+            case "wheel" -> filterStartsWith(Arrays.asList("on", "off"), input);
+            default -> Collections.emptyList();
+        };
+    }
+
+    private static List<String> filterStartsWith(List<String> options, String prefix) {
+        if (prefix.isEmpty()) return options;
+        List<String> result = new ArrayList<>();
+        for (String s : options) {
+            if (s.toLowerCase().startsWith(prefix)) {
+                result.add(s);
+            }
+        }
+        return result;
     }
 }

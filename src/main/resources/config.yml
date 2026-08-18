@@ -1,7 +1,7 @@
 # Rounds Plugin Configuration
 
 # Language: "ru" or "en"
-language: ru
+language: en
 
 game:
   default-rounds: 5

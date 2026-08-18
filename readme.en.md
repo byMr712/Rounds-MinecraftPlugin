@@ -6,7 +6,7 @@ Minecraft minigame plugin "Rounds". 4 teams, card system with 65 cards, shooting
 
 ## Requirements
 
-- Paper 1.20.1 - 1.26.2+
+- Paper 1.20.1 - 26.2+
 - Java 17+
 - Optional: [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.13006/) for placeholder support
 - Optional: [TAB](https://www.spigotmc.org/resources/tab.57806/) for scoreboard and game status display
@@ -18,7 +18,7 @@ Minecraft minigame plugin "Rounds". 4 teams, card system with 65 cards, shooting
 1. Copy `RoundsPlugin-1.0.jar` to the `plugins/` folder
 2. Restart the server
 3. Configure `plugins/RoundsPlugin/config.yml` (pre-configured by default)
-4. Configure cards in `plugins/RoundsPlugin/cards/original/` (65 cards by default)
+4. Configure cards in `plugins/RoundsPlugin/cards/` (65 cards by default)
 5. Get the special blocks with `/rdebug giveblocks` and place them in the world
 
 ---

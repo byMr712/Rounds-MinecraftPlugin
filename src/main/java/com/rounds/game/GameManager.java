@@ -1,6 +1,11 @@
 package com.rounds.game;
 
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Objects;
+import org.bukkit.util.Vector;
 import com.rounds.RoundsPlugin;
+import com.rounds.entity.RoundsEntities;
 import com.rounds.item.GunItem;
 import com.rounds.player.PlayerData;
 import com.rounds.player.PlayerDataManager;
@@ -16,6 +21,7 @@ import org.bukkit.entity.Phantom;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
@@ -23,7 +29,12 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.*;
 
-import java.util.*;
+import org.bukkit.Location;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 public class GameManager implements Listener {
 
@@ -37,6 +48,7 @@ public class GameManager implements Listener {
     private int tickTaskId = -1;
     private final Set<UUID> deadPlayers = new HashSet<>();
     private final Map<UUID, Location> abyssalLastLocations = new HashMap<>();
+    private final Map<UUID, Long> lastSilenceAuraTime = new HashMap<>();
     private GameTeam lastLoser = null;
     private final GameStateManager stateManager;
     private boolean wheelEnabled = false;
@@ -74,6 +86,7 @@ public class GameManager implements Listener {
         currentRound = 0;
         deadPlayers.clear();
         abyssalLastLocations.clear();
+        lastSilenceAuraTime.clear();
 
         plugin.getServer().broadcastMessage(ChatColor.GREEN + Messages.get("game.started"));
         plugin.getServer().broadcastMessage(ChatColor.GOLD + Messages.get("game.rounds-to-win", (int) roundsToWin));
@@ -84,11 +97,16 @@ public class GameManager implements Listener {
 
         plugin.getCardManager().clearPendingPicks();
         plugin.getPlayerDataManager().clearActivePlayers();
+        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "gamerule naturalRegeneration false");
         for (Player p : readyPlayers) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             plugin.getPlayerDataManager().trackPlayer(p.getUniqueId());
             plugin.getPlayerDataManager().savePlayerFullData(p.getUniqueId(), team, null);
             if (team != null) {
+                p.setInvulnerable(true);
+                p.setFoodLevel(20);
+                p.setSaturation(5.0f);
+                p.setExhaustion(0f);
                 plugin.getCardManager().openCardSelection(p, team);
             }
         }
@@ -105,10 +123,14 @@ public class GameManager implements Listener {
 
     private void applyPlayerHP(Player player) {
         PlayerData data = plugin.getPlayerDataManager().getData(player);
-        double maxHP = data.getMaxHealth();
+        double baseMaxHP = data.getMaxHealth();
         if (data.grow > 0) {
             double scaleBonus = data.grow * 0.2;
-            maxHP += scaleBonus * 10;
+            baseMaxHP += scaleBonus * 10;
+        }
+        double maxHP = baseMaxHP;
+        if (data.pristinePerseverance > 0) {
+            maxHP = baseMaxHP * (1.0 + data.pristinePerseverance);
         }
         var attr = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
         if (attr != null) {
@@ -119,15 +141,6 @@ public class GameManager implements Listener {
 
     private void applyRoundEffects(Player player) {
         PlayerData data = plugin.getPlayerDataManager().getData(player);
-        if (data.speed > 0) {
-            player.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                PotionEffectType.SPEED, 999999, (int) Math.max(data.speed, 1)));
-        }
-
-        if (data.sneaky > 0) {
-            player.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                PotionEffectType.INVISIBILITY, 999999, 0));
-        }
     }
 
     private void applyPeriodicEffects() {
@@ -158,9 +171,40 @@ public class GameManager implements Listener {
                         GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
                         GameTeam enemyTeam = plugin.getTeamManager().getPlayerTeam(enemy.getUniqueId());
                         if (myTeam != null && enemyTeam != null && myTeam != enemyTeam) {
-                            double auraHeal = data.lifestealAura * 0.5;
+                            double auraHeal = Math.max(Math.ceil(data.lifestealAura * 0.5), 1);
                             p.setHealth(Math.min(p.getHealth() + auraHeal, p.getMaxHealth()));
                             break;
+                        }
+                    }
+                }
+            }
+            if (data.silenceAura > 0) {
+                long now = System.currentTimeMillis();
+                for (Entity entity : p.getNearbyEntities(5.0, 5.0, 5.0)) {
+                    if (entity instanceof LivingEntity enemy && !enemy.getUniqueId().equals(p.getUniqueId())) {
+                        if (enemy instanceof Player silenceTarget) {
+                            GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+                            GameTeam enemyTeam = plugin.getTeamManager().getPlayerTeam(silenceTarget.getUniqueId());
+                            if (myTeam != null && enemyTeam != null && myTeam != enemyTeam) {
+                                Long lastSilence = lastSilenceAuraTime.get(silenceTarget.getUniqueId());
+                                if (lastSilence == null || now - lastSilence >= 2500) {
+                                    GunItem.silencePlayer(silenceTarget.getUniqueId());
+                                    GunItem.cancelReload(silenceTarget.getUniqueId());
+                                    GunItem.resetShieldActive(silenceTarget.getUniqueId());
+                                    for (Entity e : silenceTarget.getNearbyEntities(3.0, 3.0, 3.0)) {
+                                        if (GunItem.isShield(e)) {
+                                            UUID shieldOwner = GunItem.getShieldOwner(e);
+                                            if (shieldOwner != null && shieldOwner.equals(silenceTarget.getUniqueId())) {
+                                                e.remove();
+                                            }
+                                        }
+                                    }
+                                    lastSilenceAuraTime.put(silenceTarget.getUniqueId(), now);
+                                    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                                        GunItem.unsilencePlayer(silenceTarget.getUniqueId());
+                                    }, 60L);
+                                }
+                            }
                         }
                     }
                 }
@@ -186,6 +230,44 @@ public class GameManager implements Listener {
                 }
                 abyssalLastLocations.put(p.getUniqueId(), currentLoc.clone());
             }
+            if (data.pristinePerseverance > 0) {
+                var attr = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+                if (attr == null) continue;
+
+                double baseMaxHP = data.getMaxHealth();
+                if (data.grow > 0) {
+                    baseMaxHP += data.grow * 0.2 * 10;
+                }
+                double enhancedMaxHP = baseMaxHP * (1.0 + data.pristinePerseverance);
+                double currentMaxHP = attr.getValue();
+                double currentHP = p.getHealth();
+                boolean pristineActive = currentMaxHP > baseMaxHP + 0.5;
+
+                if (currentHP >= 0.9 * currentMaxHP) {
+                    if (!pristineActive && currentMaxHP < enhancedMaxHP - 0.5) {
+                        attr.setBaseValue(enhancedMaxHP);
+                    }
+                } else {
+                    if (pristineActive) {
+                        attr.setBaseValue(baseMaxHP);
+                        p.setHealth(Math.min(p.getHealth(), baseMaxHP));
+                    }
+                }
+            }
+            if (data.speed > 0) {
+                double speedRange = 5.0 + data.speed * 3.0;
+                for (Entity entity : p.getNearbyEntities(speedRange, speedRange, speedRange)) {
+                    if (entity instanceof LivingEntity enemy && !enemy.getUniqueId().equals(p.getUniqueId())) {
+                        GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+                        GameTeam enemyTeam = plugin.getTeamManager().getPlayerTeam(enemy.getUniqueId());
+                        if (myTeam != null && enemyTeam != null && myTeam != enemyTeam) {
+                            p.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                                PotionEffectType.SPEED, 40, 0, true, false, false));
+                            break;
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -196,9 +278,8 @@ public class GameManager implements Listener {
         Phantom phantom = summoner.getWorld().spawn(spawnLoc, Phantom.class, p -> {
             p.setCustomName(ChatColor.DARK_PURPLE + "Тёмный фантом");
             p.setCustomNameVisible(true);
-            p.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(40);
-            p.setHealth(40);
-            p.setTarget(null);
+            p.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(10);
+            p.setHealth(10);
         });
 
         UUID summonerUUID = summoner.getUniqueId();
@@ -207,6 +288,9 @@ public class GameManager implements Listener {
 
         new BukkitRunnable() {
             int ticks = 0;
+            boolean hasDamaged = false;
+            int deathCountdown = -1;
+
             @Override
             public void run() {
                 if (!phantom.isValid() || phantom.isDead() || ticks >= 400) {
@@ -215,16 +299,33 @@ public class GameManager implements Listener {
                     return;
                 }
 
+                if (deathCountdown >= 0) {
+                    deathCountdown++;
+                    if (deathCountdown >= 100) {
+                        if (phantom.isValid()) phantom.remove();
+                        cancel();
+                        return;
+                    }
+                }
+
                 LivingEntity target = findNearestEnemyForPhantom(phantom, summoner, summonerTeam);
                 if (target != null) {
-                    phantom.setTarget(null);
-                    phantom.teleport(target.getLocation().add(0, 2, 0));
-                    if (ticks % 20 == 0) {
+                    phantom.setTarget(target);
+                    Vector direction = target.getLocation().add(0, 1, 0).toVector()
+                        .subtract(phantom.getLocation().toVector());
+                    if (direction.length() > 0) {
+                        phantom.setVelocity(direction.normalize().multiply(0.4));
+                    }
+                    double dist = phantom.getLocation().distance(target.getLocation());
+                    if (dist < 3.0 && ticks % 20 == 0) {
                         target.damage(6.0);
+                        if (!hasDamaged) {
+                            hasDamaged = true;
+                            deathCountdown = 0;
+                        }
                     }
                 } else {
                     phantom.setTarget(null);
-                    phantom.teleport(summoner.getLocation().add(0, 4, 0));
                 }
 
                 ticks++;
@@ -297,6 +398,11 @@ public class GameManager implements Listener {
                 applyPlayerHP(p);
                 applyRoundEffects(p);
                 p.setGameMode(GameMode.SURVIVAL);
+                p.setFoodLevel(20);
+                p.setSaturation(5.0f);
+                p.setExhaustion(0f);
+                p.setInvulnerable(false);
+                p.setNoDamageTicks(0);
             }
         }
         musicTick = 0;
@@ -330,6 +436,14 @@ public class GameManager implements Listener {
                 state = GameState.CARDS;
                 saveState();
                 musicTick = 0;
+                for (Player p : plugin.getServer().getOnlinePlayers()) {
+                    if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) != null) {
+                        p.setInvulnerable(true);
+                        p.setFoodLevel(20);
+                        p.setSaturation(5.0f);
+                        p.setExhaustion(0f);
+                    }
+                }
                 openCardGUIsDraw();
             }, 60L);
         }
@@ -374,6 +488,14 @@ public class GameManager implements Listener {
             saveState();
             musicTick = 0;
             plugin.getCardManager().clearPendingPicks();
+            for (Player p : plugin.getServer().getOnlinePlayers()) {
+                if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) != null) {
+                    p.setInvulnerable(true);
+                    p.setFoodLevel(20);
+                    p.setSaturation(5.0f);
+                    p.setExhaustion(0f);
+                }
+            }
             openCardGUIs();
             updateScoreboard();
         }, 60L);
@@ -404,12 +526,18 @@ public class GameManager implements Listener {
             state = GameState.WAITING;
             saveState();
             removeScoreboard();
+            plugin.getCardManager().resetAllCards();
+            GunItem.resetRoundState();
+            RoundsEntities.clearAllState();
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "gamerule naturalRegeneration true");
             for (Player p : plugin.getServer().getOnlinePlayers()) {
                 p.getInventory().clear();
                 var attr = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
                 if (attr != null) attr.setBaseValue(20);
                 p.setHealth(20);
                 p.setFoodLevel(20);
+                p.setInvulnerable(false);
+                p.setNoDamageTicks(0);
                 p.setGameMode(GameMode.ADVENTURE);
                 clearCardEffects(p);
             }
@@ -443,6 +571,16 @@ public class GameManager implements Listener {
     public void clearCardEffects(Player player) {
         for (PotionEffectType type : PotionEffectType.values()) {
             player.removePotionEffect(type);
+        }
+    }
+
+    @EventHandler
+    public void onFoodLevelChange(FoodLevelChangeEvent event) {
+        if (!(event.getEntity() instanceof Player)) return;
+        if (!isGameStarted()) return;
+        int oldLevel = ((Player) event.getEntity()).getFoodLevel();
+        if (event.getFoodLevel() < oldLevel) {
+            event.setCancelled(true);
         }
     }
 
@@ -533,6 +671,8 @@ public class GameManager implements Listener {
             }
             player.setGameMode(GameMode.SURVIVAL);
             player.setFoodLevel(20);
+            player.setSaturation(5.0f);
+            player.setExhaustion(0f);
         }, plugin.getRoundsConfig().getRespawnDelayTicks());
     }
 
@@ -542,6 +682,10 @@ public class GameManager implements Listener {
         if (state == GameState.WAITING) return;
         stopGameTick();
         plugin.getCardManager().clearPendingPicks();
+        plugin.getCardManager().resetAllCards();
+        GunItem.resetRoundState();
+        RoundsEntities.clearAllState();
+        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "gamerule naturalRegeneration true");
         state = GameState.WAITING;
         saveState();
         removeScoreboard();
@@ -552,6 +696,8 @@ public class GameManager implements Listener {
             if (attr != null) attr.setBaseValue(20);
             p.setHealth(20);
             p.setFoodLevel(20);
+            p.setInvulnerable(false);
+            p.setNoDamageTicks(0);
             p.setGameMode(GameMode.ADVENTURE);
             clearCardEffects(p);
         }

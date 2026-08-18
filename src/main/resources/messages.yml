@@ -171,6 +171,8 @@ ru:
     help-givegun: "\u0412\u044B\u0434\u0430\u0442\u044C \u043F\u0443\u0448\u043A\u0443"  # givegun
     help-giveall: "\u0412\u044B\u0434\u0430\u0442\u044C \u0432\u0441\u0435 \u043A\u0430\u0440\u0442\u044B"  # giveall
     help-setstat: "\u0423\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u0441\u0442\u0430\u0442\u0443"  # setstat
+    help-setteam: "\u0423\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u043A\u043E\u043C\u0430\u043D\u0434\u0443"  # setteam
+    help-setlanguage: "\u0421\u043C\u0435\u043D\u0438\u0442\u044C \u044F\u0437\u044B\u043A"  # setlanguage
     help-effect: "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u044D\u0444\u0444\u0435\u043A\u0442"  # effect
     help-heal: "\u041B\u0435\u0447\u0438\u0442\u044C"  # heal
     help-spawn: "\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0430"  # spawn entities
@@ -184,7 +186,7 @@ ru:
     help-killround: "\u0423\u0431\u0438\u0442\u044C \u0432\u0440\u0430\u0433\u043E\u0432"  # killround
     help-iteminfo: "\u0418\u043D\u0444\u043E \u043E \u043F\u0440\u0435\u0434\u043C\u0435\u0442\u0435"  # iteminfo
     help-blocks: "\u0412\u044B\u0434\u0430\u0442\u044C \u0431\u043B\u043E\u043A\u0438"  # blocks
-    help-giveblocks: "\u0412\u044B\u0434\u0430\u0442\u044C \u0431\u043B\u043E\u043A\u0438 \u0438 \u0440\u0435\u0436\u0438\u043C \u0432\u044B\u0436\u0438\u0432\u0430\u043D\u0438\u044F"  # give blocks + survival mode
+    help-giveblocks: "\u0412\u044B\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u0431\u043B\u043E\u043A\u0438 \u0438 \u0440\u0435\u0436\u0438\u043C \u0432\u044B\u0436\u0438\u0432\u0430\u043D\u0438\u044F"  # give blocks + survival mode
     help-start: "\u041D\u0430\u0447\u0430\u0442\u044C \u0438\u0433\u0440\u0443"  # start game
     help-stop: "\u041E\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u0438\u0433\u0440\u0443"  # stop game
     help-status: "\u0421\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u0438\u0433\u0440\u044B"  # game state (alias)
@@ -195,8 +197,58 @@ ru:
     help-test: "\u0422\u0435\u0441\u0442"  # test
     help-cards-reload: "\u041F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u043A\u0430\u0440\u0442"  # cards reload
     help-cards-test: "\u0422\u0435\u0441\u0442 \u043A\u0430\u0440\u0442\u044B"  # cards test
-    blocks-given: "\u0412\u0441\u0435 \u0431\u043B\u043E\u043A\u0438 \u0432\u044B\u0434\u0430\u043D\u044B!"
+    blocks-given: "\u0412\u0441\u0435 \u0431\u043B\u043E\u043A\u0438 \u0432\u044B\u0441\u0442\u0430\u0432\u043B\u0435\u043D\u044B!"
     game-state: "\u0421\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u0438\u0433\u0440\u044B"
+    # setteam / setstat / setlanguage messages
+    usage-setteam: "\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u0438\u0435: /rdebug setteam <\u0426\u0412\u0415\u0422> [\u0438\u0433\u0440\u043E\u043A]"
+    usage-setstat: "\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u0438\u0435: /rdebug setstat <\u0441\u0442\u0430\u0442\u0430> <\u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435> [\u0438\u0433\u0440\u043E\u043A]"
+    team-set: "\u0418\u0433\u0440\u043E\u043A {0} -> {1}"
+    unknown-color: "\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u044B\u0439 \u0446\u0432\u0435\u0442: {0}. \u0414\u043E\u0441\u0442\u0443\u043F\u043D\u044B\u0435: BLUE, RED, YELLOW, GREEN"
+    language-set: "\u042F\u0437\u044B\u043A \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D: {0}"
+    language-invalid: "\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u044F\u0437\u044B\u043A: {0}. \u0414\u043E\u0441\u0442\u0443\u043F\u043D\u044B\u0435: ru, en"
+    usage-setlanguage: "\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u0438\u0435: /rdebug setlanguage <ru|en>"
+    setstat-done: "{0} = {1} -> {2}"
+    help-wheel: "\u0412\u043A\u043B/\u0432\u044B\u043A\u043B \u043F\u0440\u043E\u043A\u0440\u0443\u0442\u043A\u0443 \u043A\u0430\u0440\u0442\u043E\u0447\u0435\u043A"
+    wheel-set: "\u041F\u0440\u043E\u043A\u0440\u0443\u0442\u043A\u0430 \u043A\u0430\u0440\u0442\u043E\u0447\u0435\u043A {0}"
+    wheel-on: "\u0412\u041A\u041B\u042E\u0427\u0415\u041D\u0410"
+    wheel-off: "\u0412\u042B\u041A\u041B\u042E\u0427\u0415\u041D\u0410"
+    wheel-usage: "\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u0438\u0435: /rdebug wheel on|off"
+    game-already-started: "\u0418\u0433\u0440\u0430 \u0443\u0436\u0435 \u0438\u0434\u0451\u0442! \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u0435 \u0442\u0435\u043A\u0443\u0449\u0443\u044E \u0438\u0433\u0440\u0443 (/rdebug stop)"
+    debug-wheel-enabled: "\u041F\u0440\u043E\u043A\u0440\u0443\u0442\u043A\u0430 \u043A\u0430\u0440\u0442\u043E\u0447\u0435\u043A \u0412\u041A\u041B\u042E\u0427\u0415\u041D\u0410"
+    debug-wheel-disabled: "\u041F\u0440\u043E\u043A\u0440\u0443\u0442\u043A\u0430 \u043A\u0430\u0440\u0442\u043E\u0447\u0435\u043A \u0412\u042B\u041A\u041B\u042E\u0427\u0415\u041D\u0410"
+    stat-dmg: "\u0423\u0440\u043E\u043D"
+    stat-atks: "\u0412\u044B\u043D\u0435\u0441\u0435\u043D\u043E \u0430\u0442\u0430\u043A"
+    stat-atk-speed: "\u0421\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u0430\u0442\u0430\u043A\u0438"
+    stat-atkr: "\u0420\u0430\u0434\u0438\u0443\u0441 \u0430\u0442\u0430\u043A\u0438"
+    stat-ammo: "\u041F\u0430\u0442\u0440\u043E\u043D\u044B"
+    stat-atks-reload: "\u041F\u0435\u0440\u0435\u0437\u0430\u0440\u044F\u0434\u043A\u0430 \u0437\u0430 \u0430\u0442\u0430\u043A\u0443"
+    stat-bullets: "\u041F\u0443\u043B\u0438"
+    stat-bullet-speed: "\u0421\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u043F\u0443\u043B\u0438"
+    stat-bounce: "\u041E\u0442\u0441\u043A\u043E\u043A"
+    stat-homing: "\u0421\u0430\u043C\u043E\u043D\u0430\u0432\u0435\u0434\u0435\u043D\u0438\u0435"
+    stat-big-bullet: "\u0411\u043E\u043B\u044C\u0448\u0430\u044F \u043F\u0443\u043B\u044F"
+    stat-cold: "\u041C\u043E\u0440\u043E\u0437"
+    stat-cold-lvl: "\u0423\u0440. \u043C\u043E\u0440\u043E\u0437\u0430"
+    stat-poison: "\u042F\u0434"
+    stat-poison-lvl: "\u0423\u0440. \u044F\u0434\u0430"
+    stat-parazit: "\u0412\u044B\u0441\u0430\u0441\u044B\u0432\u0430\u043D\u0438\u0435"
+    stat-parazit-lvl: "\u0423\u0440. \u0432\u044B\u0441\u0430\u0441\u044B\u0432\u0430\u043D\u0438\u044F"
+    stat-leech: "\u0412\u044B\u0441\u0430\u0441\u044B\u0432\u0430\u043D\u0438\u0435"
+    stat-truster: "\u0422\u0440\u0443\u0441\u0442\u0435\u0440"
+    stat-hp: "\u0417\u0434\u043E\u0440\u043E\u0432\u044C\u0435"
+    stat-grow: "\u0420\u043E\u0441\u0442"
+    stat-empower: "\u0423\u0441\u0438\u043B\u0435\u043D\u0438\u0435"
+    stat-empower-charge: "\u0417\u0430\u0440\u044F\u0434 \u0443\u0441\u0438\u043B\u0435\u043D\u0438\u044F"
+    stat-dark-strength: "\u0421\u0438\u043B\u0430 \u0442\u044C\u043C\u044B"
+    stat-dark: "\u0422\u044C\u043C\u0430"
+    stat-bomb-bullet: "\u0411\u043E\u043C\u0431\u044B"
+    stat-bomb-on-block: "\u0411\u043E\u043C\u0431\u044B \u043D\u0430 \u0431\u043B\u043E\u043A\u0435"
+    stat-shield-active: "\u0410\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u044C"
+    stat-shield-hp: "\u0429\u0438\u0442 \u0417\u0434\u043E\u0440\u043E\u0432\u044C\u0435"
+    stat-shield-cd: "\u041F\u0435\u0440\u0435\u0437\u0430\u0440\u044F\u0434\u043A\u0430 \u0449\u0438\u0442\u0430"
+    stat-card-uses: "\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u0438\u0439 \u043A\u0430\u0440\u0442"
+    stat-rare-card: "\u0420\u0435\u0434\u043A\u0430\u044F \u043A\u0430\u0440\u0442\u0430"
+    entity-at: "{0} \u043D\u0430 \u043F\u043E\u0437\u0438\u0446\u0438\u0438 {1}"
 
 en:
   # Gun
@@ -389,4 +441,56 @@ en:
     help-test: "test"
     help-cards-reload: "cards reload"
     help-cards-test: "test card"
+    help-setteam: "set team"
+    help-setlanguage: "change language"
     game-state: "Game state"
+    # setteam / setstat / setlanguage messages
+    usage-setteam: "Usage: /rdebug setteam <COLOR> [player]"
+    usage-setstat: "Usage: /rdebug setstat <stat> <value> [player]"
+    team-set: "Player {0} -> {1}"
+    unknown-color: "Unknown color: {0}. Available: BLUE, RED, YELLOW, GREEN"
+    language-set: "Language set to: {0}"
+    language-invalid: "Invalid language: {0}. Available: ru, en"
+    usage-setlanguage: "Usage: /rdebug setlanguage <ru|en>"
+    setstat-done: "{0} = {1} -> {2}"
+    help-wheel: "Toggle card wheel"
+    wheel-set: "Card wheel {0}"
+    wheel-on: "ENABLED"
+    wheel-off: "DISABLED"
+    wheel-usage: "Usage: /rdebug wheel on|off"
+    game-already-started: "Game already in progress! Stop first (/rdebug stop)"
+    debug-wheel-enabled: "Card wheel ENABLED"
+    debug-wheel-disabled: "Card wheel DISABLED"
+    stat-dmg: "Damage"
+    stat-atks: "Hits Landed"
+    stat-atk-speed: "Attack Speed"
+    stat-atkr: "Attack Radius"
+    stat-ammo: "Ammo"
+    stat-atks-reload: "Reload per Hit"
+    stat-bullets: "Bullets"
+    stat-bullet-speed: "Bullet Speed"
+    stat-bounce: "Bounce"
+    stat-homing: "Homing"
+    stat-big-bullet: "Big Bullet"
+    stat-cold: "Cold"
+    stat-cold-lvl: "Cold Level"
+    stat-poison: "Poison"
+    stat-poison-lvl: "Poison Level"
+    stat-parazit: "Leech Damage"
+    stat-parazit-lvl: "Leech Level"
+    stat-leech: "Leech"
+    stat-truster: "Truster"
+    stat-hp: "Health"
+    stat-grow: "Grow"
+    stat-empower: "Empower"
+    stat-empower-charge: "Empower Charge"
+    stat-dark-strength: "Dark Strength"
+    stat-dark: "Dark"
+    stat-bomb-bullet: "Bombs"
+    stat-bomb-on-block: "Bombs on Block"
+    stat-shield-active: "Shield Active"
+    stat-shield-hp: "Shield HP"
+    stat-shield-cd: "Shield Cooldown"
+    stat-card-uses: "Card Uses"
+    stat-rare-card: "Rare Card"
+    entity-at: "{0} at {1}"

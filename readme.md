@@ -6,7 +6,7 @@ Minecraft плагин мини-игры "Rounds" (Raunds). 4 команды, к
 
 ## Требования
 
-- Paper 1.20.1 - 1.26.2+
+- Paper 1.20.1 - 26.2+
 - Java 17+
 - Опционально: [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.13006/) для поддержки плейсхолдеров
 - Опционально: [TAB](https://www.spigotmc.org/resources/tab.57806/) для отображения счёта и статуса игры
@@ -18,7 +18,7 @@ Minecraft плагин мини-игры "Rounds" (Raunds). 4 команды, к
 1. Скопируйте `RoundsPlugin-1.0.jar` в папку `plugins/`
 2. Перезапустите сервер
 3. Настройте `plugins/RoundsPlugin/config.yml` (по умолчанию уже настроено)
-4. Настройте карты в `plugins/RoundsPlugin/cards/original/` (по умолчанию 65 карт)
+4. Настройте карты в `plugins/RoundsPlugin/cards/` (по умолчанию 65 карт)
 5. Получите блоки командой `/rdebug giveblocks` и расставьте в мире
 
 ---

@@ -5,7 +5,7 @@ name:
 description:
   ru: "Возрождение один раз после смерти, -35% ХП"
   en: "Respawn once on death, -35% HP"
-material: FIRE
+material: BLAZE_POWDER
 custom-model-data: 10037
 rarity: LEGENDARY
 enabled: true

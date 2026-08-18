@@ -17,6 +17,10 @@ public final class RoundsKeys {
     public static final NamespacedKey BULLET_SCALE = key("bullet_scale");
     public static final NamespacedKey BULLET_HOMING = key("bullet_homing");
     public static final NamespacedKey BULLET_DRILL = key("bullet_drill");
+    public static final NamespacedKey BULLET_SPAWN_LOC = key("bullet_spawn_loc");
+    public static final NamespacedKey BULLET_TG_BOUNCE = key("bullet_tg_bounce");
+    public static final NamespacedKey BULLET_SNEAKY = key("bullet_sneaky");
+    public static final NamespacedKey BULLET_DISPLAY = key("bullet_display");
 
     public static final NamespacedKey IS_BOMB = key("is_bomb");
     public static final NamespacedKey IS_HEAL_RING = key("is_heal_ring");

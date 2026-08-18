@@ -5,7 +5,7 @@ name:
 description:
   ru: "Пуля взрывается при попадании, -30% скорость атаки"
   en: "Bullet explodes on impact, -30% ATKSPD"
-material: FIRECHARGE
+material: FIRE_CHARGE
 custom-model-data: 10022
 rarity: RARE
 enabled: true

@@ -10,4 +10,4 @@ custom-model-data: 10039
 rarity: LEGENDARY
 enabled: true
 effects:
-  hp: 4.0
+  pristine_perseverance: 4.0

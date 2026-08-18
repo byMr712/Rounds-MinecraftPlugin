@@ -29,9 +29,10 @@ public class PlayerData {
     public double maxAmmo = 1;
     public double atksReload = 0;
     public double pistolAnim = 0;
-    public double bullets = 1;
+    public double bullets = 3;
     public double cold = 0;
     public double poison = 0;
+    public double toxicCloud = 0;
     public double leech = 0;
     public double tgBounce = 0;
     public double homing = 0;
@@ -66,6 +67,7 @@ public class PlayerData {
     public double saw = 0;
     public double shockwave = 0;
     public double silence = 0;
+    public double silenceAura = 0;
     public double sneaky = 0;
     public double emp = 0;
     public double overpower = 0;
@@ -84,6 +86,7 @@ public class PlayerData {
     public double tacticalReload = 0;
     public double ammoPerHit = 0;
     public double hpBoostOnHit = 0;
+    public double pristinePerseverance = 0;
 
     public double x = 0;
     public double y = 0;
@@ -109,16 +112,17 @@ public class PlayerData {
     }
 
     public void resetStats() {
-        dmg = 1.0;
+        dmg = 3.0;
         atks = 20;
         atkSpeed = 0;
         atkr = 0;
         bouncePl = 0;
         ammo = 1;
         maxAmmo = 1;
-        bullets = 1;
+        bullets = 3;
         cold = 0;
         poison = 0;
+        toxicCloud = 0;
         leech = 0;
         tgBounce = 0;
         homing = 0;
@@ -152,6 +156,7 @@ public class PlayerData {
         saw = 0;
         shockwave = 0;
         silence = 0;
+        silenceAura = 0;
         sneaky = 0;
         emp = 0;
         overpower = 0;
@@ -170,6 +175,7 @@ public class PlayerData {
         tacticalReload = 0;
         ammoPerHit = 0;
         hpBoostOnHit = 0;
+        pristinePerseverance = 0;
         x = 0;
         y = 0;
         z = 0;
@@ -187,10 +193,14 @@ public class PlayerData {
             base *= (1.0 + empower * 0.5);
             empowerCharge--;
         }
-        return base;
+        return round2(base);
     }
 
     public double getMaxHealth() {
         return Math.max(hp, 2);
+    }
+
+    public static double round2(double value) {
+        return Math.round(value * 100.0) / 100.0;
     }
 }

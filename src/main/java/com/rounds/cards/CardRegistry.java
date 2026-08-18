@@ -239,7 +239,9 @@ public class CardRegistry {
         String lang = "en";
         try { lang = com.rounds.util.Messages.getLanguage(); } catch (Exception ignored) {}
         for (Card c : cards.values()) {
-            list.add(ChatColor.stripColor(c.getName(lang)));
+            String name = c.getName(lang);
+            name = ChatColor.stripColor(name.replaceAll("&[0-9a-fk-or]", ""));
+            list.add(name);
         }
         return list;
     }

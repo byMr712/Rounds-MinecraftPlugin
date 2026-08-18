@@ -1,24 +1,25 @@
-# RoundsPlugin v1.2.1
+# RoundsPlugin v1.0
 
-Minecraft плагин мини-игры "Rounds" (Raunds). 4 команды, карточная система, стрельба, до 20 раундов.
+Minecraft плагин мини-игры "Rounds" (Raunds). 4 команды, карточная система со 65 картами, стрельба, до 20 раундов.
 
 ---
 
 ## Требования
 
-- Paper 1.20.1 - 26.2+
+- Paper 1.20.1 - 1.26.2+
 - Java 17+
-- Optional: [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.13006/) для поддержки плейсхолдеров
+- Опционально: [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.13006/) для поддержки плейсхолдеров
+- Опционально: [TAB](https://www.spigotmc.org/resources/tab.57806/) для отображения счёта и статуса игры
 
 ---
 
 ## Установка
 
-1. Скопируйте `RoundsPlugin-1.2.1.jar` в папку `plugins/`
+1. Скопируйте `RoundsPlugin-1.0.jar` в папку `plugins/`
 2. Перезапустите сервер
-3. Настройте `plugins/RoundsPlugin/config.yml`
-4. Настройте `plugins/RoundsPlugin/cards.yml` (43 карты по умолчанию)
-5. Скопируйте блоки из инвентаря и расставьте в мире
+3. Настройте `plugins/RoundsPlugin/config.yml` (по умолчанию уже настроено)
+4. Настройте карты в `plugins/RoundsPlugin/cards/original/` (по умолчанию 65 карт)
+5. Получите блоки командой `/rdebug giveblocks` и расставьте в мире
 
 ---
 
@@ -29,25 +30,24 @@ Minecraft плагин мини-игры "Rounds" (Raunds). 4 команды, к
 Администратор должен получить командой:
 
 ```
-/rdebug giveall
+/rdebug giveblocks
 ```
 
-Это выдаст все специальные блоки в инвентарь. Разместите блоки в мире:
+Это выдаст все специальные блоки в инвентарь и переключит в режим выживания. Разместите блоки в мире:
 
 | Блок | Материал | Что делает |
 |------|----------|-----------|
-| **Синий вход** | Синяя шерсть | ПКМ — вступить в синюю команду |
-| **Красный вход** | Красная шерсть | ПКМ — вступить в красную команду |
-| **Жёлтый вход** | Жёлтая шерсть | ПКМ — вступить в жёлтую команду |
-| **Зелёный вход** | Зелёная шерсть | ПКМ — вступить в зелёную команду |
-| **Счётчик** | Часы | ПКМ — выдать все блоки (только для `rounds.admin`) |
-| **Тэгщитов** | Барьер | ПКМ — пауза/продолжить игру (доступно всем) |
-| **Тэгщитов CD** | Железный блок | ПКМ — начать игру (только для `rounds.admin`) |
+| **Синий вход** | Синяя шерсть | Вступить в синюю команду |
+| **Красный вход** | Красная шерсть | Вступить в красную команду |
+| **Жёлтый вход** | Жёлтая шерсть | Вступить в жёлтую команду |
+| **Зелёный вход** | Зелёная шерсть | Вступить в зелёную команду |
+| **Тэгщитов CD** | Железный блок | Начать игру (только для `rounds.admin`) |
 
 ### 2. Игроки вступают в команды
 
-Игроки просто **правым кликом** по цветному блоку шерсти вступают в команду.
-Менять команду можно до начала игры (просто кликнуть по другому блоку).
+Игроки просто **наступают** на цветной блок шерсти, чтобы вступить в команду.
+Менять команду можно до начала игры (просто наступить на другой блок).
+Кулдаун смены команды — 1 секунда.
 
 ### 3. Запустите игру
 
@@ -55,7 +55,7 @@ Minecraft плагин мини-игры "Rounds" (Raunds). 4 команды, к
 /rdebug start
 ```
 
-Или правым кликом по блоку **Тэгщитов CD** (железный блок).
+Или наступите на блок **Тэгщитов CD** (железный блок) в мире.
 
 ### 4. Как проходит игра
 
@@ -91,63 +91,109 @@ teams:
     - GREEN
 
 gun:
-  material: STICK           # Материал пушки (STICK, CROSSBOW, и т.д.)
+  material: STICK           # Материал пушки (STICK, CROSSBOW и т.д.)
   custom-model-data: 9999   # CustomModelData для ресурспака
   base-cooldown: 20         # Базовый кулдаун (не используется пока)
+
+cards:
+  selection-count: 5        # Количество карт для выбора
+  weighted-rarity: true     # Взвешенный выбор по редкости
+
+resource-pack:
+  auto-send: true
+  port: 41071
+
+# Встроенный scoreboard (отключён по умолчанию, конфликтует с TAB)
+builtin-scoreboard:
+  enabled: false
+  title: "&6&lROUNDS"
 ```
 
-### cards.yml
+### Система карт
 
-Каждая карта определяется так:
+Карты хранятся в формате **отдельных YAML-файлов** в папке `plugins/RoundsPlugin/cards/original/`. Пользовательские карты добавляются в `plugins/RoundsPlugin/cards/custom/`.
+
+#### Формат карты (пример `barrage.yml`):
 
 ```yaml
-cards:
-  1:
-    name: "&8Тёмная сила"
-    description: "+1 к урону от тёмной энергии"
-    material: COAL
-    custom-model-data: 10001
-    rarity: UNCOMMON
-    enabled: true
-    effects:
-      dark-strength: 1
-    potion-effects: []
-    commands: []
+id: 1
+name:
+  ru: "&cБараж"
+  en: "&cBarrage"
+description:
+  ru: "Стреляет 5 пулями, -70% урона"
+  en: "Fires 5 bullets, -70% damage"
+material: ARROW
+custom-model-data: 10001
+rarity: RARE
+enabled: true
+effects:
+  damage: -0.7
+  bullets: 5
+potion-effects: []
+commands: []
 ```
 
-**Параметры эффектов:**
+#### Параметры эффектов:
 
 | Ключ | Описание |
 |------|----------|
-| `damage` | Дополнительный урон |
+| `damage` | Дополнительный урон (множитель: -0.7 = -70%) |
 | `attack-speed` | Скорость атаки (меньше = быстрее) |
 | `attack-speed-reload` | Время перезарядки (меньше = быстрее) |
+| `attack-range` | Дальность стрельбы |
 | `bullets` | Количество пуль за выстрел |
 | `ammo` | Патроны |
 | `bullet-speed` | Скорость пуль |
-| `bounce` | Рикошет |
+| `bounce` | Рикошет по стенкам |
+| `target-bounce` | Рикошет по целям (ближайший враг) |
 | `hp` | Максимальное здоровье |
-| `cold` | Шанс заморозки |
-| `cold-level` | Уровень заморозки |
-| `poison` | Шанс отравления |
-| `poison-level` | Уровень отравления |
-| `homing` | Самонаведение |
+| `cold` + `cold-level` | Шанс и уровень заморозки |
+| `poison` + `poison-level` | Шанс и уровень отравления |
+| `parazit` + `parazit-level` | Шанс и уровень истощения (wither) |
 | `leech` | Высасывание здоровья |
-| `empower` | Усиление |
-| `empower-charge` | Заряды усиления |
-| `dark-strength` | Сила тёмной энергии |
-| `barage` | Барражировка |
+| `homing` | Самонаведение пуль |
+| `empower` + `empower-charge` | Усиление урона (расходуется за выстрел) |
+| `dark-strength` | Сила тёмной энергии (+0.5 урона за стак) |
 | `big-bullet` | Большая пуля |
-| `bomb-bullet` | Взрывные пули |
-| `explode-bullets` | Взрывающиеся пули |
-| `target-bounce` | Рикошет по целям |
-| `shield` | Щит (кулдаун) |
-| `truster` | Ускоритель |
-| `grow` | Увеличение размера |
-| `parazit` | Паразит |
-| `parazit-level` | Уровень паразита |
+| `bomb-bullet` | Взрывные пули (TNT при попадании) |
+| `bomb-on-block` | Бомба при блокировке щитом |
+| `explode-bullets` | Взрывающиеся пули (AoE) |
+| `shield` | Щит (блокировка) |
+| `shield-charge` | Заряды щита |
+| `shields-up` | Автоматический щит при патронах = 0 |
+| `truster` | Усиленный отброс |
+| `grow` | Увеличение максимального HP |
+| `speed` + `speed-boost` | Скорость перемещения |
+| `stun` | Оглушение при попадании |
+| `block-cd` | Кулдаун блокировки щита |
+| `reload-speed` | Скорость перезарядки |
+| `heal` | Лечение |
+| `damage-per-bounce` | Урон за каждый рикошет |
+| `double-block` | Двойной блок щита |
+| `auto-reload` | Автоматическая перезарядка |
+| `saw` | Пила (AoE урон при блокировке) |
+| `shockwave` | У冲击波 при блокировке (отбрасывание) |
+| `silence` | Тишина (запрет стрельбы и блокировки) |
+| `sneaky` | Скрытность |
+| `emp` | Замедление врагов при блокировке |
+| `overpower` | Сила (урон в % от HP при блокировке) |
+| `refresh` | Обновление кулдауна блокировки |
+| `radiance` | Свечение (враги видят тебя) |
+| `lifesteal-aura` | Аура высасывания здоровья |
+| `phoenix` | Феникс (воскрешение после смерти) |
+| `abyssal` | Бездонный (призывает фантома при бездействии 30 сек) |
+| `implode` | Взрыв при смерти |
+| `echo` | Эхо (второй залп через 0.25 сек) |
+| `drill` | Буровые патроны (проходят сквозь стены) |
+| `remote` | Дистанционное управление |
+| `splash` | Осколочный урон |
+| `teleport` | Телепорт при блокировке |
+| `tactical-reload` | Тактическая перезарядка (мгновенная перезарядка при блокировке) |
+| `ammo-per-hit` | Патроны за попадание |
+| `hp-boost-on-hit` | Увеличение HP за попадание |
 
-**Редкость карт:**
+#### Редкость карт:
 
 | Редкость | Шанс выпадения |
 |----------|---------------|
@@ -156,6 +202,16 @@ cards:
 | RARE | 18 |
 | EPIC | 9 |
 | LEGENDARY | 3 |
+
+#### Колесо карт (Wheel)
+
+Администратор может включить автоматическую ротацию карт во время выбора:
+
+```
+/rdebug wheel on
+```
+
+Каждые 6 секунд все открытые GUI выбора карт обновляются новыми случайными картами.
 
 ---
 
@@ -168,6 +224,7 @@ cards:
 | Подкоманда | Аргументы | Описание |
 |-----------|-----------|----------|
 | `/rdebug start` | | Начать игру |
+| `/rdebug stop` | | Остановить игру и сбросить всё |
 | `/rdebug status` | | Показать состояние игры |
 | `/rdebug pause` | | Пауза / продолжить |
 | `/rdebug reset` | | Сбросить игру (без сброса игроков) |
@@ -181,17 +238,18 @@ cards:
 | Подкоманда | Аргументы | Описание |
 |-----------|-----------|----------|
 | `/rdebug cards` | | Открыть GUI выбора карт |
-| `/rdebug cards reload` | | Перезагрузить карты из cards.yml |
+| `/rdebug cards reload` | | Перезагрузить карты из файлов |
 | `/rdebug cards test [id]` | `[id]` | Применить карту по ID или открыть GUI |
-| `/rdebug cards giveall` | | Разблокировать все 43 карты |
+| `/rdebug cards giveall` | | Разблокировать все карты |
+| `/rdebug applycard <имя>` | | Применить карту по имени |
 
 ### Предметы
 
 | Подкоманда | Аргументы | Описание |
 |-----------|-----------|----------|
-| `/rdebug givegun [игрок]` | | Выдать пушку себе или указанному игроку |
-| `/rdebug blocks` | | Выдать все специальные блоки |
-| `/rdebug applycard <id>` | | Применить карту по ID |
+| `/rdebug givegun [игрок\|@a]` | | Выдать пушку себе, игроку или всем |
+| `/rdebug giveblocks [игрок]` | | Выдать все специальные блоки |
+| `/rdebug wheel on\|off` | | Включить/выключить ротацию карт |
 
 ### Отладка
 
@@ -201,23 +259,70 @@ cards:
 | `/rdebug stats [игрок]` | | Показать все статы игрока |
 | `/rdebug setstat <стат> <значение>` | | Установить значение стата |
 | `/rdebug effect <тип> <ур> <длит>` | | Наложить зелье |
-| `/rdebug heal [кол-во]` | | Вылечить (по умолчанию до 20) |
+| `/rdebug heal` | | Вылечить до максимума |
 | `/rdebug spawnbomb` | | Создать бомбу |
 | `/rdebug spawnheal` | | Создать кольцо лечения |
 | `/rdebug spawntoxic` | | Создать токсичное кольцо |
 | `/rdebug spawnshield` | | Создать бомбу щитов |
 | `/rdebug entities` | | Показать кастомные сущности в радиусе 20 блоков |
 | `/rdebug resetstats` | | Сбросить все статы и карты |
-| `/rdebug reload` | | Перезагрузить config.yml, messages.yml, cards.yml |
+| `/rdebug reload` | | Перезагрузить config.yml, messages.yml, карты |
 | `/rdebug version` | | Версия плагина и сервера |
 | `/rdebug killround` | | Убить всех врагов (только во время раунда) |
 | `/rdebug iteminfo` | | Информация о предмете в руке |
 
 **Статы для `setstat`:**
-`dmg`, `atks`, `atkr`, `bounce`, `ammo`, `bullets`, `cold`, `poison`, `leech`, `homing`, `poison_lvl`, `cold_lvl`, `parazit`, `hp`, `bomb_bullet`, `explode_bullets`, `bullet_speed`, `empower`, `empower_charge`, `dark_strength`, `barage`, `big_bullet`, `grow`, `truster_lvl`, `dark`, `atks_reload`
+`dmg`, `atks`, `atks_reload`, `atkr`, `bounce`, `ammo`, `bullets`, `cold`, `poison`, `leech`, `homing`, `poison_lvl`, `cold_lvl`, `parazit`, `hp`, `bomb_bullet`, `explode_bullets`, `bullet_speed`, `empower`, `empower_charge`, `dark_strength`, `barage`, `big_bullet`, `grow`, `truster_lvl`, `dark`
 
 **Зелья для `effect`:**
 `SPEED`, `SLOW`, `FAST_DIGGING`, `SLOW_DIGGING`, `INCREASE_DAMAGE`, `HEAL`, `HARM`, `JUMP`, `CONFUSION`, `BLINDNESS`, `NIGHT_VISION`, `FIRE_RESISTANCE`, `WATER_BREATHING`, `INVISIBILITY`, `POISON`, `REGENERATION`, `RESISTANCE`, `HEALTH_BOOST`, `ABSORPTION`, `SATURATION`, `WEAKNESS`, `WITHER`, `LUCK`, `UNLUCK`, `LEVITATION`, `DOLPHINS_GRACE`, `BAD_OMEN`, `HERO_OF_THE_VILLAGE`
+
+---
+
+## Плейсхолдеры (PlaceholderAPI)
+
+Плагин предоставляет 15 плейсхолдеров:
+
+| Плейсхолдер | Возвращает |
+|-------------|------------|
+| `%rounds_round%` | Текущий номер раунда |
+| `%rounds_rounds_to_win%` | Раундов для победы |
+| `%rounds_round_display%` | Формат "3/5" |
+| `%rounds_state%` | Состояние игры (PLAYING, CARDS, WAITING и т.д.) |
+| `%rounds_team%` | Название команды игрока |
+| `%rounds_team_color%` | Код цвета команды |
+| `%rounds_team_adjective%` | Прилагательное команды (синий, красный и т.д.) |
+| `%rounds_team_wins%` | Победы команды игрока |
+| `%rounds_blue_wins%` | Победы синей команды |
+| `%rounds_red_wins%` | Победы красной команды |
+| `%rounds_yellow_wins%` | Победы жёлтой команды |
+| `%rounds_green_wins%` | Победы зелёной команды |
+| `%rounds_blue_name%` | Локализованное название синей команды |
+| `%rounds_red_name%` | Локализованное название красной команды |
+| `%rounds_yellow_name%` | Локализованное название жёлтой команды |
+| `%rounds_green_name%` | Локализованное название зелёной команды |
+
+---
+
+## Интеграция с TAB
+
+В папке `TAB/` находится готовый конфигурационный файл для плагина TAB. Он показывает:
+
+- Счёт команд в сайдбаре (только во время игры)
+- Отображение раунда и прогресса
+- Индикация команды игрока с цветом
+- Настройка tablist, nametag и header/footer
+
+---
+
+## Сохранение состояния
+
+Плагин автоматически сохраняет:
+
+- **Состояние игры** (`game-state.yml`) — номер раунда, победы команд, погибшие игроки
+- **Данные игроков** — статы, карты, команда (через PersistentDataContainer + `active-players.yml`)
+
+При перезапуске сервера во время активной игры состояние восстанавливается автоматически.
 
 ---
 
@@ -230,6 +335,8 @@ cards:
 3. Перезапустите сервер
 
 Все тексты хранятся в `plugins/RoundsPlugin/messages.yml`. Чтобы добавить свой язык — скопируйте секцию `ru:` или `en:` и замените тексты.
+
+Карты поддерживают локализацию в формате `name.ru` / `name.en` и `description.ru` / `description.en`.
 
 ---
 
@@ -247,6 +354,21 @@ cards:
 | Файл | Описание |
 |------|----------|
 | `plugins/RoundsPlugin/config.yml` | Основная конфигурация |
-| `plugins/RoundsPlugin/cards.yml` | Определения всех 43 карт |
 | `plugins/RoundsPlugin/messages.yml` | Тексты интерфейса (ru/en) |
+| `plugins/RoundsPlugin/cards/original/` | Стандартные карты (65 файлов) |
+| `plugins/RoundsPlugin/cards/custom/` | Пользовательские карты |
 | `plugins/RoundsPlugin/playerdata/` | Данные игроков (автоматически) |
+| `plugins/RoundsPlugin/game-state.yml` | Состояние текущей игры |
+| `plugins/RoundsPlugin/active-players.yml` | Активные игроки в сессии |
+
+---
+
+## Сборка
+
+Требования: Java 17, Gradle 8.9+
+
+```bash
+./gradlew clean build
+```
+
+Выход: `build/libs/RoundsPlugin-1.0.jar`

@@ -1051,6 +1051,8 @@ public class GameManager implements Listener {
     // ===== Built-in Scoreboard =====
     private final Map<UUID, Scoreboard> playerScoreboards = new HashMap<>();
 
+    private static final String DIV = "\u00A7b\u00A7m                                                                ";
+
     public void updateScoreboard() {
         if (!plugin.getRoundsConfig().isBuiltinScoreboard()) return;
         for (Player p : plugin.getServer().getOnlinePlayers()) {
@@ -1066,8 +1068,7 @@ public class GameManager implements Listener {
         for (Objective obj : sb.getObjectives()) obj.unregister();
 
         Objective obj = sb.registerNewObjective("rounds", Criteria.DUMMY,
-                ChatColor.translateAlternateColorCodes('&',
-                        plugin.getRoundsConfig().getBuiltinScoreboardTitle()));
+                plugin.getRoundsConfig().getBuiltinScoreboardTitle());
         obj.setDisplaySlot(DisplaySlot.SIDEBAR);
 
         List<GameTeam> activeTeams = new ArrayList<>();
@@ -1077,24 +1078,29 @@ public class GameManager implements Listener {
 
         int score = 10;
 
-        obj.getScore(" &f\u0420\u0430\u0443\u043D\u0434: &e" + currentRound + "/" + roundsToWin).setScore(score--);
-        obj.getScore(" ").setScore(score--);
+        obj.getScore(DIV).setScore(score--);
+        obj.getScore("\u00A7f\u0420\u0430\u0443\u043D\u0434: \u00A7e" + currentRound + "/" + roundsToWin).setScore(score--);
 
         GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
         String teamPart = myTeam != null
                 ? myTeam.getColor() + Messages.get("team." + myTeam.name().toLowerCase()) : "";
-        obj.getScore(" &f\u041A\u043E\u043C\u0430\u043D\u0434\u0430: " + teamPart).setScore(score--);
-        obj.getScore("  ").setScore(score--);
+        obj.getScore("\u00A7f\u041A\u043E\u043C\u0430\u043D\u0434\u0430: " + teamPart).setScore(score--);
+
+        obj.getScore(DIV).setScore(score--);
 
         for (GameTeam gt : activeTeams) {
             String name = Messages.get("team." + gt.name().toLowerCase());
             int pad = Math.max(1, 7 - name.length());
-            String entry = " " + name + ":" + " ".repeat(pad) + ChatColor.GRAY + "\u2502 "
-                    + ChatColor.AQUA + (int) plugin.getTeamManager().getWins(gt);
+            String entry = "\u00A7f" + name + ":" + " ".repeat(pad) + "\u00A77\u2502 "
+                    + "\u00A7b" + (int) plugin.getTeamManager().getWins(gt);
             obj.getScore(entry).setScore(score--);
         }
 
-        player.setScoreboard(sb);
+        obj.getScore(DIV).setScore(score);
+
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            p.setScoreboard(sb);
+        }
     }
 
     public void removeScoreboard() {

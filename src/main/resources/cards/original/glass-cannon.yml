@@ -3,11 +3,11 @@ name:
   ru: "&fСтеклянная пушка"
   en: "&fGlass Cannon"
 description:
-  ru: "+100% урона, -100% ХП"
-  en: "+100% DMG, -100% HP"
+  ru: "+100% урона, -40% ХП"
+  en: "+100% DMG, -40% HP"
 material: GLASS
 rarity: RARE
 enabled: true
 effects:
   damage: 1.0
-  hp: -1.0
+  hp: -0.4

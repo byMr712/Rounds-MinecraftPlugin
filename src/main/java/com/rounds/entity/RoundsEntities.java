@@ -180,7 +180,7 @@ public class RoundsEntities implements Listener {
                         living.getWorld().playSound(living.getLocation(), Sound.ENTITY_PLAYER_HURT, 1f, 1f);
                         if (shooterData != null) {
                             if (shooterData.trusterLvl > 0) {
-                                Vector kb = arrow.getVelocity().normalize().multiply(shooterData.trusterLvl * 1.5);
+                                Vector kb = arrow.getVelocity().normalize().multiply(shooterData.trusterLvl * 3.0);
                                 living.setVelocity(living.getVelocity().add(kb));
                             }
                             if (shooterData.stun > 0 && living instanceof Player stunTarget) {
@@ -540,7 +540,7 @@ public class RoundsEntities implements Listener {
             UUID shieldOwner = GunItem.getShieldOwner(hitEntity);
             if (shieldOwner != null && shieldOwner.equals(ownerId)) {
                 event.setCancelled(true);
-                Vector vel = arrow.getVelocity();
+                Vector vel = lastBulletVelocity.getOrDefault(arrow.getUniqueId(), arrow.getVelocity());
                 if (vel.lengthSquared() > 0.01) {
                     Location newLoc = arrow.getLocation().add(vel.clone().normalize().multiply(1.5));
                     arrow.teleport(newLoc);
@@ -608,7 +608,7 @@ public class RoundsEntities implements Listener {
                     finalDamage *= (1.0 + bounceCount * data.damagePerBounce);
                 }
                 if (data.trusterLvl > 0) {
-                    Vector knockback = arrow.getVelocity().normalize().multiply(data.trusterLvl * 1.5);
+                    Vector knockback = arrow.getVelocity().normalize().multiply(data.trusterLvl * 3.0);
                     living.setVelocity(living.getVelocity().add(knockback));
                 }
                 if (data.overpower > 0) {

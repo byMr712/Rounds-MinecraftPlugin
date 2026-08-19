@@ -9,7 +9,6 @@ commands:
   rdebug:
     description: Debug tools for testing
     usage: /rdebug <subcommand>
-    permission: rounds.admin
 permissions:
   rounds.admin:
     description: Admin permission for rounds commands

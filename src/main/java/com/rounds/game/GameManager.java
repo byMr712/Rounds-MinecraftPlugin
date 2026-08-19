@@ -921,7 +921,6 @@ public class GameManager implements Listener {
         plugin.getCardManager().resetAllCards();
         GunItem.resetRoundState();
         RoundsEntities.clearAllState();
-        plugin.getPlayerDataManager().clearActivePlayers();
         restoreGameRules();
         teamSpawns.clear();
         resetWins();
@@ -952,6 +951,7 @@ public class GameManager implements Listener {
                 p.teleport(lobbyLoc.clone().add(0, 1, 0));
             }
         }
+        plugin.getPlayerDataManager().clearActivePlayers();
     }
 
     private void stopGameTick() {

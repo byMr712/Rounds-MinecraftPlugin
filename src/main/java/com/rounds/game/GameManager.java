@@ -411,7 +411,8 @@ public class GameManager implements Listener {
     private void sendSpectatorActionbar() {
         String msg = Messages.get("game.spectator-hint");
         for (Player p : plugin.getServer().getOnlinePlayers()) {
-            if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) == null) {
+            if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) == null
+                    && !deadPlayers.contains(p.getUniqueId())) {
                 p.sendActionBar(ChatColor.GOLD + msg);
             }
         }
@@ -704,6 +705,20 @@ public class GameManager implements Listener {
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         if (state != GameState.PLAYING && state != GameState.ROUND_END && state != GameState.CARDS) return;
         Player player = event.getPlayer();
+
+        if (state == GameState.PLAYING && deadPlayers.contains(player.getUniqueId())) {
+            event.setRespawnLocation(player.getWorld().getSpawnLocation());
+            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                player.setGameMode(GameMode.SPECTATOR);
+                player.setInvulnerable(true);
+                Player target = findRandomAlivePlayer();
+                if (target != null) {
+                    player.teleport(target.getLocation());
+                }
+            }, 1L);
+            return;
+        }
+
         event.setRespawnLocation(player.getWorld().getSpawnLocation());
 
         GameTeam team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());

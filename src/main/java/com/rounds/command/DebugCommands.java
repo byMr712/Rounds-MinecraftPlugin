@@ -298,6 +298,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
         if (gm.getState() == GameManager.GameState.CARDS) {
             plugin.getCardManager().openCardSelection(player, finalTeam);
+            player.setGameMode(GameMode.SPECTATOR);
             player.setInvulnerable(true);
         } else if (gm.getState() == GameManager.GameState.PLAYING) {
             player.setGameMode(GameMode.SPECTATOR);

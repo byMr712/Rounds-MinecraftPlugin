@@ -81,6 +81,8 @@ public class RoundsEntities implements Listener {
             d.getPersistentDataContainer().set(RoundsKeys.IS_BULLET, PersistentDataType.BYTE, (byte) 1);
         });
 
+        lastBulletVelocity.put(arrow.getUniqueId(), velocity);
+
         arrow.getPersistentDataContainer().set(RoundsKeys.BULLET_DISPLAY, PersistentDataType.STRING, display.getUniqueId().toString());
 
         int lifetime = arrow.getLifetimeTicks();
@@ -120,6 +122,11 @@ public class RoundsEntities implements Listener {
                     return;
                 }
                 lastBulletVelocity.put(arrow.getUniqueId(), arrow.getVelocity());
+                PersistentDataContainer pdc = arrow.getPersistentDataContainer();
+                String ownerStr = pdc.getOrDefault(RoundsKeys.BULLET_OWNER, PersistentDataType.STRING, "");
+                UUID bulletOwnerId;
+                try { bulletOwnerId = UUID.fromString(ownerStr); }
+                catch (IllegalArgumentException ex) { bulletOwnerId = shooter.getUniqueId(); }
                 Location aLoc = arrow.getLocation();
                 Vector traveled = aLoc.toVector().subtract(prevLoc.toVector());
                 double dist = traveled.length();
@@ -133,26 +140,31 @@ public class RoundsEntities implements Listener {
                 } else {
                     checkpoints.add(aLoc.clone());
                 }
+                boolean reflected = false;
                 for (Location check : checkpoints) {
                     for (Entity entity : check.getWorld().getNearbyEntities(check, hitRadius, hitRadius, hitRadius)) {
                         if (!(entity instanceof LivingEntity living)) continue;
-                        if (entity.getUniqueId().equals(shooter.getUniqueId())) continue;
+                        if (entity.getUniqueId().equals(bulletOwnerId)) continue;
                         if (entity instanceof org.bukkit.entity.ArmorStand) continue;
                         if (entity instanceof Player p) {
                             if (!plugin.getGameManager().isParticipant(p.getUniqueId())) continue;
-                            GameTeam ownerTeam = plugin.getTeamManager().getPlayerTeam(shooter.getUniqueId());
+                            GameTeam ownerTeam = plugin.getTeamManager().getPlayerTeam(bulletOwnerId);
                             GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
                             if (ownerTeam != null && targetTeam != null && ownerTeam == targetTeam) continue;
+                            if (GunItem.isShieldActive(p.getUniqueId())) {
+                                reflectBulletFromPlayer(arrow, p, pdc);
+                                reflected = true;
+                                break;
+                            }
                         }
                         double entityDist = living.getLocation().distance(check) - 0.5;
                         if (entityDist > hitRadius) continue;
                         if (!arrow.isValid()) { cancel(); return; }
-                        PersistentDataContainer pdc = arrow.getPersistentDataContainer();
                         if (!pdc.has(RoundsKeys.IS_BULLET, PersistentDataType.BYTE)) { cancel(); return; }
                         double dmg = pdc.getOrDefault(RoundsKeys.BULLET_DAMAGE, PersistentDataType.DOUBLE, 1.0);
                         int bounces = bounceCounters.getOrDefault(arrow.getUniqueId(), 0);
                         double finalDmg = dmg * 2.0;
-                        PlayerData shooterData = plugin.getPlayerDataManager().getData(shooter.getUniqueId());
+                        PlayerData shooterData = plugin.getPlayerDataManager().getData(bulletOwnerId);
                         if (shooterData != null) {
                             String spawnLocStr = pdc.getOrDefault(RoundsKeys.BULLET_SPAWN_LOC, PersistentDataType.STRING, "");
                             if (!spawnLocStr.isEmpty() && shooterData.grow > 0) {
@@ -192,10 +204,10 @@ public class RoundsEntities implements Listener {
                                     PotionEffectType.CONFUSION, 40, 0));
                             }
                             if (shooterData.toxicCloud > 0) {
-                                spawnToxicCloud(living.getLocation(), shooter.getUniqueId(), shooterData);
+                                spawnToxicCloud(living.getLocation(), bulletOwnerId, shooterData);
                             }
                             if (shooterData.bombBullet > 0) {
-                                spawnBomb(living.getLocation(), shooter.getUniqueId());
+                                spawnBomb(living.getLocation(), bulletOwnerId);
                             }
                             if (shooterData.poison > 0) {
                                 living.addPotionEffect(new org.bukkit.potion.PotionEffect(
@@ -209,12 +221,38 @@ public class RoundsEntities implements Listener {
                         cancel();
                         return;
                     }
+                    if (reflected) break;
+                }
+                if (reflected) {
+                    prevLoc = aLoc.clone();
+                    return;
                 }
                 prevLoc = aLoc.clone();
             }
         }.runTaskTimer(plugin, 0L, 1L);
 
         return new BulletProjectile(arrow, shooter.getUniqueId(), display);
+    }
+
+    private static void reflectBulletFromPlayer(Arrow arrow, Player shieldPlayer, PersistentDataContainer pdc) {
+        Player originalShooter = arrow.getShooter() instanceof Player p ? p : null;
+        Vector toTarget;
+        if (originalShooter != null && originalShooter.isOnline()) {
+            toTarget = originalShooter.getLocation().toVector().subtract(arrow.getLocation().toVector());
+            if (toTarget.lengthSquared() > 0.01) {
+                toTarget = toTarget.normalize().multiply(3.0);
+            } else {
+                toTarget = shieldPlayer.getLocation().getDirection().multiply(3.0);
+            }
+        } else {
+            toTarget = shieldPlayer.getLocation().getDirection().multiply(3.0);
+        }
+        pdc.set(RoundsKeys.BULLET_OWNER, PersistentDataType.STRING, shieldPlayer.getUniqueId().toString());
+        arrow.setVelocity(toTarget);
+        arrow.setShooter(shieldPlayer);
+        arrow.setPierceLevel((byte) 0);
+        bounceCounters.remove(arrow.getUniqueId());
+        shieldPlayer.getWorld().playSound(shieldPlayer.getLocation(), Sound.BLOCK_ANVIL_USE, 0.6f, 2.0f);
     }
 
     public static void bounceBullet(Arrow oldArrow, Vector reflectedVelocity) {
@@ -536,55 +574,12 @@ public class RoundsEntities implements Listener {
 
         Entity hitEntity = event.getHitEntity();
 
-        if (hitEntity != null && GunItem.isShield(hitEntity)) {
-            UUID shieldOwner = GunItem.getShieldOwner(hitEntity);
-            if (shieldOwner != null && shieldOwner.equals(ownerId)) {
-                event.setCancelled(true);
-                Vector vel = lastBulletVelocity.getOrDefault(arrow.getUniqueId(), arrow.getVelocity());
-                if (vel.lengthSquared() > 0.01) {
-                    Location newLoc = arrow.getLocation().add(vel.clone().normalize().multiply(1.5));
-                    arrow.teleport(newLoc);
-                    arrow.setVelocity(vel);
-                }
-                return;
-            }
-            if (shieldOwner != null && !shieldOwner.equals(ownerId)) {
-                pdc.set(RoundsKeys.BULLET_OWNER, PersistentDataType.STRING, shieldOwner.toString());
-
-                Player shieldPlayer = plugin.getServer().getPlayer(shieldOwner);
-                Player originalShooter = plugin.getServer().getPlayer(ownerId);
-                if (shieldPlayer != null && originalShooter != null) {
-                    Vector toTarget = originalShooter.getLocation().toVector()
-                        .subtract(arrow.getLocation().toVector());
-                    if (toTarget.lengthSquared() > 0.01) {
-                        toTarget = toTarget.normalize().multiply(3.0);
-                    } else {
-                        toTarget = shieldPlayer.getLocation().getDirection().multiply(3.0);
-                    }
-                    arrow.setVelocity(toTarget);
-                    arrow.setShooter(shieldPlayer);
-                } else if (shieldPlayer != null) {
-                    Vector toTarget = shieldPlayer.getLocation().getDirection().multiply(3.0);
-                    arrow.setVelocity(toTarget);
-                    arrow.setShooter(shieldPlayer);
-                } else {
-                    arrow.setVelocity(arrow.getVelocity().multiply(-1));
-                }
-
-                arrow.setPierceLevel((byte) 0);
-                bounceCounters.remove(arrow.getUniqueId());
-
-                if (shieldPlayer != null) {
-                    shieldPlayer.getWorld().playSound(shieldPlayer.getLocation(),
-                        Sound.BLOCK_ANVIL_USE, 0.6f, 2.0f);
-                }
-
-                hitEntity.remove();
-                return;
-            }
-        }
-
         if (hitEntity != null && hitEntity instanceof LivingEntity living && !living.getUniqueId().equals(ownerId)) {
+            if (living instanceof Player blockedPlayer && GunItem.isShieldActive(blockedPlayer.getUniqueId())) {
+                event.setCancelled(true);
+                reflectBulletFromPlayer(arrow, blockedPlayer, pdc);
+                return;
+            }
             if (living instanceof Player hitPlayer && !plugin.getGameManager().isParticipant(hitPlayer.getUniqueId())) return;
             PlayerData data = plugin.getPlayerDataManager().getData(ownerId);
             double finalDamage = damage * 2.0;

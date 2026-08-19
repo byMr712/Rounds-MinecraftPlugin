@@ -136,7 +136,7 @@ public class GunItem implements Listener {
 
         int bulletCount = (int) Math.max(data.bullets, 1);
         Vector direction = player.getLocation().getDirection();
-        Location eyeLoc = player.getEyeLocation();
+        final Location bulletOrigin = player.getEyeLocation();
 
         for (int i = 0; i < bulletCount; i++) {
             final int idx = i;
@@ -151,7 +151,7 @@ public class GunItem implements Listener {
                 double speed = 3.0 * Math.max(data.bulletSpeed, 0.1);
                 vel = vel.normalize().multiply(speed);
 
-                RoundsEntities.spawnBullet(player, eyeLoc, vel, data);
+                RoundsEntities.spawnBullet(player, bulletOrigin, vel, data);
             }, idx * 3L);
         }
         data.consumeEmpowerCharge();
@@ -176,7 +176,7 @@ public class GunItem implements Listener {
 
         data.ammo -= 1;
         player.sendActionBar(ChatColor.GRAY + Messages.get("gun.ammo-display", (int) data.ammo, (int) data.maxAmmo));
-        player.getWorld().playSound(eyeLoc, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 0.5f, 1.5f);
+        player.getWorld().playSound(bulletOrigin, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 0.5f, 1.5f);
 
         if (data.shieldsUp > 0 && data.ammo <= 0) {
             doBlock(player);
@@ -225,16 +225,17 @@ public class GunItem implements Listener {
         }
         activeShields.add(uuid);
 
-        if (data.empower > 0) {
-            data.empowerCharge = 1;
-        }
-
         long shieldDuration = (long) SHIELD_DURATION_TICKS;
         if (data.shieldsUp > 0) {
             shieldDuration += (long) (data.shieldsUp * 10);
         }
+        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+            activeShields.remove(uuid);
+        }, shieldDuration);
 
-        spawnShield(player);
+        if (data.empower > 0) {
+            data.empowerCharge = 1;
+        }
 
         player.addPotionEffect(new org.bukkit.potion.PotionEffect(
             PotionEffectType.DAMAGE_RESISTANCE, 20, 255, true, false, false));
@@ -355,14 +356,6 @@ public class GunItem implements Listener {
                     if (myTeam != null && targetTeam != null && myTeam != targetTeam && target instanceof Player silenceTarget) {
                         silencePlayer(silenceTarget.getUniqueId());
                         activeShields.remove(silenceTarget.getUniqueId());
-                        for (Entity e : silenceTarget.getNearbyEntities(3.0, 3.0, 3.0)) {
-                            if (isShield(e)) {
-                                UUID shieldOwner = getShieldOwner(e);
-                                if (shieldOwner != null && shieldOwner.equals(silenceTarget.getUniqueId())) {
-                                    e.remove();
-                                }
-                            }
-                        }
                         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                             unsilencePlayer(silenceTarget.getUniqueId());
                         }, (long) (data.silence * 40));
@@ -395,47 +388,6 @@ public class GunItem implements Listener {
 
         player.getWorld().playSound(blockLoc, Sound.BLOCK_ANVIL_PLACE, 0.8f, 1.5f);
         player.sendActionBar(ChatColor.BLUE + Messages.get("gun.shield-activated"));
-
-        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-            activeShields.remove(uuid);
-        }, shieldDuration);
-    }
-
-    private void spawnShield(Player player) {
-        Location spawnLoc = player.getEyeLocation().add(player.getLocation().getDirection().multiply(1.5));
-
-        ArmorStand shield = player.getWorld().spawn(spawnLoc, ArmorStand.class, stand -> {
-            stand.setSmall(true);
-            stand.setInvisible(true);
-            stand.setGravity(false);
-            stand.setInvulnerable(true);
-            stand.setCustomNameVisible(false);
-            stand.setCustomName(null);
-            stand.setItemInHand(null);
-            stand.setRightArmPose(new org.bukkit.util.EulerAngle(0, 0, Math.toRadians(-90)));
-
-            PersistentDataContainer pdc = stand.getPersistentDataContainer();
-            pdc.set(RoundsKeys.SHIELD, PersistentDataType.BYTE, (byte) 1);
-            pdc.set(RoundsKeys.SHIELD_OWNER, PersistentDataType.STRING, player.getUniqueId().toString());
-        });
-
-        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-            if (shield.isValid()) {
-                shield.remove();
-            }
-        }, (long) SHIELD_DURATION_TICKS + 5);
-    }
-
-    public static boolean isShield(Entity entity) {
-        if (entity == null || !entity.isValid()) return false;
-        PersistentDataContainer pdc = entity.getPersistentDataContainer();
-        return pdc.has(RoundsKeys.SHIELD, PersistentDataType.BYTE);
-    }
-
-    public static UUID getShieldOwner(Entity entity) {
-        if (entity == null) return null;
-        String owner = entity.getPersistentDataContainer().get(RoundsKeys.SHIELD_OWNER, PersistentDataType.STRING);
-        return owner != null ? UUID.fromString(owner) : null;
     }
 
     @EventHandler

@@ -204,7 +204,6 @@ public class GameManager implements Listener {
             if (team != null) {
                 Location spawn = teamSpawns.get(team);
                 if (spawn != null) p.teleport(spawn);
-                p.setGameMode(GameMode.SURVIVAL);
                 p.setFoodLevel(20);
                 p.setSaturation(5.0f);
                 p.setExhaustion(0f);
@@ -295,14 +294,6 @@ public class GameManager implements Listener {
                                     GunItem.silencePlayer(silenceTarget.getUniqueId());
                                     GunItem.cancelReload(silenceTarget.getUniqueId());
                                     GunItem.resetShieldActive(silenceTarget.getUniqueId());
-                                    for (Entity e : silenceTarget.getNearbyEntities(3.0, 3.0, 3.0)) {
-                                        if (GunItem.isShield(e)) {
-                                            UUID shieldOwner = GunItem.getShieldOwner(e);
-                                            if (shieldOwner != null && shieldOwner.equals(silenceTarget.getUniqueId())) {
-                                                e.remove();
-                                            }
-                                        }
-                                    }
                                     lastSilenceAuraTime.put(silenceTarget.getUniqueId(), now);
                                     Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                                         GunItem.unsilencePlayer(silenceTarget.getUniqueId());

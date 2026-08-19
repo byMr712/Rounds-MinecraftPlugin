@@ -27,6 +27,13 @@ public final class RoundsConfig {
 
     private boolean colorNicknames;
 
+    private boolean gameRulesEnabled;
+    private boolean grInstantRespawn;
+    private boolean grKeepInventory;
+    private boolean grFreezeTime;
+    private boolean grDisableWeather;
+    private boolean grDisableMobSpawning;
+
     public RoundsConfig(RoundsPlugin plugin) {
         this.plugin = plugin;
         reload();
@@ -57,6 +64,14 @@ public final class RoundsConfig {
 
         colorNicknames = c.getBoolean("color-nicknames", true);
 
+        String gr = "game-rules.";
+        gameRulesEnabled = c.getBoolean(gr + "enabled", true);
+        grInstantRespawn = c.getBoolean(gr + "instant-respawn", true);
+        grKeepInventory = c.getBoolean(gr + "keep-inventory", true);
+        grFreezeTime = c.getBoolean(gr + "freeze-time", true);
+        grDisableWeather = c.getBoolean(gr + "disable-weather", true);
+        grDisableMobSpawning = c.getBoolean(gr + "disable-mob-spawning", true);
+
         DefaultStats ds = new DefaultStats();
         ds.dmg = c.getDouble("defaults.damage", 3.0);
         ds.atks = c.getDouble("defaults.attack-speed", 20);
@@ -86,4 +101,10 @@ public final class RoundsConfig {
     public boolean isBuiltinScoreboard() { return builtinScoreboard; }
     public String getBuiltinScoreboardTitle() { return builtinScoreboardTitle; }
     public boolean isColorNicknames() { return colorNicknames; }
+    public boolean isGameRulesEnabled() { return gameRulesEnabled; }
+    public boolean isGrInstantRespawn() { return grInstantRespawn; }
+    public boolean isGrKeepInventory() { return grKeepInventory; }
+    public boolean isGrFreezeTime() { return grFreezeTime; }
+    public boolean isGrDisableWeather() { return grDisableWeather; }
+    public boolean isGrDisableMobSpawning() { return grDisableMobSpawning; }
 }

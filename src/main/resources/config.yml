@@ -55,6 +55,24 @@ cards:
   weighted-rarity: true
 
 # ============================================
+# GAME RULES
+# ============================================
+# Automatically override world game rules during the game.
+# Master switch — turns ALL game rule overrides on/off at once.
+game-rules:
+  enabled: true
+  # Instant respawn (no death screen)
+  instant-respawn: true
+  # Keep inventory on death
+  keep-inventory: true
+  # Freeze time at daytime (disable daylight cycle)
+  freeze-time: true
+  # Disable weather changes (rain, thunder)
+  disable-weather: true
+  # Disable natural mob spawning
+  disable-mob-spawning: true
+
+# ============================================
 # NICKNAME COLORING
 # ============================================
 # Color player names in tab-list and above heads

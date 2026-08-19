@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Objects;
 import org.bukkit.util.Vector;
+import com.rounds.RoundsConfig;
 import com.rounds.RoundsPlugin;
 import com.rounds.entity.RoundsEntities;
 import com.rounds.item.GunItem;
@@ -58,6 +59,7 @@ public class GameManager implements Listener {
     private boolean wheelEnabled = false;
     private final Set<Integer> scheduledTaskIds = new HashSet<>();
     private final Set<UUID> pendingCardJoiners = new HashSet<>();
+    private final Map<GameRule<?>, Object> savedGameRules = new HashMap<>();
 
     public GameManager(RoundsPlugin plugin) {
         this.plugin = plugin;
@@ -121,7 +123,7 @@ public class GameManager implements Listener {
 
         plugin.getCardManager().clearPendingPicks();
         plugin.getPlayerDataManager().clearActivePlayers();
-        for (World world : Bukkit.getWorlds()) world.setGameRule(GameRule.NATURAL_REGENERATION, false);
+        applyGameRules();
         for (Player p : readyPlayers) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             plugin.getPlayerDataManager().trackPlayer(p.getUniqueId());
@@ -567,7 +569,7 @@ public class GameManager implements Listener {
             plugin.getCardManager().resetAllCards();
             GunItem.resetRoundState();
             RoundsEntities.clearAllState();
-            for (World world : Bukkit.getWorlds()) world.setGameRule(GameRule.NATURAL_REGENERATION, true);
+            restoreGameRules();
             for (Player p : plugin.getServer().getOnlinePlayers()) {
                 p.getInventory().clear();
                 var attr = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
@@ -758,6 +760,44 @@ public class GameManager implements Listener {
 
     public void shutdown() { stopGameTick(); }
 
+    @SuppressWarnings("unchecked")
+    private <T> void saveAndSet(World world, GameRule<T> rule, T value) {
+        T original = world.getGameRuleValue(rule);
+        if (!savedGameRules.containsKey(rule)) {
+            savedGameRules.put(rule, original);
+        }
+        world.setGameRule(rule, value);
+    }
+
+    private void applyGameRules() {
+        RoundsConfig config = plugin.getRoundsConfig();
+        if (!config.isGameRulesEnabled()) return;
+        for (World world : Bukkit.getWorlds()) {
+            if (config.isGrInstantRespawn()) saveAndSet(world, GameRule.DO_IMMEDIATE_RESPAWN, true);
+            if (config.isGrKeepInventory()) saveAndSet(world, GameRule.KEEP_INVENTORY, true);
+            if (config.isGrFreezeTime()) {
+                saveAndSet(world, GameRule.DO_DAYLIGHT_CYCLE, false);
+                world.setTime(1000);
+            }
+            if (config.isGrDisableWeather()) {
+                saveAndSet(world, GameRule.DO_WEATHER_CYCLE, false);
+                world.setClearWeatherDuration(6000);
+            }
+            if (config.isGrDisableMobSpawning()) saveAndSet(world, GameRule.DO_MOB_SPAWNING, false);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void restoreGameRules() {
+        for (World world : Bukkit.getWorlds()) {
+            for (Map.Entry<GameRule<?>, Object> entry : savedGameRules.entrySet()) {
+                GameRule<Object> rule = (GameRule<Object>) entry.getKey();
+                world.setGameRule(rule, entry.getValue());
+            }
+        }
+        savedGameRules.clear();
+    }
+
     public void stopGame() {
         if (state == GameState.WAITING) return;
         stopGameTick();
@@ -767,7 +807,7 @@ public class GameManager implements Listener {
         GunItem.resetRoundState();
         RoundsEntities.clearAllState();
         plugin.getPlayerDataManager().clearActivePlayers();
-        for (World world : Bukkit.getWorlds()) world.setGameRule(GameRule.NATURAL_REGENERATION, true);
+        restoreGameRules();
         state = GameState.WAITING;
         saveState();
         removeScoreboard();

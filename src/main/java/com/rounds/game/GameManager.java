@@ -184,6 +184,9 @@ public class GameManager implements Listener {
 
         state = GameState.CARDS;
         startGameTick();
+        currentRound = 0;
+
+        pickRandomZoneAndAssignSpawns();
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             p.setGameMode(GameMode.SPECTATOR);
@@ -193,6 +196,8 @@ public class GameManager implements Listener {
         for (Player p : readyPlayers) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             if (team != null) {
+                Location spawn = teamSpawns.get(team);
+                if (spawn != null) p.teleport(spawn);
                 p.setGameMode(GameMode.SURVIVAL);
                 p.setFoodLevel(20);
                 p.setSaturation(5.0f);
@@ -504,15 +509,11 @@ public class GameManager implements Listener {
         saveState();
         GunItem.resetRoundState();
 
-        pickRandomZoneAndAssignSpawns();
-
         plugin.getServer().broadcastMessage(ChatColor.YELLOW + Messages.get("game.round-start", currentRound));
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             if (team != null) {
-                Location spawn = teamSpawns.get(team);
-                if (spawn != null) p.teleport(spawn);
                 p.getInventory().clear();
                 giveGun(p);
                 clearCardEffects(p);
@@ -622,8 +623,12 @@ public class GameManager implements Listener {
             saveState();
             musicTick = 0;
             plugin.getCardManager().clearPendingPicks();
+            pickRandomZoneAndAssignSpawns();
             for (Player p : plugin.getServer().getOnlinePlayers()) {
-                if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) != null) {
+                GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+                if (team != null) {
+                    Location spawn = teamSpawns.get(team);
+                    if (spawn != null) p.teleport(spawn);
                     p.setInvulnerable(true);
                     p.setFoodLevel(20);
                     p.setSaturation(5.0f);

@@ -111,13 +111,18 @@ public class BlockListener implements Listener {
 
     public static void giveAllBlocks(Player player) {
         for (GameTeam team : GameTeam.values()) {
-            player.getInventory().addItem(createJoinBlock(team));
+            addItem64(player, createJoinBlock(team));
         }
-        player.getInventory().addItem(createCDShootBlock());
-        player.getInventory().addItem(createLobbyBlock());
-        player.getInventory().addItem(createMapBlock50());
-        player.getInventory().addItem(createMapBlock100());
-        player.getInventory().addItem(createSpawnBlock());
+        addItem64(player, createCDShootBlock());
+        addItem64(player, createLobbyBlock());
+        addItem64(player, createMapBlock50());
+        addItem64(player, createMapBlock100());
+        addItem64(player, createSpawnBlock());
+    }
+
+    private static void addItem64(Player player, ItemStack item) {
+        item.setAmount(64);
+        player.getInventory().addItem(item);
     }
 
     @EventHandler

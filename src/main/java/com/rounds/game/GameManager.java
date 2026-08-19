@@ -871,11 +871,11 @@ public class GameManager implements Listener {
             if (config.isGrKeepInventory()) saveAndSet(world, GameRule.KEEP_INVENTORY, true);
             if (config.isGrFreezeTime()) {
                 saveAndSet(world, GameRule.DO_DAYLIGHT_CYCLE, false);
-                world.setTime(1000);
+                try { world.setTime(1000); } catch (IllegalArgumentException ignored) {}
             }
             if (config.isGrDisableWeather()) {
                 saveAndSet(world, GameRule.DO_WEATHER_CYCLE, false);
-                world.setClearWeatherDuration(6000);
+                try { world.setClearWeatherDuration(6000); } catch (IllegalArgumentException ignored) {}
             }
             if (config.isGrDisableMobSpawning()) saveAndSet(world, GameRule.DO_MOB_SPAWNING, false);
         }

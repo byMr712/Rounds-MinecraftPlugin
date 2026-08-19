@@ -55,6 +55,13 @@ cards:
   weighted-rarity: true
 
 # ============================================
+# NICKNAME COLORING
+# ============================================
+# Color player names in tab-list and above heads
+# according to their team color (blue, red, etc.)
+color-nicknames: true
+
+# ============================================
 # SCOREBOARD
 # ============================================
 # ВАРИАНТ 1 (РЕКОМЕНДУЕМЫЙ): Плагин TAB

@@ -25,6 +25,8 @@ public final class RoundsConfig {
     private boolean builtinScoreboard;
     private String builtinScoreboardTitle;
 
+    private boolean colorNicknames;
+
     public RoundsConfig(RoundsPlugin plugin) {
         this.plugin = plugin;
         reload();
@@ -52,6 +54,8 @@ public final class RoundsConfig {
 
         builtinScoreboard = c.getBoolean("builtin-scoreboard.enabled", false);
         builtinScoreboardTitle = c.getString("builtin-scoreboard.title", "&6&lROUNDS");
+
+        colorNicknames = c.getBoolean("color-nicknames", true);
 
         DefaultStats ds = new DefaultStats();
         ds.dmg = c.getDouble("defaults.damage", 3.0);
@@ -81,4 +85,5 @@ public final class RoundsConfig {
     public boolean isWeightedRarity() { return weightedRarity; }
     public boolean isBuiltinScoreboard() { return builtinScoreboard; }
     public String getBuiltinScoreboardTitle() { return builtinScoreboardTitle; }
+    public boolean isColorNicknames() { return colorNicknames; }
 }

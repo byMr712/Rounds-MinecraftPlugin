@@ -840,6 +840,7 @@ public class GameManager implements Listener {
     }
 
     public void applyTeamColor(Player player) {
+        if (!plugin.getRoundsConfig().isColorNicknames()) return;
         GameTeam team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
         if (team != null) {
             player.setPlayerListName(team.getColor() + player.getName());
@@ -849,6 +850,7 @@ public class GameManager implements Listener {
     }
 
     public void resetAllNameColors() {
+        if (!plugin.getRoundsConfig().isColorNicknames()) return;
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             p.setPlayerListName(p.getName());
         }

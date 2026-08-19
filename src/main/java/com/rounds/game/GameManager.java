@@ -7,6 +7,8 @@ import java.util.Objects;
 import org.bukkit.util.Vector;
 import com.rounds.RoundsConfig;
 import com.rounds.RoundsPlugin;
+import com.rounds.blocks.BlockStorage;
+import com.rounds.blocks.SpawnManager;
 import com.rounds.entity.RoundsEntities;
 import com.rounds.item.GunItem;
 import com.rounds.player.PlayerData;
@@ -60,6 +62,8 @@ public class GameManager implements Listener {
     private final Set<Integer> scheduledTaskIds = new HashSet<>();
     private final Set<UUID> pendingCardJoiners = new HashSet<>();
     private final Map<GameRule<?>, Object> savedGameRules = new HashMap<>();
+    private final Map<GameTeam, Location> teamSpawns = new HashMap<>();
+    private int lastMapZoneIndex = -1;
 
     public GameManager(RoundsPlugin plugin) {
         this.plugin = plugin;
@@ -107,32 +111,98 @@ public class GameManager implements Listener {
 
         resetWins();
         resetAllCards();
-        state = GameState.CARDS;
         musicTick = 0;
         currentRound = 0;
         deadPlayers.clear();
         abyssalLastLocations.clear();
         lastSilenceAuraTime.clear();
-
-        plugin.getServer().broadcastMessage(ChatColor.GREEN + Messages.get("game.started"));
-        plugin.getServer().broadcastMessage(ChatColor.GOLD + Messages.get("game.rounds-to-win", roundsToWin));
+        teamSpawns.clear();
 
         saveState();
         initScoreboard();
-        startGameTick();
 
         plugin.getCardManager().clearPendingPicks();
         plugin.getPlayerDataManager().clearActivePlayers();
         applyGameRules();
+
         for (Player p : readyPlayers) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             plugin.getPlayerDataManager().trackPlayer(p.getUniqueId());
             plugin.getPlayerDataManager().savePlayerFullData(p.getUniqueId(), team, null);
+        }
+
+        BlockStorage bs = plugin.getBlockListener().getBlockStorage();
+        Location lobby = bs.getLobbyBlock();
+
+        if (lobby != null) {
+            Location lobbyTp = lobby.clone().add(0, 1, 0);
+            for (Player p : readyPlayers) {
+                p.teleport(lobbyTp);
+            }
+        }
+
+        startCountdown(readyPlayers, teamsWithPlayers);
+    }
+
+    private void startCountdown(List<Player> readyPlayers, Set<GameTeam> teamsWithPlayers) {
+        BlockStorage bs = plugin.getBlockListener().getBlockStorage();
+        List<Location> allSpawns = bs.getSpawnBlocks();
+
+        state = GameState.WAITING;
+
+        Map<GameTeam, Location> spawnAssignment = new HashMap<>();
+        if (!allSpawns.isEmpty()) {
+            spawnAssignment = SpawnManager.assignSpawns(teamsWithPlayers, allSpawns);
+        }
+        teamSpawns.clear();
+        teamSpawns.putAll(spawnAssignment);
+
+        new BukkitRunnable() {
+            int count = 5;
+
+            @Override
+            public void run() {
+                if (count <= 0) {
+                    cancel();
+                    finishStart(readyPlayers, teamsWithPlayers);
+                    return;
+                }
+
+                plugin.getServer().broadcastMessage(ChatColor.YELLOW + "" + count);
+
+                for (Player p : readyPlayers) {
+                    p.setGameMode(GameMode.SPECTATOR);
+                    p.setInvulnerable(true);
+                    if (!allSpawns.isEmpty()) {
+                        Location preview = allSpawns.get(new Random().nextInt(allSpawns.size())).clone().add(0, 1, 0);
+                        p.teleport(preview);
+                    }
+                }
+                count--;
+            }
+        }.runTaskTimer(plugin, 20L, 20L);
+    }
+
+    private void finishStart(List<Player> readyPlayers, Set<GameTeam> teamsWithPlayers) {
+        plugin.getServer().broadcastMessage(ChatColor.GREEN + Messages.get("game.started"));
+        plugin.getServer().broadcastMessage(ChatColor.GOLD + Messages.get("game.rounds-to-win", roundsToWin));
+
+        state = GameState.CARDS;
+        startGameTick();
+
+        for (Player p : readyPlayers) {
+            GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             if (team != null) {
-                p.setInvulnerable(true);
+                Location spawn = teamSpawns.get(team);
+                if (spawn != null) {
+                    p.teleport(spawn);
+                }
+                p.setGameMode(GameMode.SURVIVAL);
                 p.setFoodLevel(20);
                 p.setSaturation(5.0f);
                 p.setExhaustion(0f);
+                p.setInvulnerable(true);
+                p.setNoDamageTicks(0);
                 plugin.getCardManager().openCardSelection(p, team);
             }
         }
@@ -432,11 +502,15 @@ public class GameManager implements Listener {
         saveState();
         GunItem.resetRoundState();
 
+        pickRandomZoneAndAssignSpawns();
+
         plugin.getServer().broadcastMessage(ChatColor.YELLOW + Messages.get("game.round-start", currentRound));
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             if (team != null) {
+                Location spawn = teamSpawns.get(team);
+                if (spawn != null) p.teleport(spawn);
                 p.getInventory().clear();
                 giveGun(p);
                 clearCardEffects(p);
@@ -457,6 +531,33 @@ public class GameManager implements Listener {
         }
         musicTick = 0;
         updateScoreboard();
+    }
+
+    private void pickRandomZoneAndAssignSpawns() {
+        BlockStorage bs = plugin.getBlockListener().getBlockStorage();
+        List<BlockStorage.MapBlock> zones = bs.getMapBlocks();
+        if (zones.isEmpty()) return;
+
+        List<Integer> candidates = new ArrayList<>();
+        for (int i = 0; i < zones.size(); i++) {
+            if (i != lastMapZoneIndex) candidates.add(i);
+        }
+        if (candidates.isEmpty()) {
+            for (int i = 0; i < zones.size(); i++) candidates.add(i);
+        }
+        int chosen = candidates.get(new Random().nextInt(candidates.size()));
+        lastMapZoneIndex = chosen;
+
+        List<Location> spawns = bs.getSpawnBlocksInZone(zones.get(chosen));
+        Set<GameTeam> teams = new HashSet<>();
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            GameTeam t = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+            if (t != null) teams.add(t);
+        }
+        teamSpawns.clear();
+        if (!spawns.isEmpty()) {
+            teamSpawns.putAll(SpawnManager.assignSpawns(teams, spawns));
+        }
     }
 
     private void checkRoundEnd() {
@@ -580,6 +681,8 @@ public class GameManager implements Listener {
                 p.setNoDamageTicks(0);
                 p.setGameMode(GameMode.ADVENTURE);
                 clearCardEffects(p);
+                Location lobby = plugin.getBlockListener().getBlockStorage().getLobbyBlock();
+                if (lobby != null) p.teleport(lobby.clone().add(0, 1, 0));
             }
         }, 200L);
     }
@@ -808,6 +911,8 @@ public class GameManager implements Listener {
         RoundsEntities.clearAllState();
         plugin.getPlayerDataManager().clearActivePlayers();
         restoreGameRules();
+        lastMapZoneIndex = -1;
+        teamSpawns.clear();
         state = GameState.WAITING;
         saveState();
         removeScoreboard();

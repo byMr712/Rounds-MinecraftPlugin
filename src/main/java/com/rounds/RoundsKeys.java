@@ -29,6 +29,9 @@ public final class RoundsKeys {
 
     public static final NamespacedKey JOIN_BLOCK = key("join_block");
     public static final NamespacedKey CDSHOOT_BLOCK = key("cdshoot_block");
+    public static final NamespacedKey LOBBY_BLOCK = key("lobby_block");
+    public static final NamespacedKey MAP_BLOCK = key("map_block");
+    public static final NamespacedKey SPAWN_BLOCK = key("spawn_block");
     public static final NamespacedKey SHIELD = key("shield");
     public static final NamespacedKey SHIELD_OWNER = key("shield_owner");
 

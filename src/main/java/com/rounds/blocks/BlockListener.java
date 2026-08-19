@@ -26,6 +26,7 @@ public class BlockListener implements Listener {
 
     private final RoundsPlugin plugin;
     private final File blocksFile;
+    private final BlockStorage blockStorage;
 
     private static final Map<GameTeam, Material> TEAM_BLOCK_COLORS = Map.of(
         GameTeam.BLUE, Material.LIGHT_BLUE_WOOL,
@@ -42,12 +43,15 @@ public class BlockListener implements Listener {
     public BlockListener(RoundsPlugin plugin) {
         this.plugin = plugin;
         this.blocksFile = new File(Bukkit.getWorlds().get(0).getWorldFolder(), "rounds-blocks.yml");
+        this.blockStorage = new BlockStorage(Bukkit.getWorlds().get(0).getWorldFolder());
         File oldFile = new File(plugin.getDataFolder(), "placed-blocks.yml");
         if (oldFile.exists() && !blocksFile.exists()) {
             oldFile.renameTo(blocksFile);
         }
         loadBlocks();
     }
+
+    public BlockStorage getBlockStorage() { return blockStorage; }
 
     public static ItemStack createJoinBlock(GameTeam team) {
         Material mat = TEAM_BLOCK_COLORS.getOrDefault(team, Material.WHITE_WOOL);
@@ -69,11 +73,51 @@ public class BlockListener implements Listener {
         return item;
     }
 
+    public static ItemStack createLobbyBlock() {
+        ItemStack item = new ItemStack(Material.EMERALD_BLOCK);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName(ChatColor.GREEN + "Блок лобби");
+        meta.getPersistentDataContainer().set(RoundsKeys.LOBBY_BLOCK, PersistentDataType.BYTE, (byte) 1);
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    public static ItemStack createMapBlock50() {
+        ItemStack item = new ItemStack(Material.DIAMOND_BLOCK);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName(ChatColor.AQUA + "Блок карты 50x50");
+        meta.getPersistentDataContainer().set(RoundsKeys.MAP_BLOCK, PersistentDataType.INTEGER, 50);
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    public static ItemStack createMapBlock100() {
+        ItemStack item = new ItemStack(Material.EMERALD_BLOCK);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName(ChatColor.GREEN + "Блок карты 100x100");
+        meta.getPersistentDataContainer().set(RoundsKeys.MAP_BLOCK, PersistentDataType.INTEGER, 100);
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    public static ItemStack createSpawnBlock() {
+        ItemStack item = new ItemStack(Material.BEACON);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName(ChatColor.RED + "Блок спавна");
+        meta.getPersistentDataContainer().set(RoundsKeys.SPAWN_BLOCK, PersistentDataType.BYTE, (byte) 1);
+        item.setItemMeta(meta);
+        return item;
+    }
+
     public static void giveAllBlocks(Player player) {
         for (GameTeam team : GameTeam.values()) {
             player.getInventory().addItem(createJoinBlock(team));
         }
         player.getInventory().addItem(createCDShootBlock());
+        player.getInventory().addItem(createLobbyBlock());
+        player.getInventory().addItem(createMapBlock50());
+        player.getInventory().addItem(createMapBlock100());
+        player.getInventory().addItem(createSpawnBlock());
     }
 
     @EventHandler
@@ -133,6 +177,7 @@ public class BlockListener implements Listener {
         if (meta == null) return;
         org.bukkit.persistence.PersistentDataContainer pdc = meta.getPersistentDataContainer();
         Location loc = event.getBlock().getLocation();
+        Player placer = event.getPlayer();
 
         String joinTeam = pdc.get(RoundsKeys.JOIN_BLOCK, PersistentDataType.STRING);
         if (joinTeam != null) {
@@ -145,6 +190,23 @@ public class BlockListener implements Listener {
         if (pdc.has(RoundsKeys.CDSHOOT_BLOCK, PersistentDataType.BYTE)) {
             cdshootBlocks.add(loc);
             saveBlocks();
+            return;
+        }
+        if (pdc.has(RoundsKeys.LOBBY_BLOCK, PersistentDataType.BYTE)) {
+            blockStorage.setLobbyBlock(loc);
+            placer.sendMessage(ChatColor.GREEN + "Блок лобби установлен");
+            return;
+        }
+        Integer mapSize = pdc.get(RoundsKeys.MAP_BLOCK, PersistentDataType.INTEGER);
+        if (mapSize != null) {
+            blockStorage.addMapBlock(loc, mapSize);
+            placer.sendMessage(ChatColor.GREEN + "Блок карты " + mapSize + "x" + mapSize + " установлен");
+            return;
+        }
+        if (pdc.has(RoundsKeys.SPAWN_BLOCK, PersistentDataType.BYTE)) {
+            blockStorage.addSpawnBlock(loc);
+            placer.sendMessage(ChatColor.GREEN + "Блок спавна установлен");
+            return;
         }
     }
 
@@ -153,6 +215,12 @@ public class BlockListener implements Listener {
         Location loc = event.getBlock().getLocation();
         boolean removed = joinBlocks.remove(loc) != null;
         removed |= cdshootBlocks.remove(loc);
+        if (blockStorage.getLobbyBlock() != null && blockStorage.getLobbyBlock().equals(loc)) {
+            blockStorage.setLobbyBlock(null);
+            removed = true;
+        }
+        removed |= blockStorage.removeMapBlock(loc);
+        removed |= blockStorage.removeSpawnBlock(loc);
         if (removed) saveBlocks();
     }
 

@@ -63,7 +63,6 @@ public class GameManager implements Listener {
     private final Set<UUID> pendingCardJoiners = new HashSet<>();
     private final Map<GameRule<?>, Object> savedGameRules = new HashMap<>();
     private final Map<GameTeam, Location> teamSpawns = new HashMap<>();
-    private int lastMapZoneIndex = -1;
 
     public GameManager(RoundsPlugin plugin) {
         this.plugin = plugin;
@@ -538,15 +537,7 @@ public class GameManager implements Listener {
         List<BlockStorage.MapBlock> zones = bs.getMapBlocks();
         if (zones.isEmpty()) return;
 
-        List<Integer> candidates = new ArrayList<>();
-        for (int i = 0; i < zones.size(); i++) {
-            if (i != lastMapZoneIndex) candidates.add(i);
-        }
-        if (candidates.isEmpty()) {
-            for (int i = 0; i < zones.size(); i++) candidates.add(i);
-        }
-        int chosen = candidates.get(new Random().nextInt(candidates.size()));
-        lastMapZoneIndex = chosen;
+        int chosen = new Random().nextInt(zones.size());
 
         List<Location> spawns = bs.getSpawnBlocksInZone(zones.get(chosen));
         Set<GameTeam> teams = new HashSet<>();
@@ -911,7 +902,6 @@ public class GameManager implements Listener {
         RoundsEntities.clearAllState();
         plugin.getPlayerDataManager().clearActivePlayers();
         restoreGameRules();
-        lastMapZoneIndex = -1;
         teamSpawns.clear();
         state = GameState.WAITING;
         saveState();

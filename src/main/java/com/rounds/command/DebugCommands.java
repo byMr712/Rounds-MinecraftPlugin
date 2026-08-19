@@ -176,37 +176,45 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
     private void sendHelp(CommandSender sender) {
         boxHeader(sender, Messages.get("debug.title"));
-        String[][] help = {
-            {"/rdebug start", "debug.help-start"},
-            {"/rdebug stop", "debug.help-stop"},
-            {"/rdebug status", "debug.help-status"},
-            {"/rdebug rounds <\u0447\u0438\u0441\u043B\u043E>", "debug.help-rounds"},
-            {"/rdebug info", "debug.help-info"},
-            {"/rdebug test", "debug.help-test"},
-            {"/rdebug givegun [\u0438\u0433\u0440\u043E\u043A|@a]", "debug.help-givegun"},
-            {"/rdebug giveall", "debug.help-giveall"},
-            {"/rdebug cards reload", "debug.help-cards-reload"},
-            {"/rdebug cards test [id]", "debug.help-cards-test"},
-            {"/rdebug giveblocks", "debug.help-giveblocks"},
-            {"/rdebug stats [\u0438\u0433\u0440\u043E\u043A]", "debug.help-stats"},
-            {"/rdebug setstat <\u0441\u0442\u0430\u0442> <\u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435> [\u0438\u0433\u0440\u043E\u043A]", "debug.help-setstat"},
-            {"/rdebug setteam <\u0426\u0412\u0415\u0422> [\u0438\u0433\u0440\u043E\u043A]", "debug.help-setteam"},
-            {"/rdebug setlanguage <ru|en>", "debug.help-setlanguage"},
-            {"/rdebug effect <\u0442\u0438\u043F> <\u0443\u0440> <\u0434\u043B\u0438\u0442>", "debug.help-effect"},
-            {"/rdebug heal [\u043A\u043E\u043B-\u0432\u043E]", "debug.help-heal"},
-            {"/rdebug spawnbomb/heal/toxic/shield", "debug.help-spawn"},
-            {"/rdebug entities", "debug.help-entities"},
-            {"/rdebug applycard <name>", "debug.help-applycard"},
-            {"/rdebug resetstats", "debug.help-resetstats"},
-            {"/rdebug reload", "debug.help-reload"},
-            {"/rdebug version", "debug.help-version"},
-            {"/rdebug killround", "debug.help-killround"},
-            {"/rdebug iteminfo", "debug.help-iteminfo"},
-            {"/rdebug wheel on|off", "debug.help-wheel"}
-        };
-        for (String[] h : help) {
-            boxKv(sender, h[0], Messages.get(h[1]));
-        }
+
+        boxSection(sender, "GAME");
+        boxKv(sender, "/rdebug start", Messages.get("debug.help-start"));
+        boxKv(sender, "/rdebug stop", Messages.get("debug.help-stop"));
+        boxKv(sender, "/rdebug status", Messages.get("debug.help-status"));
+        boxKv(sender, "/rdebug rounds <n>", Messages.get("debug.help-rounds"));
+        boxKv(sender, "/rdebug info", Messages.get("debug.help-info"));
+        boxKv(sender, "/rdebug join", Messages.get("debug.help-join"));
+
+        boxSection(sender, "MAP BLOCKS");
+        boxKv(sender, "/rdebug giveblocks", Messages.get("debug.help-giveblocks"));
+
+        boxSection(sender, "CARDS");
+        boxKv(sender, "/rdebug cards", Messages.get("debug.help-cards"));
+        boxKv(sender, "/rdebug cards reload", Messages.get("debug.help-cards-reload"));
+        boxKv(sender, "/rdebug cards test [id]", Messages.get("debug.help-cards-test"));
+        boxKv(sender, "/rdebug applycard <name>", Messages.get("debug.help-applycard"));
+        boxKv(sender, "/rdebug wheel on|off", Messages.get("debug.help-wheel"));
+
+        boxSection(sender, "ITEMS");
+        boxKv(sender, "/rdebug givegun [player|@a]", Messages.get("debug.help-givegun"));
+        boxKv(sender, "/rdebug giveall", Messages.get("debug.help-giveall"));
+
+        boxSection(sender, "DEBUG");
+        boxKv(sender, "/rdebug stats [player]", Messages.get("debug.help-stats"));
+        boxKv(sender, "/rdebug setstat <stat> <value>", Messages.get("debug.help-setstat"));
+        boxKv(sender, "/rdebug setteam <COLOR>", Messages.get("debug.help-setteam"));
+        boxKv(sender, "/rdebug setlanguage <ru|en>", Messages.get("debug.help-setlanguage"));
+        boxKv(sender, "/rdebug effect <type> <amp> <dur>", Messages.get("debug.help-effect"));
+        boxKv(sender, "/rdebug heal [amount]", Messages.get("debug.help-heal"));
+        boxKv(sender, "/rdebug spawnbomb/heal/toxic/shield", Messages.get("debug.help-spawn"));
+        boxKv(sender, "/rdebug entities", Messages.get("debug.help-entities"));
+        boxKv(sender, "/rdebug resetstats", Messages.get("debug.help-resetstats"));
+        boxKv(sender, "/rdebug reload", Messages.get("debug.help-reload"));
+        boxKv(sender, "/rdebug version", Messages.get("debug.help-version"));
+        boxKv(sender, "/rdebug killround", Messages.get("debug.help-killround"));
+        boxKv(sender, "/rdebug iteminfo", Messages.get("debug.help-iteminfo"));
+        boxKv(sender, "/rdebug test", Messages.get("debug.help-test"));
+
         boxFooter(sender);
     }
 

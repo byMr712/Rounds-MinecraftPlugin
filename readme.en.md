@@ -1,6 +1,6 @@
 # RoundsPlugin v1.0
 
-Minecraft minigame plugin "Rounds". 4 teams, card system with 65 cards, shooting, up to 20 rounds.
+Minecraft minigame plugin "Rounds". 4 teams, card system with 65 cards, shooting, up to 20 rounds, map block-based spawn system, configurable world rules.
 
 ---
 
@@ -25,7 +25,7 @@ Minecraft minigame plugin "Rounds". 4 teams, card system with 65 cards, shooting
 
 ## Quick Start
 
-### 1. Create team join blocks
+### 1. Get the blocks
 
 Admin runs:
 
@@ -35,21 +35,44 @@ Admin runs:
 
 This gives all special blocks to inventory and switches to survival mode. Place blocks in the world:
 
+#### Team join blocks
+
 | Block | Material | Function |
 |-------|----------|----------|
 | **Blue Join** | Blue Wool | Step on to join the Blue team |
 | **Red Join** | Red Wool | Step on to join the Red team |
 | **Yellow Join** | Yellow Wool | Step on to join the Yellow team |
 | **Green Join** | Green Wool | Step on to join the Green team |
-| **Tagshields CD** | Iron Block | Step on to start the game (requires `rounds.admin`) |
 
-### 2. Players join teams
+#### Map and spawn blocks
+
+| Block | Material | Function |
+|-------|----------|----------|
+| **Lobby Block** | Emerald Block | Lobby center. Only 1 allowed. At game start all players teleport here. If a second is placed, it becomes the new one |
+| **Map Block 50x50** | Diamond Block | Center of a 50x50 map zone. Spawn blocks are searched within this area |
+| **Map Block 100x100** | Emerald Block | Center of a 100x100 map zone |
+| **Spawn Block** | Beacon | Spawn point for a team within the map zone |
+
+#### Control block
+
+| Block | Material | Function |
+|-------|----------|----------|
+| **Tagshields CD** | Iron Block | Start the game (requires `rounds.admin`) |
+
+### 2. Set up map blocks
+
+1. Place a **lobby block** — the center of your lobby area
+2. Place **map blocks** (50x50 or 100x100) — centers of zones where gameplay happens
+3. Inside each map zone, place **spawn blocks** — points where teams will appear
+4. You can place **multiple map blocks** on different parts of the map — each round the plugin picks a random zone
+
+### 3. Players join teams
 
 Players simply **step on** a colored wool block to join a team.
 They can change teams before the game starts by stepping on a different block.
 Team change has a 1-second cooldown.
 
-### 3. Start the game
+### 4. Start the game
 
 ```
 /rdebug start
@@ -57,15 +80,17 @@ Team change has a 1-second cooldown.
 
 Or step on the **Tagshields CD** block (iron block) in the world.
 
-### 4. How the game works
+### 5. How the game works
 
-1. All players receive a gun (stick)
-2. A round begins — players shoot each other
-3. Last surviving player wins the round
-4. After the round, **card selection** opens (10 seconds)
-5. Each player picks 1 card from 5 — it upgrades their stats
-6. Next round begins
-7. First team to reach the required round wins — **game over**
+1. All players teleport to the **lobby block** (+1 Y)
+2. A **countdown 5 → 1** appears in chat (seconds)
+3. On each tick all players become **spectators** and teleport to a random spawn block for preview
+4. After the countdown, each team teleports to **their own spawn block** (+1 Y), gets **survival mode** and a gun
+5. **Card selection** opens — each player picks 1 card from 5
+6. A round begins — players shoot each other
+7. Last surviving player wins the round
+8. **Next round** — the plugin picks a **random map zone** (with repeats allowed), re-assigns spawns, teleports all teams
+9. First team to reach the required round wins — **game over**, all players teleport back to lobby
 
 ---
 
@@ -75,13 +100,24 @@ Or step on the **Tagshields CD** block (iron block) in the world.
 
 ```yaml
 # Language: "ru" or "en"
-language: ru
+language: en
+
+# Default player stats (reset each round)
+defaults:
+  damage: 3.0            # Base damage per bullet
+  attack-speed: 20       # Attack cooldown in ticks (20 = 1 second)
+  ammo: 3                # Starting ammo
+  max-ammo: 3            # Maximum ammo capacity
+  bullets: 1             # Bullets per shot
+  hp: 20                 # Health
+  bullet-speed: 1.0      # Bullet flight speed
+  reload-speed: 0        # Reload speed bonus (0 = base 3 seconds)
 
 game:
   default-rounds: 5      # Default rounds to win
   max-rounds: 20          # Maximum rounds
   card-selection-time: 200 # Card selection time (200 ticks = 10 sec)
-  respawn-delay: 5        # Respawn delay (5 ticks = 0.25 sec)
+  respawn-delay: 5        # Respawn delay
 
 teams:
   enabled:
@@ -91,9 +127,8 @@ teams:
     - GREEN
 
 gun:
-  material: STICK           # Gun material (STICK, CROSSBOW, etc.)
-  custom-model-data: 9999   # CustomModelData for resource pack
-  base-cooldown: 20         # Base cooldown (not used yet)
+  material: STICK           # Gun material
+  base-cooldown: 20         # Base cooldown
 
 cards:
   selection-count: 5        # Number of cards offered for selection
@@ -102,6 +137,18 @@ cards:
 resource-pack:
   auto-send: true
   port: 41071
+
+# World game rules (automatically applied during the game)
+game-rules:
+  enabled: true             # Master switch for all game rule overrides
+  instant-respawn: true     # Instant respawn (no death screen)
+  keep-inventory: true      # Keep inventory on death
+  freeze-time: true         # Freeze time at daytime
+  disable-weather: true     # Disable weather changes
+  disable-mob-spawning: true # Disable natural mob spawning
+
+# Color player names by team
+color-nicknames: true
 
 # Built-in scoreboard (disabled by default, conflicts with TAB)
 builtin-scoreboard:
@@ -215,6 +262,34 @@ Every 6 seconds, all open card GUIs are refreshed with new random cards.
 
 ---
 
+## Map Block System
+
+### Map Blocks
+
+Map blocks define zones on the map. A zone is a cube: `[centerX ± size/2, centerZ ± size/2]`, Y from -64 to 320.
+
+- You can place **multiple** map blocks on different parts of the map
+- Each round the plugin **randomly picks** one zone (repeats allowed)
+- Inside the zone, all **spawn blocks** are found
+
+### Spawn Blocks
+
+Spawn blocks define where teams appear:
+
+- At round start, the plugin finds all spawn blocks within the selected map zone
+- Team A gets a **random** spawn block
+- Team B gets a **random** one from the remaining
+- If there are fewer spawns than teams, spawns are reused
+
+### Lobby Block
+
+- Single block on the map, marks the lobby center
+- If a second is placed, the second one becomes the new lobby
+- At `/rdebug start` all players teleport to the lobby (+1 Y)
+- At **game end** all players return to the lobby
+
+---
+
 ## Commands
 
 All game management commands are under `/rdebug`.
@@ -223,15 +298,19 @@ All game management commands are under `/rdebug`.
 
 | Subcommand | Arguments | Description |
 |-----------|-----------|-------------|
-| `/rdebug start` | | Start the game |
+| `/rdebug start` | | Start the game (teleport to lobby → countdown → spawn assignment) |
 | `/rdebug stop` | | Stop the game and reset everything |
 | `/rdebug status` | | Show game state |
-| `/rdebug pause` | | Pause / unpause game |
-| `/rdebug reset` | | Reset the game (without resetting players) |
-| `/rdebug resetallmap` | | Full clear (game + teams + players) |
 | `/rdebug rounds <number>` | | Set rounds to win (1-20) |
 | `/rdebug info` | | Plugin info |
+| `/rdebug join` | | Join a team mid-game |
 | `/rdebug test` | | Check — "RoundsPlugin is working!" |
+
+### Map Blocks
+
+| Subcommand | Arguments | Description |
+|-----------|-----------|-------------|
+| `/rdebug giveblocks [player]` | | Give all special blocks (team joins, lobby, map, spawn) |
 
 ### Cards
 
@@ -248,7 +327,7 @@ All game management commands are under `/rdebug`.
 | Subcommand | Arguments | Description |
 |-----------|-----------|-------------|
 | `/rdebug givegun [player\|@a]` | | Give a gun to self, player, or all |
-| `/rdebug giveblocks [player]` | | Give all special blocks |
+| `/rdebug giveall` | | Give all cards |
 | `/rdebug wheel on\|off` | | Toggle card rotation in GUI |
 
 ### Debug
@@ -257,9 +336,11 @@ All game management commands are under `/rdebug`.
 |-----------|-----------|-------------|
 | `/rdebug help` | | Show help for all subcommands |
 | `/rdebug stats [player]` | | Show full PlayerData stats |
-| `/rdebug setstat <stat> <value>` | | Set a specific stat value |
+| `/rdebug setstat <stat> <value> [player]` | | Set a specific stat value |
+| `/rdebug setteam <COLOR> [player]` | | Set a team |
+| `/rdebug setlanguage <ru\|en>` | | Change language |
 | `/rdebug effect <type> <amp> <dur>` | | Apply a potion effect |
-| `/rdebug heal` | | Heal to max HP |
+| `/rdebug heal [amount]` | | Heal to max HP |
 | `/rdebug spawnbomb` | | Spawn a bomb entity |
 | `/rdebug spawnheal` | | Spawn a heal ring |
 | `/rdebug spawntoxic` | | Spawn a toxic ring |
@@ -321,6 +402,7 @@ The plugin automatically saves:
 
 - **Game state** (`game-state.yml`) — current round, team wins, dead players
 - **Player data** — stats, cards, team (via PersistentDataContainer + `active-players.yml`)
+- **Map blocks** (`rounds-map-blocks.yml`) — positions of lobby, map, and spawn blocks
 
 When the server restarts during an active game, the state is restored automatically.
 
@@ -360,6 +442,8 @@ Cards support localization via `name.ru` / `name.en` and `description.ru` / `des
 | `plugins/RoundsPlugin/playerdata/` | Player data (automatic) |
 | `plugins/RoundsPlugin/game-state.yml` | Current game state |
 | `plugins/RoundsPlugin/active-players.yml` | Active session players |
+| `< world >/rounds-blocks.yml` | Team join blocks |
+| `< world >/rounds-map-blocks.yml` | Lobby, map, and spawn blocks |
 
 ---
 

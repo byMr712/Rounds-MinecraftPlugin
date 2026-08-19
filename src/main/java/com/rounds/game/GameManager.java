@@ -550,6 +550,7 @@ public class GameManager implements Listener {
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             if (team != null && team == lastLoser) {
+                if (p.isDead()) continue;
                 plugin.getCardManager().openCardSelection(p, team);
             }
         }
@@ -562,6 +563,7 @@ public class GameManager implements Listener {
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             if (team != null) {
+                if (p.isDead()) continue;
                 plugin.getCardManager().openCardSelection(p, team);
             }
         }
@@ -663,13 +665,19 @@ public class GameManager implements Listener {
 
     @EventHandler
     public void onPlayerRespawn(PlayerRespawnEvent event) {
-        if (state != GameState.PLAYING && state != GameState.ROUND_END) return;
+        if (state != GameState.PLAYING && state != GameState.ROUND_END && state != GameState.CARDS) return;
         Player player = event.getPlayer();
         event.setRespawnLocation(player.getWorld().getSpawnLocation());
         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
             if (state == GameState.PLAYING) {
                 giveGun(player);
                 applyPlayerHP(player);
+            } else if (state == GameState.CARDS) {
+                GameTeam team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+                if (team != null && (lastLoser == null || team == lastLoser)) {
+                    plugin.getCardManager().openCardSelection(player, team);
+                }
+                player.setInvulnerable(true);
             }
             player.setGameMode(GameMode.SURVIVAL);
             player.setFoodLevel(20);

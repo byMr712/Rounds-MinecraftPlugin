@@ -118,7 +118,7 @@ public class GameManager implements Listener {
         teamSpawns.clear();
 
         saveState();
-        initScoreboard();
+        updateScoreboard();
 
         plugin.getCardManager().clearPendingPicks();
         plugin.getPlayerDataManager().clearActivePlayers();
@@ -1017,7 +1017,7 @@ public class GameManager implements Listener {
 
         plugin.getLogger().info("Restored game state: " + state.name() + " round " + currentRound);
 
-        initScoreboard();
+        updateScoreboard();
         startGameTick();
 
         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
@@ -1048,53 +1048,62 @@ public class GameManager implements Listener {
         }, 5L);
     }
 
-    // ===== Built-in Scoreboard (disabled by default, see config) =====
-    private Scoreboard scoreboard;
-    private Objective objective;
+    // ===== Built-in Scoreboard =====
+    private final Map<UUID, Scoreboard> playerScoreboards = new HashMap<>();
 
-    private void initScoreboard() {
+    public void updateScoreboard() {
         if (!plugin.getRoundsConfig().isBuiltinScoreboard()) return;
-        scoreboard = Objects.requireNonNull(Bukkit.getScoreboardManager()).getNewScoreboard();
-        String title = plugin.getRoundsConfig().getBuiltinScoreboardTitle();
-        objective = scoreboard.registerNewObjective("rounds", Criteria.DUMMY,
-                ChatColor.translateAlternateColorCodes('&', title));
-        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
-    }
-
-    private void updateScoreboard() {
-        if (!plugin.getRoundsConfig().isBuiltinScoreboard() || scoreboard == null) return;
-
-        if (objective != null) objective.unregister();
-        String title = plugin.getRoundsConfig().getBuiltinScoreboardTitle();
-        objective = scoreboard.registerNewObjective("rounds_" + System.currentTimeMillis(), Criteria.DUMMY,
-                ChatColor.translateAlternateColorCodes('&', title));
-        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
-
-        int line = 7;
-        for (GameTeam gt : GameTeam.values()) {
-            if (plugin.getTeamManager().getTeamPlayers(gt).isEmpty()) continue;
-            String teamName = Messages.get("team." + gt.name().toLowerCase());
-            String entry = gt.getColor() + teamName + ": " + ChatColor.WHITE + (int) plugin.getTeamManager().getWins(gt);
-            objective.getScore(entry).setScore(line--);
-        }
-
-        objective.getScore(" ").setScore(line--);
-        objective.getScore(ChatColor.YELLOW + Messages.get("sb.round") + ": " + ChatColor.WHITE + currentRound + "/" + roundsToWin).setScore(line);
-
         for (Player p : plugin.getServer().getOnlinePlayers()) {
-            p.setScoreboard(scoreboard);
+            buildScoreboard(p);
         }
     }
 
-    private void removeScoreboard() {
+    public void buildScoreboard(Player player) {
         if (!plugin.getRoundsConfig().isBuiltinScoreboard()) return;
-        if (scoreboard != null) {
+        Scoreboard sb = playerScoreboards.computeIfAbsent(player.getUniqueId(),
+                k -> Objects.requireNonNull(Bukkit.getScoreboardManager()).getNewScoreboard());
+
+        for (Objective obj : sb.getObjectives()) obj.unregister();
+
+        Objective obj = sb.registerNewObjective("rounds", Criteria.DUMMY,
+                ChatColor.translateAlternateColorCodes('&',
+                        plugin.getRoundsConfig().getBuiltinScoreboardTitle()));
+        obj.setDisplaySlot(DisplaySlot.SIDEBAR);
+
+        List<GameTeam> activeTeams = new ArrayList<>();
+        for (GameTeam gt : GameTeam.values()) {
+            if (!plugin.getTeamManager().getTeamPlayers(gt).isEmpty()) activeTeams.add(gt);
+        }
+
+        int score = 10;
+
+        obj.getScore(" &f\u0420\u0430\u0443\u043D\u0434: &e" + currentRound + "/" + roundsToWin).setScore(score--);
+        obj.getScore(" ").setScore(score--);
+
+        GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        String teamPart = myTeam != null
+                ? myTeam.getColor() + Messages.get("team." + myTeam.name().toLowerCase()) : "";
+        obj.getScore(" &f\u041A\u043E\u043C\u0430\u043D\u0434\u0430: " + teamPart).setScore(score--);
+        obj.getScore("  ").setScore(score--);
+
+        for (GameTeam gt : activeTeams) {
+            String name = Messages.get("team." + gt.name().toLowerCase());
+            int pad = Math.max(1, 7 - name.length());
+            String entry = " " + name + ":" + " ".repeat(pad) + ChatColor.GRAY + "\u2502 "
+                    + ChatColor.AQUA + (int) plugin.getTeamManager().getWins(gt);
+            obj.getScore(entry).setScore(score--);
+        }
+
+        player.setScoreboard(sb);
+    }
+
+    public void removeScoreboard() {
+        for (Scoreboard sb : playerScoreboards.values()) {
             Scoreboard empty = Bukkit.getScoreboardManager().getNewScoreboard();
             for (Player p : plugin.getServer().getOnlinePlayers()) {
-                p.setScoreboard(empty);
+                if (p.getScoreboard() == sb) p.setScoreboard(empty);
             }
-            scoreboard = null;
-            objective = null;
         }
+        playerScoreboards.clear();
     }
 }

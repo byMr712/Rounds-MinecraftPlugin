@@ -14,11 +14,6 @@ public final class RoundsConfig {
     private double baseGunCooldown;
     private String gunMaterial;
 
-    private boolean resourcePackAutoSend;
-    private String resourcePackUrl;
-    private String resourcePackHash;
-    private String resourcePackPrompt;
-
     private int cardSelectionCount;
     private boolean weightedRarity;
 
@@ -50,11 +45,6 @@ public final class RoundsConfig {
 
         baseGunCooldown = c.getDouble("gun.base-cooldown", 20);
         gunMaterial = c.getString("gun.material", "CROSSBOW");
-
-        resourcePackAutoSend = c.getBoolean("resource-pack.auto-send", false);
-        resourcePackUrl = c.getString("resource-pack.url", "");
-        resourcePackHash = c.getString("resource-pack.hash", "");
-        resourcePackPrompt = c.getString("resource-pack.prompt", "Download Rounds resource pack for custom textures?");
 
         cardSelectionCount = c.getInt("cards.selection-count", 5);
         weightedRarity = c.getBoolean("cards.weighted-rarity", true);
@@ -92,10 +82,6 @@ public final class RoundsConfig {
     public int getRespawnDelayTicks() { return respawnDelayTicks; }
     public double getBaseGunCooldown() { return baseGunCooldown; }
     public String getGunMaterial() { return gunMaterial; }
-    public boolean isResourcePackAutoSend() { return resourcePackAutoSend; }
-    public String getResourcePackUrl() { return resourcePackUrl; }
-    public String getResourcePackHash() { return resourcePackHash; }
-    public String getResourcePackPrompt() { return resourcePackPrompt; }
     public int getCardSelectionCount() { return cardSelectionCount; }
     public boolean isWeightedRarity() { return weightedRarity; }
     public boolean isBuiltinScoreboard() { return builtinScoreboard; }
@@ -107,4 +93,16 @@ public final class RoundsConfig {
     public boolean isGrFreezeTime() { return grFreezeTime; }
     public boolean isGrDisableWeather() { return grDisableWeather; }
     public boolean isGrDisableMobSpawning() { return grDisableMobSpawning; }
+
+    public void setBuiltinScoreboard(boolean enabled) {
+        this.builtinScoreboard = enabled;
+        plugin.getConfig().set("builtin-scoreboard.enabled", enabled);
+        plugin.saveConfig();
+    }
+
+    public void setBuiltinScoreboardTitle(String title) {
+        this.builtinScoreboardTitle = title;
+        plugin.getConfig().set("builtin-scoreboard.title", title);
+        plugin.saveConfig();
+    }
 }

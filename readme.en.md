@@ -134,10 +134,6 @@ cards:
   selection-count: 5        # Number of cards offered for selection
   weighted-rarity: true     # Weighted random by rarity
 
-resource-pack:
-  auto-send: true
-  port: 41071
-
 # World game rules (automatically applied during the game)
 game-rules:
   enabled: true             # Master switch for all game rule overrides
@@ -329,6 +325,15 @@ All game management commands are under `/rdebug`.
 | `/rdebug givegun [player\|@a]` | | Give a gun to self, player, or all |
 | `/rdebug giveall` | | Give all cards |
 | `/rdebug wheel on\|off` | | Toggle card rotation in GUI |
+
+### Scoreboard
+
+| Subcommand | Arguments | Description |
+|-----------|-----------|-------------|
+| `/rdebug tab on\|off` | | Toggle built-in scoreboard |
+| `/rdebug tab name <title>` | | Change scoreboard title |
+
+Built-in scoreboard shows: current round, player's team, and wins of all active teams (only teams with players).
 
 ### Debug
 

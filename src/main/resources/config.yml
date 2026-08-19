@@ -43,13 +43,6 @@ gun:
   material: STICK
   base-cooldown: 20
 
-resource-pack:
-  auto-send: true
-  port: 41071
-  url: ""
-  hash: ""
-  prompt: "Download Rounds resource pack for custom textures?"
-
 cards:
   selection-count: 5
   weighted-rarity: true

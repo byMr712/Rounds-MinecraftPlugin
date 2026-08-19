@@ -1,5 +1,6 @@
 package com.rounds.command;
 
+import com.rounds.RoundsConfig;
 import com.rounds.RoundsKeys;
 import com.rounds.RoundsPlugin;
 import com.rounds.entity.RoundsEntities;
@@ -169,6 +170,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "iteminfo" -> handleItemInfo(sender);
             case "giveblocks" -> handleBlocks(sender, args);
             case "wheel" -> handleWheel(sender, args);
+            case "tab" -> handleTab(sender, args);
             default -> sender.sendMessage(ChatColor.RED + Messages.get("debug.unknown-command", args[0]));
         }
         return true;
@@ -194,6 +196,10 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxKv(sender, "/rdebug cards test [id]", Messages.get("debug.help-cards-test"));
         boxKv(sender, "/rdebug applycard <name>", Messages.get("debug.help-applycard"));
         boxKv(sender, "/rdebug wheel on|off", Messages.get("debug.help-wheel"));
+
+        boxSection(sender, "SCOREBOARD");
+        boxKv(sender, "/rdebug tab on|off", Messages.get("debug.help-tab"));
+        boxKv(sender, "/rdebug tab name <title>", Messages.get("debug.help-tab-name"));
 
         boxSection(sender, "ITEMS");
         boxKv(sender, "/rdebug givegun [player|@a]", Messages.get("debug.help-givegun"));
@@ -257,6 +263,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         GameTeam finalTeam = plugin.getTeamManager().getPlayerTeam(uuid);
         gm.markPendingCardJoiner(uuid);
         gm.applyTeamColor(player);
+        gm.buildScoreboard(player);
 
         if (gm.getState() == GameManager.GameState.CARDS) {
             plugin.getCardManager().openCardSelection(player, finalTeam);
@@ -801,13 +808,44 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
     }
 
+    private void handleTab(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage(ChatColor.RED + Messages.get("debug.tab-usage"));
+            return;
+        }
+        RoundsConfig config = plugin.getRoundsConfig();
+        switch (args[1].toLowerCase()) {
+            case "on" -> {
+                config.setBuiltinScoreboard(true);
+                plugin.getGameManager().updateScoreboard();
+                sender.sendMessage(ChatColor.GREEN + Messages.get("debug.tab-enabled"));
+            }
+            case "off" -> {
+                config.setBuiltinScoreboard(false);
+                plugin.getGameManager().removeScoreboard();
+                sender.sendMessage(ChatColor.RED + Messages.get("debug.tab-disabled"));
+            }
+            case "name" -> {
+                if (args.length < 3) {
+                    sender.sendMessage(ChatColor.RED + Messages.get("debug.tab-name-usage"));
+                    return;
+                }
+                String title = String.join(" ", Arrays.copyOfRange(args, 2, args.length));
+                config.setBuiltinScoreboardTitle(title);
+                plugin.getGameManager().updateScoreboard();
+                sender.sendMessage(ChatColor.GREEN + Messages.get("debug.tab-name-set", title));
+            }
+            default -> sender.sendMessage(ChatColor.RED + Messages.get("debug.tab-usage"));
+        }
+    }
+
     private static final List<String> SUBCOMMANDS = Arrays.asList(
         "help", "start", "stop", "status", "rounds", "info", "test",
         "givegun", "giveall", "cards", "giveblocks", "join",
         "stats", "setstat", "setteam", "setlanguage", "effect", "heal",
         "spawnbomb", "spawnheal", "spawntoxic", "spawnshield",
         "entities", "applycard", "resetstats", "reload",
-        "version", "killround", "iteminfo", "wheel"
+        "version", "killround", "iteminfo", "wheel", "tab"
     );
     private static final List<String> TEAM_COLORS = Arrays.asList("BLUE", "RED", "YELLOW", "GREEN");
 
@@ -876,6 +914,11 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             }
             case "rounds" -> filterStartsWith(Arrays.asList("1", "5", "10", "15", "20"), input);
             case "wheel" -> filterStartsWith(Arrays.asList("on", "off"), input);
+            case "tab" -> {
+                if (args.length == 2) yield filterStartsWith(Arrays.asList("on", "off", "name"), input);
+                if (args.length == 3 && args[1].equalsIgnoreCase("name")) yield Collections.emptyList();
+                yield Collections.emptyList();
+            }
             default -> Collections.emptyList();
         };
     }

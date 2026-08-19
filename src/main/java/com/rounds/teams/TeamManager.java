@@ -61,14 +61,15 @@ public class TeamManager {
 
     private void ensureTeamsRegistered() {
         for (GameTeam gt : GameTeam.values()) {
-            Team team = teams.get(gt);
-            if (team == null || scoreboard.getTeam(team.getName()) == null) {
-                Team t = scoreboard.registerNewTeam(TEAM_PREFIX + gt.name().toLowerCase());
-                t.setDisplayName(gt.getColor() + gt.getName());
-                t.setColor(gt.getColor());
-                t.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
-                teams.put(gt, t);
+            String teamName = TEAM_PREFIX + gt.name().toLowerCase();
+            Team team = scoreboard.getTeam(teamName);
+            if (team == null) {
+                team = scoreboard.registerNewTeam(teamName);
+                team.setDisplayName(gt.getColor() + gt.getName());
+                team.setColor(gt.getColor());
+                team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
             }
+            teams.put(gt, team);
         }
     }
 

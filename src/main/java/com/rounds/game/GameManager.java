@@ -859,10 +859,10 @@ public class GameManager implements Listener {
             Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                 player.setGameMode(GameMode.SPECTATOR);
                 player.setInvulnerable(true);
-                Player target = findRandomAlivePlayer();
-                if (target != null) {
-                    player.teleport(target.getLocation());
-                }
+                GameTeam deadTeam = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+                Location spawn = deadTeam != null ? teamSpawns.get(deadTeam) : null;
+                if (spawn == null) spawn = currentZoneCenter;
+                if (spawn != null) player.teleport(spawn);
             }, 1L);
             return;
         }
@@ -1009,7 +1009,8 @@ public class GameManager implements Listener {
         List<Player> alive = new ArrayList<>();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-            if (team != null && p.isOnline() && p.isValid() && p.getHealth() > 0) {
+            if (team != null && p.isOnline() && p.isValid() && p.getHealth() > 0
+                    && !deadPlayers.contains(p.getUniqueId())) {
                 alive.add(p);
             }
         }

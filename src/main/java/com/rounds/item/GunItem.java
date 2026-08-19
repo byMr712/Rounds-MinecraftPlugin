@@ -390,7 +390,7 @@ public class GunItem implements Listener {
 
         if (data.heal > 0) {
             player.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                PotionEffectType.REGENERATION, 100, 1));
+                PotionEffectType.REGENERATION, 100, 2));
         }
 
         player.getWorld().playSound(blockLoc, Sound.BLOCK_ANVIL_PLACE, 0.8f, 1.5f);

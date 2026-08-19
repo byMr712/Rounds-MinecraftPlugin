@@ -147,6 +147,7 @@ public class GameManager implements Listener {
 
     private void applyPeriodicEffects() {
         for (Player p : plugin.getServer().getOnlinePlayers()) {
+            if (!p.isValid()) continue;
             if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) == null) continue;
             if (deadPlayers.contains(p.getUniqueId())) continue;
             PlayerData data = plugin.getPlayerDataManager().getData(p);
@@ -166,6 +167,7 @@ public class GameManager implements Listener {
                 if (data.ammo < data.maxAmmo && !GunItem.isReloading(p.getUniqueId())) {
                     data.ammo = Math.min(data.ammo + data.autoReload * 0.1, data.maxAmmo);
                 }
+                data.ammo = Math.min(data.ammo, data.maxAmmo);
             }
             if (data.lifestealAura > 0) {
                 for (Entity entity : p.getNearbyEntities(5.0, 5.0, 5.0)) {
@@ -413,17 +415,25 @@ public class GameManager implements Listener {
 
     private void checkRoundEnd() {
         Set<GameTeam> aliveTeams = new HashSet<>();
+        int totalAlive = 0;
         for (GameTeam team : GameTeam.values()) {
             int alive = 0;
             for (UUID uuid : plugin.getTeamManager().getTeamPlayers(team)) {
                 Player p = Bukkit.getPlayer(uuid);
-                if (p != null && p.isOnline() && p.getHealth() > 0 && !deadPlayers.contains(uuid)) {
+                if (p != null && p.isOnline() && p.isValid() && p.getHealth() > 0 && !deadPlayers.contains(uuid)) {
                     alive++;
                 }
             }
             if (alive > 0) {
                 aliveTeams.add(team);
             }
+            totalAlive += alive;
+        }
+
+        if (totalAlive == 0) {
+            stopGame();
+            plugin.getServer().broadcastMessage(ChatColor.RED + Messages.get("game.all-disconnected"));
+            return;
         }
 
         if (aliveTeams.size() == 1 && plugin.getTeamManager().getTotalReadyPlayers() > 1) {

@@ -87,6 +87,7 @@ public class GunItem implements Listener {
         if (event.getHand() != EquipmentSlot.HAND) return;
 
         Player player = event.getPlayer();
+        if (player.getGameMode() == GameMode.CREATIVE || player.getGameMode() == GameMode.SPECTATOR) return;
         ItemStack item = player.getInventory().getItemInMainHand();
         if (!isGun(item)) return;
 

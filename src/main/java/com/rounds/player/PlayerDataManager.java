@@ -425,6 +425,9 @@ public class PlayerDataManager implements Listener {
             savePlayerDataOnQuit(uuid);
         }
         com.rounds.item.GunItem.cancelReload(uuid);
+        if (plugin.getGameManager().getState() == GameManager.GameState.CARDS) {
+            plugin.getCardManager().removePendingPick(uuid);
+        }
         cache.remove(uuid);
         GunCooldowns.clear(uuid);
     }

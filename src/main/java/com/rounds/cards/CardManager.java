@@ -115,6 +115,11 @@ public class CardManager {
         pendingPicks.clear();
     }
 
+    public void removePendingPick(UUID uuid) {
+        pendingPicks.remove(uuid);
+        pendingCards.remove(uuid);
+    }
+
     public void replacePendingCards(UUID uuid, List<Card> newCards) {
         pendingCards.put(uuid, newCards);
     }

@@ -110,6 +110,10 @@ public class BlockListener implements Listener {
             stepCooldown.add(player.getUniqueId());
             Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> stepCooldown.remove(player.getUniqueId()), 20L);
             if (!player.hasPermission("rounds.admin")) return;
+            if (plugin.getGameManager().isGameStarted()) {
+                player.sendMessage(ChatColor.RED + Messages.get("debug.game-already-started"));
+                return;
+            }
             plugin.getGameManager().startGame();
         }
     }

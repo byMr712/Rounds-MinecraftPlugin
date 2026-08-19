@@ -267,6 +267,11 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
         GameTeam existingTeam = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
         if (existingTeam != null) {
+            if (gm.isPendingCardJoiner(player.getUniqueId())) {
+                String teamName = Messages.get("team." + existingTeam.name().toLowerCase());
+                sender.sendMessage(ChatColor.GOLD + Messages.get("game.restored-team", existingTeam.getColor() + teamName));
+                return;
+            }
             sender.sendMessage(ChatColor.GOLD + Messages.get("game.already-has-team"));
             return;
         }
@@ -283,8 +288,6 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             } else {
                 plugin.getTeamManager().joinTeam(uuid, team);
             }
-            plugin.getPlayerDataManager().removeActivePlayer(uuid);
-            plugin.getPlayerDataManager().removePlayerData(uuid);
         } else {
             plugin.getTeamManager().joinTeam(uuid, team);
             plugin.getPlayerDataManager().trackPlayer(uuid);
@@ -514,7 +517,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     private void handleGiveAll(CommandSender sender) {
         if (!(sender instanceof Player player)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
         PlayerData data = plugin.getPlayerDataManager().getData(player);
-        for (int i = 1; i <= 43; i++) {
+        for (int i = 1; i <= 44; i++) {
             data.setCard(i, true);
         }
         sender.sendMessage(ChatColor.GREEN + Messages.get("debug.all-cards-unlocked"));
@@ -867,7 +870,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
     private int countCards(PlayerData data) {
         int count = 0;
-        for (int i = 1; i <= 43; i++) {
+        for (int i = 1; i <= 44; i++) {
             if (data.getCard(i)) count++;
         }
         return count;
@@ -997,7 +1000,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 if (args.length == 2) yield filterStartsWith(Arrays.asList("reload", "test", "giveall"), input);
                 if (args.length == 3 && args[1].equalsIgnoreCase("test")) {
                     List<String> list = new ArrayList<>();
-                    for (int i = 1; i <= 43; i++) list.add(String.valueOf(i));
+                    for (int i = 1; i <= 44; i++) list.add(String.valueOf(i));
                     yield filterStartsWith(list, input);
                 }
                 yield Collections.emptyList();

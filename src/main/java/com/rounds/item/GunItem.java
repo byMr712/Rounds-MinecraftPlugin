@@ -201,8 +201,8 @@ public class GunItem implements Listener {
         if (data.shieldCooldown > 0) {
             cooldownReduction = Math.max(0.1, 1.0 - data.shieldCooldown * 0.1);
         }
-        if (data.blockCd > 0) {
-            cooldownReduction = Math.max(0.1, cooldownReduction - data.blockCd * 0.1);
+        if (data.blockCd != 0) {
+            cooldownReduction = Math.max(0.1, cooldownReduction + data.blockCd * 0.5);
         }
         long actualCooldown = (long) (SHIELD_COOLDOWN_MS * cooldownReduction);
 

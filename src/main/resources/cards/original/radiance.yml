@@ -3,8 +3,8 @@ name:
   ru: "&6Сияние"
   en: "&6Radiance"
 description:
-  ru: "Волны урона при перезарядке, +50% ХП"
-  en: "Damaging waves on reload, +50% HP"
+  ru: "Противники светятся при блоке, +50% ХП"
+  en: "Enemies glow when you block, +50% HP"
 material: LIGHT
 rarity: RARE
 enabled: true

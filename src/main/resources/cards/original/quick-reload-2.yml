@@ -1,0 +1,12 @@
+id: 44
+name:
+  ru: "&eУскоренная перезарядка"
+  en: "&eFast Reload"
+description:
+  ru: "-20% времени перезарядки"
+  en: "-20% Reload time"
+material: REDSTONE
+rarity: COMMON
+enabled: true
+effects:
+  reload_speed: 0.2

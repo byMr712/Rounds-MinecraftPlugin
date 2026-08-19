@@ -133,7 +133,7 @@ public class PlayerDataManager implements Listener {
         yml.set(path + ".stats.pristine-perseverance", data.pristinePerseverance);
 
         List<Integer> ownedCards = new ArrayList<>();
-        for (int i = 1; i <= 43; i++) {
+        for (int i = 1; i <= 44; i++) {
             if (data.getCard(i)) ownedCards.add(i);
         }
         yml.set(path + ".cards", ownedCards);
@@ -266,7 +266,7 @@ public class PlayerDataManager implements Listener {
         yml.set(path + ".stats.pristine-perseverance", data.pristinePerseverance);
 
         List<Integer> ownedCards = new ArrayList<>();
-        for (int i = 1; i <= 43; i++) {
+        for (int i = 1; i <= 44; i++) {
             if (data.getCard(i)) ownedCards.add(i);
         }
         yml.set(path + ".cards", ownedCards);
@@ -358,7 +358,7 @@ public class PlayerDataManager implements Listener {
         cache.put(uuid, data);
 
         if (plugin.getGameManager().isGameStarted()) {
-            if (isActive(uuid)) {
+            if (plugin.getTeamManager().getPlayerTeam(uuid) != null) {
                 plugin.getTeamManager().leaveTeam(uuid);
             }
             Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {

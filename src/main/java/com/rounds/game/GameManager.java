@@ -269,15 +269,18 @@ public class GameManager implements Listener {
                 data.ammo = Math.min(data.ammo, data.maxAmmo);
             }
             if (data.lifestealAura > 0) {
-                for (Entity entity : p.getNearbyEntities(5.0, 5.0, 5.0)) {
-                    if (entity instanceof LivingEntity enemy && !enemy.getUniqueId().equals(p.getUniqueId())) {
-                        GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-                        GameTeam enemyTeam = plugin.getTeamManager().getPlayerTeam(enemy.getUniqueId());
-                        if (myTeam != null && enemyTeam != null && myTeam != enemyTeam) {
-                            double auraHeal = Math.max(Math.ceil(data.lifestealAura * 0.5), 1);
-                            p.setHealth(Math.min(p.getHealth() + auraHeal, p.getMaxHealth()));
-                            break;
-                        }
+                for (Entity entity : p.getNearbyEntities(2.5, 2.5, 2.5)) {
+                    if (!(entity instanceof Player enemy)) continue;
+                    if (enemy.getUniqueId().equals(p.getUniqueId())) continue;
+                    if (enemy.getGameMode() == GameMode.SPECTATOR) continue;
+                    if (!enemy.isOnline() || !enemy.isValid() || enemy.getHealth() <= 0) continue;
+                    if (deadPlayers.contains(enemy.getUniqueId()) || pendingCardJoiners.contains(enemy.getUniqueId())) continue;
+                    GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+                    GameTeam enemyTeam = plugin.getTeamManager().getPlayerTeam(enemy.getUniqueId());
+                    if (myTeam != null && enemyTeam != null && myTeam != enemyTeam) {
+                        double auraHeal = Math.max(Math.ceil(data.lifestealAura * 0.5), 1);
+                        p.setHealth(Math.min(p.getHealth() + auraHeal, p.getMaxHealth()));
+                        break;
                     }
                 }
             }
@@ -435,17 +438,18 @@ public class GameManager implements Listener {
         double closest = Double.MAX_VALUE;
         LivingEntity nearest = null;
         for (Entity entity : phantom.getNearbyEntities(PHANTOM_TARGET_RADIUS, PHANTOM_TARGET_RADIUS, PHANTOM_TARGET_RADIUS)) {
-            if (entity instanceof LivingEntity living && !entity.getUniqueId().equals(summoner.getUniqueId())) {
-                if (entity instanceof Player p) {
-                    if (!isParticipant(p.getUniqueId())) continue;
-                    GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-                    if (summonerTeam != null && targetTeam != null && summonerTeam == targetTeam) continue;
-                }
-                double dist = living.getLocation().distanceSquared(phantom.getLocation());
-                if (dist < closest) {
-                    closest = dist;
-                    nearest = living;
-                }
+            if (!(entity instanceof Player p)) continue;
+            if (p.getUniqueId().equals(summoner.getUniqueId())) continue;
+            if (p.getGameMode() == GameMode.SPECTATOR) continue;
+            if (!p.isOnline() || !p.isValid() || p.getHealth() <= 0) continue;
+            if (deadPlayers.contains(p.getUniqueId()) || pendingCardJoiners.contains(p.getUniqueId())) continue;
+            if (!isParticipant(p.getUniqueId())) continue;
+            GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+            if (summonerTeam != null && targetTeam != null && summonerTeam == targetTeam) continue;
+            double dist = p.getLocation().distanceSquared(phantom.getLocation());
+            if (dist < closest) {
+                closest = dist;
+                nearest = p;
             }
         }
         return nearest;
@@ -480,7 +484,7 @@ public class GameManager implements Listener {
             for (Player p : plugin.getServer().getOnlinePlayers()) {
                 if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) == null
                         && !deadPlayers.contains(p.getUniqueId())) {
-                    p.sendTitle(ChatColor.YELLOW + Messages.get("game.enemy-picking-cards"), "", 10, 60, 20);
+                    sendEnemyPickingCardsTitle(p, 60);
                 }
             }
         }
@@ -494,6 +498,12 @@ public class GameManager implements Listener {
                 p.sendActionBar(ChatColor.GOLD + msg);
             }
         }
+    }
+
+    private void sendEnemyPickingCardsTitle(Player p, int stay) {
+        String full = Messages.get("game.enemy-picking-cards");
+        String[] parts = full.split("\n", 2);
+        p.sendTitle(ChatColor.YELLOW + parts[0], parts.length > 1 ? ChatColor.YELLOW + parts[1] : "", 10, stay, 20);
     }
 
     public void onAllCardsPicked() {
@@ -565,7 +575,7 @@ public class GameManager implements Listener {
             int alive = 0;
             for (UUID uuid : plugin.getTeamManager().getTeamPlayers(team)) {
                 Player p = Bukkit.getPlayer(uuid);
-                if (p != null && p.isOnline() && p.isValid() && p.getHealth() > 0 && !deadPlayers.contains(uuid)) {
+                if (p != null && p.isOnline() && p.isValid() && p.getHealth() > 0 && !deadPlayers.contains(uuid) && !pendingCardJoiners.contains(uuid)) {
                     alive++;
                 }
             }
@@ -581,9 +591,15 @@ public class GameManager implements Listener {
             return;
         }
 
-        if (aliveTeams.size() == 1 && plugin.getTeamManager().getTotalReadyPlayers() > 1) {
-            GameTeam winner = aliveTeams.iterator().next();
-            endRound(winner);
+        if (aliveTeams.size() == 1) {
+            Set<UUID> participants = new HashSet<>(plugin.getPlayerDataManager().getActivePlayers());
+            for (GameTeam team : GameTeam.values()) {
+                participants.addAll(plugin.getTeamManager().getTeamPlayers(team));
+            }
+            if (participants.size() > 1) {
+                GameTeam winner = aliveTeams.iterator().next();
+                endRound(winner);
+            }
         }
     }
 
@@ -710,7 +726,7 @@ public class GameManager implements Listener {
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
             if (!pickers.contains(p.getUniqueId())) {
-                p.sendTitle(ChatColor.YELLOW + Messages.get("game.enemy-picking-cards"), "", 10, 100, 20);
+                sendEnemyPickingCardsTitle(p, 100);
             }
         }
     }
@@ -1027,6 +1043,10 @@ public class GameManager implements Listener {
 
     public void markPendingCardJoiner(UUID uuid) {
         pendingCardJoiners.add(uuid);
+    }
+
+    public boolean isPendingCardJoiner(UUID uuid) {
+        return pendingCardJoiners.contains(uuid);
     }
 
     public void applyTeamColor(Player player) {

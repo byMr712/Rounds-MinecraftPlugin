@@ -38,10 +38,14 @@ public class BlockListener implements Listener {
     private final Map<Location, GameTeam> joinBlocks = new HashMap<>();
     private final Set<Location> cdshootBlocks = new HashSet<>();
     private final Set<Location> jumpBlocks = new HashSet<>();
+    private final Set<Location> upBlocks = new HashSet<>();
     private final Set<UUID> stepCooldown = new HashSet<>();
+    private final Set<UUID> liftingPlayers = new HashSet<>();
 
     private Location jumpPos1;
     private Location jumpPos2;
+    private Location upPos1;
+    private Location upPos2;
 
     public BlockListener(RoundsPlugin plugin) {
         this.plugin = plugin;
@@ -78,6 +82,36 @@ public class BlockListener implements Listener {
                     Location loc = new Location(world, x, y, z);
                     loc.getBlock().setType(Material.COAL_BLOCK);
                     jumpBlocks.add(loc);
+                    filled.add(loc);
+                }
+            }
+        }
+        saveBlocks();
+        return filled;
+    }
+
+    public Location getUpPos1() { return upPos1; }
+    public Location getUpPos2() { return upPos2; }
+    public void setUpPos1(Location loc) { upPos1 = loc.clone(); }
+    public void setUpPos2(Location loc) { upPos2 = loc.clone(); }
+
+    public Set<Location> fillUpBlocks() {
+        Set<Location> filled = new HashSet<>();
+        if (upPos1 == null || upPos2 == null) return filled;
+        World world = upPos1.getWorld();
+        if (world == null || upPos2.getWorld() != world) return filled;
+        int x1 = Math.min(upPos1.getBlockX(), upPos2.getBlockX());
+        int y1 = Math.min(upPos1.getBlockY(), upPos2.getBlockY());
+        int z1 = Math.min(upPos1.getBlockZ(), upPos2.getBlockZ());
+        int x2 = Math.max(upPos1.getBlockX(), upPos2.getBlockX());
+        int y2 = Math.max(upPos1.getBlockY(), upPos2.getBlockY());
+        int z2 = Math.max(upPos1.getBlockZ(), upPos2.getBlockZ());
+        for (int x = x1; x <= x2; x++) {
+            for (int y = y1; y <= y2; y++) {
+                for (int z = z1; z <= z2; z++) {
+                    Location loc = new Location(world, x, y, z);
+                    loc.getBlock().setType(Material.PURPLE_GLAZED_TERRACOTTA);
+                    upBlocks.add(loc);
                     filled.add(loc);
                 }
             }
@@ -151,6 +185,15 @@ public class BlockListener implements Listener {
         return item;
     }
 
+    public static ItemStack createUpBlock() {
+        ItemStack item = new ItemStack(Material.PURPLE_GLAZED_TERRACOTTA);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName(ChatColor.LIGHT_PURPLE + "Блок вверх");
+        meta.getPersistentDataContainer().set(RoundsKeys.UP_BLOCK, PersistentDataType.BYTE, (byte) 1);
+        item.setItemMeta(meta);
+        return item;
+    }
+
     public static void giveAllBlocks(Player player) {
         for (GameTeam team : GameTeam.values()) {
             addItem64(player, createJoinBlock(team));
@@ -161,6 +204,7 @@ public class BlockListener implements Listener {
         addItem64(player, createMapBlock100());
         addItem64(player, createSpawnBlock());
         addItem64(player, createJumpBlock());
+        addItem64(player, createUpBlock());
     }
 
     private static void addItem64(Player player, ItemStack item) {
@@ -223,6 +267,26 @@ public class BlockListener implements Listener {
             player.setVelocity(new org.bukkit.util.Vector(0, launchHeight * 0.2, 0));
             player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.5f);
         }
+
+        if (upBlocks.contains(loc)) {
+            if (liftingPlayers.contains(player.getUniqueId())) return;
+            liftingPlayers.add(player.getUniqueId());
+            double speed = plugin.getRoundsConfig().getUpBlockLiftSpeed();
+            int duration = plugin.getRoundsConfig().getUpBlockDurationTicks();
+            new org.bukkit.scheduler.BukkitRunnable() {
+                int ticks = 0;
+                @Override
+                public void run() {
+                    if (ticks >= duration || !player.isOnline() || player.isDead()) {
+                        liftingPlayers.remove(player.getUniqueId());
+                        cancel();
+                        return;
+                    }
+                    player.setVelocity(new org.bukkit.util.Vector(0, speed, 0));
+                    ticks++;
+                }
+            }.runTaskTimer(plugin, 0L, 1L);
+        }
     }
 
     @EventHandler
@@ -275,6 +339,12 @@ public class BlockListener implements Listener {
             saveBlocks();
             return;
         }
+        if (pdc.has(RoundsKeys.UP_BLOCK, PersistentDataType.BYTE)) {
+            upBlocks.add(loc);
+            placer.sendMessage(ChatColor.GREEN + "Блок вверх установлен");
+            saveBlocks();
+            return;
+        }
     }
 
     @EventHandler
@@ -283,6 +353,7 @@ public class BlockListener implements Listener {
         boolean removed = joinBlocks.remove(loc) != null;
         removed |= cdshootBlocks.remove(loc);
         removed |= jumpBlocks.remove(loc);
+        removed |= upBlocks.remove(loc);
         if (blockStorage.getLobbyBlock() != null && blockStorage.getLobbyBlock().equals(loc)) {
             blockStorage.setLobbyBlock(null);
             removed = true;
@@ -325,6 +396,16 @@ public class BlockListener implements Listener {
             config.set(path + ".z", loc.getBlockZ());
             i++;
         }
+        i = 0;
+        for (Location loc : upBlocks) {
+            String path = "up." + i;
+            if (loc.getWorld() == null) { i++; continue; }
+            config.set(path + ".world", loc.getWorld().getName());
+            config.set(path + ".x", loc.getBlockX());
+            config.set(path + ".y", loc.getBlockY());
+            config.set(path + ".z", loc.getBlockZ());
+            i++;
+        }
         try {
             config.save(blocksFile);
         } catch (IOException e) {
@@ -356,6 +437,7 @@ public class BlockListener implements Listener {
 
         loadLocationSet(config, "cdshoot", cdshootBlocks);
         loadLocationSet(config, "jump", jumpBlocks);
+        loadLocationSet(config, "up", upBlocks);
     }
 
     private void loadLocationSet(YamlConfiguration config, String sectionName, Set<Location> set) {

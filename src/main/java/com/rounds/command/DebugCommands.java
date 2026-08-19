@@ -174,6 +174,9 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "jumppos1" -> handleJumpPos(sender, 1);
             case "jumppos2" -> handleJumpPos(sender, 2);
             case "jumpset" -> handleJumpSet(sender);
+            case "uppos1" -> handleUpPos(sender, 1);
+            case "uppos2" -> handleUpPos(sender, 2);
+            case "upset" -> handleUpSet(sender);
             case "wheel" -> handleWheel(sender, args);
             case "tab" -> handleTab(sender, args);
             case "placeholders" -> handlePlaceholders(sender);
@@ -197,6 +200,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxKv(sender, "/rdebug giveblocks", Messages.get("debug.help-giveblocks"));
         boxKv(sender, "/rdebug setlobby", "Установить блок лобби на вашей позиции");
         boxKv(sender, "/rdebug jumppos1/pos2/set", "Заполнить область jump-блоками");
+        boxKv(sender, "/rdebug uppos1/pos2/set", "Заполнить область up-блоками");
 
         boxSection(sender, "CARDS");
         boxKv(sender, "/rdebug cards", Messages.get("debug.help-cards"));
@@ -383,6 +387,31 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
         Set<org.bukkit.Location> filled = bl.fillJumpBlocks();
         sender.sendMessage(ChatColor.GREEN + "Установлено " + filled.size() + " jump-блоков");
+    }
+
+    private void handleUpPos(CommandSender sender, int posNum) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player"));
+            return;
+        }
+        org.bukkit.Location pos = player.getLocation().getBlock().getLocation().subtract(0, 1, 0);
+        if (posNum == 1) {
+            plugin.getBlockListener().setUpPos1(pos);
+        } else {
+            plugin.getBlockListener().setUpPos2(pos);
+        }
+        sender.sendMessage(ChatColor.GREEN + "Up pos" + posNum + " установлен на " +
+            String.format("(%d, %d, %d)", pos.getBlockX(), pos.getBlockY(), pos.getBlockZ()));
+    }
+
+    private void handleUpSet(CommandSender sender) {
+        com.rounds.blocks.BlockListener bl = plugin.getBlockListener();
+        if (bl.getUpPos1() == null || bl.getUpPos2() == null) {
+            sender.sendMessage(ChatColor.RED + "Сначала установи uppos1 и uppos2");
+            return;
+        }
+        Set<org.bukkit.Location> filled = bl.fillUpBlocks();
+        sender.sendMessage(ChatColor.GREEN + "Установлено " + filled.size() + " up-блоков");
     }
 
     private void handleRounds(CommandSender sender, String[] args) {
@@ -903,7 +932,9 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         "stats", "setstat", "setteam", "setlanguage", "effect", "heal",
         "spawnbomb", "spawnheal", "spawntoxic", "spawnshield",
         "entities", "applycard", "resetstats", "reload",
-        "version", "killround", "iteminfo", "setlobby", "jumppos1", "jumppos2", "jumpset", "wheel", "tab"
+        "version", "killround", "iteminfo", "setlobby",
+        "jumppos1", "jumppos2", "jumpset", "uppos1", "uppos2", "upset",
+        "wheel", "tab"
     );
     private static final List<String> TEAM_COLORS = Arrays.asList("BLUE", "RED", "YELLOW", "GREEN");
 

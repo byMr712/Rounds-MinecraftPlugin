@@ -358,6 +358,9 @@ public class PlayerDataManager implements Listener {
         cache.put(uuid, data);
 
         if (plugin.getGameManager().isGameStarted()) {
+            if (isActive(uuid)) {
+                plugin.getTeamManager().leaveTeam(uuid);
+            }
             Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                 player.setGameMode(GameMode.SPECTATOR);
                 player.setInvulnerable(true);

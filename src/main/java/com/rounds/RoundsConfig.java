@@ -32,6 +32,9 @@ public final class RoundsConfig {
     private double jumpBlockDamagePercent;
     private double jumpBlockLaunchHeight;
 
+    private double upBlockLiftSpeed;
+    private int upBlockDurationTicks;
+
     public RoundsConfig(RoundsPlugin plugin) {
         this.plugin = plugin;
         reload();
@@ -69,6 +72,10 @@ public final class RoundsConfig {
         jumpBlockDamagePercent = c.getDouble(jb + "damage-percent", 20.0);
         jumpBlockLaunchHeight = c.getDouble(jb + "launch-height", 10.0);
 
+        String ub = "up-block.";
+        upBlockLiftSpeed = c.getDouble(ub + "lift-speed", 0.3);
+        upBlockDurationTicks = c.getInt(ub + "duration-ticks", 40);
+
         DefaultStats ds = new DefaultStats();
         ds.dmg = c.getDouble("defaults.damage", 3.0);
         ds.atks = c.getDouble("defaults.attack-speed", 20);
@@ -102,6 +109,8 @@ public final class RoundsConfig {
     public boolean isGrDisableMobSpawning() { return grDisableMobSpawning; }
     public double getJumpBlockDamagePercent() { return jumpBlockDamagePercent; }
     public double getJumpBlockLaunchHeight() { return jumpBlockLaunchHeight; }
+    public double getUpBlockLiftSpeed() { return upBlockLiftSpeed; }
+    public int getUpBlockDurationTicks() { return upBlockDurationTicks; }
 
     public void setBuiltinScoreboard(boolean enabled) {
         this.builtinScoreboard = enabled;

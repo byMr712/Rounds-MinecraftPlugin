@@ -59,7 +59,21 @@ public class TeamManager {
         }
     }
 
+    private void ensureTeamsRegistered() {
+        for (GameTeam gt : GameTeam.values()) {
+            Team team = teams.get(gt);
+            if (team == null || scoreboard.getTeam(team.getName()) == null) {
+                Team t = scoreboard.registerNewTeam(TEAM_PREFIX + gt.name().toLowerCase());
+                t.setDisplayName(gt.getColor() + gt.getName());
+                t.setColor(gt.getColor());
+                t.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
+                teams.put(gt, t);
+            }
+        }
+    }
+
     public boolean joinTeam(UUID uuid, GameTeam team) {
+        ensureTeamsRegistered();
         GameTeam old = playerTeams.get(uuid);
         if (old != null) {
             Team oldTeam = teams.get(old);
@@ -80,6 +94,7 @@ public class TeamManager {
     }
 
     public void leaveTeam(UUID uuid) {
+        ensureTeamsRegistered();
         GameTeam old = playerTeams.remove(uuid);
         if (old != null) {
             Team t = teams.get(old);
@@ -125,6 +140,7 @@ public class TeamManager {
 
     public void clearAll() {
         playerTeams.clear();
+        ensureTeamsRegistered();
         for (GameTeam gt : GameTeam.values()) {
             Team team = teams.get(gt);
             for (String entry : new ArrayList<>(team.getEntries())) {

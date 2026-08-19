@@ -438,10 +438,12 @@ public class GameManager implements Listener {
         }.runTaskTimer(plugin, 0L, 1L);
     }
 
+    private static final double PHANTOM_TARGET_RADIUS = 100.0;
+
     private LivingEntity findNearestEnemyForPhantom(Phantom phantom, Player summoner, GameTeam summonerTeam) {
         double closest = Double.MAX_VALUE;
         LivingEntity nearest = null;
-        for (Entity entity : phantom.getNearbyEntities(20, 20, 20)) {
+        for (Entity entity : phantom.getNearbyEntities(PHANTOM_TARGET_RADIUS, PHANTOM_TARGET_RADIUS, PHANTOM_TARGET_RADIUS)) {
             if (entity instanceof LivingEntity living && !entity.getUniqueId().equals(summoner.getUniqueId())) {
                 if (entity instanceof Player p) {
                     if (!isParticipant(p.getUniqueId())) continue;

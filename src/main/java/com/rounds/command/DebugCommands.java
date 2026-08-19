@@ -248,6 +248,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
         GameTeam finalTeam = plugin.getTeamManager().getPlayerTeam(uuid);
         gm.markPendingCardJoiner(uuid);
+        gm.applyTeamColor(player);
 
         if (gm.getState() == GameManager.GameState.CARDS) {
             plugin.getCardManager().openCardSelection(player, finalTeam);
@@ -555,6 +556,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
 
         plugin.getTeamManager().joinTeam(target.getUniqueId(), team);
+        plugin.getGameManager().applyTeamColor(target);
         sender.sendMessage(ChatColor.GREEN + Messages.get("debug.team-set", target.getName(), team.getColor() + team.getName()));
     }
 

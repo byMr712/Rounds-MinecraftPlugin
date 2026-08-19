@@ -98,6 +98,7 @@ public class BlockListener implements Listener {
                 return;
             }
             if (plugin.getTeamManager().joinTeam(player.getUniqueId(), team)) {
+                plugin.getGameManager().applyTeamColor(player);
                 String teamName = Messages.get("team." + team.name().toLowerCase());
                 String msg = team.getColor() + "\u00A7l" + Messages.get("team.joined", teamName);
                 player.sendActionBar(msg);

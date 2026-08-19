@@ -440,6 +440,7 @@ public class GameManager implements Listener {
                 clearCardEffects(p);
                 applyPlayerHP(p);
                 applyRoundEffects(p);
+                applyTeamColor(p);
                 p.setGameMode(GameMode.SURVIVAL);
                 p.setFoodLevel(20);
                 p.setSaturation(5.0f);
@@ -447,6 +448,7 @@ public class GameManager implements Listener {
                 p.setInvulnerable(false);
                 p.setNoDamageTicks(0);
             } else {
+                p.setPlayerListName(p.getName());
                 p.setGameMode(GameMode.SPECTATOR);
                 p.setInvulnerable(true);
             }
@@ -561,6 +563,7 @@ public class GameManager implements Listener {
             state = GameState.WAITING;
             saveState();
             removeScoreboard();
+            resetAllNameColors();
             plugin.getCardManager().resetAllCards();
             GunItem.resetRoundState();
             RoundsEntities.clearAllState();
@@ -768,6 +771,7 @@ public class GameManager implements Listener {
         state = GameState.WAITING;
         saveState();
         removeScoreboard();
+        resetAllNameColors();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GunItem.cancelReload(p.getUniqueId());
             p.getInventory().clear();
@@ -833,6 +837,21 @@ public class GameManager implements Listener {
 
     public void markPendingCardJoiner(UUID uuid) {
         pendingCardJoiners.add(uuid);
+    }
+
+    public void applyTeamColor(Player player) {
+        GameTeam team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (team != null) {
+            player.setPlayerListName(team.getColor() + player.getName());
+        } else {
+            player.setPlayerListName(player.getName());
+        }
+    }
+
+    public void resetAllNameColors() {
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            p.setPlayerListName(p.getName());
+        }
     }
 
     private void saveState() {

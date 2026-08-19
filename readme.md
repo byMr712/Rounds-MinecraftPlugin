@@ -364,7 +364,10 @@ commands: []
 
 ## Плейсхолдеры (PlaceholderAPI)
 
-Плагин предоставляет 15 плейсхолдеров:
+Плагин предоставляет плейсхолдеры для информации об игре и статистике игроков.
+Полный список можно посмотреть в игре: `/rdebug placeholders`
+
+### Информация об игре
 
 | Плейсхолдер | Возвращает |
 |-------------|------------|
@@ -384,6 +387,48 @@ commands: []
 | `%rounds_red_name%` | Локализованное название красной команды |
 | `%rounds_yellow_name%` | Локализованное название жёлтой команды |
 | `%rounds_green_name%` | Локализованное название зелёной команды |
+
+### Статы игрока
+
+| Плейсхолдер | Возвращает |
+|-------------|------------|
+| `%rounds_stat_hp%` | Здоровье |
+| `%rounds_stat_dmg%` | Урон |
+| `%rounds_stat_atk_speed%` | Скорость атаки |
+| `%rounds_stat_atkr%` | Радиус атаки |
+| `%rounds_stat_ammo%` | Патроны |
+| `%rounds_stat_max_ammo%` | Макс. патронов |
+| `%rounds_stat_bullets%` | Пули |
+| `%rounds_stat_bullet_speed%` | Скорость пули |
+| `%rounds_stat_bounce%` | Отскок |
+| `%rounds_stat_homing%` | Самонаведение |
+| `%rounds_stat_big_bullet%` | Большая пуля |
+| `%rounds_stat_cold%` | Мороз |
+| `%rounds_stat_cold_lvl%` | Ур. мороза |
+| `%rounds_stat_poison%` | Яд |
+| `%rounds_stat_poison_lvl%` | Ур. яда |
+| `%rounds_stat_parazit%` | Высасывание |
+| `%rounds_stat_parazit_lvl%` | Ур. высасывания |
+| `%rounds_stat_leech%` | Высасывание |
+| `%rounds_stat_truster%` | Трустер |
+| `%rounds_stat_empower%` | Усиление |
+| `%rounds_stat_empower_charge%` | Заряд усиления |
+| `%rounds_stat_dark_strength%` | Сила тьмы |
+| `%rounds_stat_dark%` | Тьма |
+| `%rounds_stat_grow%` | Рост |
+| `%rounds_stat_bomb_bullet%` | Бомбы |
+| `%rounds_stat_bomb_on_block%` | Бомбы на блоке |
+| `%rounds_stat_shield_active%` | Щит активен (1/0) |
+| `%rounds_stat_shield_hp%` | Здоровье щита |
+| `%rounds_stat_shield_cd%` | Кулдаун щита |
+| `%rounds_stat_speed%` | Скорость |
+| `%rounds_stat_stun%` | Оглушение |
+| `%rounds_stat_saw%` | Пила |
+| `%rounds_stat_silence%` | Тишина |
+| `%rounds_stat_emp%` | ЭМП |
+| `%rounds_stat_sneaky%` | Скрытность |
+| `%rounds_stat_phoenix%` | Феникс |
+| `%rounds_stat_abyssal%` | Абиссальный |
 
 ---
 

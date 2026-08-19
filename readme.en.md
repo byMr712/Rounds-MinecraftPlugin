@@ -367,7 +367,10 @@ Built-in scoreboard shows: current round, player's team, and wins of all active 
 
 ## Placeholders (PlaceholderAPI)
 
-The plugin provides 15 placeholders:
+The plugin provides placeholders for game info and player stats.
+Full list available in-game: `/rdebug placeholders`
+
+### Game Info
 
 | Placeholder | Returns |
 |------------|---------|
@@ -387,6 +390,48 @@ The plugin provides 15 placeholders:
 | `%rounds_red_name%` | Localized red team name |
 | `%rounds_yellow_name%` | Localized yellow team name |
 | `%rounds_green_name%` | Localized green team name |
+
+### Player Stats
+
+| Placeholder | Returns |
+|------------|---------|
+| `%rounds_stat_hp%` | Health |
+| `%rounds_stat_dmg%` | Damage |
+| `%rounds_stat_atk_speed%` | Attack Speed |
+| `%rounds_stat_atkr%` | Attack Radius |
+| `%rounds_stat_ammo%` | Ammo |
+| `%rounds_stat_max_ammo%` | Max Ammo |
+| `%rounds_stat_bullets%` | Bullets |
+| `%rounds_stat_bullet_speed%` | Bullet Speed |
+| `%rounds_stat_bounce%` | Bounce |
+| `%rounds_stat_homing%` | Homing |
+| `%rounds_stat_big_bullet%` | Big Bullet |
+| `%rounds_stat_cold%` | Cold |
+| `%rounds_stat_cold_lvl%` | Cold Level |
+| `%rounds_stat_poison%` | Poison |
+| `%rounds_stat_poison_lvl%` | Poison Level |
+| `%rounds_stat_parazit%` | Leech Damage |
+| `%rounds_stat_parazit_lvl%` | Leech Level |
+| `%rounds_stat_leech%` | Leech |
+| `%rounds_stat_truster%` | Truster |
+| `%rounds_stat_empower%` | Empower |
+| `%rounds_stat_empower_charge%` | Empower Charge |
+| `%rounds_stat_dark_strength%` | Dark Strength |
+| `%rounds_stat_dark%` | Dark |
+| `%rounds_stat_grow%` | Grow |
+| `%rounds_stat_bomb_bullet%` | Bombs |
+| `%rounds_stat_bomb_on_block%` | Bombs on Block |
+| `%rounds_stat_shield_active%` | Shield Active (1/0) |
+| `%rounds_stat_shield_hp%` | Shield HP |
+| `%rounds_stat_shield_cd%` | Shield Cooldown |
+| `%rounds_stat_speed%` | Speed |
+| `%rounds_stat_stun%` | Stun |
+| `%rounds_stat_saw%` | Saw |
+| `%rounds_stat_silence%` | Silence |
+| `%rounds_stat_emp%` | EMP |
+| `%rounds_stat_sneaky%` | Sneaky |
+| `%rounds_stat_phoenix%` | Phoenix |
+| `%rounds_stat_abyssal%` | Abyssal |
 
 ---
 

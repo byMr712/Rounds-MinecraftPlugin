@@ -189,6 +189,11 @@ public class GameManager implements Listener {
         state = GameState.CARDS;
         startGameTick();
 
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            p.setGameMode(GameMode.SPECTATOR);
+            p.setInvulnerable(true);
+        }
+
         for (Player p : readyPlayers) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             if (team != null) {
@@ -476,6 +481,12 @@ public class GameManager implements Listener {
         }
         if (musicTick % 40 == 0) {
             sendSpectatorActionbar();
+            for (Player p : plugin.getServer().getOnlinePlayers()) {
+                if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) == null
+                        && !deadPlayers.contains(p.getUniqueId())) {
+                    p.sendTitle(ChatColor.YELLOW + Messages.get("game.enemy-picking-cards"), "", 10, 60, 20);
+                }
+            }
         }
     }
 
@@ -680,19 +691,32 @@ public class GameManager implements Listener {
 
     private void openCardGUIs() {
         for (Player p : plugin.getServer().getOnlinePlayers()) {
+            p.setGameMode(GameMode.SPECTATOR);
+            p.setInvulnerable(true);
+        }
+        Set<UUID> pickers = new HashSet<>();
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             if (team != null && (team == lastLoser || pendingCardJoiners.contains(p.getUniqueId()))) {
                 if (p.isDead()) continue;
+                pickers.add(p.getUniqueId());
                 plugin.getCardManager().openCardSelection(p, team);
             }
         }
         pendingCardJoiners.clear();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+            if (!pickers.contains(p.getUniqueId())) {
+                p.sendTitle(ChatColor.YELLOW + Messages.get("game.enemy-picking-cards"), "", 10, 100, 20);
+            }
         }
     }
 
     private void openCardGUIsDraw() {
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            p.setGameMode(GameMode.SPECTATOR);
+            p.setInvulnerable(true);
+        }
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             if (team != null || pendingCardJoiners.contains(p.getUniqueId())) {
@@ -903,17 +927,25 @@ public class GameManager implements Listener {
         plugin.getPlayerDataManager().clearActivePlayers();
         restoreGameRules();
         teamSpawns.clear();
+        resetWins();
+        deadPlayers.clear();
+        abyssalLastLocations.clear();
+        lastSilenceAuraTime.clear();
         state = GameState.WAITING;
         saveState();
         removeScoreboard();
         resetAllNameColors();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
+            PlayerData data = plugin.getPlayerDataManager().getData(p.getUniqueId());
+            if (data != null) data.resetStats();
             GunItem.cancelReload(p.getUniqueId());
             p.getInventory().clear();
             var attr = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
             if (attr != null) attr.setBaseValue(20);
             p.setHealth(Math.min(p.getHealth(), 20));
             p.setFoodLevel(20);
+            p.setSaturation(5.0f);
+            p.setExhaustion(0f);
             p.setInvulnerable(false);
             p.setNoDamageTicks(0);
             p.setGameMode(GameMode.ADVENTURE);
@@ -1051,7 +1083,7 @@ public class GameManager implements Listener {
     // ===== Built-in Scoreboard =====
     private final Map<UUID, Scoreboard> playerScoreboards = new HashMap<>();
 
-    private static final String DIV = "\u00A7b\u00A7m                                                                ";
+    private static final String DIV = "\u00A7b\u00A7m                          ";
 
     public void updateScoreboard() {
         if (!plugin.getRoundsConfig().isBuiltinScoreboard()) return;
@@ -1068,7 +1100,8 @@ public class GameManager implements Listener {
         for (Objective obj : sb.getObjectives()) obj.unregister();
 
         Objective obj = sb.registerNewObjective("rounds", Criteria.DUMMY,
-                plugin.getRoundsConfig().getBuiltinScoreboardTitle());
+                ChatColor.translateAlternateColorCodes('&',
+                        plugin.getRoundsConfig().getBuiltinScoreboardTitle()));
         obj.setDisplaySlot(DisplaySlot.SIDEBAR);
 
         List<GameTeam> activeTeams = new ArrayList<>();

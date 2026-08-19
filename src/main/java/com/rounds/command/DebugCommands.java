@@ -6,6 +6,7 @@ import com.rounds.RoundsPlugin;
 import com.rounds.entity.RoundsEntities;
 import com.rounds.game.GameManager;
 import com.rounds.item.GunItem;
+import com.rounds.placeholder.RoundsPlaceholders;
 import com.rounds.player.PlayerData;
 import com.rounds.player.PlayerDataManager;
 import com.rounds.teams.TeamManager;
@@ -171,6 +172,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "giveblocks" -> handleBlocks(sender, args);
             case "wheel" -> handleWheel(sender, args);
             case "tab" -> handleTab(sender, args);
+            case "placeholders" -> handlePlaceholders(sender);
             default -> sender.sendMessage(ChatColor.RED + Messages.get("debug.unknown-command", args[0]));
         }
         return true;
@@ -220,6 +222,25 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxKv(sender, "/rdebug killround", Messages.get("debug.help-killround"));
         boxKv(sender, "/rdebug iteminfo", Messages.get("debug.help-iteminfo"));
         boxKv(sender, "/rdebug test", Messages.get("debug.help-test"));
+
+        boxSection(sender, "PLACEHOLDERS");
+        boxKv(sender, "/rdebug placeholders", Messages.get("debug.help-placeholders"));
+
+        boxFooter(sender);
+    }
+
+    private void handlePlaceholders(CommandSender sender) {
+        boxHeader(sender, Messages.get("debug.placeholders-title"));
+
+        boxSection(sender, Messages.get("debug.ph-game-section"));
+        for (RoundsPlaceholders.PlaceholderEntry ph : RoundsPlaceholders.getGamePlaceholders()) {
+            boxKv(sender, "%" + ph.key() + "%", Messages.get(ph.descriptionKey()));
+        }
+
+        boxSection(sender, Messages.get("debug.ph-stats-section"));
+        for (RoundsPlaceholders.PlaceholderEntry ph : RoundsPlaceholders.getStatPlaceholders()) {
+            boxKv(sender, "%" + ph.key() + "%", Messages.get(ph.descriptionKey()));
+        }
 
         boxFooter(sender);
     }
@@ -444,11 +465,10 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
         boxSection(sender, Messages.get("debug.combat-section"));
         boxStat(sender, "stat-dmg", data.dmg);
-        boxStat(sender, "stat-atks", data.atks);
+        boxStat(sender, "stat-atks", data.hp);
         boxStat(sender, "stat-atk-speed", data.atkSpeed);
         boxStat(sender, "stat-atkr", data.atkr);
         boxStat(sender, "stat-ammo", data.ammo);
-        boxStat(sender, "stat-atks-reload", data.atksReload);
         boxStat(sender, "stat-bullets", data.bullets);
         boxStat(sender, "stat-bullet-speed", data.bulletSpeed);
         boxStat(sender, "stat-bounce", data.bouncePl);
@@ -466,7 +486,6 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxStat(sender, "stat-truster", data.trusterLvl);
 
         boxSection(sender, Messages.get("debug.special-section"));
-        boxStat(sender, "stat-hp", data.hp);
         boxStat(sender, "stat-grow", data.grow);
         boxStat(sender, "stat-empower", data.empower);
         boxStat(sender, "stat-empower-charge", data.empowerCharge);
@@ -477,12 +496,8 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
         boxSection(sender, Messages.get("debug.shield-section"));
         boxKv(sender, Messages.get("debug.stat-shield-active"), data.shieldActive ? "ON" : "OFF");
-        boxStat(sender, "stat-shield-hp", data.shieldHp);
-        boxStat(sender, "stat-shield-cd", data.shieldCooldown);
-
-        boxSection(sender, Messages.get("debug.misc-section"));
-        boxStat(sender, "stat-card-uses", data.cardUses);
-        boxStat(sender, "stat-rare-card", data.rareCard);
+        boxKv(sender, Messages.get("debug.stat-shield-cd"),
+                String.format("%.1fs", data.shieldCooldown / 20.0));
 
         boxFooter(sender);
     }

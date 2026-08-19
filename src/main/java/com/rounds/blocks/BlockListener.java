@@ -121,6 +121,11 @@ public class BlockListener implements Listener {
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
+        if (plugin.getGameManager().isGameStarted()
+                && !plugin.getGameManager().isParticipant(event.getPlayer().getUniqueId())) {
+            event.setCancelled(true);
+            return;
+        }
         ItemStack item = event.getItemInHand();
         if (!item.hasItemMeta()) return;
         ItemMeta meta = item.getItemMeta();

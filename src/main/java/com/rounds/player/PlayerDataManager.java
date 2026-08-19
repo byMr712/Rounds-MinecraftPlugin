@@ -69,6 +69,10 @@ public class PlayerDataManager implements Listener {
         return new HashSet<>(activePlayers);
     }
 
+    public boolean isActive(UUID uuid) {
+        return activePlayers.contains(uuid);
+    }
+
     public void clearActivePlayers() {
         activePlayers.clear();
         savedData.clear();
@@ -390,6 +394,15 @@ public class PlayerDataManager implements Listener {
                     }
                 }
             }
+        } else if (plugin.getGameManager().isGameStarted()) {
+            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                player.setGameMode(GameMode.SPECTATOR);
+                player.setInvulnerable(true);
+                Player target = plugin.getGameManager().findRandomAlivePlayer();
+                if (target != null) {
+                    player.teleport(target.getLocation());
+                }
+            }, 5L);
         }
     }
 

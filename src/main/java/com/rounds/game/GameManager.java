@@ -38,6 +38,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Random;
 
 public class GameManager implements Listener {
 
@@ -363,6 +364,7 @@ public class GameManager implements Listener {
         for (Entity entity : phantom.getNearbyEntities(20, 20, 20)) {
             if (entity instanceof LivingEntity living && !entity.getUniqueId().equals(summoner.getUniqueId())) {
                 if (entity instanceof Player p) {
+                    if (!isParticipant(p.getUniqueId())) continue;
                     GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
                     if (summonerTeam != null && targetTeam != null && summonerTeam == targetTeam) continue;
                 }
@@ -390,12 +392,27 @@ public class GameManager implements Listener {
         if (musicTick % 20 == 0) {
             applyPeriodicEffects();
         }
+        if (musicTick % 40 == 0) {
+            sendSpectatorActionbar();
+        }
     }
 
     private void cardTick() {
         musicTick++;
         if (wheelEnabled && musicTick % 120 == 0) {
             plugin.getCardGUI().rotateAllCards();
+        }
+        if (musicTick % 40 == 0) {
+            sendSpectatorActionbar();
+        }
+    }
+
+    private void sendSpectatorActionbar() {
+        String msg = Messages.get("game.spectator-hint");
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) == null) {
+                p.sendActionBar(ChatColor.GOLD + msg);
+            }
         }
     }
 
@@ -427,6 +444,9 @@ public class GameManager implements Listener {
                 p.setExhaustion(0f);
                 p.setInvulnerable(false);
                 p.setNoDamageTicks(0);
+            } else {
+                p.setGameMode(GameMode.SPECTATOR);
+                p.setInvulnerable(true);
             }
         }
         musicTick = 0;
@@ -682,12 +702,25 @@ public class GameManager implements Listener {
         if (state != GameState.PLAYING && state != GameState.ROUND_END && state != GameState.CARDS) return;
         Player player = event.getPlayer();
         event.setRespawnLocation(player.getWorld().getSpawnLocation());
+
+        GameTeam team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (team == null) {
+            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                player.setGameMode(GameMode.SPECTATOR);
+                player.setInvulnerable(true);
+                Player target = findRandomAlivePlayer();
+                if (target != null) {
+                    player.teleport(target.getLocation());
+                }
+            }, plugin.getRoundsConfig().getRespawnDelayTicks());
+            return;
+        }
+
         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
             if (state == GameState.PLAYING) {
                 giveGun(player);
                 applyPlayerHP(player);
             } else if (state == GameState.CARDS) {
-                GameTeam team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
                 if (team != null && (lastLoser == null || team == lastLoser)) {
                     plugin.getCardManager().openCardSelection(player, team);
                 }
@@ -746,6 +779,38 @@ public class GameManager implements Listener {
     public GameTeam getLastLoser() { return lastLoser; }
     public Set<UUID> getDeadPlayers() { return Collections.unmodifiableSet(deadPlayers); }
     public GameStateManager getStateManager() { return stateManager; }
+
+    public boolean isParticipant(UUID uuid) {
+        return plugin.getPlayerDataManager().isActive(uuid);
+    }
+
+    public Player findRandomAlivePlayer() {
+        List<Player> alive = new ArrayList<>();
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+            if (team != null && p.isOnline() && p.isValid() && p.getHealth() > 0) {
+                alive.add(p);
+            }
+        }
+        if (alive.isEmpty()) return null;
+        return alive.get(new Random().nextInt(alive.size()));
+    }
+
+    public GameTeam findSmallestTeam() {
+        int minCount = Integer.MAX_VALUE;
+        List<GameTeam> candidates = new ArrayList<>();
+        for (GameTeam team : GameTeam.values()) {
+            int count = plugin.getTeamManager().getPlayerCount(team);
+            if (count < minCount) {
+                minCount = count;
+                candidates.clear();
+                candidates.add(team);
+            } else if (count == minCount) {
+                candidates.add(team);
+            }
+        }
+        return candidates.get(new Random().nextInt(candidates.size()));
+    }
 
     private void saveState() {
         if (state == GameState.WAITING) {

@@ -139,6 +139,7 @@ public class RoundsEntities implements Listener {
                         if (entity.getUniqueId().equals(shooter.getUniqueId())) continue;
                         if (entity instanceof org.bukkit.entity.ArmorStand) continue;
                         if (entity instanceof Player p) {
+                            if (!plugin.getGameManager().isParticipant(p.getUniqueId())) continue;
                             GameTeam ownerTeam = plugin.getTeamManager().getPlayerTeam(shooter.getUniqueId());
                             GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
                             if (ownerTeam != null && targetTeam != null && ownerTeam == targetTeam) continue;
@@ -406,6 +407,7 @@ public class RoundsEntities implements Listener {
             if (entity.getUniqueId().equals(ownerId)) continue;
             if (entity instanceof org.bukkit.entity.ArmorStand) continue;
             if (entity instanceof org.bukkit.entity.Player p) {
+                if (!plugin.getGameManager().isParticipant(p.getUniqueId())) continue;
                 GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
                 if (ownerTeam != null && targetTeam != null && ownerTeam == targetTeam) continue;
             }
@@ -427,6 +429,7 @@ public class RoundsEntities implements Listener {
         loc.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, loc, 1);
         for (var entity : loc.getNearbyLivingEntities(5.0)) {
             if (entity.getUniqueId().equals(owner)) continue;
+            if (entity instanceof Player p && !plugin.getGameManager().isParticipant(p.getUniqueId())) continue;
             double dist = entity.getLocation().distance(loc);
             if (dist > 5.0) continue;
             double dmg = Math.max(0, 8.0 * damageMultiplier * (1.0 - dist / 5.0));
@@ -582,6 +585,7 @@ public class RoundsEntities implements Listener {
         }
 
         if (hitEntity != null && hitEntity instanceof LivingEntity living && !living.getUniqueId().equals(ownerId)) {
+            if (living instanceof Player hitPlayer && !plugin.getGameManager().isParticipant(hitPlayer.getUniqueId())) return;
             PlayerData data = plugin.getPlayerDataManager().getData(ownerId);
             double finalDamage = damage * 2.0;
             if (data != null) {
@@ -628,6 +632,7 @@ public class RoundsEntities implements Listener {
                     double splashRadius = 2.0 + data.splash;
                     for (Entity entity : living.getNearbyEntities(splashRadius, splashRadius, splashRadius)) {
                         if (entity instanceof LivingEntity splashTarget && !splashTarget.getUniqueId().equals(ownerId)) {
+                            if (splashTarget instanceof Player sp && !plugin.getGameManager().isParticipant(sp.getUniqueId())) continue;
                             double splashDmg = finalDamage * 0.5;
                             splashTarget.setNoDamageTicks(0);
                             splashTarget.damage(splashDmg);
@@ -638,6 +643,7 @@ public class RoundsEntities implements Listener {
                 if (data.shockwave > 0) {
                     for (Entity entity : living.getNearbyEntities(5.0, 5.0, 5.0)) {
                         if (entity instanceof LivingEntity shockTarget && !shockTarget.getUniqueId().equals(ownerId)) {
+                            if (shockTarget instanceof Player sp && !plugin.getGameManager().isParticipant(sp.getUniqueId())) continue;
                             Vector push = shockTarget.getLocation().toVector()
                                 .subtract(living.getLocation().toVector()).normalize().multiply(data.shockwave * 0.8);
                             push.setY(0.5);
@@ -832,6 +838,7 @@ public class RoundsEntities implements Listener {
         }
         if (event.getDamager() instanceof Player attacker) {
             event.setCancelled(true);
+            if (!plugin.getGameManager().isParticipant(attacker.getUniqueId())) return;
             if (!GunItem.consumeShotThisTick(attacker.getUniqueId()) && GunItem.isGun(attacker.getInventory().getItemInMainHand())) {
                 GunItem.getInstance().doShoot(attacker);
             }

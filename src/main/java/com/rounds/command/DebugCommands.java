@@ -120,12 +120,16 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!sender.hasPermission("rounds.admin")) {
-            sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
-            return true;
-        }
         if (args.length == 0) {
             sendHelp(sender);
+            return true;
+        }
+        if (args[0].toLowerCase().equals("join")) {
+            handleJoin(sender);
+            return true;
+        }
+        if (!sender.hasPermission("rounds.admin")) {
+            sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
             return true;
         }
         switch (args[0].toLowerCase()) {
@@ -203,6 +207,30 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             boxKv(sender, h[0], Messages.get(h[1]));
         }
         boxFooter(sender);
+    }
+
+    private void handleJoin(CommandSender sender) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player"));
+            return;
+        }
+        GameManager gm = plugin.getGameManager();
+        if (!gm.isGameStarted()) {
+            sender.sendMessage(ChatColor.RED + Messages.get("game.not-started"));
+            return;
+        }
+        GameTeam existingTeam = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (existingTeam != null) {
+            sender.sendMessage(ChatColor.GOLD + Messages.get("game.already-has-team"));
+            return;
+        }
+        GameTeam team = gm.findSmallestTeam();
+        UUID uuid = player.getUniqueId();
+        plugin.getTeamManager().joinTeam(uuid, team);
+        plugin.getPlayerDataManager().trackPlayer(uuid);
+        plugin.getPlayerDataManager().savePlayerFullData(uuid, team, null);
+        String teamName = Messages.get("team." + team.name().toLowerCase());
+        sender.sendMessage(ChatColor.GOLD + Messages.get("game.joined-team", team.getColor() + teamName));
     }
 
     // === GAME MANAGEMENT ===
@@ -728,7 +756,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
     private static final List<String> SUBCOMMANDS = Arrays.asList(
         "help", "start", "stop", "status", "rounds", "info", "test",
-        "givegun", "giveall", "cards", "giveblocks",
+        "givegun", "giveall", "cards", "giveblocks", "join",
         "stats", "setstat", "setteam", "setlanguage", "effect", "heal",
         "spawnbomb", "spawnheal", "spawntoxic", "spawnshield",
         "entities", "applycard", "resetstats", "reload",

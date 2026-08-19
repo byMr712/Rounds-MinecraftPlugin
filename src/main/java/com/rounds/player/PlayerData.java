@@ -20,7 +20,6 @@ public class PlayerData {
     public double dmgPlayer = 0;
     public double atksPlayer = 0;
     public double atkrPlayer = 0;
-    public double bouncePlayer = 0;
 
     public double dmg;
     public double atks;
@@ -208,9 +207,14 @@ public class PlayerData {
         }
         if (empower > 0 && empowerCharge > 0) {
             base *= (1.0 + empower * 0.5);
-            empowerCharge--;
         }
         return round2(base);
+    }
+
+    public void consumeEmpowerCharge() {
+        if (empower > 0 && empowerCharge > 0) {
+            empowerCharge--;
+        }
     }
 
     public double getMaxHealth() {

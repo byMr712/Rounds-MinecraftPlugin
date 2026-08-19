@@ -96,7 +96,7 @@ public class Card {
             case "auto-reload": data.autoReload = PlayerData.round2(Math.max(data.autoReload + value, 0)); break;
             case "saw": data.saw = PlayerData.round2(Math.max(data.saw + value, 0)); break;
             case "shockwave": data.shockwave = PlayerData.round2(Math.max(data.shockwave + value, 0)); break;
-            case "silence": data.silenceAura = PlayerData.round2(Math.max(data.silenceAura + value, 0)); break;
+            case "silence": data.silence = PlayerData.round2(Math.max(data.silence + value, 0)); break;
             case "sneaky": data.sneaky = PlayerData.round2(Math.max(data.sneaky + value, 0)); break;
             case "emp": data.emp = PlayerData.round2(Math.max(data.emp + value, 0)); break;
             case "overpower": data.overpower = PlayerData.round2(Math.max(data.overpower + value, 0)); break;

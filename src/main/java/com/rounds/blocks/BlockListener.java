@@ -78,6 +78,7 @@ public class BlockListener implements Listener {
 
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
+        if (event.getTo() == null) return;
         if (event.getFrom().getBlockX() == event.getTo().getBlockX()
                 && event.getFrom().getBlockY() == event.getTo().getBlockY()
                 && event.getFrom().getBlockZ() == event.getTo().getBlockZ()) return;
@@ -129,7 +130,9 @@ public class BlockListener implements Listener {
 
         String joinTeam = pdc.get(RoundsKeys.JOIN_BLOCK, PersistentDataType.STRING);
         if (joinTeam != null) {
-            joinBlocks.put(loc, GameTeam.valueOf(joinTeam));
+            try {
+                joinBlocks.put(loc, GameTeam.valueOf(joinTeam));
+            } catch (IllegalArgumentException e) { return; }
             saveBlocks();
             return;
         }
@@ -152,6 +155,7 @@ public class BlockListener implements Listener {
         int i = 0;
         for (Map.Entry<Location, GameTeam> entry : joinBlocks.entrySet()) {
             String path = "join." + i;
+            if (entry.getKey().getWorld() == null) { i++; continue; }
             config.set(path + ".world", entry.getKey().getWorld().getName());
             config.set(path + ".x", entry.getKey().getBlockX());
             config.set(path + ".y", entry.getKey().getBlockY());
@@ -162,6 +166,7 @@ public class BlockListener implements Listener {
         i = 0;
         for (Location loc : cdshootBlocks) {
             String path = "cdshoot." + i;
+            if (loc.getWorld() == null) { i++; continue; }
             config.set(path + ".world", loc.getWorld().getName());
             config.set(path + ".x", loc.getBlockX());
             config.set(path + ".y", loc.getBlockY());

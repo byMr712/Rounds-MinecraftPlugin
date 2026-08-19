@@ -220,7 +220,10 @@ public class RoundsEntities implements Listener {
         PersistentDataContainer pdc = oldArrow.getPersistentDataContainer();
         if (!pdc.has(RoundsKeys.IS_BULLET, PersistentDataType.BYTE)) return;
 
-        UUID ownerId = UUID.fromString(pdc.getOrDefault(RoundsKeys.BULLET_OWNER, PersistentDataType.STRING, ""));
+        String ownerStr = pdc.getOrDefault(RoundsKeys.BULLET_OWNER, PersistentDataType.STRING, "");
+        if (ownerStr.isEmpty()) return;
+        UUID ownerId;
+        try { ownerId = UUID.fromString(ownerStr); } catch (IllegalArgumentException e) { return; }
         double damage = pdc.getOrDefault(RoundsKeys.BULLET_DAMAGE, PersistentDataType.DOUBLE, 1.0);
         int maxBounce = pdc.getOrDefault(RoundsKeys.BULLET_BOUNCE, PersistentDataType.INTEGER, 0);
         double scale = pdc.getOrDefault(RoundsKeys.BULLET_SCALE, PersistentDataType.DOUBLE, 1.0);
@@ -350,7 +353,9 @@ public class RoundsEntities implements Listener {
                 display.setVelocity(arrow.getVelocity());
 
                 PersistentDataContainer pdc = arrow.getPersistentDataContainer();
-                UUID ownerId = UUID.fromString(pdc.getOrDefault(RoundsKeys.BULLET_OWNER, PersistentDataType.STRING, ""));
+                String ownerStr = pdc.getOrDefault(RoundsKeys.BULLET_OWNER, PersistentDataType.STRING, "");
+                UUID ownerId;
+                try { ownerId = UUID.fromString(ownerStr); } catch (IllegalArgumentException e) { display.remove(); cancel(); return; }
                 Double homingVal = pdc.get(RoundsKeys.BULLET_HOMING, PersistentDataType.DOUBLE);
                 double homingStrength = homingVal != null ? homingVal : 0.0;
                 if (homingStrength <= 0) {
@@ -520,7 +525,9 @@ public class RoundsEntities implements Listener {
         PersistentDataContainer pdc = arrow.getPersistentDataContainer();
         if (!pdc.has(RoundsKeys.IS_BULLET, PersistentDataType.BYTE)) return;
 
-        UUID ownerId = UUID.fromString(pdc.getOrDefault(RoundsKeys.BULLET_OWNER, PersistentDataType.STRING, ""));
+        String ownerStr = pdc.getOrDefault(RoundsKeys.BULLET_OWNER, PersistentDataType.STRING, "");
+        UUID ownerId;
+        try { ownerId = UUID.fromString(ownerStr); } catch (IllegalArgumentException e) { return; }
         double damage = pdc.getOrDefault(RoundsKeys.BULLET_DAMAGE, PersistentDataType.DOUBLE, 1.0);
         int maxBounce = pdc.getOrDefault(RoundsKeys.BULLET_BOUNCE, PersistentDataType.INTEGER, 0);
 
@@ -661,19 +668,25 @@ public class RoundsEntities implements Listener {
                 if (data.hpBoostOnHit > 0 && arrow.getShooter() instanceof Player hpShooter) {
                     UUID shooterUUID = hpShooter.getUniqueId();
                     if (!hpBoostBaseHP.containsKey(shooterUUID)) {
-                        double baseMaxHP = hpShooter.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
-                        hpBoostBaseHP.put(shooterUUID, baseMaxHP);
-                        double boost = baseMaxHP * data.hpBoostOnHit;
-                        double newMax = baseMaxHP + boost;
-                        hpShooter.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(newMax);
-                        hpShooter.setHealth(Math.min(hpShooter.getHealth() + boost, newMax));
-                        int taskId = Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-                            hpBoostBaseHP.remove(shooterUUID);
-                            hpBoostTasks.remove(shooterUUID);
-                            hpShooter.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(baseMaxHP);
-                            hpShooter.setHealth(Math.min(hpShooter.getHealth(), baseMaxHP));
-                        }, 40L);
-                        hpBoostTasks.put(shooterUUID, taskId);
+                        var hpAttr = hpShooter.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+                        if (hpAttr != null) {
+                            double baseMaxHP = hpAttr.getValue();
+                            hpBoostBaseHP.put(shooterUUID, baseMaxHP);
+                            double boost = baseMaxHP * data.hpBoostOnHit;
+                            double newMax = baseMaxHP + boost;
+                            hpAttr.setBaseValue(newMax);
+                            hpShooter.setHealth(Math.min(hpShooter.getHealth() + boost, newMax));
+                            int taskId = Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                                hpBoostBaseHP.remove(shooterUUID);
+                                hpBoostTasks.remove(shooterUUID);
+                                var restoreAttr = hpShooter.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+                                if (restoreAttr != null) {
+                                    restoreAttr.setBaseValue(baseMaxHP);
+                                    hpShooter.setHealth(Math.min(hpShooter.getHealth(), baseMaxHP));
+                                }
+                            }, 40L);
+                            hpBoostTasks.put(shooterUUID, taskId);
+                        }
                     }
                 }
                 if (data.silence > 0 && living instanceof Player silenceTarget) {

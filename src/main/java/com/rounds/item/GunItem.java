@@ -154,6 +154,7 @@ public class GunItem implements Listener {
                 RoundsEntities.spawnBullet(player, eyeLoc, vel, data);
             }, idx * 3L);
         }
+        data.consumeEmpowerCharge();
 
         if (data.echo > 0) {
             int echoDelay = bulletCount * 3;

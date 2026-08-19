@@ -65,13 +65,13 @@ public class CardManager {
     }
 
     public void resetAllCards() {
+        pendingPicks.clear();
+        pendingCards.clear();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
-            pendingCards.remove(p.getUniqueId());
             PlayerData data = plugin.getPlayerDataManager().getData(p);
             data.resetAllCards();
             data.resetStats();
         }
-        pendingPicks.clear();
     }
 
     public boolean allPicksDone() {
@@ -113,6 +113,7 @@ public class CardManager {
 
     public void clearPendingPicks() {
         pendingPicks.clear();
+        pendingCards.clear();
     }
 
     public void removePendingPick(UUID uuid) {
@@ -133,8 +134,8 @@ public class CardManager {
         var attr = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
         if (attr != null) {
             attr.setBaseValue(maxHP);
+            player.setHealth(Math.min(player.getHealth(), maxHP));
         }
-        player.setHealth(maxHP);
     }
 
     public void reload() {

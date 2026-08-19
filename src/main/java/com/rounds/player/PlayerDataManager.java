@@ -338,7 +338,7 @@ public class PlayerDataManager implements Listener {
     }
 
     public PlayerData getData(UUID uuid) {
-        return cache.computeIfAbsent(uuid, uuid2 -> new PlayerData());
+        return cache.computeIfAbsent(uuid, u -> new PlayerData());
     }
 
     @EventHandler
@@ -449,7 +449,7 @@ public class PlayerDataManager implements Listener {
         setStat(pdc, "atks", data.atks);
         setStat(pdc, "atk-speed", data.atkSpeed);
         setStat(pdc, "atkr", data.atkr);
-        setStat(pdc, "bounce", data.bouncePlayer);
+        setStat(pdc, "bounce", data.bouncePl);
         setStat(pdc, "ammo", data.ammo);
         setStat(pdc, "bullets", data.bullets);
         setStat(pdc, "cold", data.cold);
@@ -501,7 +501,7 @@ public class PlayerDataManager implements Listener {
         data.atks = getStat(pdc, "atks", 20);
         data.atkSpeed = getStat(pdc, "atk-speed", 0);
         data.atkr = getStat(pdc, "atkr", 0);
-        data.bouncePlayer = getStat(pdc, "bounce", 0);
+        data.bouncePl = getStat(pdc, "bounce", 0);
         data.ammo = getStat(pdc, "ammo", 1);
         data.bullets = getStat(pdc, "bullets", 1);
         data.cold = getStat(pdc, "cold", 0);
@@ -547,7 +547,9 @@ public class PlayerDataManager implements Listener {
     }
 
     private void setStat(PersistentDataContainer pdc, String name, double value) {
-        pdc.set(STAT_KEYS.get(name), PersistentDataType.DOUBLE, value);
+        NamespacedKey key = STAT_KEYS.get(name);
+        if (key == null) return;
+        pdc.set(key, PersistentDataType.DOUBLE, value);
     }
 
     private double getStat(PersistentDataContainer pdc, String name, double def) {

@@ -61,8 +61,8 @@ public class GameStateManager {
 
         if (state == GameState.WAITING) return null;
 
-        double currentRound = yml.getDouble("current-round", 0);
-        double roundsToWin = yml.getDouble("rounds-to-win", 5);
+        int currentRound = (int) yml.getDouble("current-round", 0);
+        int roundsToWin = (int) yml.getDouble("rounds-to-win", 5);
 
         String loserStr = yml.getString("last-loser");
         GameTeam lastLoser = null;
@@ -94,13 +94,13 @@ public class GameStateManager {
 
     public static class SavedState {
         public final GameState state;
-        public final double currentRound;
-        public final double roundsToWin;
+        public final int currentRound;
+        public final int roundsToWin;
         public final GameTeam lastLoser;
         public final Set<UUID> deadPlayers;
         public final Map<GameTeam, Integer> wins;
 
-        public SavedState(GameState state, double currentRound, double roundsToWin,
+        public SavedState(GameState state, int currentRound, int roundsToWin,
                           GameTeam lastLoser, Set<UUID> deadPlayers, Map<GameTeam, Integer> wins) {
             this.state = state;
             this.currentRound = currentRound;

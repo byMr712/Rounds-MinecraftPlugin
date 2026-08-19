@@ -1,5 +1,6 @@
 package com.rounds.game;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Objects;
@@ -44,8 +45,8 @@ public class GameManager implements Listener {
 
     private final RoundsPlugin plugin;
     private GameState state = GameState.WAITING;
-    private double roundsToWin;
-    private double currentRound = 0;
+    private int roundsToWin;
+    private int currentRound = 0;
     private double musicTick = 0;
     private int tickTaskId = -1;
     private final Set<UUID> deadPlayers = new HashSet<>();
@@ -54,6 +55,7 @@ public class GameManager implements Listener {
     private GameTeam lastLoser = null;
     private final GameStateManager stateManager;
     private boolean wheelEnabled = false;
+    private final Set<Integer> scheduledTaskIds = new HashSet<>();
 
     public GameManager(RoundsPlugin plugin) {
         this.plugin = plugin;
@@ -63,6 +65,24 @@ public class GameManager implements Listener {
 
     public boolean isWheelEnabled() { return wheelEnabled; }
     public void setWheelEnabled(boolean enabled) { this.wheelEnabled = enabled; }
+
+    private void cancelScheduledTasks() {
+        for (int id : scheduledTaskIds) {
+            Bukkit.getScheduler().cancelTask(id);
+        }
+        scheduledTaskIds.clear();
+    }
+
+    private int scheduleDelayed(Runnable runnable, long delay) {
+        final int[] idHolder = {-1};
+        int id = Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+            scheduledTaskIds.remove(idHolder[0]);
+            runnable.run();
+        }, delay);
+        idHolder[0] = id;
+        scheduledTaskIds.add(id);
+        return id;
+    }
 
     public void startGame() {
         List<Player> readyPlayers = getReadyPlayers();
@@ -91,7 +111,7 @@ public class GameManager implements Listener {
         lastSilenceAuraTime.clear();
 
         plugin.getServer().broadcastMessage(ChatColor.GREEN + Messages.get("game.started"));
-        plugin.getServer().broadcastMessage(ChatColor.GOLD + Messages.get("game.rounds-to-win", (int) roundsToWin));
+        plugin.getServer().broadcastMessage(ChatColor.GOLD + Messages.get("game.rounds-to-win", roundsToWin));
 
         saveState();
         initScoreboard();
@@ -137,12 +157,11 @@ public class GameManager implements Listener {
         var attr = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
         if (attr != null) {
             attr.setBaseValue(maxHP);
+            player.setHealth(Math.min(player.getHealth(), maxHP));
         }
-        player.setHealth(maxHP);
     }
 
     private void applyRoundEffects(Player player) {
-        PlayerData data = plugin.getPlayerDataManager().getData(player);
     }
 
     private void applyPeriodicEffects() {
@@ -282,7 +301,8 @@ public class GameManager implements Listener {
         Phantom phantom = summoner.getWorld().spawn(spawnLoc, Phantom.class, p -> {
             p.setCustomName(ChatColor.DARK_PURPLE + "Тёмный фантом");
             p.setCustomNameVisible(true);
-            p.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(10);
+            var attr = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+            if (attr != null) attr.setBaseValue(10);
             p.setHealth(10);
         });
 
@@ -391,7 +411,7 @@ public class GameManager implements Listener {
         saveState();
         GunItem.resetRoundState();
 
-        plugin.getServer().broadcastMessage(ChatColor.YELLOW + Messages.get("game.round-start", (int) currentRound));
+        plugin.getServer().broadcastMessage(ChatColor.YELLOW + Messages.get("game.round-start", currentRound));
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
@@ -439,25 +459,6 @@ public class GameManager implements Listener {
         if (aliveTeams.size() == 1 && plugin.getTeamManager().getTotalReadyPlayers() > 1) {
             GameTeam winner = aliveTeams.iterator().next();
             endRound(winner);
-        } else if (aliveTeams.isEmpty()) {
-            state = GameState.ROUND_END;
-            lastLoser = null;
-            saveState();
-            plugin.getServer().broadcastMessage(ChatColor.RED + Messages.get("game.draw"));
-            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-                state = GameState.CARDS;
-                saveState();
-                musicTick = 0;
-                for (Player p : plugin.getServer().getOnlinePlayers()) {
-                    if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) != null) {
-                        p.setInvulnerable(true);
-                        p.setFoodLevel(20);
-                        p.setSaturation(5.0f);
-                        p.setExhaustion(0f);
-                    }
-                }
-                openCardGUIsDraw();
-            }, 60L);
         }
     }
 
@@ -495,7 +496,7 @@ public class GameManager implements Listener {
             }
         }
 
-        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+        scheduleDelayed(() -> {
             state = GameState.CARDS;
             saveState();
             musicTick = 0;
@@ -534,7 +535,7 @@ public class GameManager implements Listener {
             }
         }
 
-        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+        scheduleDelayed(() -> {
             state = GameState.WAITING;
             saveState();
             removeScoreboard();
@@ -546,7 +547,7 @@ public class GameManager implements Listener {
                 p.getInventory().clear();
                 var attr = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
                 if (attr != null) attr.setBaseValue(20);
-                p.setHealth(20);
+                p.setHealth(Math.min(p.getHealth(), 20));
                 p.setFoodLevel(20);
                 p.setInvulnerable(false);
                 p.setNoDamageTicks(0);
@@ -598,7 +599,8 @@ public class GameManager implements Listener {
         }
     }
 
-    private void resetWins() { plugin.getTeamManager().resetWins(); currentRound = 0; }
+    private void resetWins() {         plugin.getTeamManager().resetWins();
+        currentRound = 0; }
     private void resetAllCards() { plugin.getCardManager().resetAllCards(); }
 
     public String getScoreDisplay() {
@@ -643,9 +645,11 @@ public class GameManager implements Listener {
             dead.getWorld().createExplosion(dead.getLocation(), 3.0f, false, false);
             for (Entity entity : dead.getNearbyEntities(4.0, 4.0, 4.0)) {
                 if (entity instanceof LivingEntity target && !target.getUniqueId().equals(dead.getUniqueId())) {
-                    double dist = target.getLocation().distance(dead.getLocation());
-                    double dmg = Math.max(0, 8.0 * (1.0 - dist / 4.0));
-                    if (dmg > 0) target.damage(dmg);
+                    try {
+                        double dist = target.getLocation().distance(dead.getLocation());
+                        double dmg = Math.max(0, 8.0 * (1.0 - dist / 4.0));
+                        if (dmg > 0) target.damage(dmg);
+                    } catch (IllegalArgumentException ignored) {}
                 }
             }
             dead.getWorld().playSound(dead.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 0.8f);
@@ -688,6 +692,8 @@ public class GameManager implements Listener {
                     plugin.getCardManager().openCardSelection(player, team);
                 }
                 player.setInvulnerable(true);
+            } else if (state == GameState.ROUND_END) {
+                player.setInvulnerable(true);
             }
             player.setGameMode(GameMode.SURVIVAL);
             player.setFoodLevel(20);
@@ -701,6 +707,7 @@ public class GameManager implements Listener {
     public void stopGame() {
         if (state == GameState.WAITING) return;
         stopGameTick();
+        cancelScheduledTasks();
         plugin.getCardManager().clearPendingPicks();
         plugin.getCardManager().resetAllCards();
         GunItem.resetRoundState();
@@ -714,7 +721,7 @@ public class GameManager implements Listener {
             p.getInventory().clear();
             var attr = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
             if (attr != null) attr.setBaseValue(20);
-            p.setHealth(20);
+            p.setHealth(Math.min(p.getHealth(), 20));
             p.setFoodLevel(20);
             p.setInvulnerable(false);
             p.setNoDamageTicks(0);
@@ -731,13 +738,13 @@ public class GameManager implements Listener {
     }
 
     public GameState getState() { return state; }
-    public double getRounds() { return roundsToWin; }
-    public void setRounds(double rounds) { this.roundsToWin = rounds; }
+    public int getRounds() { return roundsToWin; }
+    public void setRounds(int rounds) { this.roundsToWin = rounds; }
     public double getCurrentRound() { return currentRound; }
     public boolean isGameStarted() { return state != GameState.WAITING; }
     public void addDeadPlayer(UUID uuid) { deadPlayers.add(uuid); }
     public GameTeam getLastLoser() { return lastLoser; }
-    public Set<UUID> getDeadPlayers() { return deadPlayers; }
+    public Set<UUID> getDeadPlayers() { return Collections.unmodifiableSet(deadPlayers); }
     public GameStateManager getStateManager() { return stateManager; }
 
     private void saveState() {
@@ -764,7 +771,7 @@ public class GameManager implements Listener {
             }
         }
 
-        plugin.getLogger().info("Restored game state: " + state.name() + " round " + (int) currentRound);
+        plugin.getLogger().info("Restored game state: " + state.name() + " round " + currentRound);
 
         initScoreboard();
         startGameTick();
@@ -828,7 +835,7 @@ public class GameManager implements Listener {
         }
 
         objective.getScore(" ").setScore(line--);
-        objective.getScore(ChatColor.YELLOW + Messages.get("sb.round") + ": " + ChatColor.WHITE + (int) currentRound + "/" + (int) roundsToWin).setScore(line);
+        objective.getScore(ChatColor.YELLOW + Messages.get("sb.round") + ": " + ChatColor.WHITE + currentRound + "/" + roundsToWin).setScore(line);
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             p.setScoreboard(scoreboard);

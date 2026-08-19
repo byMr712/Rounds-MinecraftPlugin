@@ -225,7 +225,6 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     private void handleStop(CommandSender sender) {
         GameManager gm = plugin.getGameManager();
         gm.stopGame();
-        plugin.getCardManager().resetAllCards();
         plugin.getTeamManager().clearAll();
         plugin.getPlayerDataManager().clearActivePlayers();
         gm.getStateManager().clear();
@@ -247,7 +246,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             double amount = Double.parseDouble(args[1]);
             int max = plugin.getRoundsConfig().getMaxRounds();
             if (amount < 1 || amount > max) { sender.sendMessage(ChatColor.RED + Messages.get("command.amount-between", max)); return; }
-            plugin.getGameManager().setRounds(amount);
+            plugin.getGameManager().setRounds((int) amount);
             Bukkit.broadcastMessage(ChatColor.GOLD + Messages.get("command.rounds-set", String.format("%.0f", amount)));
         } catch (NumberFormatException e) {
             sender.sendMessage(ChatColor.RED + Messages.get("command.invalid-number", args[1]));
@@ -434,7 +433,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "atks" -> data.atks = value;
             case "atk_speed" -> data.atkSpeed = value;
             case "atkr" -> data.atkr = value;
-            case "bounce" -> { data.bouncePl = value; data.bouncePlayer = value; }
+            case "bounce" -> data.bouncePl = value;
             case "ammo" -> data.ammo = value;
             case "bullets" -> data.bullets = value;
             case "cold" -> data.cold = value;
@@ -530,7 +529,8 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
     private void handleHeal(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
-        double maxHP = player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
+        var attr = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+        double maxHP = attr != null ? attr.getValue() : 20;
         player.setHealth(maxHP);
         sender.sendMessage(ChatColor.GREEN + Messages.get("debug.healed", maxHP));
     }

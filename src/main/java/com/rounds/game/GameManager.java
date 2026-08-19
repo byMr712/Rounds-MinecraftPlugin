@@ -63,6 +63,7 @@ public class GameManager implements Listener {
     private final Set<UUID> pendingCardJoiners = new HashSet<>();
     private final Map<GameRule<?>, Object> savedGameRules = new HashMap<>();
     private final Map<GameTeam, Location> teamSpawns = new HashMap<>();
+    private Location currentZoneCenter = null;
 
     public GameManager(RoundsPlugin plugin) {
         this.plugin = plugin;
@@ -156,8 +157,10 @@ public class GameManager implements Listener {
         teamSpawns.clear();
         teamSpawns.putAll(spawnAssignment);
 
+        applyDarkness();
+
         new BukkitRunnable() {
-            int count = 5;
+            int count = 3;
 
             @Override
             public void run() {
@@ -168,6 +171,7 @@ public class GameManager implements Listener {
                 }
 
                 plugin.getServer().broadcastMessage(ChatColor.YELLOW + "" + count);
+                applyDarkness();
 
                 for (Player p : readyPlayers) {
                     p.setGameMode(GameMode.SPECTATOR);
@@ -187,6 +191,8 @@ public class GameManager implements Listener {
         currentRound = 0;
 
         pickRandomZoneAndAssignSpawns();
+
+        removeDarkness();
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             p.setGameMode(GameMode.SPECTATOR);
@@ -514,6 +520,8 @@ public class GameManager implements Listener {
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             if (team != null) {
+                Location spawn = teamSpawns.get(team);
+                if (spawn != null) p.teleport(spawn);
                 p.getInventory().clear();
                 giveGun(p);
                 clearCardEffects(p);
@@ -527,6 +535,7 @@ public class GameManager implements Listener {
                 p.setInvulnerable(false);
                 p.setNoDamageTicks(0);
             } else {
+                if (currentZoneCenter != null) p.teleport(currentZoneCenter);
                 p.setPlayerListName(p.getName());
                 p.setGameMode(GameMode.SPECTATOR);
                 p.setInvulnerable(true);
@@ -542,6 +551,7 @@ public class GameManager implements Listener {
         if (zones.isEmpty()) return;
 
         int chosen = new Random().nextInt(zones.size());
+        currentZoneCenter = zones.get(chosen).center.clone();
 
         List<Location> spawns = bs.getSpawnBlocksInZone(zones.get(chosen));
         Set<GameTeam> teams = new HashSet<>();
@@ -624,6 +634,7 @@ public class GameManager implements Listener {
             musicTick = 0;
             plugin.getCardManager().clearPendingPicks();
             pickRandomZoneAndAssignSpawns();
+            applyDarkness();
             for (Player p : plugin.getServer().getOnlinePlayers()) {
                 GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
                 if (team != null) {
@@ -633,6 +644,8 @@ public class GameManager implements Listener {
                     p.setFoodLevel(20);
                     p.setSaturation(5.0f);
                     p.setExhaustion(0f);
+                } else {
+                    if (currentZoneCenter != null) p.teleport(currentZoneCenter);
                 }
             }
             openCardGUIs();
@@ -687,6 +700,7 @@ public class GameManager implements Listener {
     }
 
     private void openCardGUIs() {
+        removeDarkness();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             p.setGameMode(GameMode.SPECTATOR);
             p.setInvulnerable(true);
@@ -730,6 +744,19 @@ public class GameManager implements Listener {
     public void clearCardEffects(Player player) {
         for (PotionEffectType type : PotionEffectType.values()) {
             player.removePotionEffect(type);
+        }
+    }
+
+    private void applyDarkness() {
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            p.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                PotionEffectType.DARKNESS, 200, 0, false, false, false));
+        }
+    }
+
+    private void removeDarkness() {
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            p.removePotionEffect(PotionEffectType.DARKNESS);
         }
     }
 
@@ -922,6 +949,7 @@ public class GameManager implements Listener {
         GunItem.resetRoundState();
         RoundsEntities.clearAllState();
         restoreGameRules();
+        removeDarkness();
         teamSpawns.clear();
         resetWins();
         deadPlayers.clear();
@@ -962,6 +990,7 @@ public class GameManager implements Listener {
     }
 
     public GameState getState() { return state; }
+    public Map<GameTeam, Location> getTeamSpawns() { return teamSpawns; }
     public int getRounds() { return roundsToWin; }
     public void setRounds(int rounds) { this.roundsToWin = rounds; }
     public double getCurrentRound() { return currentRound; }
@@ -1015,12 +1044,49 @@ public class GameManager implements Listener {
         } else {
             player.setPlayerListName(player.getName());
         }
+        refreshTeamScoreboards();
     }
 
     public void resetAllNameColors() {
         if (!plugin.getRoundsConfig().isColorNicknames()) return;
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             p.setPlayerListName(p.getName());
+        }
+        Scoreboard mainSb = Bukkit.getScoreboardManager().getMainScoreboard();
+        for (GameTeam gt : GameTeam.values()) {
+            org.bukkit.scoreboard.Team team = mainSb.getTeam("rounds_" + gt.name().toLowerCase());
+            if (team != null) team.unregister();
+        }
+    }
+
+    private void refreshTeamScoreboards() {
+        if (!plugin.getRoundsConfig().isColorNicknames()) return;
+        Scoreboard mainSb = Bukkit.getScoreboardManager().getMainScoreboard();
+        for (GameTeam gt : GameTeam.values()) {
+            String teamName = "rounds_" + gt.name().toLowerCase();
+            org.bukkit.scoreboard.Team team = mainSb.getTeam(teamName);
+            if (team == null) {
+                team = mainSb.registerNewTeam(teamName);
+            }
+            team.setColor(gt.getColor());
+            team.setPrefix(gt.getColor().toString());
+            team.setOption(org.bukkit.scoreboard.Team.Option.NAME_TAG_VISIBILITY, org.bukkit.scoreboard.Team.OptionStatus.ALWAYS);
+        }
+        org.bukkit.scoreboard.Team noTeam = mainSb.getTeam("rounds_noteam");
+        if (noTeam != null) noTeam.unregister();
+
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            GameTeam pTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+            String teamName = pTeam != null ? "rounds_" + pTeam.name().toLowerCase() : null;
+            for (org.bukkit.scoreboard.Team t : mainSb.getTeams()) {
+                if (t.getName().startsWith("rounds_")) {
+                    t.removePlayer(p);
+                }
+            }
+            if (teamName != null) {
+                org.bukkit.scoreboard.Team target = mainSb.getTeam(teamName);
+                if (target != null) target.addPlayer(p);
+            }
         }
     }
 

@@ -29,6 +29,9 @@ public final class RoundsConfig {
     private boolean grDisableWeather;
     private boolean grDisableMobSpawning;
 
+    private double jumpBlockDamagePercent;
+    private double jumpBlockLaunchHeight;
+
     public RoundsConfig(RoundsPlugin plugin) {
         this.plugin = plugin;
         reload();
@@ -62,6 +65,10 @@ public final class RoundsConfig {
         grDisableWeather = c.getBoolean(gr + "disable-weather", true);
         grDisableMobSpawning = c.getBoolean(gr + "disable-mob-spawning", true);
 
+        String jb = "jump-block.";
+        jumpBlockDamagePercent = c.getDouble(jb + "damage-percent", 20.0);
+        jumpBlockLaunchHeight = c.getDouble(jb + "launch-height", 10.0);
+
         DefaultStats ds = new DefaultStats();
         ds.dmg = c.getDouble("defaults.damage", 3.0);
         ds.atks = c.getDouble("defaults.attack-speed", 20);
@@ -93,6 +100,8 @@ public final class RoundsConfig {
     public boolean isGrFreezeTime() { return grFreezeTime; }
     public boolean isGrDisableWeather() { return grDisableWeather; }
     public boolean isGrDisableMobSpawning() { return grDisableMobSpawning; }
+    public double getJumpBlockDamagePercent() { return jumpBlockDamagePercent; }
+    public double getJumpBlockLaunchHeight() { return jumpBlockLaunchHeight; }
 
     public void setBuiltinScoreboard(boolean enabled) {
         this.builtinScoreboard = enabled;

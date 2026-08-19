@@ -170,6 +170,10 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "killround" -> handleKillRound(sender);
             case "iteminfo" -> handleItemInfo(sender);
             case "giveblocks" -> handleBlocks(sender, args);
+            case "setlobby" -> handleSetLobby(sender);
+            case "jumppos1" -> handleJumpPos(sender, 1);
+            case "jumppos2" -> handleJumpPos(sender, 2);
+            case "jumpset" -> handleJumpSet(sender);
             case "wheel" -> handleWheel(sender, args);
             case "tab" -> handleTab(sender, args);
             case "placeholders" -> handlePlaceholders(sender);
@@ -191,6 +195,8 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
         boxSection(sender, "MAP BLOCKS");
         boxKv(sender, "/rdebug giveblocks", Messages.get("debug.help-giveblocks"));
+        boxKv(sender, "/rdebug setlobby", "Установить блок лобби на вашей позиции");
+        boxKv(sender, "/rdebug jumppos1/pos2/set", "Заполнить область jump-блоками");
 
         boxSection(sender, "CARDS");
         boxKv(sender, "/rdebug cards", Messages.get("debug.help-cards"));
@@ -290,13 +296,10 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             plugin.getCardManager().openCardSelection(player, finalTeam);
             player.setInvulnerable(true);
         } else if (gm.getState() == GameManager.GameState.PLAYING) {
-            player.getInventory().clear();
-            player.getInventory().setItemInMainHand(com.rounds.item.GunItem.createGunItem());
-            plugin.getGameManager().applyPlayerHP(player);
-            player.setGameMode(GameMode.SURVIVAL);
-            player.setFoodLevel(20);
-            player.setSaturation(5.0f);
-            player.setExhaustion(0f);
+            player.setGameMode(GameMode.SPECTATOR);
+            player.setInvulnerable(true);
+            Location spawn = gm.getTeamSpawns().get(finalTeam);
+            if (spawn != null) player.teleport(spawn);
         }
 
         String teamName = Messages.get("team." + finalTeam.name().toLowerCase());
@@ -330,6 +333,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         plugin.getTeamManager().clearAll();
         plugin.getPlayerDataManager().clearActivePlayers();
         gm.getStateManager().clear();
+        org.bukkit.Location lobbyLoc = plugin.getBlockListener().getBlockStorage().getLobbyBlock();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             p.getInventory().clear();
             var attr = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
@@ -338,8 +342,47 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             p.setFoodLevel(20);
             p.setGameMode(GameMode.ADVENTURE);
             gm.clearCardEffects(p);
+            if (lobbyLoc != null) {
+                p.teleport(lobbyLoc.clone().add(0, 1, 0));
+            }
         }
         sender.sendMessage(ChatColor.YELLOW + Messages.get("command.game-stopped"));
+    }
+
+    private void handleSetLobby(CommandSender sender) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player"));
+            return;
+        }
+        org.bukkit.Location loc = player.getLocation().getBlock().getLocation();
+        plugin.getBlockListener().getBlockStorage().setLobbyBlock(loc);
+        sender.sendMessage(ChatColor.GREEN + "Блок лобби установлен на " +
+            String.format("(%d, %d, %d)", loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
+    }
+
+    private void handleJumpPos(CommandSender sender, int posNum) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player"));
+            return;
+        }
+        org.bukkit.Location pos = player.getLocation().getBlock().getLocation().subtract(0, 1, 0);
+        if (posNum == 1) {
+            plugin.getBlockListener().setJumpPos1(pos);
+        } else {
+            plugin.getBlockListener().setJumpPos2(pos);
+        }
+        sender.sendMessage(ChatColor.GREEN + "Jump pos" + posNum + " установлен на " +
+            String.format("(%d, %d, %d)", pos.getBlockX(), pos.getBlockY(), pos.getBlockZ()));
+    }
+
+    private void handleJumpSet(CommandSender sender) {
+        com.rounds.blocks.BlockListener bl = plugin.getBlockListener();
+        if (bl.getJumpPos1() == null || bl.getJumpPos2() == null) {
+            sender.sendMessage(ChatColor.RED + "Сначала установи jumppos1 и jumppos2");
+            return;
+        }
+        Set<org.bukkit.Location> filled = bl.fillJumpBlocks();
+        sender.sendMessage(ChatColor.GREEN + "Установлено " + filled.size() + " jump-блоков");
     }
 
     private void handleRounds(CommandSender sender, String[] args) {
@@ -860,7 +903,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         "stats", "setstat", "setteam", "setlanguage", "effect", "heal",
         "spawnbomb", "spawnheal", "spawntoxic", "spawnshield",
         "entities", "applycard", "resetstats", "reload",
-        "version", "killround", "iteminfo", "wheel", "tab"
+        "version", "killround", "iteminfo", "setlobby", "jumppos1", "jumppos2", "jumpset", "wheel", "tab"
     );
     private static final List<String> TEAM_COLORS = Arrays.asList("BLUE", "RED", "YELLOW", "GREEN");
 

@@ -37,8 +37,11 @@ public class BlockListener implements Listener {
 
     private final Map<Location, GameTeam> joinBlocks = new HashMap<>();
     private final Set<Location> cdshootBlocks = new HashSet<>();
-
+    private final Set<Location> jumpBlocks = new HashSet<>();
     private final Set<UUID> stepCooldown = new HashSet<>();
+
+    private Location jumpPos1;
+    private Location jumpPos2;
 
     public BlockListener(RoundsPlugin plugin) {
         this.plugin = plugin;
@@ -52,6 +55,36 @@ public class BlockListener implements Listener {
     }
 
     public BlockStorage getBlockStorage() { return blockStorage; }
+
+    public Location getJumpPos1() { return jumpPos1; }
+    public Location getJumpPos2() { return jumpPos2; }
+    public void setJumpPos1(Location loc) { jumpPos1 = loc.clone(); }
+    public void setJumpPos2(Location loc) { jumpPos2 = loc.clone(); }
+
+    public Set<Location> fillJumpBlocks() {
+        Set<Location> filled = new HashSet<>();
+        if (jumpPos1 == null || jumpPos2 == null) return filled;
+        World world = jumpPos1.getWorld();
+        if (world == null || jumpPos2.getWorld() != world) return filled;
+        int x1 = Math.min(jumpPos1.getBlockX(), jumpPos2.getBlockX());
+        int y1 = Math.min(jumpPos1.getBlockY(), jumpPos2.getBlockY());
+        int z1 = Math.min(jumpPos1.getBlockZ(), jumpPos2.getBlockZ());
+        int x2 = Math.max(jumpPos1.getBlockX(), jumpPos2.getBlockX());
+        int y2 = Math.max(jumpPos1.getBlockY(), jumpPos2.getBlockY());
+        int z2 = Math.max(jumpPos1.getBlockZ(), jumpPos2.getBlockZ());
+        for (int x = x1; x <= x2; x++) {
+            for (int y = y1; y <= y2; y++) {
+                for (int z = z1; z <= z2; z++) {
+                    Location loc = new Location(world, x, y, z);
+                    loc.getBlock().setType(Material.COAL_BLOCK);
+                    jumpBlocks.add(loc);
+                    filled.add(loc);
+                }
+            }
+        }
+        saveBlocks();
+        return filled;
+    }
 
     public static ItemStack createJoinBlock(GameTeam team) {
         Material mat = TEAM_BLOCK_COLORS.getOrDefault(team, Material.WHITE_WOOL);
@@ -109,6 +142,15 @@ public class BlockListener implements Listener {
         return item;
     }
 
+    public static ItemStack createJumpBlock() {
+        ItemStack item = new ItemStack(Material.COAL_BLOCK);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName(ChatColor.YELLOW + "Блок прыжка");
+        meta.getPersistentDataContainer().set(RoundsKeys.JUMP_BLOCK, PersistentDataType.BYTE, (byte) 1);
+        item.setItemMeta(meta);
+        return item;
+    }
+
     public static void giveAllBlocks(Player player) {
         for (GameTeam team : GameTeam.values()) {
             addItem64(player, createJoinBlock(team));
@@ -118,6 +160,7 @@ public class BlockListener implements Listener {
         addItem64(player, createMapBlock50());
         addItem64(player, createMapBlock100());
         addItem64(player, createSpawnBlock());
+        addItem64(player, createJumpBlock());
     }
 
     private static void addItem64(Player player, ItemStack item) {
@@ -168,6 +211,18 @@ public class BlockListener implements Listener {
             }
             plugin.getGameManager().startGame();
         }
+
+        if (jumpBlocks.contains(loc)) {
+            if (stepCooldown.contains(player.getUniqueId())) return;
+            stepCooldown.add(player.getUniqueId());
+            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> stepCooldown.remove(player.getUniqueId()), 10L);
+            double maxHp = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue();
+            double damage = maxHp * plugin.getRoundsConfig().getJumpBlockDamagePercent() / 100.0;
+            player.damage(damage);
+            double launchHeight = plugin.getRoundsConfig().getJumpBlockLaunchHeight();
+            player.setVelocity(new org.bukkit.util.Vector(0, launchHeight * 0.2, 0));
+            player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.5f);
+        }
     }
 
     @EventHandler
@@ -214,6 +269,12 @@ public class BlockListener implements Listener {
             placer.sendMessage(ChatColor.GREEN + "Блок спавна установлен");
             return;
         }
+        if (pdc.has(RoundsKeys.JUMP_BLOCK, PersistentDataType.BYTE)) {
+            jumpBlocks.add(loc);
+            placer.sendMessage(ChatColor.GREEN + "Блок прыжка установлен");
+            saveBlocks();
+            return;
+        }
     }
 
     @EventHandler
@@ -221,6 +282,7 @@ public class BlockListener implements Listener {
         Location loc = event.getBlock().getLocation();
         boolean removed = joinBlocks.remove(loc) != null;
         removed |= cdshootBlocks.remove(loc);
+        removed |= jumpBlocks.remove(loc);
         if (blockStorage.getLobbyBlock() != null && blockStorage.getLobbyBlock().equals(loc)) {
             blockStorage.setLobbyBlock(null);
             removed = true;
@@ -246,6 +308,16 @@ public class BlockListener implements Listener {
         i = 0;
         for (Location loc : cdshootBlocks) {
             String path = "cdshoot." + i;
+            if (loc.getWorld() == null) { i++; continue; }
+            config.set(path + ".world", loc.getWorld().getName());
+            config.set(path + ".x", loc.getBlockX());
+            config.set(path + ".y", loc.getBlockY());
+            config.set(path + ".z", loc.getBlockZ());
+            i++;
+        }
+        i = 0;
+        for (Location loc : jumpBlocks) {
+            String path = "jump." + i;
             if (loc.getWorld() == null) { i++; continue; }
             config.set(path + ".world", loc.getWorld().getName());
             config.set(path + ".x", loc.getBlockX());
@@ -283,6 +355,7 @@ public class BlockListener implements Listener {
         }
 
         loadLocationSet(config, "cdshoot", cdshootBlocks);
+        loadLocationSet(config, "jump", jumpBlocks);
     }
 
     private void loadLocationSet(YamlConfiguration config, String sectionName, Set<Location> set) {

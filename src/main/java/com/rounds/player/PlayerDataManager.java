@@ -356,6 +356,8 @@ public class PlayerDataManager implements Listener {
                 }
                 applySavedData(uuid, saved);
 
+                GameManager.GameState gameState = plugin.getGameManager().getState();
+
                 if (!saved.pendingCardIds.isEmpty()) {
                     player.setInvulnerable(true);
                     player.setFoodLevel(20);
@@ -364,7 +366,7 @@ public class PlayerDataManager implements Listener {
                     Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                         plugin.getCardManager().restorePendingPick(uuid, saved.pendingCardIds);
                     }, 5L);
-                } else if (plugin.getGameManager().getState() == GameManager.GameState.PLAYING) {
+                } else if (gameState == GameManager.GameState.PLAYING) {
                     Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                         giveGunPlayer(player);
                         applyHP(player);
@@ -373,6 +375,19 @@ public class PlayerDataManager implements Listener {
                         player.setSaturation(5.0f);
                         player.setExhaustion(0f);
                     }, 5L);
+                } else if (gameState == GameManager.GameState.CARDS
+                        || gameState == GameManager.GameState.ROUND_END) {
+                    com.rounds.teams.TeamManager.GameTeam team = plugin.getTeamManager().getPlayerTeam(uuid);
+                    com.rounds.game.GameManager gm = plugin.getGameManager();
+                    if (team != null && (gm.getLastLoser() == null || team == gm.getLastLoser())) {
+                        player.setInvulnerable(true);
+                        player.setFoodLevel(20);
+                        player.setSaturation(5.0f);
+                        player.setExhaustion(0f);
+                        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                            plugin.getCardManager().openCardSelection(player, team);
+                        }, 5L);
+                    }
                 }
             }
         }

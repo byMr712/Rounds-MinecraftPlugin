@@ -745,6 +745,7 @@ public class GameManager implements Listener {
         plugin.getCardManager().resetAllCards();
         GunItem.resetRoundState();
         RoundsEntities.clearAllState();
+        plugin.getPlayerDataManager().clearActivePlayers();
         for (World world : Bukkit.getWorlds()) world.setGameRule(GameRule.NATURAL_REGENERATION, true);
         state = GameState.WAITING;
         saveState();

@@ -6,6 +6,7 @@ import com.rounds.entity.RoundsEntities;
 import com.rounds.game.GameManager;
 import com.rounds.item.GunItem;
 import com.rounds.player.PlayerData;
+import com.rounds.player.PlayerDataManager;
 import com.rounds.teams.TeamManager;
 import com.rounds.teams.TeamManager.GameTeam;
 import com.rounds.util.Messages;
@@ -224,13 +225,34 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage(ChatColor.GOLD + Messages.get("game.already-has-team"));
             return;
         }
-        GameTeam team = gm.findSmallestTeam();
+
         UUID uuid = player.getUniqueId();
-        plugin.getTeamManager().joinTeam(uuid, team);
-        plugin.getPlayerDataManager().trackPlayer(uuid);
-        plugin.getPlayerDataManager().savePlayerFullData(uuid, team, null);
-        String teamName = Messages.get("team." + team.name().toLowerCase());
-        sender.sendMessage(ChatColor.GOLD + Messages.get("game.joined-team", team.getColor() + teamName));
+        boolean returning = plugin.getPlayerDataManager().isActive(uuid);
+        GameTeam team = gm.findSmallestTeam();
+
+        if (returning) {
+            PlayerDataManager.SavedPlayerData saved = plugin.getPlayerDataManager().loadPlayerFullData(uuid);
+            if (saved != null) {
+                plugin.getTeamManager().joinTeam(uuid, saved.team != null ? saved.team : team);
+                plugin.getPlayerDataManager().applySavedData(uuid, saved);
+            } else {
+                plugin.getTeamManager().joinTeam(uuid, team);
+            }
+            plugin.getPlayerDataManager().removeActivePlayer(uuid);
+            plugin.getPlayerDataManager().removePlayerData(uuid);
+        } else {
+            plugin.getTeamManager().joinTeam(uuid, team);
+            plugin.getPlayerDataManager().trackPlayer(uuid);
+            plugin.getPlayerDataManager().savePlayerFullData(uuid, team, null);
+        }
+
+        GameTeam finalTeam = plugin.getTeamManager().getPlayerTeam(uuid);
+        String teamName = Messages.get("team." + finalTeam.name().toLowerCase());
+        if (returning) {
+            sender.sendMessage(ChatColor.GOLD + Messages.get("game.restored-team", finalTeam.getColor() + teamName));
+        } else {
+            sender.sendMessage(ChatColor.GOLD + Messages.get("game.joined-team", finalTeam.getColor() + teamName));
+        }
     }
 
     // === GAME MANAGEMENT ===

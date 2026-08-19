@@ -73,6 +73,11 @@ public class PlayerDataManager implements Listener {
         return activePlayers.contains(uuid);
     }
 
+    public void removeActivePlayer(UUID uuid) {
+        activePlayers.remove(uuid);
+        saveActivePlayers();
+    }
+
     public void clearActivePlayers() {
         activePlayers.clear();
         savedData.clear();
@@ -352,49 +357,7 @@ public class PlayerDataManager implements Listener {
         PlayerData data = loadFromPDC(player);
         cache.put(uuid, data);
 
-        if (plugin.getGameManager().isGameStarted() && activePlayers.contains(uuid)) {
-            SavedPlayerData saved = loadPlayerFullData(uuid);
-            if (saved != null) {
-                if (saved.team != null) {
-                    plugin.getTeamManager().joinTeam(uuid, saved.team);
-                }
-                applySavedData(uuid, saved);
-
-                GameManager.GameState gameState = plugin.getGameManager().getState();
-
-                if (!saved.pendingCardIds.isEmpty()) {
-                    player.setInvulnerable(true);
-                    player.setFoodLevel(20);
-                    player.setSaturation(5.0f);
-                    player.setExhaustion(0f);
-                    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-                        plugin.getCardManager().restorePendingPick(uuid, saved.pendingCardIds);
-                    }, 5L);
-                } else if (gameState == GameManager.GameState.PLAYING) {
-                    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-                        giveGunPlayer(player);
-                        applyHP(player);
-                        player.setGameMode(GameMode.SURVIVAL);
-                        player.setFoodLevel(20);
-                        player.setSaturation(5.0f);
-                        player.setExhaustion(0f);
-                    }, 5L);
-                } else if (gameState == GameManager.GameState.CARDS
-                        || gameState == GameManager.GameState.ROUND_END) {
-                    com.rounds.teams.TeamManager.GameTeam team = plugin.getTeamManager().getPlayerTeam(uuid);
-                    com.rounds.game.GameManager gm = plugin.getGameManager();
-                    if (team != null && (gm.getLastLoser() == null || team == gm.getLastLoser())) {
-                        player.setInvulnerable(true);
-                        player.setFoodLevel(20);
-                        player.setSaturation(5.0f);
-                        player.setExhaustion(0f);
-                        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-                            plugin.getCardManager().openCardSelection(player, team);
-                        }, 5L);
-                    }
-                }
-            }
-        } else if (plugin.getGameManager().isGameStarted()) {
+        if (plugin.getGameManager().isGameStarted()) {
             Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                 player.setGameMode(GameMode.SPECTATOR);
                 player.setInvulnerable(true);
@@ -404,26 +367,6 @@ public class PlayerDataManager implements Listener {
                 }
             }, 5L);
         }
-    }
-
-    private void giveGunPlayer(Player player) {
-        org.bukkit.inventory.ItemStack gun = com.rounds.item.GunItem.createGunItem();
-        player.getInventory().setItemInMainHand(gun);
-    }
-
-    private void applyHP(Player player) {
-        PlayerData data = getData(player);
-        double baseMaxHP = data.getMaxHealth();
-        if (data.grow > 0) {
-            baseMaxHP += data.grow * 0.2 * 10;
-        }
-        double maxHP = baseMaxHP;
-        if (data.pristinePerseverance > 0) {
-            maxHP = baseMaxHP * (1.0 + data.pristinePerseverance);
-        }
-        var attr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
-        if (attr != null) attr.setBaseValue(maxHP);
-        player.setHealth(Math.min(player.getHealth(), maxHP));
     }
 
     @EventHandler

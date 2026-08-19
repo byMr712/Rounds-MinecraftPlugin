@@ -6,7 +6,6 @@ description:
   ru: "Наносит % от максимального ХП врагу при блоке"
   en: "Deal max HP % to enemies on block"
 material: NETHERITE_SWORD
-custom-model-data: 10035
 rarity: RARE
 enabled: true
 effects:

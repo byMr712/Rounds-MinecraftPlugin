@@ -6,7 +6,6 @@ description:
   ru: "Пули создают бомбы, -15% урона"
   en: "Bullets spawn bombs, -15% DMG"
 material: CLOCK
-custom-model-data: 10064
 rarity: RARE
 enabled: true
 effects:

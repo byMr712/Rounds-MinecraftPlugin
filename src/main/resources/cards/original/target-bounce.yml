@@ -6,7 +6,6 @@ description:
   ru: "Пули ищут цель при отскоке, +1 отскок, -40% урона"
   en: "Bullets seek target on bounce, +1 bounce, -40% DMG"
 material: ARROW
-custom-model-data: 10060
 rarity: RARE
 enabled: true
 effects:

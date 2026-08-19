@@ -3,7 +3,6 @@
 #   name: Display name (supports color codes with &)
 #   description: Short description shown in GUI
 #   material: Bukkit Material name
-#   custom-model-data: CustomModelData number
 #   rarity: COMMON, UNCOMMON, RARE, EPIC, LEGENDARY
 #   enabled: true/false
 #   effects: stat modifiers
@@ -20,7 +19,6 @@ cards:
     name: '&5Abyssal Countdown'
     description: 'Stand still to summon dark powers'
     material: ENDER_EYE
-    custom-model-data: 10001
     rarity: RARE
     enabled: true
     effects:
@@ -30,7 +28,6 @@ cards:
     name: '&cBarrage'
     description: '+4 Bullets, +5 Ammo, -70% DMG, +Reload'
     material: ARROW
-    custom-model-data: 10002
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -42,7 +39,6 @@ cards:
     name: '&fBig Bullets'
     description: 'Bigger bullets, slower reload'
     material: SLIME_BALL
-    custom-model-data: 10003
     rarity: COMMON
     enabled: true
     effects:
@@ -52,7 +48,6 @@ cards:
     name: '&eBombs Away'
     description: 'Spawn bombs around you, +HP'
     material: TNT
-    custom-model-data: 10004
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -63,7 +58,6 @@ cards:
     name: '&bBouncy'
     description: '+2 Bounces, +25% DMG, +Reload'
     material: SLIME_BLOCK
-    custom-model-data: 10005
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -74,7 +68,6 @@ cards:
     name: '&cBrawler'
     description: '+200% HP after dealing damage'
     material: IRON_SWORD
-    custom-model-data: 10006
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -84,7 +77,6 @@ cards:
     name: '&eBuckshot'
     description: '+4 Bullets, +5 Ammo, -60% DMG, +Reload'
     material: GUNPOWDER
-    custom-model-data: 10007
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -96,7 +88,6 @@ cards:
     name: '&aBurst'
     description: '+2 Bullets, +3 Ammo, -60% DMG, +Reload'
     material: FIREWORK_ROCKET
-    custom-model-data: 10008
     rarity: COMMON
     enabled: true
     effects:
@@ -108,7 +99,6 @@ cards:
     name: '&6Careful Planning'
     description: '+100% DMG, -150% ATKSPD, +Reload'
     material: BOW
-    custom-model-data: 10009
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -119,7 +109,6 @@ cards:
     name: '&aChase'
     description: '+60% move speed towards enemy, +HP'
     material: FEATHER
-    custom-model-data: 10010
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -129,7 +118,6 @@ cards:
     name: '&bChilling Presence'
     description: 'Slow nearby enemies, +25% HP'
     material: PACKED_ICE
-    custom-model-data: 10011
     rarity: RARE
     enabled: true
     effects:
@@ -140,7 +128,6 @@ cards:
     name: '&bCold Bullets'
     description: '+70% Bullet slow, +Reload'
     material: ICE
-    custom-model-data: 10012
     rarity: COMMON
     enabled: true
     effects:
@@ -151,7 +138,6 @@ cards:
     name: '&4Combine'
     description: '+100% DMG, -2 Ammo, +Reload'
     material: NETHER_STAR
-    custom-model-data: 10013
     rarity: COMMON
     enabled: true
     effects:
@@ -162,7 +148,6 @@ cards:
     name: '&dDazzle'
     description: 'Bullets stun enemies, +Reload'
     material: DIAMOND
-    custom-model-data: 10014
     rarity: COMMON
     enabled: true
     effects:
@@ -173,7 +158,6 @@ cards:
     name: '&2Decay'
     description: 'Damage over time, +50% HP'
     material: WITHER_SKELETON_SKULL
-    custom-model-data: 10015
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -184,7 +168,6 @@ cards:
     name: '&9Defender'
     description: '-Block CD, +30% HP'
     material: SHIELD
-    custom-model-data: 10016
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -194,7 +177,6 @@ cards:
     name: '&4Demonic Pact'
     description: '+9 Bullets, +2 Splash, -HP per shot'
     material: END_CRYSTAL
-    custom-model-data: 10017
     rarity: RARE
     enabled: true
     effects:
@@ -205,7 +187,6 @@ cards:
     name: '&7Drill Ammo'
     description: 'Bullets drill through walls, +Reload'
     material: IRON_PICKAXE
-    custom-model-data: 10018
     rarity: RARE
     enabled: true
     effects:
@@ -215,7 +196,6 @@ cards:
     name: '&eEcho'
     description: 'Double block, +HP, +Block CD'
     material: REPEATER
-    custom-model-data: 10019
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -226,7 +206,6 @@ cards:
     name: '&cEMP'
     description: 'Slowing ring on block, +HP'
     material: REDSTONE
-    custom-model-data: 10020
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -237,7 +216,6 @@ cards:
     name: '&6Empower'
     description: 'Block boosts next shot damage'
     material: NETHER_STAR
-    custom-model-data: 10021
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -248,7 +226,6 @@ cards:
     name: '&6Explosive Bullet'
     description: 'Bullet explodes on impact, -ATKSPD'
     material: FIRE_CHARGE
-    custom-model-data: 10022
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -259,7 +236,6 @@ cards:
     name: '&fFastball'
     description: '+250% Bullet speed, -50% ATKSPD'
     material: ARROW
-    custom-model-data: 10023
     rarity: COMMON
     enabled: true
     effects:
@@ -270,7 +246,6 @@ cards:
     name: '&aFast Forward'
     description: '+100% Proj speed, +30% Reload speed'
     material: QUARTZ
-    custom-model-data: 10024
     rarity: COMMON
     enabled: true
     effects:
@@ -280,7 +255,6 @@ cards:
     name: '&bFrost Slam'
     description: 'Slow enemies on block, +HP'
     material: BLUE_ICE
-    custom-model-data: 10025
     rarity: COMMON
     enabled: true
     effects:
@@ -292,7 +266,6 @@ cards:
     name: '&fGlass Cannon'
     description: '+100% DMG, -100% HP'
     material: GLASS
-    custom-model-data: 10026
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -303,7 +276,6 @@ cards:
     name: '&aGrow'
     description: 'Bullets gain damage over distance'
     material: BONE_MEAL
-    custom-model-data: 10027
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -313,7 +285,6 @@ cards:
     name: '&aHealing Field'
     description: 'Healing aura, +HP'
     material: BEACON
-    custom-model-data: 10028
     rarity: COMMON
     enabled: true
     effects:
@@ -324,7 +295,6 @@ cards:
     name: '&dHoming'
     description: 'Bullets home to targets, -DMG, -ATKSPD'
     material: ENDER_PEARL
-    custom-model-data: 10029
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -336,7 +306,6 @@ cards:
     name: '&6Huge'
     description: '+80% HP'
     material: GOLDEN_APPLE
-    custom-model-data: 10030
     rarity: COMMON
     enabled: true
     effects:
@@ -345,7 +314,6 @@ cards:
     name: '&4Implode'
     description: 'Pull enemies on block, +HP'
     material: ENDER_EYE
-    custom-model-data: 10031
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -356,7 +324,6 @@ cards:
     name: '&2Leech'
     description: '+75% Life steal, +30% HP'
     material: FERMENTED_SPIDER_EYE
-    custom-model-data: 10032
     rarity: COMMON
     enabled: true
     effects:
@@ -366,7 +333,6 @@ cards:
     name: '&4Lifestealer'
     description: 'Steal HP when near enemy, +25% HP'
     material: REDSTONE
-    custom-model-data: 10033
     rarity: RARE
     enabled: true
     effects:
@@ -376,7 +342,6 @@ cards:
     name: '&dMayhem'
     description: '+5 Bounces, -15% DMG, +Reload'
     material: MAGMA_CREAM
-    custom-model-data: 10034
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -387,7 +352,6 @@ cards:
     name: '&cOverpower'
     description: 'Deal max HP % to enemies on block'
     material: BLAZE_POWDER
-    custom-model-data: 10035
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -398,7 +362,6 @@ cards:
     name: '&2Parasite'
     description: 'DOT, +50% Lifesteal, +25% HP, +25% DMG'
     material: SPIDER_EYE
-    custom-model-data: 10036
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -412,7 +375,6 @@ cards:
     name: '&cPhoenix'
     description: 'Respawn once on death, -35% HP'
     material: TOTEM_OF_UNDYING
-    custom-model-data: 10037
     rarity: RARE
     enabled: true
     effects:
@@ -422,7 +384,6 @@ cards:
     name: '&aPoison'
     description: 'DOT over 3s, +70% DMG, +Reload, -1 Bullet'
     material: SPIDER_EYE
-    custom-model-data: 10038
     rarity: COMMON
     enabled: true
     effects:
@@ -435,7 +396,6 @@ cards:
     name: '&dPristine Perseverance'
     description: '+400% HP when above 90% HP'
     material: GOLDEN_CARROT
-    custom-model-data: 10039
     rarity: RARE
     enabled: true
     effects:
@@ -444,7 +404,6 @@ cards:
     name: '&eQuick Reload'
     description: '-70% Reload time'
     material: STRING
-    custom-model-data: 10040
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -453,7 +412,6 @@ cards:
     name: '&fQuick Shot'
     description: '+150% Bullet speed, +Reload'
     material: SPECTRAL_ARROW
-    custom-model-data: 10041
     rarity: COMMON
     enabled: true
     effects:
@@ -463,7 +421,6 @@ cards:
     name: '&eRadar Shot'
     description: 'Auto-aim on block, +HP'
     material: ECHO_SHARD
-    custom-model-data: 10042
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -474,7 +431,6 @@ cards:
     name: '&6Radiance'
     description: 'Damaging waves on reload, +HP'
     material: SUNFLOWER
-    custom-model-data: 10043
     rarity: RARE
     enabled: true
     effects:
@@ -484,7 +440,6 @@ cards:
     name: '&bRefresh'
     description: 'Dealing damage resets block CD'
     material: COPPER_INGOT
-    custom-model-data: 10044
     rarity: RARE
     enabled: true
     effects:
@@ -493,7 +448,6 @@ cards:
     name: '&5Remote'
     description: 'Steer bullets, -40% Bullet speed'
     material: COMPASS
-    custom-model-data: 10045
     rarity: RARE
     enabled: true
     effects:
@@ -504,7 +458,6 @@ cards:
     name: '&bRicochet'
     description: '+2 Bounces, +25% ATKSPD, +Reload'
     material: SLIME_BALL
-    custom-model-data: 10046
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -515,7 +468,6 @@ cards:
     name: '&8Saw'
     description: 'Spinning saw on block, +HP'
     material: IRON_SWORD
-    custom-model-data: 10047
     rarity: RARE
     enabled: true
     effects:
@@ -526,7 +478,6 @@ cards:
     name: '&eScavenger'
     description: 'Dealing damage reloads weapon, +Reload'
     material: HOPPER
-    custom-model-data: 10048
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -535,7 +486,6 @@ cards:
     name: '&9Shield Charge'
     description: 'Launch forward on block, second block'
     material: SHIELD
-    custom-model-data: 10049
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -546,7 +496,6 @@ cards:
     name: '&9Shields Up'
     description: 'Last bullet triggers block, disable auto-reload'
     material: IRON_INGOT
-    custom-model-data: 10050
     rarity: RARE
     enabled: true
     effects:
@@ -557,7 +506,6 @@ cards:
     name: '&cShockwave'
     description: 'Push enemies on block, +50% HP'
     material: GUNPOWDER
-    custom-model-data: 10051
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -568,7 +516,6 @@ cards:
     name: '&8Silence'
     description: 'Silence enemies on block, +25% HP'
     material: OBSIDIAN
-    custom-model-data: 10052
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -580,7 +527,6 @@ cards:
     name: '&7Sneaky'
     description: 'Bullets avoid the ground'
     material: FEATHER
-    custom-model-data: 10053
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -590,7 +536,6 @@ cards:
     name: '&cSpray'
     description: '+1000% ATKSPD, +12 Ammo, -75% DMG'
     material: FLINT
-    custom-model-data: 10054
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -602,7 +547,6 @@ cards:
     name: '&eStatic Field'
     description: 'Slow + damage field on block'
     material: LIGHTNING_ROD
-    custom-model-data: 10055
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -613,7 +557,6 @@ cards:
     name: '&fSteady Shot'
     description: '+40% HP, +100% Bullet speed, +Reload'
     material: BOW
-    custom-model-data: 10056
     rarity: COMMON
     enabled: true
     effects:
@@ -624,7 +567,6 @@ cards:
     name: '&dSupernova'
     description: 'Pull + stun enemies, +50% HP'
     material: END_CRYSTAL
-    custom-model-data: 10057
     rarity: RARE
     enabled: true
     effects:
@@ -636,7 +578,6 @@ cards:
     name: '&eTactical Reload'
     description: 'Block reloads weapon, +Block CD'
     material: REDSTONE_TORCH
-    custom-model-data: 10058
     rarity: RARE
     enabled: true
     effects:
@@ -645,7 +586,6 @@ cards:
     name: '&7Tank'
     description: '+100% HP, -25% ATKSPD, +Reload'
     material: ANVIL
-    custom-model-data: 10059
     rarity: COMMON
     enabled: true
     effects:
@@ -656,7 +596,6 @@ cards:
     name: '&eTarget Bounce'
     description: 'Bullets seek on bounce, +1 Bounce, -20% DMG'
     material: SPECTRAL_ARROW
-    custom-model-data: 10060
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -668,7 +607,6 @@ cards:
     name: '&4Taste of Blood'
     description: '+50% speed after hit, +30% Lifesteal'
     material: NETHER_WART
-    custom-model-data: 10061
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -678,7 +616,6 @@ cards:
     name: '&5Teleport'
     description: 'Teleport forward on block, -Block CD'
     material: ENDER_PEARL
-    custom-model-data: 10062
     rarity: RARE
     enabled: true
     effects:
@@ -688,7 +625,6 @@ cards:
     name: '&eThruster'
     description: 'Bullets push targets, +Reload'
     material: FIREWORK_ROCKET
-    custom-model-data: 10063
     rarity: UNCOMMON
     enabled: true
     effects:
@@ -698,7 +634,6 @@ cards:
     name: '&6Timed Detonation'
     description: 'Bullets spawn bombs, -15% DMG'
     material: TNT
-    custom-model-data: 10064
     rarity: COMMON
     enabled: true
     effects:
@@ -709,7 +644,6 @@ cards:
     name: '&2Toxic Cloud'
     description: 'Poison cloud on impact, -ATKSPD'
     material: COBWEB
-    custom-model-data: 10065
     rarity: RARE
     enabled: true
     effects:
@@ -721,7 +655,6 @@ cards:
     name: '&dTrickster'
     description: '+80% DMG per bounce, +2 Bounces, -20% DMG'
     material: JIGSAW
-    custom-model-data: 10066
     rarity: RARE
     enabled: true
     effects:
@@ -732,7 +665,6 @@ cards:
     name: '&fWind Up'
     description: '+100% Bullet speed, +60% DMG, -100% ATKSPD'
     material: PISTON
-    custom-model-data: 10067
     rarity: COMMON
     enabled: true
     effects:

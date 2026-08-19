@@ -6,7 +6,6 @@ description:
   ru: "Урон во времени, +50% вампиризм, +25% ХП, +25% урон"
   en: "DOT, +50% Lifesteal, +25% HP, +25% DMG"
 material: SPIDER_EYE
-custom-model-data: 10036
 rarity: RARE
 enabled: true
 effects:

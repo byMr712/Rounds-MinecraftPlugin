@@ -18,7 +18,6 @@ teams:
 
 gun:
   material: STICK
-  custom-model-data: 9999
   base-cooldown: 20
 
 resource-pack:

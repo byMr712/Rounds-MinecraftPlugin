@@ -6,7 +6,6 @@ description:
   ru: "Пули летят выше земли"
   en: "Bullets avoid the ground"
 material: CACTUS
-custom-model-data: 10053
 rarity: COMMON
 enabled: true
 effects:

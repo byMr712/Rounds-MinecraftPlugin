@@ -6,7 +6,6 @@ description:
   ru: "Притягивает и оглушает врагов, +50% ХП"
   en: "Pull + stun enemies, +50% HP"
 material: END_CRYSTAL
-custom-model-data: 10057
 rarity: LEGENDARY
 enabled: true
 effects:

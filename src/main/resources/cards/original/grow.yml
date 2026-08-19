@@ -6,7 +6,6 @@ description:
   ru: "Пули набирают урон с расстоянием"
   en: "Bullets gain damage over distance"
 material: BONE_MEAL
-custom-model-data: 10027
 rarity: COMMON
 enabled: true
 effects:

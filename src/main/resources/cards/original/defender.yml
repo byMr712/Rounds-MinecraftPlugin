@@ -6,7 +6,6 @@ description:
   ru: "-КД блока, +30% ХП"
   en: "-Block CD, +30% HP"
 material: SHIELD
-custom-model-data: 10016
 rarity: COMMON
 enabled: true
 effects:

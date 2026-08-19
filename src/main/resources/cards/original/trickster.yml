@@ -6,7 +6,6 @@ description:
   ru: "+80% урона за отскок, +2 отскока, -20% урона"
   en: "+80% DMG per bounce, +2 Bounces, -20% DMG"
 material: JIGSAW
-custom-model-data: 10066
 rarity: RARE
 enabled: true
 effects:

@@ -6,7 +6,6 @@ description:
   ru: "+40% ХП, +100% скорость пули, +10% перезарядки"
   en: "+40% HP, +100% Bullet speed, +10% Reload time"
 material: GOLDEN_HELMET
-custom-model-data: 10056
 rarity: COMMON
 enabled: true
 effects:

@@ -6,7 +6,6 @@ description:
   ru: "+5 отскоков, -15% урона, +10% перезарядки"
   en: "+5 Bounces, -15% DMG, +10% Reload time"
 material: FIREWORK_ROCKET
-custom-model-data: 10034
 rarity: COMMON
 enabled: true
 effects:

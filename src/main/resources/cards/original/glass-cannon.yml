@@ -6,7 +6,6 @@ description:
   ru: "+100% урона, -100% ХП"
   en: "+100% DMG, -100% HP"
 material: GLASS
-custom-model-data: 10026
 rarity: RARE
 enabled: true
 effects:

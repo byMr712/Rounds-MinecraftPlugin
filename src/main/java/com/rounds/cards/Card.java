@@ -20,7 +20,6 @@ public class Card {
     private final Map<String, String> names;
     private final Map<String, String> descriptions;
     private final Material material;
-    private final int customModelData;
     private final CardRegistry.Rarity rarity;
     private final boolean enabled;
     private final Map<String, Double> effects;
@@ -28,14 +27,13 @@ public class Card {
     private final String customScript;
 
     public Card(int id, Map<String, String> names, Map<String, String> descriptions,
-                Material material, int customModelData,
+                Material material,
                 CardRegistry.Rarity rarity, boolean enabled, Map<String, Double> effects,
                 List<String> commands, String customScript) {
         this.id = id;
         this.names = names;
         this.descriptions = descriptions;
         this.material = material;
-        this.customModelData = customModelData;
         this.rarity = rarity;
         this.enabled = enabled;
         this.effects = effects;
@@ -146,9 +144,6 @@ public class Card {
         lore.add(ChatColor.YELLOW + Messages.get("card.click-to-select"));
 
         meta.setLore(lore);
-        if (customModelData > 0) {
-            meta.setCustomModelData(customModelData);
-        }
         item.setItemMeta(meta);
         return item;
     }
@@ -185,7 +180,6 @@ public class Card {
     public Map<String, String> getNames() { return Collections.unmodifiableMap(names); }
     public Map<String, String> getDescriptions() { return Collections.unmodifiableMap(descriptions); }
     public Material getMaterial() { return material; }
-    public int getCustomModelData() { return customModelData; }
     public CardRegistry.Rarity getRarity() { return rarity; }
     public boolean isEnabled() { return enabled; }
     public Map<String, Double> getEffects() { return Collections.unmodifiableMap(effects); }

@@ -6,7 +6,6 @@ description:
   ru: "Управляй пулями, -40% скорость пули"
   en: "Steer bullets, -40% Bullet speed"
 material: LEAD
-custom-model-data: 10045
 rarity: RARE
 enabled: true
 effects:

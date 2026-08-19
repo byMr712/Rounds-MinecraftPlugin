@@ -109,7 +109,6 @@ public class CardRegistry {
                 cardFile.set("name.en", nameRaw);
                 cardFile.set("description.en", cardSection.getString("description", ""));
                 cardFile.set("material", cardSection.getString("material", "PAPER"));
-                cardFile.set("custom-model-data", cardSection.getInt("custom-model-data", 0));
                 cardFile.set("rarity", cardSection.getString("rarity", "COMMON"));
                 cardFile.set("enabled", cardSection.getBoolean("enabled", true));
 
@@ -155,7 +154,6 @@ public class CardRegistry {
                 if (id <= 0) continue;
 
                 String materialStr = config.getString("material", "PAPER");
-                int customModelData = config.getInt("custom-model-data", 0);
                 String rarityStr = config.getString("rarity", "COMMON");
                 boolean enabled = config.getBoolean("enabled", true);
 
@@ -189,7 +187,7 @@ public class CardRegistry {
                 List<String> commands = config.getStringList("commands");
                 String customScript = config.getString("script", null);
 
-                Card card = new Card(id, names, descriptions, material, customModelData,
+                Card card = new Card(id, names, descriptions, material,
                         rarity, enabled, effects, commands, customScript);
                 cards.put(id, card);
             } catch (Exception e) {

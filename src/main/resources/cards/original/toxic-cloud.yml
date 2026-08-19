@@ -6,7 +6,6 @@ description:
   ru: "Ядовитое облако при попадании, -30% скорость атаки"
   en: "Poison cloud on impact, -30% ATKSPD"
 material: SLIME_BALL
-custom-model-data: 10065
 rarity: RARE
 enabled: true
 effects:

@@ -6,7 +6,6 @@ description:
   ru: "+400% ХП если ХП выше 90%"
   en: "+400% HP when above 90% HP"
 material: TOTEM_OF_UNDYING
-custom-model-data: 10039
 rarity: LEGENDARY
 enabled: true
 effects:

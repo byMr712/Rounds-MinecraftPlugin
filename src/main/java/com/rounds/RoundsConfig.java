@@ -13,7 +13,6 @@ public final class RoundsConfig {
 
     private double baseGunCooldown;
     private String gunMaterial;
-    private int gunCustomModelData;
 
     private boolean resourcePackAutoSend;
     private String resourcePackUrl;
@@ -42,7 +41,6 @@ public final class RoundsConfig {
 
         baseGunCooldown = c.getDouble("gun.base-cooldown", 20);
         gunMaterial = c.getString("gun.material", "CROSSBOW");
-        gunCustomModelData = c.getInt("gun.custom-model-data", 9999);
 
         resourcePackAutoSend = c.getBoolean("resource-pack.auto-send", false);
         resourcePackUrl = c.getString("resource-pack.url", "");
@@ -62,7 +60,6 @@ public final class RoundsConfig {
     public int getRespawnDelayTicks() { return respawnDelayTicks; }
     public double getBaseGunCooldown() { return baseGunCooldown; }
     public String getGunMaterial() { return gunMaterial; }
-    public int getGunCustomModelData() { return gunCustomModelData; }
     public boolean isResourcePackAutoSend() { return resourcePackAutoSend; }
     public String getResourcePackUrl() { return resourcePackUrl; }
     public String getResourcePackHash() { return resourcePackHash; }

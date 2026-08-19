@@ -6,7 +6,6 @@ description:
   ru: "Поле замедления и урона при блоке"
   en: "Slow + damage field on block"
 material: CHAIN
-custom-model-data: 10055
 rarity: RARE
 enabled: true
 effects:

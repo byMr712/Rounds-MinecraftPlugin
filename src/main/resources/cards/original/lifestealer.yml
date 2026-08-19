@@ -6,7 +6,6 @@ description:
   ru: "Крадёт ХП рядом с врагом, +25% ХП"
   en: "Steal HP when near enemy, +25% HP"
 material: NETHER_WART
-custom-model-data: 10033
 rarity: RARE
 enabled: true
 effects:

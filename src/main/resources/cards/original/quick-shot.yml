@@ -6,7 +6,6 @@ description:
   ru: "+150% скорость пули, +10% перезарядки"
   en: "+150% Bullet speed, +10% Reload time"
 material: FIREWORK_ROCKET
-custom-model-data: 10041
 rarity: COMMON
 enabled: true
 effects:

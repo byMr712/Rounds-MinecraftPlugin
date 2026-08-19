@@ -6,7 +6,6 @@ description:
   ru: "Телепорт вперёд при блоке, -КД блока"
   en: "Teleport forward on block, -Block CD"
 material: ENDER_PEARL
-custom-model-data: 10062
 rarity: RARE
 enabled: true
 effects:

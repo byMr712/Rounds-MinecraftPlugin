@@ -6,7 +6,6 @@ description:
   ru: "+75% вампиризма, +30% ХП"
   en: "+75% Life steal, +30% HP"
 material: RED_DYE
-custom-model-data: 10032
 rarity: COMMON
 enabled: true
 effects:

@@ -6,7 +6,6 @@ description:
   ru: "-70% времени перезарядки"
   en: "-70% Reload time"
 material: REDSTONE
-custom-model-data: 10040
 rarity: COMMON
 enabled: true
 effects:

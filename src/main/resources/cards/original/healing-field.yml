@@ -6,7 +6,6 @@ description:
   ru: "Аура исцеления по блоку, +50% ХП"
   en: "Healing aura on block, +50% HP"
 material: GOLDEN_APPLE
-custom-model-data: 10028
 rarity: RARE
 enabled: true
 effects:

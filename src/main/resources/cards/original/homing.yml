@@ -6,7 +6,6 @@ description:
   ru: "Пули летят к цели, -30% урона, -30% скорость атаки"
   en: "Bullets home to targets, -30% DMG, -30% ATKSPD"
 material: EYE_OF_ENDER
-custom-model-data: 10029
 rarity: RARE
 enabled: true
 effects:

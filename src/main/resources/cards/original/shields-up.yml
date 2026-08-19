@@ -6,7 +6,6 @@ description:
   ru: "Последняя пуля запускает блок, отключение автоперезарядки"
   en: "Last bullet triggers block, disable auto-reload"
 material: SHIELD
-custom-model-data: 10050
 rarity: RARE
 enabled: true
 effects:

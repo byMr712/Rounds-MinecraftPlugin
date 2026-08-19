@@ -6,7 +6,6 @@ description:
   ru: "Рывок вперёд при блоке, второй блок"
   en: "Launch forward on block, second block"
 material: SHIELD
-custom-model-data: 10049
 rarity: RARE
 enabled: true
 effects:

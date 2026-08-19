@@ -63,12 +63,9 @@ public class GunItem implements Listener {
         } catch (IllegalArgumentException e) {
             mat = Material.STICK;
         }
-        int cmd = plugin.getConfig().getInt("gun.custom-model-data", 9999);
-
         ItemStack item = new ItemStack(mat);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(ChatColor.YELLOW + Messages.get("gun.name"));
-        meta.setCustomModelData(cmd);
         meta.setUnbreakable(true);
         List<String> lore = new ArrayList<>();
         lore.add(ChatColor.GRAY + Messages.get("gun.lore-1"));

@@ -6,7 +6,6 @@ description:
   ru: "Создаёт бомбы вокруг себя, +50% ХП"
   en: "Spawn bombs around yourself, +50% HP"
 material: TNT
-custom-model-data: 10004
 rarity: RARE
 enabled: true
 effects:

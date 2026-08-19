@@ -6,7 +6,6 @@ description:
   ru: "+100% ХП, -25% скорость атаки, +10% перезарядки"
   en: "+100% HP, -25% ATKSPD, +10% Reload time"
 material: IRON_CHESTPLATE
-custom-model-data: 10059
 rarity: COMMON
 enabled: true
 effects:

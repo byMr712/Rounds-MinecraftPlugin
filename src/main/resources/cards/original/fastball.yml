@@ -6,7 +6,6 @@ description:
   ru: "+250% скорость пули, -50% скорость атаки"
   en: "+250% Bullet speed, -50% ATKSPD"
 material: SNOWBALL
-custom-model-data: 10024
 rarity: COMMON
 enabled: true
 effects:

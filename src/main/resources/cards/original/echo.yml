@@ -6,7 +6,6 @@ description:
   ru: "Двойной блок, +50% ХП, +КД блока"
   en: "Double block, +50% HP, +Block CD"
 material: ENDER_PEARL
-custom-model-data: 10019
 rarity: RARE
 enabled: true
 effects:

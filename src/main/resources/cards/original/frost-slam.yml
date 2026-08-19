@@ -6,7 +6,6 @@ description:
   ru: "Замедляет врагов при блоке, +50% ХП"
   en: "Slow enemies on block, +50% HP"
 material: PACKED_ICE
-custom-model-data: 10025
 rarity: RARE
 enabled: true
 effects:

@@ -6,7 +6,6 @@ description:
   ru: "+2 отскока, +25% урона, +10% перезарядки"
   en: "+2 Bounces, +25% DMG, +10% Reload time"
 material: SLIME_BALL
-custom-model-data: 10005
 rarity: COMMON
 enabled: true
 effects:

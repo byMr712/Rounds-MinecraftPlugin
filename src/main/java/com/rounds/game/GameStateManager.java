@@ -25,8 +25,12 @@ public class GameStateManager {
         yml.set("current-round", gm.getCurrentRound());
         yml.set("rounds-to-win", gm.getRounds());
 
-        GameTeam loser = gm.getLastLoser();
-        yml.set("last-loser", loser != null ? loser.name() : null);
+        List<String> loserStrs = new ArrayList<>();
+        for (GameTeam gt : gm.getLosingTeams()) {
+            loserStrs.add(gt.name());
+        }
+        yml.set("last-losers", loserStrs);
+        yml.set("last-loser", loserStrs.isEmpty() ? null : loserStrs.get(0));
 
         List<String> deadStrs = new ArrayList<>();
         for (UUID uuid : gm.getDeadPlayers()) {
@@ -64,12 +68,20 @@ public class GameStateManager {
         int currentRound = (int) yml.getDouble("current-round", 0);
         int roundsToWin = (int) yml.getDouble("rounds-to-win", 5);
 
-        String loserStr = yml.getString("last-loser");
-        GameTeam lastLoser = null;
-        if (loserStr != null) {
+        Set<GameTeam> lastLosers = new HashSet<>();
+        List<String> losersStrs = yml.getStringList("last-losers");
+        for (String s : losersStrs) {
             try {
-                lastLoser = GameTeam.valueOf(loserStr);
+                lastLosers.add(GameTeam.valueOf(s));
             } catch (IllegalArgumentException ignored) {}
+        }
+        if (lastLosers.isEmpty()) {
+            String loserStr = yml.getString("last-loser");
+            if (loserStr != null) {
+                try {
+                    lastLosers.add(GameTeam.valueOf(loserStr));
+                } catch (IllegalArgumentException ignored) {}
+            }
         }
 
         Set<UUID> deadPlayers = new HashSet<>();
@@ -85,7 +97,7 @@ public class GameStateManager {
             wins.put(gt, yml.getInt("team-wins." + gt.name(), 0));
         }
 
-        return new SavedState(state, currentRound, roundsToWin, lastLoser, deadPlayers, wins);
+        return new SavedState(state, currentRound, roundsToWin, lastLosers, deadPlayers, wins);
     }
 
     public void clear() {
@@ -96,16 +108,16 @@ public class GameStateManager {
         public final GameState state;
         public final int currentRound;
         public final int roundsToWin;
-        public final GameTeam lastLoser;
+        public final Set<GameTeam> lastLosers;
         public final Set<UUID> deadPlayers;
         public final Map<GameTeam, Integer> wins;
 
         public SavedState(GameState state, int currentRound, int roundsToWin,
-                          GameTeam lastLoser, Set<UUID> deadPlayers, Map<GameTeam, Integer> wins) {
+                          Set<GameTeam> lastLosers, Set<UUID> deadPlayers, Map<GameTeam, Integer> wins) {
             this.state = state;
             this.currentRound = currentRound;
             this.roundsToWin = roundsToWin;
-            this.lastLoser = lastLoser;
+            this.lastLosers = lastLosers;
             this.deadPlayers = deadPlayers;
             this.wins = wins;
         }

@@ -56,7 +56,7 @@ public class GameManager implements Listener {
     private final Set<UUID> deadPlayers = new HashSet<>();
     private final Map<UUID, Location> abyssalLastLocations = new HashMap<>();
     private final Map<UUID, Long> lastSilenceAuraTime = new HashMap<>();
-    private GameTeam lastLoser = null;
+    private final Set<GameTeam> losingTeams = new HashSet<>();
     private final GameStateManager stateManager;
     private boolean wheelEnabled = false;
     private final Set<Integer> scheduledTaskIds = new HashSet<>();
@@ -599,12 +599,11 @@ public class GameManager implements Listener {
     private void endRound(GameTeam winner) {
         plugin.getTeamManager().addWin(winner);
         state = GameState.ROUND_END;
-        lastLoser = null;
+        losingTeams.clear();
         saveState();
         for (GameTeam team : GameTeam.values()) {
             if (team != winner && plugin.getTeamManager().getTeamPlayers(team).size() > 0) {
-                lastLoser = team;
-                break;
+                losingTeams.add(team);
             }
         }
 
@@ -617,7 +616,7 @@ public class GameManager implements Listener {
             if (pTeam == winner) {
                 p.sendTitle(Messages.get("title.won"), "", 10, 60, 20);
                 p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
-            } else if (pTeam == lastLoser) {
+            } else if (losingTeams.contains(pTeam)) {
                 p.sendTitle(Messages.get("title.lost"), "", 10, 60, 20);
                 p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0f, 1.0f);
             }
@@ -710,7 +709,7 @@ public class GameManager implements Listener {
         Set<UUID> pickers = new HashSet<>();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-            if (team != null && (team == lastLoser || pendingCardJoiners.contains(p.getUniqueId()))) {
+            if (team != null && (losingTeams.contains(team) || pendingCardJoiners.contains(p.getUniqueId()))) {
                 if (p.isDead()) continue;
                 pickers.add(p.getUniqueId());
                 plugin.getCardManager().openCardSelection(p, team);
@@ -888,7 +887,7 @@ public class GameManager implements Listener {
                 giveGun(player);
                 applyPlayerHP(player);
             } else if (state == GameState.CARDS) {
-                if (team != null && (lastLoser == null || team == lastLoser)) {
+                if (team != null && (losingTeams.isEmpty() || losingTeams.contains(team))) {
                     plugin.getCardManager().openCardSelection(player, team);
                 }
                 player.setInvulnerable(true);
@@ -998,7 +997,7 @@ public class GameManager implements Listener {
     public double getCurrentRound() { return currentRound; }
     public boolean isGameStarted() { return state != GameState.WAITING; }
     public void addDeadPlayer(UUID uuid) { deadPlayers.add(uuid); }
-    public GameTeam getLastLoser() { return lastLoser; }
+    public Set<GameTeam> getLosingTeams() { return Collections.unmodifiableSet(losingTeams); }
     public Set<UUID> getDeadPlayers() { return Collections.unmodifiableSet(deadPlayers); }
     public GameStateManager getStateManager() { return stateManager; }
 
@@ -1107,7 +1106,7 @@ public class GameManager implements Listener {
         state = saved.state;
         currentRound = saved.currentRound;
         roundsToWin = saved.roundsToWin;
-        lastLoser = saved.lastLoser;
+        losingTeams.addAll(saved.lastLosers);
         deadPlayers.addAll(saved.deadPlayers);
 
         for (Map.Entry<GameTeam, Integer> entry : saved.wins.entrySet()) {

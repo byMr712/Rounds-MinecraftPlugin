@@ -6,7 +6,7 @@ Minecraft плагин мини-игры "Rounds" (Raunds). 4 команды, к
 
 ## Требования
 
-- Paper 1.20.1 - 26.2+
+- Paper 1.20.4 - 26.2+
 - Java 17+
 - Опционально: [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.13006/) для поддержки плейсхолдеров
 - Опционально: [TAB](https://www.spigotmc.org/resources/tab.57806/) для отображения счёта и статуса игры

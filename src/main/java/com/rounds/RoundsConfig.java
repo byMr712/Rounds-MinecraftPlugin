@@ -52,6 +52,19 @@ public final class RoundsConfig {
 
         builtinScoreboard = c.getBoolean("builtin-scoreboard.enabled", false);
         builtinScoreboardTitle = c.getString("builtin-scoreboard.title", "&6&lROUNDS");
+
+        DefaultStats ds = new DefaultStats();
+        ds.dmg = c.getDouble("defaults.damage", 3.0);
+        ds.atks = c.getDouble("defaults.attack-speed", 20);
+        ds.atkSpeed = c.getDouble("defaults.attack-speed-modifier", 0);
+        ds.atkr = c.getDouble("defaults.attack-range", 0);
+        ds.ammo = c.getDouble("defaults.ammo", 3);
+        ds.maxAmmo = c.getDouble("defaults.max-ammo", 3);
+        ds.bullets = c.getDouble("defaults.bullets", 1);
+        ds.hp = c.getDouble("defaults.hp", 20);
+        ds.bulletSpeed = c.getDouble("defaults.bullet-speed", 1.0);
+        ds.reloadSpeed = c.getDouble("defaults.reload-speed", 0);
+        DefaultStats.set(ds);
     }
 
     public int getDefaultRounds() { return defaultRounds; }

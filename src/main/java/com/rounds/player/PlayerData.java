@@ -1,5 +1,7 @@
 package com.rounds.player;
 
+import com.rounds.DefaultStats;
+
 public class PlayerData {
 
     public String playerName = "";
@@ -20,16 +22,16 @@ public class PlayerData {
     public double atkrPlayer = 0;
     public double bouncePlayer = 0;
 
-    public double dmg = 3.0;
-    public double atks = 20;
-    public double atkSpeed = 0;
-    public double atkr = 0;
+    public double dmg;
+    public double atks;
+    public double atkSpeed;
+    public double atkr;
     public double bouncePl = 0;
-    public double ammo = 1;
-    public double maxAmmo = 1;
+    public double ammo;
+    public double maxAmmo;
     public double atksReload = 0;
     public double pistolAnim = 0;
-    public double bullets = 3;
+    public double bullets;
     public double cold = 0;
     public double poison = 0;
     public double toxicCloud = 0;
@@ -40,11 +42,11 @@ public class PlayerData {
     public double coldLvl = 0;
     public double parazitLvl = 0;
     public double parazit = 0;
-    public double hp = 20;
+    public double hp;
     public double shieldCooldown = 0;
     public double bombBullet = 0;
     public double bombOnBlock = 0;
-    public double bulletSpeed = 1.0;
+    public double bulletSpeed;
     public double empower = 0;
     public double empowerCharge = 0;
     public double darkStrength = 0;
@@ -57,7 +59,7 @@ public class PlayerData {
     public double speedBoost = 0;
     public double stun = 0;
     public double blockCd = 0;
-    public double reloadSpeed = 0;
+    public double reloadSpeed;
     public double heal = 0;
     public double damagePerBounce = 0;
     public double doubleBlock = 0;
@@ -96,6 +98,20 @@ public class PlayerData {
     public double shieldHp = 0;
     public boolean phoenixUsed = false;
 
+    public PlayerData() {
+        DefaultStats d = DefaultStats.get();
+        dmg = d.dmg;
+        atks = d.atks;
+        atkSpeed = d.atkSpeed;
+        atkr = d.atkr;
+        ammo = d.ammo;
+        maxAmmo = d.maxAmmo;
+        bullets = d.bullets;
+        hp = d.hp;
+        bulletSpeed = d.bulletSpeed;
+        reloadSpeed = d.reloadSpeed;
+    }
+
     public boolean getCard(int index) {
         if (index < 0 || index >= cards.length) return false;
         return cards[index];
@@ -112,14 +128,15 @@ public class PlayerData {
     }
 
     public void resetStats() {
-        dmg = 3.0;
-        atks = 20;
-        atkSpeed = 0;
-        atkr = 0;
+        DefaultStats d = DefaultStats.get();
+        dmg = d.dmg;
+        atks = d.atks;
+        atkSpeed = d.atkSpeed;
+        atkr = d.atkr;
         bouncePl = 0;
-        ammo = 1;
-        maxAmmo = 1;
-        bullets = 3;
+        ammo = d.ammo;
+        maxAmmo = d.maxAmmo;
+        bullets = d.bullets;
         cold = 0;
         poison = 0;
         toxicCloud = 0;
@@ -130,11 +147,11 @@ public class PlayerData {
         coldLvl = 0;
         parazitLvl = 0;
         parazit = 0;
-        hp = 20;
+        hp = d.hp;
         shieldCooldown = 0;
         bombBullet = 0;
         bombOnBlock = 0;
-        bulletSpeed = 1.0;
+        bulletSpeed = d.bulletSpeed;
         empower = 0;
         empowerCharge = 0;
         darkStrength = 0;
@@ -146,7 +163,7 @@ public class PlayerData {
         speedBoost = 0;
         stun = 0;
         blockCd = 0;
-        reloadSpeed = 0;
+        reloadSpeed = d.reloadSpeed;
         heal = 0;
         damagePerBounce = 0;
         doubleBlock = 0;

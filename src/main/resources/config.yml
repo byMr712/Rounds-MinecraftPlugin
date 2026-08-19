@@ -3,6 +3,29 @@
 # Language: "ru" or "en"
 language: en
 
+# Default player stats (reset each round)
+defaults:
+  # Base damage per bullet
+  damage: 3.0
+  # Base attack cooldown in ticks (20 ticks = 1 second). Lower = faster shooting
+  attack-speed: 20
+  # Additional attack speed modifier (added by cards, usually 0)
+  attack-speed-modifier: 0
+  # Extra attack range in blocks (added by cards, usually 0)
+  attack-range: 0
+  # Starting ammo (current bullets in magazine)
+  ammo: 3
+  # Maximum ammo capacity (reload restores to this value)
+  max-ammo: 3
+  # Number of bullets fired per shot (1 = single shot, >1 = shotgun)
+  bullets: 1
+  # Starting health (max 20 in vanilla, but can be higher)
+  hp: 20
+  # Bullet flight speed multiplier (1.0 = default)
+  bullet-speed: 1.0
+  # Reload speed bonus (0 = base 3 seconds, 0.95 = near-instant). Formula: 60 * (1.0 - reloadSpeed) ticks
+  reload-speed: 0
+
 game:
   default-rounds: 5
   max-rounds: 20

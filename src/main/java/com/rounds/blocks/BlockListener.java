@@ -101,7 +101,7 @@ public class BlockListener implements Listener {
     }
 
     public static ItemStack createSpawnBlock() {
-        ItemStack item = new ItemStack(Material.BEACON);
+        ItemStack item = new ItemStack(Material.OBSIDIAN);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(ChatColor.RED + "Блок спавна");
         meta.getPersistentDataContainer().set(RoundsKeys.SPAWN_BLOCK, PersistentDataType.BYTE, (byte) 1);

@@ -172,10 +172,6 @@ public class GameManager implements Listener {
                 for (Player p : readyPlayers) {
                     p.setGameMode(GameMode.SPECTATOR);
                     p.setInvulnerable(true);
-                    if (!allSpawns.isEmpty()) {
-                        Location preview = allSpawns.get(new Random().nextInt(allSpawns.size())).clone().add(0, 1, 0);
-                        p.teleport(preview);
-                    }
                 }
                 count--;
             }
@@ -197,10 +193,6 @@ public class GameManager implements Listener {
         for (Player p : readyPlayers) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             if (team != null) {
-                Location spawn = teamSpawns.get(team);
-                if (spawn != null) {
-                    p.teleport(spawn);
-                }
                 p.setGameMode(GameMode.SURVIVAL);
                 p.setFoodLevel(20);
                 p.setSaturation(5.0f);
@@ -235,7 +227,7 @@ public class GameManager implements Listener {
         var attr = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
         if (attr != null) {
             attr.setBaseValue(maxHP);
-            player.setHealth(Math.min(player.getHealth(), maxHP));
+            player.setHealth(maxHP);
         }
     }
 

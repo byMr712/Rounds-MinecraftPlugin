@@ -927,6 +927,7 @@ public class GameManager implements Listener {
         saveState();
         removeScoreboard();
         resetAllNameColors();
+        Location lobbyLoc = plugin.getBlockListener().getBlockStorage().getLobbyBlock();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             PlayerData data = plugin.getPlayerDataManager().getData(p.getUniqueId());
             if (data != null) data.resetStats();
@@ -942,6 +943,9 @@ public class GameManager implements Listener {
             p.setNoDamageTicks(0);
             p.setGameMode(GameMode.ADVENTURE);
             clearCardEffects(p);
+            if (lobbyLoc != null) {
+                p.teleport(lobbyLoc.clone().add(0, 1, 0));
+            }
         }
     }
 

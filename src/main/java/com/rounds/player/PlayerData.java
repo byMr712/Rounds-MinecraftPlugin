@@ -4,6 +4,8 @@ import com.rounds.DefaultStats;
 
 public class PlayerData {
 
+    public static final double MAX_HEALTH = 1024.0;
+
     public String playerName = "";
     public double playerUse = 0;
 
@@ -88,6 +90,7 @@ public class PlayerData {
     public double ammoPerHit = 0;
     public double hpBoostOnHit = 0;
     public double pristinePerseverance = 0;
+    public double hpCost = 0;
 
     public double x = 0;
     public double y = 0;
@@ -192,6 +195,7 @@ public class PlayerData {
         ammoPerHit = 0;
         hpBoostOnHit = 0;
         pristinePerseverance = 0;
+        hpCost = 0;
         x = 0;
         y = 0;
         z = 0;
@@ -218,7 +222,11 @@ public class PlayerData {
     }
 
     public double getMaxHealth() {
-        return Math.max(hp, 2);
+        return Math.max(2, Math.min(Math.max(hp, 2), MAX_HEALTH));
+    }
+
+    public static double clampMaxHealth(double value) {
+        return Math.max(2, Math.min(value, MAX_HEALTH));
     }
 
     public static double round2(double value) {

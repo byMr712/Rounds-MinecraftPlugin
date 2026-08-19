@@ -35,6 +35,19 @@ public class RoundsEntities implements Listener {
         plugin = pl;
     }
 
+    private static boolean isFinite(Vector v) {
+        return Double.isFinite(v.getX()) && Double.isFinite(v.getY()) && Double.isFinite(v.getZ());
+    }
+
+    private static void safeKnockback(LivingEntity target, Vector direction, double strength) {
+        if (!isFinite(direction) || direction.lengthSquared() <= 0.001) return;
+        Vector kb = direction.normalize().multiply(strength);
+        Vector newVel = target.getVelocity().add(kb);
+        if (isFinite(newVel)) {
+            target.setVelocity(newVel);
+        }
+    }
+
     public static void clearAllState() {
         bounceCounters.clear();
         lastBulletVelocity.clear();
@@ -44,7 +57,9 @@ public class RoundsEntities implements Listener {
 
     public static BulletProjectile spawnBullet(Player shooter, Location loc, Vector velocity, PlayerData data) {
         double scale = data.bigBullet > 0 ? 2.0 : 1.0;
-        Vector dir = velocity.clone().normalize();
+        Vector dir = (velocity.lengthSquared() > 0.001 && isFinite(velocity))
+            ? velocity.clone().normalize()
+            : new Vector(0, 0, 1);
         Location spawnLoc = loc.clone().add(dir.multiply(0.5));
 
         Arrow arrow = shooter.getWorld().spawn(spawnLoc, Arrow.class, a -> {
@@ -121,7 +136,10 @@ public class RoundsEntities implements Listener {
                     cancel();
                     return;
                 }
-                lastBulletVelocity.put(arrow.getUniqueId(), arrow.getVelocity());
+                Vector bulletVel = arrow.getVelocity();
+                if (isFinite(bulletVel)) {
+                    lastBulletVelocity.put(arrow.getUniqueId(), bulletVel);
+                }
                 PersistentDataContainer pdc = arrow.getPersistentDataContainer();
                 String ownerStr = pdc.getOrDefault(RoundsKeys.BULLET_OWNER, PersistentDataType.STRING, "");
                 UUID bulletOwnerId;
@@ -147,7 +165,7 @@ public class RoundsEntities implements Listener {
                         if (entity.getUniqueId().equals(bulletOwnerId)) continue;
                         if (entity instanceof org.bukkit.entity.ArmorStand) continue;
                         if (entity instanceof Player p) {
-                            if (!plugin.getGameManager().isParticipant(p.getUniqueId())) continue;
+                            if (!plugin.getGameManager().isTargetable(p)) continue;
                             GameTeam ownerTeam = plugin.getTeamManager().getPlayerTeam(bulletOwnerId);
                             GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
                             if (ownerTeam != null && targetTeam != null && ownerTeam == targetTeam) continue;
@@ -192,8 +210,7 @@ public class RoundsEntities implements Listener {
                         living.getWorld().playSound(living.getLocation(), Sound.ENTITY_PLAYER_HURT, 1f, 1f);
                         if (shooterData != null) {
                             if (shooterData.trusterLvl > 0) {
-                                Vector kb = arrow.getVelocity().normalize().multiply(shooterData.trusterLvl * 3.0);
-                                living.setVelocity(living.getVelocity().add(kb));
+                                safeKnockback(living, arrow.getVelocity(), shooterData.trusterLvl * 3.0);
                             }
                             if (shooterData.stun > 0 && living instanceof Player stunTarget) {
                                 stunTarget.addPotionEffect(new org.bukkit.potion.PotionEffect(
@@ -207,11 +224,18 @@ public class RoundsEntities implements Listener {
                                 spawnToxicCloud(living.getLocation(), bulletOwnerId, shooterData);
                             }
                             if (shooterData.bombBullet > 0) {
-                                spawnBomb(living.getLocation(), bulletOwnerId);
+                                spawnBomb(living.getLocation(), bulletOwnerId, shooterData.getEffectiveDamage() * 0.3);
                             }
                             if (shooterData.poison > 0) {
                                 living.addPotionEffect(new org.bukkit.potion.PotionEffect(
                                     PotionEffectType.POISON, 60, (int) Math.max(shooterData.poisonLvl, 1)));
+                            }
+                            if (shooterData.leech > 0) {
+                                Player shooterPlayer = Bukkit.getPlayer(bulletOwnerId);
+                                if (shooterPlayer != null && shooterPlayer.isOnline() && shooterPlayer.isValid()) {
+                                    double heal = Math.max(Math.ceil(finalDmg * shooterData.leech), 1);
+                                    shooterPlayer.setHealth(Math.min(shooterPlayer.getHealth() + heal, shooterPlayer.getMaxHealth()));
+                                }
                             }
                         }
                         removeBulletDisplay(arrow);
@@ -277,7 +301,9 @@ public class RoundsEntities implements Listener {
             ? reflectedVelocity.normalize().multiply(speed)
             : reflectedVelocity;
 
-        Location newLoc = oldArrow.getLocation().add(newVel.clone().normalize().multiply(0.5));
+        Location newLoc = newVel.lengthSquared() > 0.001
+            ? oldArrow.getLocation().add(newVel.clone().normalize().multiply(0.5))
+            : oldArrow.getLocation().clone();
         Player shooter = oldArrow.getShooter() instanceof Player p ? p : null;
         org.bukkit.projectiles.ProjectileSource originalShooter = oldArrow.getShooter();
 
@@ -415,6 +441,13 @@ public class RoundsEntities implements Listener {
                         nearest.setNoDamageTicks(0);
                         nearest.damage(finalDamage);
                         nearest.getWorld().playSound(nearest.getLocation(), Sound.ENTITY_PLAYER_HURT, 1f, 1f);
+                        if (shooterData != null && shooterData.leech > 0) {
+                            Player shooterPlayer = Bukkit.getPlayer(ownerId);
+                            if (shooterPlayer != null && shooterPlayer.isOnline() && shooterPlayer.isValid()) {
+                                double heal = Math.max(Math.ceil(finalDamage * shooterData.leech), 1);
+                                shooterPlayer.setHealth(Math.min(shooterPlayer.getHealth() + heal, shooterPlayer.getMaxHealth()));
+                            }
+                        }
                         arrow.remove();
                         display.remove();
                         cancel();
@@ -445,7 +478,7 @@ public class RoundsEntities implements Listener {
             if (entity.getUniqueId().equals(ownerId)) continue;
             if (entity instanceof org.bukkit.entity.ArmorStand) continue;
             if (entity instanceof org.bukkit.entity.Player p) {
-                if (!plugin.getGameManager().isParticipant(p.getUniqueId())) continue;
+                if (!plugin.getGameManager().isTargetable(p)) continue;
                 GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
                 if (ownerTeam != null && targetTeam != null && ownerTeam == targetTeam) continue;
             }
@@ -459,18 +492,16 @@ public class RoundsEntities implements Listener {
     }
 
     public static void spawnBomb(Location loc, UUID owner) {
-        spawnBomb(loc, owner, 1.0);
+        spawnBomb(loc, owner, 8.0);
     }
 
-    public static void spawnBomb(Location loc, UUID owner, double damageMultiplier) {
+    public static void spawnBomb(Location loc, UUID owner, double bombDamage) {
         loc.getWorld().playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 1.2f);
         loc.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, loc, 1);
         for (var entity : loc.getNearbyLivingEntities(5.0)) {
             if (entity.getUniqueId().equals(owner)) continue;
-            if (entity instanceof Player p && !plugin.getGameManager().isParticipant(p.getUniqueId())) continue;
-            double dist = entity.getLocation().distance(loc);
-            if (dist > 5.0) continue;
-            double dmg = Math.max(0, 8.0 * damageMultiplier * (1.0 - dist / 5.0));
+            if (entity instanceof Player p && !plugin.getGameManager().isTargetable(p)) continue;
+            double dmg = Math.max(0, bombDamage);
             if (dmg > 0) {
                 entity.setNoDamageTicks(0);
                 entity.damage(dmg);
@@ -553,6 +584,7 @@ public class RoundsEntities implements Listener {
         loc.getWorld().createExplosion(loc, 2.0f, false, false);
         for (var entity : loc.getNearbyLivingEntities(2.0)) {
             if (entity.getUniqueId().equals(owner)) continue;
+            if (entity instanceof Player sp && !plugin.getGameManager().isTargetable(sp)) continue;
             double dist = entity.getLocation().distance(loc);
             double dmg = Math.max(0, 5.0 * (1.0 - dist / 2.0));
             if (dmg > 0) { entity.setNoDamageTicks(0); entity.damage(dmg); }
@@ -580,7 +612,7 @@ public class RoundsEntities implements Listener {
                 reflectBulletFromPlayer(arrow, blockedPlayer, pdc);
                 return;
             }
-            if (living instanceof Player hitPlayer && !plugin.getGameManager().isParticipant(hitPlayer.getUniqueId())) return;
+            if (living instanceof Player hitPlayer && !plugin.getGameManager().isTargetable(hitPlayer)) return;
             PlayerData data = plugin.getPlayerDataManager().getData(ownerId);
             double finalDamage = damage * 2.0;
             if (data != null) {
@@ -603,8 +635,7 @@ public class RoundsEntities implements Listener {
                     finalDamage *= (1.0 + bounceCount * data.damagePerBounce);
                 }
                 if (data.trusterLvl > 0) {
-                    Vector knockback = arrow.getVelocity().normalize().multiply(data.trusterLvl * 3.0);
-                    living.setVelocity(living.getVelocity().add(knockback));
+                    safeKnockback(living, arrow.getVelocity(), data.trusterLvl * 3.0);
                 }
                 if (data.overpower > 0) {
                     finalDamage *= (1.0 + data.overpower * 0.2);
@@ -627,7 +658,7 @@ public class RoundsEntities implements Listener {
                     double splashRadius = 2.0 + data.splash;
                     for (Entity entity : living.getNearbyEntities(splashRadius, splashRadius, splashRadius)) {
                         if (entity instanceof LivingEntity splashTarget && !splashTarget.getUniqueId().equals(ownerId)) {
-                            if (splashTarget instanceof Player sp && !plugin.getGameManager().isParticipant(sp.getUniqueId())) continue;
+                            if (splashTarget instanceof Player sp && !plugin.getGameManager().isTargetable(sp)) continue;
                             double splashDmg = finalDamage * 0.5;
                             splashTarget.setNoDamageTicks(0);
                             splashTarget.damage(splashDmg);
@@ -638,11 +669,15 @@ public class RoundsEntities implements Listener {
                 if (data.shockwave > 0) {
                     for (Entity entity : living.getNearbyEntities(5.0, 5.0, 5.0)) {
                         if (entity instanceof LivingEntity shockTarget && !shockTarget.getUniqueId().equals(ownerId)) {
-                            if (shockTarget instanceof Player sp && !plugin.getGameManager().isParticipant(sp.getUniqueId())) continue;
-                            Vector push = shockTarget.getLocation().toVector()
-                                .subtract(living.getLocation().toVector()).normalize().multiply(data.shockwave * 0.8);
-                            push.setY(0.5);
-                            shockTarget.setVelocity(shockTarget.getVelocity().add(push));
+                            if (shockTarget instanceof Player sp && !plugin.getGameManager().isTargetable(sp)) continue;
+                            Vector toTarget = shockTarget.getLocation().toVector()
+                                .subtract(living.getLocation().toVector());
+                            if (isFinite(toTarget) && toTarget.lengthSquared() > 0.001) {
+                                Vector push = toTarget.normalize().multiply(data.shockwave * 0.8);
+                                push.setY(0.5);
+                                Vector newVel = shockTarget.getVelocity().add(push);
+                                if (isFinite(newVel)) shockTarget.setVelocity(newVel);
+                            }
                         }
                     }
                 }
@@ -659,7 +694,7 @@ public class RoundsEntities implements Listener {
                         PotionEffectType.WITHER, 40, (int) Math.max(data.parazitLvl, 1)));
                 }
                 if (data.leech > 0 && arrow.getShooter() instanceof Player shooter) {
-                    double heal = Math.max(Math.ceil(data.leech * 0.5), 1);
+                    double heal = Math.max(Math.ceil(finalDamage * data.leech), 1);
                     shooter.setHealth(Math.min(shooter.getHealth() + heal, shooter.getMaxHealth()));
                 }
                 if (data.speedBoost > 0 && arrow.getShooter() instanceof Player speedShooter) {
@@ -674,9 +709,10 @@ public class RoundsEntities implements Listener {
                             double baseMaxHP = hpAttr.getValue();
                             hpBoostBaseHP.put(shooterUUID, baseMaxHP);
                             double boost = baseMaxHP * data.hpBoostOnHit;
-                            double newMax = baseMaxHP + boost;
+                            double newMax = Math.min(baseMaxHP + boost, PlayerData.MAX_HEALTH);
+                            double actualBoost = Math.max(0, newMax - baseMaxHP);
                             hpAttr.setBaseValue(newMax);
-                            hpShooter.setHealth(Math.min(hpShooter.getHealth() + boost, newMax));
+                            hpShooter.setHealth(Math.min(hpShooter.getHealth() + actualBoost, newMax));
                             int taskId = Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                                 hpBoostBaseHP.remove(shooterUUID);
                                 hpBoostTasks.remove(shooterUUID);
@@ -703,7 +739,7 @@ public class RoundsEntities implements Listener {
                     GunItem.resetBlockCooldown(refreshShooter.getUniqueId());
                 }
                 if (data.bombBullet > 0) {
-                    spawnBomb(living.getLocation(), ownerId);
+                    spawnBomb(living.getLocation(), ownerId, data.getEffectiveDamage() * 0.3);
                 }
                 if (data.toxicCloud > 0) {
                     spawnToxicCloud(living.getLocation(), ownerId, data);
@@ -773,7 +809,7 @@ public class RoundsEntities implements Listener {
                             spawnToxicCloud(arrow.getLocation(), ownerId, bounceData);
                         }
                         if (bounceData.bombBullet > 0) {
-                            spawnBomb(arrow.getLocation(), ownerId);
+                            spawnBomb(arrow.getLocation(), ownerId, bounceData.getEffectiveDamage() * 0.3);
                         }
                     }
                     bounceBullet(arrow, reflected);
@@ -789,7 +825,7 @@ public class RoundsEntities implements Listener {
                 spawnToxicCloud(arrow.getLocation(), ownerId, blockData);
             }
             if (blockData != null && blockData.bombBullet > 0) {
-                spawnBomb(arrow.getLocation(), ownerId);
+                spawnBomb(arrow.getLocation(), ownerId, blockData.getEffectiveDamage() * 0.3);
             }
             return;
         }

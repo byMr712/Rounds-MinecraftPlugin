@@ -159,6 +159,14 @@ public class GameManager implements Listener {
 
         applyDarkness();
 
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) == null) {
+                p.setGameMode(GameMode.SPECTATOR);
+                p.setInvulnerable(true);
+                if (currentZoneCenter != null) p.teleport(currentZoneCenter);
+            }
+        }
+
         new BukkitRunnable() {
             int count = 3;
 
@@ -173,7 +181,7 @@ public class GameManager implements Listener {
                 plugin.getServer().broadcastMessage(ChatColor.YELLOW + "" + count);
                 applyDarkness();
 
-                for (Player p : readyPlayers) {
+                for (Player p : plugin.getServer().getOnlinePlayers()) {
                     p.setGameMode(GameMode.SPECTATOR);
                     p.setInvulnerable(true);
                 }
@@ -234,10 +242,11 @@ public class GameManager implements Listener {
         if (data.pristinePerseverance > 0) {
             maxHP = baseMaxHP * (1.0 + data.pristinePerseverance);
         }
+        maxHP = com.rounds.player.PlayerData.clampMaxHealth(maxHP);
         var attr = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
         if (attr != null) {
             attr.setBaseValue(maxHP);
-            player.setHealth(maxHP);
+            player.setHealth(Math.min(maxHP, com.rounds.player.PlayerData.MAX_HEALTH));
         }
     }
 
@@ -253,6 +262,7 @@ public class GameManager implements Listener {
             if (data.radiance > 0) {
                 for (Entity entity : p.getNearbyEntities(8.0, 8.0, 8.0)) {
                     if (entity instanceof Player radTarget && !radTarget.equals(p)) {
+                        if (radTarget.getGameMode() == GameMode.SPECTATOR) continue;
                         GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
                         GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(radTarget.getUniqueId());
                         if (myTeam != targetTeam) {
@@ -278,8 +288,10 @@ public class GameManager implements Listener {
                     GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
                     GameTeam enemyTeam = plugin.getTeamManager().getPlayerTeam(enemy.getUniqueId());
                     if (myTeam != null && enemyTeam != null && myTeam != enemyTeam) {
-                        double auraHeal = Math.max(Math.ceil(data.lifestealAura * 0.5), 1);
-                        p.setHealth(Math.min(p.getHealth() + auraHeal, p.getMaxHealth()));
+                        double steal = Math.max(Math.ceil(data.lifestealAura * 0.5), 1);
+                        enemy.setNoDamageTicks(0);
+                        enemy.damage(steal);
+                        p.setHealth(Math.min(p.getHealth() + steal, p.getMaxHealth()));
                         break;
                     }
                 }
@@ -288,7 +300,8 @@ public class GameManager implements Listener {
                 long now = System.currentTimeMillis();
                 for (Entity entity : p.getNearbyEntities(5.0, 5.0, 5.0)) {
                     if (entity instanceof LivingEntity enemy && !enemy.getUniqueId().equals(p.getUniqueId())) {
-                        if (enemy instanceof Player silenceTarget) {
+                        if (entity instanceof Player silenceTarget) {
+                            if (silenceTarget.getGameMode() == GameMode.SPECTATOR) continue;
                             GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
                             GameTeam enemyTeam = plugin.getTeamManager().getPlayerTeam(silenceTarget.getUniqueId());
                             if (myTeam != null && enemyTeam != null && myTeam != enemyTeam) {
@@ -336,7 +349,7 @@ public class GameManager implements Listener {
                 if (data.grow > 0) {
                     baseMaxHP += data.grow * 0.2 * 10;
                 }
-                double enhancedMaxHP = baseMaxHP * (1.0 + data.pristinePerseverance);
+                double enhancedMaxHP = com.rounds.player.PlayerData.clampMaxHealth(baseMaxHP * (1.0 + data.pristinePerseverance));
                 double currentMaxHP = attr.getValue();
                 double currentHP = p.getHealth();
                 boolean pristineActive = currentMaxHP > baseMaxHP + 0.5;
@@ -344,6 +357,7 @@ public class GameManager implements Listener {
                 if (currentHP >= 0.9 * currentMaxHP) {
                     if (!pristineActive && currentMaxHP < enhancedMaxHP - 0.5) {
                         attr.setBaseValue(enhancedMaxHP);
+                        p.setHealth(Math.min(p.getHealth(), enhancedMaxHP));
                     }
                 } else {
                     if (pristineActive) {
@@ -586,8 +600,7 @@ public class GameManager implements Listener {
         }
 
         if (totalAlive == 0) {
-            stopGame();
-            plugin.getServer().broadcastMessage(ChatColor.RED + Messages.get("game.all-disconnected"));
+            drawRound();
             return;
         }
 
@@ -661,6 +674,42 @@ public class GameManager implements Listener {
         }, 60L);
     }
 
+    private void drawRound() {
+        state = GameState.ROUND_END;
+        losingTeams.clear();
+        saveState();
+        plugin.getServer().broadcastMessage(ChatColor.YELLOW + Messages.get("game.draw"));
+
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            p.sendTitle(Messages.get("title.draw"), "", 10, 60, 20);
+            p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+        }
+
+        scheduleDelayed(() -> {
+            state = GameState.CARDS;
+            saveState();
+            musicTick = 0;
+            plugin.getCardManager().clearPendingPicks();
+            pickRandomZoneAndAssignSpawns();
+            applyDarkness();
+            for (Player p : plugin.getServer().getOnlinePlayers()) {
+                GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+                if (team != null) {
+                    Location spawn = teamSpawns.get(team);
+                    if (spawn != null) p.teleport(spawn);
+                    p.setInvulnerable(true);
+                    p.setFoodLevel(20);
+                    p.setSaturation(5.0f);
+                    p.setExhaustion(0f);
+                } else {
+                    if (currentZoneCenter != null) p.teleport(currentZoneCenter);
+                }
+            }
+            openCardGUIs(true);
+            updateScoreboard();
+        }, 60L);
+    }
+
     private void endGame(GameTeam winner) {
         state = GameState.GAME_END;
         saveState();
@@ -708,6 +757,10 @@ public class GameManager implements Listener {
     }
 
     private void openCardGUIs() {
+        openCardGUIs(false);
+    }
+
+    private void openCardGUIs(boolean allTeams) {
         removeDarkness();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             p.setGameMode(GameMode.SPECTATOR);
@@ -716,7 +769,7 @@ public class GameManager implements Listener {
         Set<UUID> pickers = new HashSet<>();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-            if (team != null && (losingTeams.contains(team) || pendingCardJoiners.contains(p.getUniqueId()))) {
+            if (team != null && (allTeams || losingTeams.contains(team) || pendingCardJoiners.contains(p.getUniqueId()))) {
                 if (p.isDead()) continue;
                 pickers.add(p.getUniqueId());
                 plugin.getCardManager().openCardSelection(p, team);
@@ -813,9 +866,14 @@ public class GameManager implements Listener {
         PlayerData deadData = plugin.getPlayerDataManager().getData(dead);
         if (deadData.phoenix > 0 && !deadData.phoenixUsed) {
             deadData.phoenixUsed = true;
+            event.setCancelled(true);
+            dead.setFallDistance(0);
+            dead.setFireTicks(0);
             dead.setHealth(dead.getMaxHealth() / 2);
+            dead.setNoDamageTicks(20);
             dead.addPotionEffect(new org.bukkit.potion.PotionEffect(
                 PotionEffectType.REGENERATION, 100, 2));
+            dead.getWorld().playSound(dead.getLocation(), Sound.ENTITY_BLAZE_SHOOT, 1.0f, 1.0f);
             dead.sendMessage(ChatColor.RED + "Phoenix revived you!");
             return;
         }
@@ -824,6 +882,7 @@ public class GameManager implements Listener {
             dead.getWorld().createExplosion(dead.getLocation(), 3.0f, false, false);
             for (Entity entity : dead.getNearbyEntities(4.0, 4.0, 4.0)) {
                 if (entity instanceof LivingEntity target && !target.getUniqueId().equals(dead.getUniqueId())) {
+                    if (target instanceof Player tp && tp.getGameMode() == GameMode.SPECTATOR) continue;
                     try {
                         double dist = target.getLocation().distance(dead.getLocation());
                         double dmg = Math.max(0, 8.0 * (1.0 - dist / 4.0));
@@ -1010,6 +1069,12 @@ public class GameManager implements Listener {
 
     public boolean isParticipant(UUID uuid) {
         return plugin.getPlayerDataManager().isActive(uuid);
+    }
+
+    public boolean isTargetable(Player player) {
+        return player != null && player.isOnline() && player.isValid()
+            && player.getGameMode() != GameMode.SPECTATOR
+            && isParticipant(player.getUniqueId());
     }
 
     public Player findRandomAlivePlayer() {

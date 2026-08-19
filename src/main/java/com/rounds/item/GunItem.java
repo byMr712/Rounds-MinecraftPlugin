@@ -175,6 +175,10 @@ public class GunItem implements Listener {
         }
 
         data.ammo -= 1;
+        if (data.hpCost > 0 && player.isOnline() && player.isValid()) {
+            player.setNoDamageTicks(0);
+            player.damage(player.getMaxHealth() * data.hpCost);
+        }
         player.sendActionBar(ChatColor.GRAY + Messages.get("gun.ammo-display", (int) data.ammo, (int) data.maxAmmo));
         player.getWorld().playSound(bulletOrigin, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 0.5f, 1.5f);
 
@@ -243,10 +247,11 @@ public class GunItem implements Listener {
         if (data.bombOnBlock > 0) {
             Location bombCenter = player.getLocation();
             int bombCount = Math.max((int) data.bombOnBlock, 1);
+            double bombDamage = data.getEffectiveDamage() * 0.3;
             for (int i = 0; i < bombCount; i++) {
                 double angle = 2 * Math.PI * i / bombCount;
                 Location bombLoc = bombCenter.clone().add(Math.cos(angle) * 3.0, 0.5, Math.sin(angle) * 3.0);
-                RoundsEntities.spawnBomb(bombLoc, uuid, 1.0);
+                RoundsEntities.spawnBomb(bombLoc, uuid, bombDamage);
             }
         }
 
@@ -293,6 +298,7 @@ public class GunItem implements Listener {
                     Location sawLoc = p.getLocation();
                     for (Entity entity : sawLoc.getNearbyEntities(5.0, 5.0, 5.0)) {
                         if (entity instanceof LivingEntity target && !target.getUniqueId().equals(uuid)) {
+                            if (target instanceof Player tp && tp.getGameMode() == GameMode.SPECTATOR) continue;
                             GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(uuid);
                             GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(target.getUniqueId());
                             if (myTeam != null && targetTeam != null && myTeam != targetTeam) {
@@ -310,6 +316,7 @@ public class GunItem implements Listener {
         if (data.emp > 0) {
             for (Entity entity : blockLoc.getNearbyEntities(5.0, 5.0, 5.0)) {
                 if (entity instanceof LivingEntity target && !target.getUniqueId().equals(uuid)) {
+                    if (target instanceof Player tp && tp.getGameMode() == GameMode.SPECTATOR) continue;
                     GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(uuid);
                     GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(target.getUniqueId());
                     if (myTeam != null && targetTeam != null && myTeam != targetTeam) {
@@ -327,10 +334,17 @@ public class GunItem implements Listener {
         if (data.shockwave > 0) {
             for (Entity entity : blockLoc.getNearbyEntities(5.0, 5.0, 5.0)) {
                 if (entity instanceof LivingEntity target && !target.getUniqueId().equals(uuid)) {
+                    if (target instanceof Player tp && tp.getGameMode() == GameMode.SPECTATOR) continue;
                     Vector push = target.getLocation().toVector()
-                        .subtract(blockLoc.toVector()).normalize().multiply(1.5);
-                    push.setY(0.5);
-                    target.setVelocity(target.getVelocity().add(push));
+                        .subtract(blockLoc.toVector());
+                    if (push.lengthSquared() > 0.001) {
+                        push.normalize().multiply(1.5);
+                        push.setY(0.5);
+                        Vector newVel = target.getVelocity().add(push);
+                        if (Double.isFinite(newVel.getX()) && Double.isFinite(newVel.getY()) && Double.isFinite(newVel.getZ())) {
+                            target.setVelocity(newVel);
+                        }
+                    }
                 }
             }
             player.getWorld().playSound(blockLoc, Sound.ENTITY_PLAYER_ATTACK_KNOCKBACK, 1.0f, 0.5f);
@@ -339,10 +353,17 @@ public class GunItem implements Listener {
         if (data.implode > 0) {
             for (Entity entity : blockLoc.getNearbyEntities(5.0, 5.0, 5.0)) {
                 if (entity instanceof LivingEntity target && !target.getUniqueId().equals(uuid)) {
+                    if (target instanceof Player tp && tp.getGameMode() == GameMode.SPECTATOR) continue;
                     Vector pull = blockLoc.toVector()
-                        .subtract(target.getLocation().toVector()).normalize().multiply(1.0);
-                    pull.setY(0.3);
-                    target.setVelocity(target.getVelocity().add(pull));
+                        .subtract(target.getLocation().toVector());
+                    if (pull.lengthSquared() > 0.001) {
+                        pull.normalize().multiply(1.0);
+                        pull.setY(0.3);
+                        Vector newVel = target.getVelocity().add(pull);
+                        if (Double.isFinite(newVel.getX()) && Double.isFinite(newVel.getY()) && Double.isFinite(newVel.getZ())) {
+                            target.setVelocity(newVel);
+                        }
+                    }
                 }
             }
             player.getWorld().playSound(blockLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 0.5f);
@@ -351,6 +372,7 @@ public class GunItem implements Listener {
         if (data.silence > 0) {
             for (Entity entity : blockLoc.getNearbyEntities(5.0, 5.0, 5.0)) {
                 if (entity instanceof LivingEntity target && !target.getUniqueId().equals(uuid)) {
+                    if (target instanceof Player tp && tp.getGameMode() == GameMode.SPECTATOR) continue;
                     GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(uuid);
                     GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(target.getUniqueId());
                     if (myTeam != null && targetTeam != null && myTeam != targetTeam && target instanceof Player silenceTarget) {
@@ -369,6 +391,7 @@ public class GunItem implements Listener {
             double playerHP = player.getHealth();
             for (Entity entity : blockLoc.getNearbyEntities(5.0, 5.0, 5.0)) {
                 if (entity instanceof LivingEntity target && !target.getUniqueId().equals(uuid)) {
+                    if (target instanceof Player tp && tp.getGameMode() == GameMode.SPECTATOR) continue;
                     GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(uuid);
                     GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(target.getUniqueId());
                     if (myTeam != null && targetTeam != null && myTeam != targetTeam) {

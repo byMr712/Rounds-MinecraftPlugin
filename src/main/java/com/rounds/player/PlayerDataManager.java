@@ -1,5 +1,6 @@
 package com.rounds.player;
 
+import com.rounds.DefaultStats;
 import com.rounds.RoundsKeys;
 import com.rounds.RoundsPlugin;
 import com.rounds.game.GameManager;
@@ -32,7 +33,7 @@ public class PlayerDataManager implements Listener {
 
     static {
         String[] stats = {
-            "dmg", "atks", "atk-speed", "atkr", "bounce", "ammo", "bullets",
+            "dmg", "atks", "atk-speed", "atkr", "bounce", "ammo", "max-ammo", "bullets",
             "cold", "poison", "toxic_cloud", "leech", "tg_bounce", "homing",
             "poison_lvl", "cold_lvl", "parazit_lvl", "parazit",
             "hp", "shield_cooldown", "bomb_bullet", "bomb_on_block", "explode_bullets",
@@ -182,8 +183,10 @@ public class PlayerDataManager implements Listener {
         data.atkSpeed = saved.stats.getOrDefault("atk-speed", 0.0);
         data.atkr = saved.stats.getOrDefault("atkr", 0.0);
         data.bouncePl = saved.stats.getOrDefault("bounce", 0.0);
-        data.ammo = saved.stats.getOrDefault("ammo", 1.0);
-        data.maxAmmo = saved.stats.getOrDefault("max-ammo", 1.0);
+        data.ammo = saved.stats.getOrDefault("ammo", DefaultStats.get().ammo);
+        double restoredMaxAmmo = saved.stats.getOrDefault("max-ammo", 0.0);
+        data.maxAmmo = restoredMaxAmmo >= 1 ? restoredMaxAmmo : DefaultStats.get().maxAmmo;
+        data.ammo = Math.min(Math.max(data.ammo, 1), data.maxAmmo);
         data.bullets = saved.stats.getOrDefault("bullets", 1.0);
         data.cold = saved.stats.getOrDefault("cold", 0.0);
         data.poison = saved.stats.getOrDefault("poison", 0.0);
@@ -410,6 +413,7 @@ public class PlayerDataManager implements Listener {
         setStat(pdc, "atkr", data.atkr);
         setStat(pdc, "bounce", data.bouncePl);
         setStat(pdc, "ammo", data.ammo);
+        setStat(pdc, "max-ammo", data.maxAmmo);
         setStat(pdc, "bullets", data.bullets);
         setStat(pdc, "cold", data.cold);
         setStat(pdc, "poison", data.poison);
@@ -461,7 +465,8 @@ public class PlayerDataManager implements Listener {
         data.atkSpeed = getStat(pdc, "atk-speed", 0);
         data.atkr = getStat(pdc, "atkr", 0);
         data.bouncePl = getStat(pdc, "bounce", 0);
-        data.ammo = getStat(pdc, "ammo", 1);
+        data.ammo = getStat(pdc, "ammo", DefaultStats.get().ammo);
+        data.maxAmmo = getStat(pdc, "max-ammo", DefaultStats.get().maxAmmo);
         data.bullets = getStat(pdc, "bullets", 1);
         data.cold = getStat(pdc, "cold", 0);
         data.poison = getStat(pdc, "poison", 0);

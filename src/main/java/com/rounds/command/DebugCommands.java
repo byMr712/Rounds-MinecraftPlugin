@@ -219,7 +219,8 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
         boxSection(sender, "DEBUG");
         boxKv(sender, "/rdebug stats [player]", Messages.get("debug.help-stats"));
-        boxKv(sender, "/rdebug setstat <stat> <value>", Messages.get("debug.help-setstat"));
+        boxKv(sender, "/rdebug stats <player> <stat> <value>", Messages.get("debug.help-stats-set"));
+        boxKv(sender, "/rdebug setstat <stat> <value> [player]", Messages.get("debug.help-setstat"));
         boxKv(sender, "/rdebug setteam <COLOR>", Messages.get("debug.help-setteam"));
         boxKv(sender, "/rdebug setlanguage <ru|en>", Messages.get("debug.help-setlanguage"));
         boxKv(sender, "/rdebug effect <type> <amp> <dur>", Messages.get("debug.help-effect"));
@@ -536,6 +537,23 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage(ChatColor.RED + Messages.get("debug.specify-player")); return;
         }
 
+        if (args.length >= 4) {
+            String stat = args[2].toLowerCase();
+            double value;
+            try {
+                value = Double.parseDouble(args[3]);
+            } catch (NumberFormatException e) {
+                sender.sendMessage(ChatColor.RED + Messages.get("command.invalid-number", args[3])); return;
+            }
+            PlayerData setData = plugin.getPlayerDataManager().getData(target);
+            if (!applyStat(setData, target, stat, value)) {
+                sender.sendMessage(ChatColor.RED + Messages.get("debug.unknown-stat", stat));
+                return;
+            }
+            sender.sendMessage(ChatColor.GREEN + Messages.get("debug.setstat-done", stat, PlayerData.round2(value), target.getName()));
+            return;
+        }
+
         PlayerData data = plugin.getPlayerDataManager().getData(target);
         boxHeader(sender, Messages.get("debug.stats-title", target.getName()), Messages.get("debug.team-label", getTeamDisplay(target)) + " | " + Messages.get("debug.cards-label", countCards(data)));
 
@@ -600,6 +618,14 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
 
         PlayerData data = plugin.getPlayerDataManager().getData(target);
+        if (!applyStat(data, target, stat, value)) {
+            sender.sendMessage(ChatColor.RED + Messages.get("debug.unknown-stat", stat));
+            return;
+        }
+        sender.sendMessage(ChatColor.GREEN + Messages.get("debug.setstat-done", stat, PlayerData.round2(value), target.getName()));
+    }
+
+    private boolean applyStat(PlayerData data, Player target, String stat, double value) {
         switch (stat) {
             case "dmg" -> data.dmg = value;
             case "atks" -> data.atks = value;
@@ -618,10 +644,11 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "parazit" -> data.parazit = value;
             case "parazit_lvl" -> data.parazitLvl = value;
             case "hp" -> {
-                data.hp = value;
+                double clamped = PlayerData.clampMaxHealth(value);
+                data.hp = clamped;
                 var attr = target.getAttribute(Attribute.GENERIC_MAX_HEALTH);
-                if (attr != null) attr.setBaseValue(Math.max(value, 2));
-                target.setHealth(Math.min(target.getHealth(), Math.max(value, 2)));
+                if (attr != null) attr.setBaseValue(clamped);
+                target.setHealth(Math.min(target.getHealth(), clamped));
             }
             case "bomb_bullet" -> data.bombBullet = value;
             case "bomb_on_block" -> data.bombOnBlock = value;
@@ -634,9 +661,9 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "truster_lvl" -> data.trusterLvl = value;
             case "dark" -> data.dark = value;
             case "atks_reload" -> data.atksReload = value;
-            default -> { sender.sendMessage(ChatColor.RED + Messages.get("debug.unknown-stat", stat)); return; }
+            default -> { return false; }
         }
-        sender.sendMessage(ChatColor.GREEN + Messages.get("debug.setstat-done", stat, PlayerData.round2(value), target.getName()));
+        return true;
     }
 
     private void handleSetTeam(CommandSender sender, String[] args) {
@@ -960,9 +987,13 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 yield filterStartsWith(list, input);
             }
             case "stats" -> {
-                List<String> list = new ArrayList<>();
-                Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
-                yield filterStartsWith(list, input);
+                if (args.length == 2 || args.length == 4) {
+                    List<String> list = new ArrayList<>();
+                    Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
+                    yield filterStartsWith(list, input);
+                }
+                if (args.length == 3) yield filterStartsWith(STATS, input);
+                yield Collections.emptyList();
             }
             case "setstat" -> {
                 if (args.length == 2) yield filterStartsWith(STATS, input);

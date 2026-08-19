@@ -57,6 +57,7 @@ public class GameManager implements Listener {
     private final GameStateManager stateManager;
     private boolean wheelEnabled = false;
     private final Set<Integer> scheduledTaskIds = new HashSet<>();
+    private final Set<UUID> pendingCardJoiners = new HashSet<>();
 
     public GameManager(RoundsPlugin plugin) {
         this.plugin = plugin;
@@ -144,7 +145,7 @@ public class GameManager implements Listener {
         player.getInventory().setItemInMainHand(gun);
     }
 
-    private void applyPlayerHP(Player player) {
+    public void applyPlayerHP(Player player) {
         PlayerData data = plugin.getPlayerDataManager().getData(player);
         double baseMaxHP = data.getMaxHealth();
         if (data.grow > 0) {
@@ -580,11 +581,12 @@ public class GameManager implements Listener {
     private void openCardGUIs() {
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-            if (team != null && team == lastLoser) {
+            if (team != null && (team == lastLoser || pendingCardJoiners.contains(p.getUniqueId()))) {
                 if (p.isDead()) continue;
                 plugin.getCardManager().openCardSelection(p, team);
             }
         }
+        pendingCardJoiners.clear();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
         }
@@ -593,11 +595,12 @@ public class GameManager implements Listener {
     private void openCardGUIsDraw() {
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-            if (team != null) {
+            if (team != null || pendingCardJoiners.contains(p.getUniqueId())) {
                 if (p.isDead()) continue;
                 plugin.getCardManager().openCardSelection(p, team);
             }
         }
+        pendingCardJoiners.clear();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
         }
@@ -811,6 +814,10 @@ public class GameManager implements Listener {
             }
         }
         return candidates.get(new Random().nextInt(candidates.size()));
+    }
+
+    public void markPendingCardJoiner(UUID uuid) {
+        pendingCardJoiners.add(uuid);
     }
 
     private void saveState() {

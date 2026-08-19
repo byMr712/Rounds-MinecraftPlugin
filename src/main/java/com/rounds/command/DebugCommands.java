@@ -247,6 +247,21 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
 
         GameTeam finalTeam = plugin.getTeamManager().getPlayerTeam(uuid);
+        gm.markPendingCardJoiner(uuid);
+
+        if (gm.getState() == GameManager.GameState.CARDS) {
+            plugin.getCardManager().openCardSelection(player, finalTeam);
+            player.setInvulnerable(true);
+        } else if (gm.getState() == GameManager.GameState.PLAYING) {
+            player.getInventory().clear();
+            player.getInventory().setItemInMainHand(com.rounds.item.GunItem.createGunItem());
+            plugin.getGameManager().applyPlayerHP(player);
+            player.setGameMode(GameMode.SURVIVAL);
+            player.setFoodLevel(20);
+            player.setSaturation(5.0f);
+            player.setExhaustion(0f);
+        }
+
         String teamName = Messages.get("team." + finalTeam.name().toLowerCase());
         if (returning) {
             sender.sendMessage(ChatColor.GOLD + Messages.get("game.restored-team", finalTeam.getColor() + teamName));

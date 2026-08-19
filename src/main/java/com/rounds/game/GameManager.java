@@ -13,6 +13,8 @@ import com.rounds.teams.TeamManager;
 import com.rounds.game.GameStateManager.SavedState;
 import com.rounds.teams.TeamManager.GameTeam;
 import com.rounds.util.Messages;
+import org.bukkit.GameRule;
+import org.bukkit.World;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Entity;
@@ -97,7 +99,7 @@ public class GameManager implements Listener {
 
         plugin.getCardManager().clearPendingPicks();
         plugin.getPlayerDataManager().clearActivePlayers();
-        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "gamerule naturalRegeneration false");
+        for (World world : Bukkit.getWorlds()) world.setGameRule(GameRule.NATURAL_REGENERATION, false);
         for (Player p : readyPlayers) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             plugin.getPlayerDataManager().trackPlayer(p.getUniqueId());
@@ -529,7 +531,7 @@ public class GameManager implements Listener {
             plugin.getCardManager().resetAllCards();
             GunItem.resetRoundState();
             RoundsEntities.clearAllState();
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "gamerule naturalRegeneration true");
+            for (World world : Bukkit.getWorlds()) world.setGameRule(GameRule.NATURAL_REGENERATION, true);
             for (Player p : plugin.getServer().getOnlinePlayers()) {
                 p.getInventory().clear();
                 var attr = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
@@ -685,7 +687,7 @@ public class GameManager implements Listener {
         plugin.getCardManager().resetAllCards();
         GunItem.resetRoundState();
         RoundsEntities.clearAllState();
-        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "gamerule naturalRegeneration true");
+        for (World world : Bukkit.getWorlds()) world.setGameRule(GameRule.NATURAL_REGENERATION, true);
         state = GameState.WAITING;
         saveState();
         removeScoreboard();

@@ -122,7 +122,9 @@ public class GunItem implements Listener {
         PlayerData data = plugin.getPlayerDataManager().getData(player);
 
         if (data.ammo <= 0) {
-            player.sendActionBar(ChatColor.RED + Messages.get("gun.no-ammo"));
+            if (!isReloading(uuid) && !reloadingPlayers.contains(uuid)) {
+                startReload(player, data);
+            }
             return;
         }
 

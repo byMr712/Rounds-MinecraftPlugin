@@ -75,6 +75,7 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
             new PlaceholderEntry("stat_max_ammo",      "ph-desc.stat-max-ammo"),
             new PlaceholderEntry("stat_bullets",       "ph-desc.stat-bullets"),
             new PlaceholderEntry("stat_bullet_speed",  "ph-desc.stat-bullet-speed"),
+            new PlaceholderEntry("stat_reload_time",   "ph-desc.stat-reload-time"),
             new PlaceholderEntry("stat_bounce",        "ph-desc.stat-bounce"),
             new PlaceholderEntry("stat_homing",        "ph-desc.stat-homing"),
             new PlaceholderEntry("stat_big_bullet",    "ph-desc.stat-big-bullet"),
@@ -177,6 +178,7 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
             case "max_ammo"       -> d.maxAmmo;
             case "bullets"        -> d.bullets;
             case "bullet_speed"   -> d.bulletSpeed;
+            case "reload_time"    -> Math.max(100 * (1.0 - Math.min(d.reloadSpeed, 0.95)) * (1.0 + d.atksReload * 0.1), 4) / 20.0;
             case "bounce"         -> d.bouncePl;
             case "homing"         -> d.homing;
             case "big_bullet"     -> d.bigBullet;

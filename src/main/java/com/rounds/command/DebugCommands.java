@@ -580,6 +580,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxStat(sender, "stat-ammo", data.ammo);
         boxStat(sender, "stat-bullets", data.bullets);
         boxStat(sender, "stat-bullet-speed", data.bulletSpeed);
+        boxStat(sender, "stat-reload-time", Math.max(100 * (1.0 - Math.min(data.reloadSpeed, 0.95)) * (1.0 + data.atksReload * 0.1), 4) / 20.0);
         boxStat(sender, "stat-bounce", data.bouncePl);
         boxStat(sender, "stat-homing", data.homing);
         boxStat(sender, "stat-big-bullet", data.bigBullet);

@@ -541,6 +541,8 @@ public class GameManager implements Listener {
                 if (spawn != null) p.teleport(spawn);
                 p.getInventory().clear();
                 giveGun(p);
+                PlayerData roundData = plugin.getPlayerDataManager().getData(p);
+                if (roundData != null) roundData.ammo = roundData.maxAmmo;
                 clearCardEffects(p);
                 applyPlayerHP(p);
                 applyRoundEffects(p);

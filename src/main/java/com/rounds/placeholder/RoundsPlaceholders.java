@@ -157,7 +157,11 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
             PlayerDataManager pdm = plugin.getPlayerDataManager();
             PlayerData data = pdm.getData(player.getUniqueId());
             if (data == null) return "0";
-            return String.valueOf(getStatValue(data, params.substring(5)));
+            double v = getStatValue(data, params.substring(5));
+            if (v == Math.floor(v) && !Double.isInfinite(v)) {
+                return String.valueOf((long) v);
+            }
+            return String.valueOf(v);
         }
 
         return null;

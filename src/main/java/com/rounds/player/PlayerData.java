@@ -166,6 +166,7 @@ public class PlayerData {
         stun = 0;
         blockCd = 0;
         reloadSpeed = d.reloadSpeed;
+        atksReload = 0;
         heal = 0;
         damagePerBounce = 0;
         doubleBlock = 0;

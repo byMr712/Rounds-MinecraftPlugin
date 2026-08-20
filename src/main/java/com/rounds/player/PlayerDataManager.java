@@ -372,6 +372,28 @@ public class PlayerDataManager implements Listener {
                     player.teleport(target.getLocation());
                 }
             }, 5L);
+        } else {
+            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                PlayerData pdata = getData(uuid);
+                if (pdata != null) {
+                    pdata.resetStats();
+                    pdata.resetAllCards();
+                }
+                plugin.getGameManager().clearCardEffects(player);
+                com.rounds.item.GunItem.cancelReload(uuid);
+                player.getInventory().clear();
+                var attr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
+                if (attr != null) attr.setBaseValue(20);
+                player.setHealth(20);
+                player.setFoodLevel(20);
+                player.setGameMode(GameMode.ADVENTURE);
+                player.setInvulnerable(false);
+                player.setNoDamageTicks(0);
+                org.bukkit.Location lobby = plugin.getBlockListener().getBlockStorage().getLobbyBlock();
+                if (lobby != null) {
+                    player.teleport(lobby.clone().add(0, 1, 0));
+                }
+            }, 1L);
         }
     }
 

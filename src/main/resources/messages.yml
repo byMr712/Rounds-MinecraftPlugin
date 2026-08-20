@@ -317,6 +317,7 @@ ru:
     ph-desc.stat-sneaky: "\u0421\u043A\u0440\u044B\u0442\u043D\u043E\u0441\u0442\u044C"
     ph-desc.stat-phoenix: "\u0424\u0435\u043D\u0438\u043A\u0441"
     ph-desc.stat-abyssal: "\u0410\u0431\u0438\u0441\u0441\u0430\u043B\u044C\u043D\u044B\u0439"
+    ph-desc.stat-cards: "\u041A\u0430\u0440\u0442\u044B"
 
 en:
   # Gun
@@ -630,3 +631,4 @@ en:
     ph-desc.stat-sneaky: "Sneaky"
     ph-desc.stat-phoenix: "Phoenix"
     ph-desc.stat-abyssal: "Abyssal"
+    ph-desc.stat-cards: "Cards"

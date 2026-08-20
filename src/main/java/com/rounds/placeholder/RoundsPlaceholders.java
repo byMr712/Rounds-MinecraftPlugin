@@ -103,7 +103,8 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
             new PlaceholderEntry("stat_emp",           "ph-desc.stat-emp"),
             new PlaceholderEntry("stat_sneaky",        "ph-desc.stat-sneaky"),
             new PlaceholderEntry("stat_phoenix",       "ph-desc.stat-phoenix"),
-            new PlaceholderEntry("stat_abyssal",       "ph-desc.stat-abyssal")
+            new PlaceholderEntry("stat_abyssal",       "ph-desc.stat-abyssal"),
+            new PlaceholderEntry("stat_cards",         "ph-desc.stat-cards")
         );
     }
 
@@ -201,6 +202,7 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
             case "sneaky"         -> d.sneaky;
             case "phoenix"        -> d.phoenix;
             case "abyssal"        -> d.abyssal;
+            case "cards"          -> { int c = 0; for (boolean b : d.cards) if (b) c++; yield c; }
             default               -> 0.0;
         };
     }

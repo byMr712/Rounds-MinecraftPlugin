@@ -357,43 +357,60 @@ public class PlayerDataManager implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
-        PlayerData data = loadFromPDC(player);
-        cache.put(uuid, data);
 
-        if (plugin.getGameManager().isGameStarted()) {
-            if (plugin.getTeamManager().getPlayerTeam(uuid) != null) {
-                plugin.getTeamManager().leaveTeam(uuid);
+        try {
+            plugin.getLogger().info("[Join] " + player.getName() + " joined, gameStarted=" + plugin.getGameManager().isGameStarted() + " state=" + plugin.getGameManager().getState());
+
+            PlayerData data = loadFromPDC(player);
+            cache.put(uuid, data);
+
+            if (plugin.getGameManager().isGameStarted()) {
+                if (plugin.getTeamManager().getPlayerTeam(uuid) != null) {
+                    plugin.getTeamManager().leaveTeam(uuid);
+                }
+                Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                    player.setGameMode(GameMode.SPECTATOR);
+                    player.setInvulnerable(true);
+                    Player target = plugin.getGameManager().findRandomAlivePlayer();
+                    if (target != null) {
+                        player.teleport(target.getLocation());
+                    }
+                }, 5L);
+            } else {
+                plugin.getLogger().info("[Join] " + player.getName() + " -> WAITING, scheduling reset");
+                Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                    try {
+                        plugin.getLogger().info("[Join] " + player.getName() + " -> executing reset now");
+                        PlayerData pdata = getData(uuid);
+                        if (pdata != null) {
+                            pdata.resetStats();
+                            pdata.resetAllCards();
+                        }
+                        plugin.getGameManager().clearCardEffects(player);
+                        com.rounds.item.GunItem.cancelReload(uuid);
+                        player.getInventory().clear();
+                        var attr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
+                        if (attr != null) attr.setBaseValue(20);
+                        player.setHealth(20);
+                        player.setFoodLevel(20);
+                        player.setGameMode(GameMode.ADVENTURE);
+                        player.setInvulnerable(false);
+                        player.setNoDamageTicks(0);
+                        org.bukkit.Location lobby = plugin.getBlockListener().getBlockStorage().getLobbyBlock();
+                        if (lobby != null) {
+                            player.teleport(lobby.clone().add(0, 1, 0));
+                        } else {
+                            plugin.getLogger().warning("[Join] Lobby is null!");
+                        }
+                    } catch (Exception e) {
+                        plugin.getLogger().severe("[Join] Error resetting " + player.getName() + ": " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }, 5L);
             }
-            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-                player.setGameMode(GameMode.SPECTATOR);
-                player.setInvulnerable(true);
-                Player target = plugin.getGameManager().findRandomAlivePlayer();
-                if (target != null) {
-                    player.teleport(target.getLocation());
-                }
-            }, 5L);
-        } else {
-            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-                PlayerData pdata = getData(uuid);
-                if (pdata != null) {
-                    pdata.resetStats();
-                    pdata.resetAllCards();
-                }
-                plugin.getGameManager().clearCardEffects(player);
-                com.rounds.item.GunItem.cancelReload(uuid);
-                player.getInventory().clear();
-                var attr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
-                if (attr != null) attr.setBaseValue(20);
-                player.setHealth(20);
-                player.setFoodLevel(20);
-                player.setGameMode(GameMode.ADVENTURE);
-                player.setInvulnerable(false);
-                player.setNoDamageTicks(0);
-                org.bukkit.Location lobby = plugin.getBlockListener().getBlockStorage().getLobbyBlock();
-                if (lobby != null) {
-                    player.teleport(lobby.clone().add(0, 1, 0));
-                }
-            }, 1L);
+        } catch (Exception e) {
+            plugin.getLogger().severe("[Join] Error in onJoin for " + player.getName() + ": " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

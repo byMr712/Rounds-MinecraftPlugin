@@ -131,30 +131,17 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             sendHelp(sender);
             return true;
         }
-        if (args[0].toLowerCase().equals("join")) {
+        String sub = args[0].toLowerCase();
+        if (sub.equals("join")) {
             handleJoin(sender);
             return true;
         }
-        String sub = args[0].toLowerCase();
-        if (sub.equals("start") || sub.equals("stop") || sub.equals("rounds")) {
-            if (sub.equals("start")) {
-                if (plugin.getGameManager().isGameStarted()) {
-                    sender.sendMessage(ChatColor.RED + Messages.get("debug.game-already-started"));
-                } else {
-                    plugin.getGameManager().startGame();
-                }
-            } else if (sub.equals("stop")) {
-                handleStop(sender);
-            } else {
-                handleRounds(sender, args);
-            }
-            return true;
-        }
-        if (!sender.hasPermission("rounds.admin")) {
+        boolean freeplayActive = plugin.getRoundsConfig().isFreeplay();
+        if (!sender.hasPermission("rounds.admin") && !(freeplayActive && FREEPLAY_COMMANDS.contains(sub))) {
             sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
             return true;
         }
-        switch (args[0].toLowerCase()) {
+        switch (sub) {
             case "help" -> sendHelp(sender);
             case "start" -> {
                 if (plugin.getGameManager().isGameStarted()) {
@@ -190,6 +177,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "uppos2" -> handleUpPos(sender, 2);
             case "upset" -> handleUpSet(sender);
             case "wheel" -> handleWheel(sender, args);
+            case "freeplay" -> handleFreeplay(sender, args);
             case "tab" -> handleTab(sender, args);
             case "placeholders" -> handlePlaceholders(sender);
             default -> sender.sendMessage(ChatColor.RED + Messages.get("debug.unknown-command", args[0]));
@@ -207,6 +195,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxKv(sender, "/rdebug rounds <n>", Messages.get("debug.help-rounds"));
         boxKv(sender, "/rdebug info", Messages.get("debug.help-info"));
         boxKv(sender, "/rdebug join", Messages.get("debug.help-join"));
+        boxKv(sender, "/rdebug freeplay on|off", Messages.get("debug.help-freeplay"));
 
         boxSection(sender, Y, Messages.get("debug.help-section-map-blocks"));
         boxKv(sender, "/rdebug giveblocks", Messages.get("debug.help-giveblocks"));
@@ -775,6 +764,21 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
     // === MISC ===
 
+    private void handleFreeplay(CommandSender sender, String[] args) {
+        if (args.length < 2) { sender.sendMessage(ChatColor.RED + Messages.get("debug.usage-freeplay")); return; }
+        switch (args[1].toLowerCase()) {
+            case "on" -> {
+                plugin.getRoundsConfig().setFreeplay(true);
+                sender.sendMessage(ChatColor.GREEN + Messages.get("debug.freeplay-on"));
+            }
+            case "off" -> {
+                plugin.getRoundsConfig().setFreeplay(false);
+                sender.sendMessage(ChatColor.GREEN + Messages.get("debug.freeplay-off"));
+            }
+            default -> sender.sendMessage(ChatColor.RED + Messages.get("debug.usage-freeplay"));
+        }
+    }
+
     private void handleResetStats(CommandSender sender) {
         if (!(sender instanceof Player player)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
         PlayerData data = plugin.getPlayerDataManager().getData(player);
@@ -882,24 +886,32 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
     private static final List<String> SUBCOMMANDS = Arrays.asList(
         "help", "start", "stop", "status", "rounds", "info",
-        "givegun", "cards", "giveblocks", "join",
+        "givegun", "cards", "giveblocks", "join", "freeplay",
         "stats", "setstat", "setteam", "setlanguage", "effect", "heal",
         "spawnbomb", "spawnheal", "spawntoxic", "spawnshield",
         "resetstats", "reload", "setlobby",
         "jumppos1", "jumppos2", "jumpset", "uppos1", "uppos2", "upset",
         "wheel", "tab"
     );
+    private static final List<String> FREEPLAY_COMMANDS = Arrays.asList(
+        "start", "stop", "rounds", "stats", "givegun", "wheel"
+    );
     private static final List<String> TEAM_COLORS = Arrays.asList("BLUE", "RED", "YELLOW", "GREEN");
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (!sender.hasPermission("rounds.admin")) return Collections.emptyList();
+        boolean admin = sender.hasPermission("rounds.admin");
+        boolean freeplay = plugin.getRoundsConfig().isFreeplay();
+        if (!admin && !freeplay) return Collections.emptyList();
 
         String input = args[args.length - 1].toLowerCase();
 
         if (args.length == 1) {
-            return filterStartsWith(SUBCOMMANDS, input);
+            if (admin) return filterStartsWith(SUBCOMMANDS, input);
+            return filterStartsWith(FREEPLAY_COMMANDS, input);
         }
+
+        if (!admin && !FREEPLAY_COMMANDS.contains(args[0].toLowerCase())) return Collections.emptyList();
 
         return switch (args[0].toLowerCase()) {
             case "givegun", "giveblocks" -> {
@@ -960,6 +972,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 yield Collections.emptyList();
             }
             case "rounds" -> filterStartsWith(Arrays.asList("1", "5", "10", "15", "20"), input);
+            case "freeplay" -> filterStartsWith(Arrays.asList("on", "off"), input);
             case "wheel" -> filterStartsWith(Arrays.asList("on", "off"), input);
             case "tab" -> {
                 if (args.length == 2) yield filterStartsWith(Arrays.asList("on", "off", "name"), input);

@@ -20,6 +20,8 @@ public final class RoundsConfig {
     private boolean builtinScoreboard;
     private String builtinScoreboardTitle;
 
+    private boolean freeplay;
+
     private boolean colorNicknames;
 
     private boolean gameRulesEnabled;
@@ -57,6 +59,8 @@ public final class RoundsConfig {
 
         builtinScoreboard = c.getBoolean("builtin-scoreboard.enabled", false);
         builtinScoreboardTitle = c.getString("builtin-scoreboard.title", "&6&lROUNDS");
+
+        freeplay = c.getBoolean("freeplay.enabled", false);
 
         colorNicknames = c.getBoolean("color-nicknames", true);
 
@@ -111,6 +115,14 @@ public final class RoundsConfig {
     public double getJumpBlockLaunchHeight() { return jumpBlockLaunchHeight; }
     public double getUpBlockLiftSpeed() { return upBlockLiftSpeed; }
     public int getUpBlockDurationTicks() { return upBlockDurationTicks; }
+
+    public boolean isFreeplay() { return freeplay; }
+
+    public void setFreeplay(boolean enabled) {
+        this.freeplay = enabled;
+        plugin.getConfig().set("freeplay.enabled", enabled);
+        plugin.saveConfig();
+    }
 
     public void setBuiltinScoreboard(boolean enabled) {
         this.builtinScoreboard = enabled;

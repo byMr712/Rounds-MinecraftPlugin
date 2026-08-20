@@ -6,7 +6,7 @@ Minecraft minigame plugin "Rounds". 4 teams, card system with 65 cards, shooting
 
 ## Requirements
 
-- Paper 1.20.4 - 26.2+
+- Paper 1.20.4 - 26.2
 - Java 17+
 - Optional: [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.13006/) for placeholder support
 - Optional: [TAB](https://www.spigotmc.org/resources/tab.57806/) for scoreboard and game status display

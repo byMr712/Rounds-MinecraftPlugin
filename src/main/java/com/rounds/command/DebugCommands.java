@@ -179,7 +179,6 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "spawntoxic" -> handleSpawnToxic(sender);
             case "spawnshield" -> handleSpawnShield(sender);
             case "cards" -> handleCards(sender, args);
-            case "applycard" -> handleApplyCard(sender, args);
             case "resetstats" -> handleResetStats(sender);
             case "reload" -> handleReload(sender);
             case "giveblocks" -> handleBlocks(sender, args);
@@ -219,7 +218,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxKv(sender, "/rdebug cards", Messages.get("debug.help-cards"));
         boxKv(sender, "/rdebug cards reload", Messages.get("debug.help-cards-reload"));
         boxKv(sender, "/rdebug cards test [id]", Messages.get("debug.help-cards-test"));
-        boxKv(sender, "/rdebug applycard <name>", Messages.get("debug.help-applycard"));
+        boxKv(sender, "/rdebug cards add <name>", Messages.get("debug.help-cards-add"));
         boxKv(sender, "/rdebug wheel on|off", Messages.get("debug.help-wheel"));
 
         boxSection(sender, LP, Messages.get("debug.help-section-scoreboard"));
@@ -495,6 +494,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         switch (args[1].toLowerCase()) {
             case "reload" -> handleCardsReload(sender);
             case "test" -> handleCardsTest(sender, args);
+            case "add" -> handleCardsAdd(sender, args);
             default -> sender.sendMessage(ChatColor.RED + Messages.get("debug.unknown-command", args[0] + " " + args[1]));
         }
     }
@@ -502,6 +502,20 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     private void handleCardsReload(CommandSender sender) {
         plugin.getCardManager().reload();
         sender.sendMessage(ChatColor.GREEN + Messages.get("command.cards-reloaded", plugin.getCardManager().getRegistry().getAllCards().size()));
+    }
+
+    private void handleCardsAdd(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
+        if (args.length < 3) { sender.sendMessage(ChatColor.RED + "Usage: /rdebug cards add <name>"); return; }
+
+        String nameInput = String.join(" ", Arrays.copyOfRange(args, 2, args.length));
+        var card = plugin.getCardManager().getRegistry().findCardByName(nameInput);
+        if (card == null) { sender.sendMessage(ChatColor.RED + Messages.get("command.card-not-found", nameInput)); return; }
+
+        PlayerData data = plugin.getPlayerDataManager().getData(player);
+        card.apply(player, data);
+        data.setCard(card.getId(), true);
+        sender.sendMessage(ChatColor.GREEN + Messages.get("command.applied-card", card.getColoredName(Messages.getLanguage())));
     }
 
     private void handleCardsTest(CommandSender sender, String[] args) {
@@ -761,20 +775,6 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
     // === MISC ===
 
-    private void handleApplyCard(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
-        if (args.length < 2) { sender.sendMessage(ChatColor.RED + "Usage: /rdebug applycard <name>"); return; }
-
-        String nameInput = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
-        var card = plugin.getCardManager().getRegistry().findCardByName(nameInput);
-        if (card == null) { sender.sendMessage(ChatColor.RED + Messages.get("command.card-not-found", nameInput)); return; }
-
-        PlayerData data = plugin.getPlayerDataManager().getData(player);
-        card.apply(player, data);
-        data.setCard(card.getId(), true);
-        sender.sendMessage(ChatColor.GREEN + Messages.get("command.applied-card", card.getColoredName(Messages.getLanguage())));
-    }
-
     private void handleResetStats(CommandSender sender) {
         if (!(sender instanceof Player player)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
         PlayerData data = plugin.getPlayerDataManager().getData(player);
@@ -885,7 +885,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         "givegun", "cards", "giveblocks", "join",
         "stats", "setstat", "setteam", "setlanguage", "effect", "heal",
         "spawnbomb", "spawnheal", "spawntoxic", "spawnshield",
-        "applycard", "resetstats", "reload", "setlobby",
+        "resetstats", "reload", "setlobby",
         "jumppos1", "jumppos2", "jumpset", "uppos1", "uppos2", "upset",
         "wheel", "tab"
     );
@@ -945,18 +945,17 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 if (args.length == 4) yield filterStartsWith(Arrays.asList("10", "20", "40", "60", "100", "200"), input);
                 yield Collections.emptyList();
             }
-            case "applycard" -> {
-                List<String> cards = plugin.getCardManager().getRegistry().getCardNameSuggestions();
-                yield filterStartsWith(cards, input);
-            }
             case "cards" -> {
-                if (args.length == 2) yield filterStartsWith(Arrays.asList("reload", "test"), input);
+                if (args.length == 2) yield filterStartsWith(Arrays.asList("reload", "test", "add"), input);
                 if (args.length == 3 && args[1].equalsIgnoreCase("test")) {
                     List<String> list = new ArrayList<>();
                     for (com.rounds.cards.Card card : plugin.getCardManager().getRegistry().getAllCards()) {
                         list.add(String.valueOf(card.getId()));
                     }
                     yield filterStartsWith(list, input);
+                }
+                if (args.length == 3 && args[1].equalsIgnoreCase("add")) {
+                    yield filterStartsWith(plugin.getCardManager().getRegistry().getCardNameSuggestions(), input);
                 }
                 yield Collections.emptyList();
             }

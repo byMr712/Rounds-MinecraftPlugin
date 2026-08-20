@@ -429,7 +429,7 @@ public class GunItem implements Listener {
     private void startReload(Player player, PlayerData data) {
         UUID uuid = player.getUniqueId();
         reloadingPlayers.add(uuid);
-        double reloadDurationTicks = Math.max(60 * (1.0 - Math.min(data.reloadSpeed, 0.95)) + data.atksReload * 2, 4);
+        double reloadDurationTicks = Math.max(100 * (1.0 - Math.min(data.reloadSpeed, 0.95)) * (1.0 + data.atksReload * 0.1), 4);
 
         ReloadTask task = new ReloadTask(player, data, (int) reloadDurationTicks);
         reloadTasks.put(uuid, task);

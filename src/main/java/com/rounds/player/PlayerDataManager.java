@@ -5,9 +5,12 @@ import com.rounds.RoundsKeys;
 import com.rounds.RoundsPlugin;
 import com.rounds.game.GameManager;
 import com.rounds.teams.TeamManager.GameTeam;
+import com.rounds.util.Messages;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Sound;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -431,6 +434,30 @@ public class PlayerDataManager implements Listener {
         }
         cache.remove(uuid);
         GunCooldowns.clear(uuid);
+
+        GameManager gm = plugin.getGameManager();
+        if (gm.isGameStarted() && gm.getState() != GameManager.GameState.GAME_END) {
+            int alive = 0;
+            for (Player p : plugin.getServer().getOnlinePlayers()) {
+                if (p.getUniqueId().equals(uuid)) continue;
+                if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) != null) {
+                    alive++;
+                }
+            }
+            if (alive < 2) {
+                for (Player p : plugin.getServer().getOnlinePlayers()) {
+                    if (p.getUniqueId().equals(uuid)) continue;
+                    if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) != null) {
+                        p.sendTitle(Messages.get("title.game-won"), "", 10, 100, 20);
+                        p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+                        p.sendMessage(ChatColor.GREEN + Messages.get("game.auto-stop-single"));
+                    }
+                }
+                gm.stopGame();
+                plugin.getTeamManager().clearAll();
+                gm.getStateManager().clear();
+            }
+        }
     }
 
     public void saveAll() {

@@ -13,6 +13,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
@@ -852,6 +853,16 @@ public class RoundsEntities implements Listener {
             }
             if (blockData != null && blockData.bombBullet > 0) {
                 spawnBomb(arrow.getLocation(), ownerId, blockData.getEffectiveDamage() * 0.3);
+            }
+        }
+    }
+
+    @EventHandler
+    public void onChunkLoad(ChunkLoadEvent event) {
+        if (event.isNewChunk()) return;
+        for (Entity entity : event.getChunk().getEntities()) {
+            if (entity.getPersistentDataContainer().has(RoundsKeys.IS_BULLET, PersistentDataType.BYTE)) {
+                entity.remove();
             }
         }
     }

@@ -131,6 +131,21 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             handleJoin(sender);
             return true;
         }
+        String sub = args[0].toLowerCase();
+        if (sub.equals("start") || sub.equals("stop") || sub.equals("rounds")) {
+            if (sub.equals("start")) {
+                if (plugin.getGameManager().isGameStarted()) {
+                    sender.sendMessage(ChatColor.RED + Messages.get("debug.game-already-started"));
+                } else {
+                    plugin.getGameManager().startGame();
+                }
+            } else if (sub.equals("stop")) {
+                handleStop(sender);
+            } else {
+                handleRounds(sender, args);
+            }
+            return true;
+        }
         if (!sender.hasPermission("rounds.admin")) {
             sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
             return true;

@@ -864,8 +864,8 @@ public class GameManager implements Listener {
         event.setDroppedExp(0);
 
         PlayerData deadData = plugin.getPlayerDataManager().getData(dead);
-        if (deadData.phoenix > 0 && !deadData.phoenixUsed) {
-            deadData.phoenixUsed = true;
+        if (deadData.phoenixUses > 0) {
+            deadData.phoenixUses--;
             event.setCancelled(true);
             dead.setFallDistance(0);
             dead.setFireTicks(0);

@@ -98,7 +98,7 @@ public class PlayerData {
 
     public boolean shieldActive = false;
     public double shieldHp = 0;
-    public boolean phoenixUsed = false;
+    public int phoenixUses = 0;
 
     public PlayerData() {
         DefaultStats d = DefaultStats.get();
@@ -201,7 +201,7 @@ public class PlayerData {
         z = 0;
         shieldActive = false;
         shieldHp = 0;
-        phoenixUsed = false;
+        phoenixUses = 0;
     }
 
     public double getEffectiveDamage() {

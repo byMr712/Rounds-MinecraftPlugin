@@ -104,7 +104,8 @@ public class Card {
             case "refresh": data.refresh = PlayerData.round2(Math.max(data.refresh + value, 0)); break;
             case "radiance": data.radiance = PlayerData.round2(Math.max(data.radiance + value, 0)); break;
             case "lifesteal-aura": data.lifestealAura = PlayerData.round2(Math.max(data.lifestealAura + value, 0)); break;
-            case "phoenix": data.phoenix = PlayerData.round2(Math.max(data.phoenix + value, 0)); break;
+            case "phoenix": data.phoenix = PlayerData.round2(Math.max(data.phoenix + value, 0));
+                data.phoenixUses = (int) data.phoenix; break;
             case "abyssal": data.abyssal = PlayerData.round2(Math.max(data.abyssal + value, 0)); break;
             case "implode": data.implode = PlayerData.round2(Math.max(data.implode + value, 0)); break;
             case "echo": data.echo = PlayerData.round2(Math.max(data.echo + value, 0)); break;

@@ -3,6 +3,7 @@ package com.rounds.player;
 import com.rounds.DefaultStats;
 import com.rounds.RoundsKeys;
 import com.rounds.RoundsPlugin;
+import com.rounds.cards.Card;
 import com.rounds.game.GameManager;
 import com.rounds.teams.TeamManager.GameTeam;
 import com.rounds.util.Messages;
@@ -55,6 +56,14 @@ public class PlayerDataManager implements Listener {
         this.plugin = plugin;
         this.activeFile = new File(plugin.getDataFolder(), "active-players.yml");
         loadActivePlayers();
+    }
+
+    private List<Integer> getRegisteredCardIds() {
+        List<Integer> ids = new ArrayList<>();
+        for (Card card : plugin.getCardManager().getRegistry().getAllCards()) {
+            ids.add(card.getId());
+        }
+        return ids;
     }
 
     // ==================== Active player tracking ====================
@@ -137,8 +146,8 @@ public class PlayerDataManager implements Listener {
         yml.set(path + ".stats.pristine-perseverance", data.pristinePerseverance);
 
         List<Integer> ownedCards = new ArrayList<>();
-        for (int i = 1; i <= 44; i++) {
-            if (data.getCard(i)) ownedCards.add(i);
+        for (int id : getRegisteredCardIds()) {
+            if (data.getCard(id)) ownedCards.add(id);
         }
         yml.set(path + ".cards", ownedCards);
 
@@ -272,8 +281,8 @@ public class PlayerDataManager implements Listener {
         yml.set(path + ".stats.pristine-perseverance", data.pristinePerseverance);
 
         List<Integer> ownedCards = new ArrayList<>();
-        for (int i = 1; i <= 44; i++) {
-            if (data.getCard(i)) ownedCards.add(i);
+        for (int id : getRegisteredCardIds()) {
+            if (data.getCard(id)) ownedCards.add(id);
         }
         yml.set(path + ".cards", ownedCards);
 
@@ -371,6 +380,7 @@ public class PlayerDataManager implements Listener {
                 if (plugin.getTeamManager().getPlayerTeam(uuid) != null) {
                     plugin.getTeamManager().leaveTeam(uuid);
                 }
+                plugin.getGameManager().hideNameTagsInGame();
                 Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                     player.setGameMode(GameMode.SPECTATOR);
                     player.setInvulnerable(true);
@@ -514,8 +524,8 @@ public class PlayerDataManager implements Listener {
         setStat(pdc, "player_use", data.playerUse);
         setStat(pdc, "atks_reload", data.atksReload);
 
-        for (int i = 1; i <= 43; i++) {
-            pdc.set(new NamespacedKey("rounds", "card_" + i), PersistentDataType.DOUBLE, data.getCard(i) ? 1.0 : 0.0);
+        for (int id : getRegisteredCardIds()) {
+            pdc.set(new NamespacedKey("rounds", "card_" + id), PersistentDataType.DOUBLE, data.getCard(id) ? 1.0 : 0.0);
         }
     }
 
@@ -567,10 +577,10 @@ public class PlayerDataManager implements Listener {
         data.playerUse = getStat(pdc, "player_use", 0);
         data.atksReload = getStat(pdc, "atks_reload", 0);
 
-        for (int i = 1; i <= 43; i++) {
-            NamespacedKey cardKey = new NamespacedKey("rounds", "card_" + i);
+        for (int id : getRegisteredCardIds()) {
+            NamespacedKey cardKey = new NamespacedKey("rounds", "card_" + id);
             Double cardVal = pdc.get(cardKey, PersistentDataType.DOUBLE);
-            data.setCard(i, cardVal != null && cardVal > 0);
+            data.setCard(id, cardVal != null && cardVal > 0);
         }
 
         return data;

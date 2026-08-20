@@ -79,7 +79,7 @@ color-nicknames: true
 # Установите плагин TAB + PlaceholderAPI.
 # Используйте плейсхолдеры в конфиге TAB:
 #   %rounds_round%          - текущий раунд
-#   %rounds_rounds_to_win%  - раундов до победы
+#   %rounds_rounds_to_win%  - побед для выигрыша
 #   %rounds_round_display%  - "3/5"
 #   %rounds_state%          - состояние игры
 #   %rounds_team%           - название команды игрока

@@ -208,7 +208,7 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
             case "sneaky"         -> d.sneaky;
             case "phoenix"        -> d.phoenix;
             case "abyssal"        -> d.abyssal;
-            case "cards"          -> { int c = 0; for (boolean b : d.cards) if (b) c++; yield c; }
+            case "cards"          -> d.getOwnedCards().size();
             default               -> 0.0;
         };
     }

@@ -58,6 +58,7 @@ public class GameManager implements Listener {
     private final Map<UUID, Long> lastSilenceAuraTime = new HashMap<>();
     private final Set<GameTeam> losingTeams = new HashSet<>();
     private final GameStateManager stateManager;
+    private final com.rounds.util.TabCompat tabCompat;
     private boolean wheelEnabled = false;
     private final Set<Integer> scheduledTaskIds = new HashSet<>();
     private final Set<UUID> pendingCardJoiners = new HashSet<>();
@@ -69,6 +70,7 @@ public class GameManager implements Listener {
         this.plugin = plugin;
         this.roundsToWin = plugin.getRoundsConfig().getDefaultRounds();
         this.stateManager = new GameStateManager(plugin);
+        this.tabCompat = new com.rounds.util.TabCompat();
     }
 
     public boolean isWheelEnabled() { return wheelEnabled; }
@@ -120,6 +122,7 @@ public class GameManager implements Listener {
 
         saveState();
         updateScoreboard();
+        hideNameTagsInGame();
 
         plugin.getCardManager().clearPendingPicks();
         plugin.getPlayerDataManager().clearActivePlayers();
@@ -738,6 +741,7 @@ public class GameManager implements Listener {
             saveState();
             removeScoreboard();
             resetAllNameColors();
+            restoreNameTags();
             plugin.getCardManager().resetAllCards();
             GunItem.resetRoundState();
             RoundsEntities.clearAllState();
@@ -1028,6 +1032,7 @@ public class GameManager implements Listener {
         saveState();
         removeScoreboard();
         resetAllNameColors();
+        restoreNameTags();
         Location lobbyLoc = plugin.getBlockListener().getBlockStorage().getLobbyBlock();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             PlayerData data = plugin.getPlayerDataManager().getData(p.getUniqueId());
@@ -1116,10 +1121,63 @@ public class GameManager implements Listener {
         return pendingCardJoiners.contains(uuid);
     }
 
+    public void hideNameTagsInGame() {
+        if (tabCompat.isActive()) {
+            for (Player p : plugin.getServer().getOnlinePlayers()) {
+                tabCompat.hideNametag(p);
+            }
+            return;
+        }
+        Scoreboard mainSb = Bukkit.getScoreboardManager().getMainScoreboard();
+        Team hidden = mainSb.getTeam("rounds_hidden");
+        if (hidden == null) {
+            hidden = mainSb.registerNewTeam("rounds_hidden");
+            hidden.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
+        }
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            for (Team t : new ArrayList<>(mainSb.getTeams())) {
+                if (t.getName().startsWith("rounds_") && !t.getName().equals("rounds_hidden")) {
+                    t.removePlayer(p);
+                }
+            }
+            hidden.addPlayer(p);
+        }
+    }
+
+    public void restoreNameTags() {
+        if (tabCompat.isActive()) {
+            for (Player p : plugin.getServer().getOnlinePlayers()) {
+                tabCompat.showNametag(p);
+                GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+                if (team != null) {
+                    tabCompat.setColoredName(p, team.getColor());
+                } else {
+                    tabCompat.resetName(p);
+                }
+            }
+            return;
+        }
+        Scoreboard mainSb = Bukkit.getScoreboardManager().getMainScoreboard();
+        Team hidden = mainSb.getTeam("rounds_hidden");
+        if (hidden != null) hidden.unregister();
+        if (!plugin.getRoundsConfig().isColorNicknames()) return;
+        refreshTeamScoreboards();
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+            p.setPlayerListName(team != null ? team.getColor() + p.getName() : p.getName());
+        }
+    }
+
     public void applyTeamColor(Player player) {
         if (!plugin.getRoundsConfig().isColorNicknames()) return;
         GameTeam team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
-        if (team != null) {
+        if (tabCompat.isActive()) {
+            if (team != null) {
+                tabCompat.setColoredName(player, team.getColor());
+            } else {
+                tabCompat.resetName(player);
+            }
+        } else if (team != null) {
             player.setPlayerListName(team.getColor() + player.getName());
         } else {
             player.setPlayerListName(player.getName());

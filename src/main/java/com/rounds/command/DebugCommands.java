@@ -60,6 +60,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     private static final String A = "\u00A7b"; // ChatColor.AQUA
     private static final String R = "\u00A7c"; // ChatColor.RED
     private static final String GR = "\u00A77"; // ChatColor.GRAY
+    private static final String LP = "\u00A7d"; // ChatColor.LIGHT_PURPLE
     private static final String BOLD = "\u00A7l";
     private static final String RESET = "\u00A7r";
 
@@ -91,8 +92,11 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     }
 
     private void boxSection(CommandSender sender, String title) {
-        String filler = "\u2550".repeat(Math.max(0, 28 - title.length()));
-        sender.sendMessage(B + "\u2560\u2550\u2550 " + A + title + " " + B + filler);
+        boxSection(sender, A, title);
+    }
+
+    private void boxSection(CommandSender sender, String colorPrefix, String title) {
+        sender.sendMessage(B + "\u2560\u2550\u2550 " + BOLD + colorPrefix + title + " \u2193");
     }
 
     private void boxKv(CommandSender sender, String text) {
@@ -163,10 +167,8 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "stop" -> handleStop(sender);
             case "rounds" -> handleRounds(sender, args);
             case "info" -> handleInfo(sender);
-            case "test" -> sender.sendMessage(ChatColor.GREEN + Messages.get("command.plugin-working"));
             case "stats" -> handleStats(sender, args);
             case "givegun" -> handleGiveGun(sender, args);
-            case "giveall" -> handleGiveAll(sender);
             case "setstat" -> handleSetStat(sender, args);
             case "setteam" -> handleSetTeam(sender, args);
             case "setlanguage" -> handleSetLanguage(sender, args);
@@ -176,14 +178,10 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "spawnheal" -> handleSpawnHeal(sender);
             case "spawntoxic" -> handleSpawnToxic(sender);
             case "spawnshield" -> handleSpawnShield(sender);
-            case "entities" -> handleEntities(sender);
             case "cards" -> handleCards(sender, args);
             case "applycard" -> handleApplyCard(sender, args);
             case "resetstats" -> handleResetStats(sender);
             case "reload" -> handleReload(sender);
-            case "version" -> handleVersion(sender);
-            case "killround" -> handleKillRound(sender);
-            case "iteminfo" -> handleItemInfo(sender);
             case "giveblocks" -> handleBlocks(sender, args);
             case "setlobby" -> handleSetLobby(sender);
             case "jumppos1" -> handleJumpPos(sender, 1);
@@ -203,7 +201,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     private void sendHelp(CommandSender sender) {
         boxHeader(sender, Messages.get("debug.title"));
 
-        boxSection(sender, "GAME");
+        boxSection(sender, G, Messages.get("debug.help-section-game"));
         boxKv(sender, "/rdebug start", Messages.get("debug.help-start"));
         boxKv(sender, "/rdebug stop", Messages.get("debug.help-stop"));
         boxKv(sender, "/rdebug status", Messages.get("debug.help-status"));
@@ -211,28 +209,27 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxKv(sender, "/rdebug info", Messages.get("debug.help-info"));
         boxKv(sender, "/rdebug join", Messages.get("debug.help-join"));
 
-        boxSection(sender, "MAP BLOCKS");
+        boxSection(sender, Y, Messages.get("debug.help-section-map-blocks"));
         boxKv(sender, "/rdebug giveblocks", Messages.get("debug.help-giveblocks"));
-        boxKv(sender, "/rdebug setlobby", "Установить блок лобби на вашей позиции");
-        boxKv(sender, "/rdebug jumppos1/pos2/set", "Заполнить область jump-блоками");
-        boxKv(sender, "/rdebug uppos1/pos2/set", "Заполнить область up-блоками");
+        boxKv(sender, "/rdebug setlobby", Messages.get("debug.help-setlobby"));
+        boxKv(sender, "/rdebug jumppos1/pos2/set", Messages.get("debug.help-jumppos"));
+        boxKv(sender, "/rdebug uppos1/pos2/set", Messages.get("debug.help-uppos"));
 
-        boxSection(sender, "CARDS");
+        boxSection(sender, A, Messages.get("debug.help-section-cards"));
         boxKv(sender, "/rdebug cards", Messages.get("debug.help-cards"));
         boxKv(sender, "/rdebug cards reload", Messages.get("debug.help-cards-reload"));
         boxKv(sender, "/rdebug cards test [id]", Messages.get("debug.help-cards-test"));
         boxKv(sender, "/rdebug applycard <name>", Messages.get("debug.help-applycard"));
         boxKv(sender, "/rdebug wheel on|off", Messages.get("debug.help-wheel"));
 
-        boxSection(sender, "SCOREBOARD");
+        boxSection(sender, LP, Messages.get("debug.help-section-scoreboard"));
         boxKv(sender, "/rdebug tab on|off", Messages.get("debug.help-tab"));
         boxKv(sender, "/rdebug tab name <title>", Messages.get("debug.help-tab-name"));
 
-        boxSection(sender, "ITEMS");
+        boxSection(sender, W, Messages.get("debug.help-section-items"));
         boxKv(sender, "/rdebug givegun [player|@a]", Messages.get("debug.help-givegun"));
-        boxKv(sender, "/rdebug giveall", Messages.get("debug.help-giveall"));
 
-        boxSection(sender, "DEBUG");
+        boxSection(sender, R, Messages.get("debug.help-section-debug"));
         boxKv(sender, "/rdebug stats [player]", Messages.get("debug.help-stats"));
         boxKv(sender, "/rdebug stats <player> <stat> <value>", Messages.get("debug.help-stats-set"));
         boxKv(sender, "/rdebug setstat <stat> <value> [player]", Messages.get("debug.help-setstat"));
@@ -241,15 +238,10 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxKv(sender, "/rdebug effect <type> <amp> <dur>", Messages.get("debug.help-effect"));
         boxKv(sender, "/rdebug heal [amount]", Messages.get("debug.help-heal"));
         boxKv(sender, "/rdebug spawnbomb/heal/toxic/shield", Messages.get("debug.help-spawn"));
-        boxKv(sender, "/rdebug entities", Messages.get("debug.help-entities"));
         boxKv(sender, "/rdebug resetstats", Messages.get("debug.help-resetstats"));
         boxKv(sender, "/rdebug reload", Messages.get("debug.help-reload"));
-        boxKv(sender, "/rdebug version", Messages.get("debug.help-version"));
-        boxKv(sender, "/rdebug killround", Messages.get("debug.help-killround"));
-        boxKv(sender, "/rdebug iteminfo", Messages.get("debug.help-iteminfo"));
-        boxKv(sender, "/rdebug test", Messages.get("debug.help-test"));
 
-        boxSection(sender, "PLACEHOLDERS");
+        boxSection(sender, GR, Messages.get("debug.help-section-placeholders"));
         boxKv(sender, "/rdebug placeholders", Messages.get("debug.help-placeholders"));
 
         boxFooter(sender);
@@ -258,12 +250,12 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     private void handlePlaceholders(CommandSender sender) {
         boxHeader(sender, Messages.get("debug.placeholders-title"));
 
-        boxSection(sender, Messages.get("debug.ph-game-section"));
+        boxSection(sender, G, Messages.get("debug.ph-game-section"));
         for (RoundsPlaceholders.PlaceholderEntry ph : RoundsPlaceholders.getGamePlaceholders()) {
             boxKv(sender, "%" + ph.key() + "%", Messages.get(ph.descriptionKey()));
         }
 
-        boxSection(sender, Messages.get("debug.ph-stats-section"));
+        boxSection(sender, A, Messages.get("debug.ph-stats-section"));
         for (RoundsPlaceholders.PlaceholderEntry ph : RoundsPlaceholders.getStatPlaceholders()) {
             boxKv(sender, "%" + ph.key() + "%", Messages.get(ph.descriptionKey()));
         }
@@ -343,7 +335,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxKv(sender, Messages.get("command.state", gm.getState()));
         boxKv(sender, Messages.get("command.rounds-to-win-cmd", (int) gm.getRounds()));
         boxKv(sender, Messages.get("command.current-round", (int) gm.getCurrentRound()));
-        boxSection(sender, "Teams");
+        boxSection(sender, Messages.get("debug.section-teams"));
         for (GameTeam team : GameTeam.values()) {
             String teamName = Messages.get("team." + team.name().toLowerCase());
             boxLine(sender, team.getColor(), Messages.get("command.team-info", teamName, (int) tm.getWins(team), tm.getPlayerCount(team)));
@@ -454,12 +446,12 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxKv(sender, Messages.get("command.version", plugin.getDescription().getVersion()));
         boxKv(sender, Messages.get("command.state", gm.getState()));
         boxKv(sender, Messages.get("command.rounds-to-win-cmd", (int) gm.getRounds()));
-        boxSection(sender, "Teams");
+        boxSection(sender, Messages.get("debug.section-teams"));
         for (GameTeam team : GameTeam.values()) {
             String teamName = Messages.get("team." + team.name().toLowerCase());
             boxLine(sender, team.getColor(), Messages.get("command.team-info", teamName, (int) tm.getWins(team), tm.getPlayerCount(team)));
         }
-        boxSection(sender, "Cards");
+        boxSection(sender, Messages.get("debug.section-cards"));
         boxKv(sender, Messages.get("command.cards-loaded", plugin.getCardManager().getRegistry().getAllCards().size()));
         boxFooter(sender);
     }
@@ -503,7 +495,6 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         switch (args[1].toLowerCase()) {
             case "reload" -> handleCardsReload(sender);
             case "test" -> handleCardsTest(sender, args);
-            case "giveall" -> handleGiveAll(sender);
             default -> sender.sendMessage(ChatColor.RED + Messages.get("debug.unknown-command", args[0] + " " + args[1]));
         }
     }
@@ -528,15 +519,6 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         } else {
             plugin.getCardManager().openCardSelection(player, GameTeam.BLUE);
         }
-    }
-
-    private void handleGiveAll(CommandSender sender) {
-        if (!(sender instanceof Player player)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
-        PlayerData data = plugin.getPlayerDataManager().getData(player);
-        for (int i = 1; i <= 44; i++) {
-            data.setCard(i, true);
-        }
-        sender.sendMessage(ChatColor.GREEN + Messages.get("debug.all-cards-unlocked"));
     }
 
     // === STATS ===
@@ -779,30 +761,6 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
     // === MISC ===
 
-    private void handleEntities(CommandSender sender) {
-        if (!(sender instanceof Player player)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
-        List<Entity> nearby = player.getNearbyEntities(20, 20, 20);
-        List<String> found = new ArrayList<>();
-        for (Entity e : nearby) {
-            PersistentDataContainer pdc = e.getPersistentDataContainer();
-            if (pdc.has(RoundsKeys.IS_BULLET, PersistentDataType.BYTE) ||
-                pdc.has(RoundsKeys.IS_BOMB, PersistentDataType.BYTE) ||
-                pdc.has(RoundsKeys.IS_HEAL_RING, PersistentDataType.BYTE) ||
-                pdc.has(RoundsKeys.IS_TOXIC_RING, PersistentDataType.BYTE) ||
-                pdc.has(RoundsKeys.IS_SHIELD_BOMB, PersistentDataType.BYTE)) {
-                found.add(Messages.get("debug.entity-at", e.getType(), formatLoc(e.getLocation())));
-            }
-        }
-        boxHeader(sender, Messages.get("debug.entities-found", found.size()));
-        for (String line : found) {
-            boxLine(sender, Y, line);
-        }
-        if (found.isEmpty()) {
-            boxLine(sender, GR, "...");
-        }
-        boxFooter(sender);
-    }
-
     private void handleApplyCard(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
         if (args.length < 2) { sender.sendMessage(ChatColor.RED + "Usage: /rdebug applycard <name>"); return; }
@@ -838,57 +796,6 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.GREEN + Messages.get("command.cards-reloaded", plugin.getCardManager().getRegistry().getAllCards().size()));
     }
 
-    private void handleVersion(CommandSender sender) {
-        boxHeader(sender, Messages.get("debug.plugin-version", plugin.getDescription().getVersion()));
-        boxKv(sender, Messages.get("debug.server-version", Bukkit.getVersion()));
-        boxKv(sender, Messages.get("debug.online-players", Bukkit.getOnlinePlayers().size()));
-        boxKv(sender, Messages.get("command.cards-loaded", plugin.getCardManager().getRegistry().getAllCards().size()));
-        boxKv(sender, Messages.get("debug.game-state"), String.valueOf(plugin.getGameManager().getState()));
-        boxFooter(sender);
-    }
-
-    private void handleKillRound(CommandSender sender) {
-        GameManager gm = plugin.getGameManager();
-        if (gm.getState() != GameManager.GameState.PLAYING) {
-            sender.sendMessage(ChatColor.RED + Messages.get("debug.game-not-playing")); return;
-        }
-        Player killer = sender instanceof Player p ? p : null;
-        int killed = 0;
-        for (Player target : Bukkit.getOnlinePlayers()) {
-            if (killer != null && target.equals(killer)) continue;
-            GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(target.getUniqueId());
-            GameTeam killerTeam = killer != null ? plugin.getTeamManager().getPlayerTeam(killer.getUniqueId()) : null;
-            if (targetTeam != null && targetTeam != killerTeam) {
-                target.setHealth(0);
-                killed++;
-            }
-        }
-        sender.sendMessage(ChatColor.GREEN + Messages.get("debug.killed-enemies", killed));
-    }
-
-    private void handleItemInfo(CommandSender sender) {
-        if (!(sender instanceof Player player)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
-        ItemStack item = player.getInventory().getItemInMainHand();
-        if (item.getType() == Material.AIR) { sender.sendMessage(ChatColor.RED + Messages.get("debug.holding-nothing")); return; }
-
-        ItemMeta meta = item.getItemMeta();
-        boxHeader(sender, Messages.get("debug.item-title"));
-        boxKv(sender, Messages.get("debug.material", item.getType()));
-        boxKv(sender, Messages.get("debug.amount", item.getAmount()));
-        boxKv(sender, Messages.get("debug.display", (meta != null && meta.hasDisplayName() ? meta.getDisplayName() : Messages.get("debug.none"))));
-
-        if (meta != null) {
-            PersistentDataContainer pdc = meta.getPersistentDataContainer();
-            if (!pdc.getKeys().isEmpty()) {
-                boxSection(sender, Messages.get("debug.pdc-keys"));
-                for (org.bukkit.NamespacedKey key : pdc.getKeys()) {
-                    boxKv(sender, key.toString(), pdc.get(key, PersistentDataType.STRING));
-                }
-            }
-        }
-        boxFooter(sender);
-    }
-
     private void handleBlocks(CommandSender sender, String[] args) {
         Player target = null;
         if (args.length >= 2) {
@@ -900,7 +807,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player"));
             return;
         }
-        target.setGameMode(GameMode.SURVIVAL);
+        target.setGameMode(GameMode.CREATIVE);
         com.rounds.blocks.BlockListener.giveAllBlocks(target);
         sender.sendMessage(ChatColor.GREEN + Messages.get("debug.blocks-given") + " -> " + target.getName());
     }
@@ -913,8 +820,8 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
     private int countCards(PlayerData data) {
         int count = 0;
-        for (int i = 1; i <= 44; i++) {
-            if (data.getCard(i)) count++;
+        for (com.rounds.cards.Card card : plugin.getCardManager().getRegistry().getAllCards()) {
+            if (data.getCard(card.getId())) count++;
         }
         return count;
     }
@@ -974,12 +881,11 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     }
 
     private static final List<String> SUBCOMMANDS = Arrays.asList(
-        "help", "start", "stop", "status", "rounds", "info", "test",
-        "givegun", "giveall", "cards", "giveblocks", "join",
+        "help", "start", "stop", "status", "rounds", "info",
+        "givegun", "cards", "giveblocks", "join",
         "stats", "setstat", "setteam", "setlanguage", "effect", "heal",
         "spawnbomb", "spawnheal", "spawntoxic", "spawnshield",
-        "entities", "applycard", "resetstats", "reload",
-        "version", "killround", "iteminfo", "setlobby",
+        "applycard", "resetstats", "reload", "setlobby",
         "jumppos1", "jumppos2", "jumpset", "uppos1", "uppos2", "upset",
         "wheel", "tab"
     );
@@ -1044,10 +950,12 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 yield filterStartsWith(cards, input);
             }
             case "cards" -> {
-                if (args.length == 2) yield filterStartsWith(Arrays.asList("reload", "test", "giveall"), input);
+                if (args.length == 2) yield filterStartsWith(Arrays.asList("reload", "test"), input);
                 if (args.length == 3 && args[1].equalsIgnoreCase("test")) {
                     List<String> list = new ArrayList<>();
-                    for (int i = 1; i <= 44; i++) list.add(String.valueOf(i));
+                    for (com.rounds.cards.Card card : plugin.getCardManager().getRegistry().getAllCards()) {
+                        list.add(String.valueOf(card.getId()));
+                    }
                     yield filterStartsWith(list, input);
                 }
                 yield Collections.emptyList();

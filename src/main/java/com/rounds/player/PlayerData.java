@@ -2,6 +2,9 @@ package com.rounds.player;
 
 import com.rounds.DefaultStats;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class PlayerData {
 
     public static final double MAX_HEALTH = 1024.0;
@@ -9,7 +12,7 @@ public class PlayerData {
     public String playerName = "";
     public double playerUse = 0;
 
-    public boolean[] cards = new boolean[50];
+    private final Set<Integer> ownedCards = new HashSet<>();
 
     public double cardSelect1 = 0;
     public double cardSelect2 = 0;
@@ -114,19 +117,24 @@ public class PlayerData {
         reloadSpeed = d.reloadSpeed;
     }
 
-    public boolean getCard(int index) {
-        if (index < 0 || index >= cards.length) return false;
-        return cards[index];
+    public boolean getCard(int id) {
+        return ownedCards.contains(id);
     }
 
-    public void setCard(int index, boolean value) {
-        if (index >= 0 && index < cards.length) {
-            cards[index] = value;
+    public void setCard(int id, boolean value) {
+        if (value) {
+            ownedCards.add(id);
+        } else {
+            ownedCards.remove(id);
         }
     }
 
+    public Set<Integer> getOwnedCards() {
+        return ownedCards;
+    }
+
     public void resetAllCards() {
-        cards = new boolean[50];
+        ownedCards.clear();
     }
 
     public void resetStats() {

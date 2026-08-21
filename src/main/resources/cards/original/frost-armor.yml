@@ -6,7 +6,8 @@ description:
   ru: "Враги, попавшие по вам, замедляются на 20%"
   en: "Enemies who hit you are slowed by 20%"
 material: BLUE_ICE
-rarity: LEGENDARY
 enabled: true
-effects:
-  frost-armor: 0.2
+variations:
+  - rarity: LEGENDARY
+    effects:
+      frost-armor: 0.2

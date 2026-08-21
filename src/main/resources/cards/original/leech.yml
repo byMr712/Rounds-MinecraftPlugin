@@ -3,11 +3,28 @@ name:
   ru: "&2Пиявка"
   en: "&2Leech"
 description:
-  ru: "+75% вампиризма, +30% ХП"
-  en: "+75% Life steal, +30% HP"
+  ru: "+{0} вампиризма, +{1} ХП"
+  en: "+{0} Life steal, +{1} HP"
 material: RED_DYE
-rarity: COMMON
 enabled: true
-effects:
-  leech: 0.75
-  hp: 0.3
+variations:
+  - rarity: COMMON
+    values: ["75%", "30%"]
+    effects:
+      leech: 0.75
+      hp: 0.3
+  - rarity: UNCOMMON
+    values: ["90%", "40%"]
+    effects:
+      leech: 0.9
+      hp: 0.4
+  - rarity: RARE
+    values: ["100%", "50%"]
+    effects:
+      leech: 1.0
+      hp: 0.5
+  - rarity: EPIC
+    values: ["110%", "60%"]
+    effects:
+      leech: 1.1
+      hp: 0.6

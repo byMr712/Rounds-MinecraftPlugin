@@ -6,7 +6,8 @@ description:
   ru: "В начале каждого раунда +1 патрона навсегда"
   en: "At the start of each round +1 ammo forever"
 material: FIREWORK_ROCKET
-rarity: LEGENDARY
 enabled: true
-effects:
-  bullet-rain: 1
+variations:
+  - rarity: LEGENDARY
+    effects:
+      bullet-rain: 1

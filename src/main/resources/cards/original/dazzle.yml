@@ -6,8 +6,9 @@ description:
   ru: "Пули оглушают врагов, +10% перезарядки"
   en: "Bullets stun enemies, +10% Reload time"
 material: PRISMARINE_SHARD
-rarity: RARE
 enabled: true
-effects:
-  stun: 1
-  reload: 1
+variations:
+  - rarity: RARE
+    effects:
+      stun: 1
+      reload: 1

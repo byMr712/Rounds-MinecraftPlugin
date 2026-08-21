@@ -3,11 +3,28 @@ name:
   ru: "&4Вкус крови"
   en: "&4Taste of Blood"
 description:
-  ru: "+50% скорости после удара, +30% вампиризм"
-  en: "+50% speed after hit, +30% Lifesteal"
+  ru: "+{0} скорости после удара, +{1} вампиризм"
+  en: "+{0} speed after hit, +{1} Lifesteal"
 material: BEEF
-rarity: COMMON
 enabled: true
-effects:
-  speed_boost: 0.5
-  leech: 0.6
+variations:
+  - rarity: COMMON
+    values: ["50%", "60%"]
+    effects:
+      speed_boost: 0.5
+      leech: 0.6
+  - rarity: UNCOMMON
+    values: ["65%", "75%"]
+    effects:
+      speed_boost: 0.65
+      leech: 0.75
+  - rarity: RARE
+    values: ["80%", "90%"]
+    effects:
+      speed_boost: 0.8
+      leech: 0.9
+  - rarity: EPIC
+    values: ["100%", "105%"]
+    effects:
+      speed_boost: 1.0
+      leech: 1.05

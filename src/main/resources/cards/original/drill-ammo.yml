@@ -6,8 +6,9 @@ description:
   ru: "Пули пробивают стены, -40% перезарядки"
   en: "Bullets drill through walls, -40% Reload time"
 material: IRON_PICKAXE
-rarity: RARE
 enabled: true
-effects:
-  drill: 1
-  reload: -4
+variations:
+  - rarity: RARE
+    effects:
+      drill: 1
+      reload: -4

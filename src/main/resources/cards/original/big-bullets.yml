@@ -6,8 +6,9 @@ description:
   ru: "Пули больше, перезарядка медленнее"
   en: "Bigger bullets, slower reload"
 material: IRON_NUGGET
-rarity: COMMON
 enabled: true
-effects:
-  big_bullet: 1
-  reload: -0.3
+variations:
+  - rarity: COMMON
+    effects:
+      big_bullet: 1
+      reload: -0.3

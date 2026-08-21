@@ -3,11 +3,28 @@ name:
   ru: "&eМародёр"
   en: "&eScavenger"
 description:
-  ru: "Нанесение урона перезаряжает оружие, +10% перезарядки"
-  en: "Dealing damage reloads weapon, +10% Reload time"
+  ru: "Пополнение патронов при попадании: {0}, +{1} перезарядки"
+  en: "Ammo refund per hit: {0}, +{1} Reload time"
 material: HOPPER
-rarity: COMMON
 enabled: true
-effects:
-  ammo-per-hit: 1
-  reload: 1
+variations:
+  - rarity: COMMON
+    values: ["1", "10%"]
+    effects:
+      ammo-per-hit: 1
+      reload: 1
+  - rarity: UNCOMMON
+    values: ["1.5", "15%"]
+    effects:
+      ammo-per-hit: 1.5
+      reload: 1.5
+  - rarity: RARE
+    values: ["2", "20%"]
+    effects:
+      ammo-per-hit: 2
+      reload: 2
+  - rarity: EPIC
+    values: ["2.5", "25%"]
+    effects:
+      ammo-per-hit: 2.5
+      reload: 2.5

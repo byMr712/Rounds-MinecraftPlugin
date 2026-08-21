@@ -6,7 +6,8 @@ description:
   ru: "Стой на месте 5 секунд, чтоб получить невидимость на 7 секунд"
   en: "Stand still for 5 seconds to gain invisibility for 7 seconds"
 material: SPYGLASS
-rarity: LEGENDARY
 enabled: true
-effects:
-  chameleon: 1
+variations:
+  - rarity: LEGENDARY
+    effects:
+      chameleon: 1

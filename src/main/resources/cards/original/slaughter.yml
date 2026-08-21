@@ -3,11 +3,28 @@ name:
   ru: "&cРезня"
   en: "&cSlaughter"
 description:
-  ru: "+35% урона, +10% скорострельность"
-  en: "+35% damage, +10% fire rate"
+  ru: "+{v} урона, +10% скорострельность"
+  en: "+{v} damage, +10% fire rate"
 material: IRON_SWORD
-rarity: EPIC
 enabled: true
-effects:
-  damage: 0.35
-  attack-speed: 0.1
+variations:
+  - rarity: EPIC
+    value: "35%"
+    effects:
+      damage: 0.35
+      attack-speed: 0.1
+  - rarity: COMMON
+    value: "15%"
+    effects:
+      damage: 0.15
+      attack-speed: 0.1
+  - rarity: UNCOMMON
+    value: "25%"
+    effects:
+      damage: 0.25
+      attack-speed: 0.1
+  - rarity: RARE
+    value: "30%"
+    effects:
+      damage: 0.3
+      attack-speed: 0.1

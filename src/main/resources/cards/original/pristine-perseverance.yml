@@ -6,7 +6,8 @@ description:
   ru: "+400% ХП если ХП выше 90%"
   en: "+400% HP when above 90% HP"
 material: TOTEM_OF_UNDYING
-rarity: LEGENDARY
 enabled: true
-effects:
-  pristine_perseverance: 4.0
+variations:
+  - rarity: LEGENDARY
+    effects:
+      pristine_perseverance: 4.0

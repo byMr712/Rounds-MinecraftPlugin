@@ -6,8 +6,9 @@ description:
   ru: "Кольцо замедления при блоке, +50% ХП"
   en: "Slowing ring on block, +50% HP"
 material: COMPARATOR
-rarity: RARE
 enabled: true
-effects:
-  emp: 1
-  hp: 0.5
+variations:
+  - rarity: RARE
+    effects:
+      emp: 1
+      hp: 0.5

@@ -3,11 +3,28 @@ name:
   ru: "&6Пацан к успеху шел"
   en: "&6The Kid Was Going Places"
 description:
-  ru: "+50% урона, -30% ХП"
-  en: "+50% damage, -30% HP"
+  ru: "+{0} урона, -{1} ХП"
+  en: "+{0} damage, -{1} HP"
 material: GOLD_INGOT
-rarity: EPIC
 enabled: true
-effects:
-  damage: 0.5
-  hp: -0.3
+variations:
+  - rarity: EPIC
+    values: ["50%", "30%"]
+    effects:
+      damage: 0.5
+      hp: -0.3
+  - rarity: COMMON
+    values: ["20%", "15%"]
+    effects:
+      damage: 0.2
+      hp: -0.15
+  - rarity: UNCOMMON
+    values: ["30%", "20%"]
+    effects:
+      damage: 0.3
+      hp: -0.2
+  - rarity: RARE
+    values: ["40%", "25%"]
+    effects:
+      damage: 0.4
+      hp: -0.25

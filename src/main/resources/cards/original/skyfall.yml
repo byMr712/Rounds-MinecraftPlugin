@@ -6,7 +6,8 @@ description:
   ru: "Падение с большой высоты создаёт взрыв"
   en: "Falling from great height creates an explosion"
 material: TNT
-rarity: LEGENDARY
 enabled: true
-effects:
-  skyfall: 1
+variations:
+  - rarity: LEGENDARY
+    effects:
+      skyfall: 1

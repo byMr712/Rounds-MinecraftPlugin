@@ -6,8 +6,9 @@ description:
   ru: "Рывок вперёд при блоке, второй блок"
   en: "Launch forward on block, second block"
 material: SHIELD
-rarity: RARE
 enabled: true
-effects:
-  shield_charge: 1
-  double_block: 1
+variations:
+  - rarity: RARE
+    effects:
+      shield_charge: 1
+      double_block: 1

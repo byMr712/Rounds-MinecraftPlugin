@@ -3,11 +3,28 @@ name:
   ru: "&aПогоня"
   en: "&aChase"
 description:
-  ru: "+30% скорости к врагу, +50% ХП"
-  en: "+30% move speed towards enemy, +50% HP"
+  ru: "+{0} скорости к врагу, +{1} ХП"
+  en: "+{0} move speed towards enemy, +{1} HP"
 material: FEATHER
-rarity: RARE
 enabled: true
-effects:
-  speed: 0.3
-  hp: 0.5
+variations:
+  - rarity: RARE
+    values: ["30%", "50%"]
+    effects:
+      speed: 0.3
+      hp: 0.5
+  - rarity: COMMON
+    values: ["10%", "25%"]
+    effects:
+      speed: 0.1
+      hp: 0.25
+  - rarity: UNCOMMON
+    values: ["20%", "35%"]
+    effects:
+      speed: 0.2
+      hp: 0.35
+  - rarity: EPIC
+    values: ["60%", "65%"]
+    effects:
+      speed: 0.6
+      hp: 0.65

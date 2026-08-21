@@ -3,11 +3,28 @@ name:
   ru: "&9Защитник"
   en: "&9Defender"
 description:
-  ru: "-КД блока, +30% ХП"
-  en: "-Block CD, +30% HP"
+  ru: "{0} КД блока, +{1} ХП"
+  en: "{0} Block CD, +{1} HP"
 material: SHIELD
-rarity: COMMON
 enabled: true
-effects:
-  block_cd: -0.5
-  hp: 0.3
+variations:
+  - rarity: COMMON
+    values: ["-50%", "30%"]
+    effects:
+      block_cd: -0.5
+      hp: 0.3
+  - rarity: UNCOMMON
+    values: ["-40%", "45%"]
+    effects:
+      block_cd: -0.4
+      hp: 0.45
+  - rarity: RARE
+    values: ["-30%", "60%"]
+    effects:
+      block_cd: -0.3
+      hp: 0.6
+  - rarity: EPIC
+    values: ["-20%", "80%"]
+    effects:
+      block_cd: -0.2
+      hp: 0.8

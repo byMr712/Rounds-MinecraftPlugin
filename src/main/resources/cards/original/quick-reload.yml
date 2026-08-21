@@ -3,10 +3,24 @@ name:
   ru: "&eБыстрая перезарядка"
   en: "&eQuick Reload"
 description:
-  ru: "-70% времени перезарядки"
-  en: "-70% Reload time"
+  ru: "Перезарядка быстрее на {v}"
+  en: "Reload {v} faster"
 material: REDSTONE
-rarity: COMMON
 enabled: true
-effects:
-  reload_speed: 0.7
+variations:
+  - rarity: COMMON
+    value: "20%"
+    effects:
+      reload_speed: 0.2
+  - rarity: UNCOMMON
+    value: "35%"
+    effects:
+      reload_speed: 0.35
+  - rarity: RARE
+    value: "50%"
+    effects:
+      reload_speed: 0.5
+  - rarity: EPIC
+    value: "70%"
+    effects:
+      reload_speed: 0.7

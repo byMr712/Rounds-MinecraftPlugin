@@ -3,11 +3,28 @@ name:
   ru: "&aУскорение"
   en: "&aFast Forward"
 description:
-  ru: "+100% скорость снарядов, +30% скорость перезарядки"
-  en: "+100% Proj speed, +30% Reload speed"
+  ru: "+{0} скорость снарядов, +{1} скорость перезарядки"
+  en: "+{0} Proj speed, +{1} Reload speed"
 material: SUGAR
-rarity: COMMON
 enabled: true
-effects:
-  bullet_speed: 1.0
-  reload_speed: 0.3
+variations:
+  - rarity: COMMON
+    values: ["100%", "30%"]
+    effects:
+      bullet_speed: 1.0
+      reload_speed: 0.3
+  - rarity: UNCOMMON
+    values: ["150%", "40%"]
+    effects:
+      bullet_speed: 1.5
+      reload_speed: 0.4
+  - rarity: RARE
+    values: ["200%", "50%"]
+    effects:
+      bullet_speed: 2.0
+      reload_speed: 0.5
+  - rarity: EPIC
+    values: ["250%", "60%"]
+    effects:
+      bullet_speed: 2.5
+      reload_speed: 0.6

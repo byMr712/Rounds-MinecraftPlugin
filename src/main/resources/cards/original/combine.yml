@@ -3,12 +3,32 @@ name:
   ru: "&4Объединение"
   en: "&4Combine"
 description:
-  ru: "+100% урона, -2 патрона, +10% перезарядки"
-  en: "+100% DMG, -2 Ammo, +10% Reload time"
+  ru: "+{0} урона, -{1} патрона, +{2} перезарядки"
+  en: "+{0} DMG, -{1} Ammo, +{2} Reload time"
 material: REDSTONE
-rarity: RARE
 enabled: true
-effects:
-  damage: 1.0
-  ammo: -2
-  reload: 1
+variations:
+  - rarity: RARE
+    values: ["100%", "2", "10%"]
+    effects:
+      damage: 1.0
+      ammo: -2
+      reload: 1
+  - rarity: COMMON
+    values: ["50%", "1", "5%"]
+    effects:
+      damage: 0.5
+      ammo: -1
+      reload: 0.5
+  - rarity: UNCOMMON
+    values: ["75%", "2", "8%"]
+    effects:
+      damage: 0.75
+      ammo: -2
+      reload: 0.8
+  - rarity: EPIC
+    values: ["125%", "3", "13%"]
+    effects:
+      damage: 1.25
+      ammo: -3
+      reload: 1.3

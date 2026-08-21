@@ -6,7 +6,8 @@ description:
   ru: "Попадание ослепляет и замедляет врага"
   en: "Hits blind and slow the enemy"
 material: LIGHT_BLUE_WOOL
-rarity: UNCOMMON
 enabled: true
-effects:
-  stun: 1
+variations:
+  - rarity: UNCOMMON
+    effects:
+      stun: 1

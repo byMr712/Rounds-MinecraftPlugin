@@ -6,7 +6,8 @@ description:
   ru: "Стой на месте 30 сек, чтобы призвать фантома"
   en: "Stand still for 30s to summon a phantom"
 material: ENDER_EYE
-rarity: RARE
 enabled: true
-effects:
-  abyssal: 1.0
+variations:
+  - rarity: RARE
+    effects:
+      abyssal: 1.0

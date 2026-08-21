@@ -6,8 +6,9 @@ description:
   ru: "Управляй пулями, -40% скорость пули"
   en: "Steer bullets, -40% Bullet speed"
 material: LEAD
-rarity: RARE
 enabled: true
-effects:
-  remote: 1
-  bullet_speed: -0.4
+variations:
+  - rarity: RARE
+    effects:
+      remote: 1
+      bullet_speed: -0.4

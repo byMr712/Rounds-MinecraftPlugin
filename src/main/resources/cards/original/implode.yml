@@ -6,8 +6,9 @@ description:
   ru: "Притягивает врагов при блоке, +50% ХП"
   en: "Pull enemies on block, +50% HP"
 material: MAGMA_CREAM
-rarity: RARE
 enabled: true
-effects:
-  implode: 1
-  hp: 0.5
+variations:
+  - rarity: RARE
+    effects:
+      implode: 1
+      hp: 0.5

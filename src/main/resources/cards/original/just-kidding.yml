@@ -6,7 +6,8 @@ description:
   ru: "Пули скользят по стенам"
   en: "Bullets slide along walls"
 material: SLIME_BALL
-rarity: COMMON
 enabled: true
-effects:
-  sneaky: 1
+variations:
+  - rarity: COMMON
+    effects:
+      sneaky: 1

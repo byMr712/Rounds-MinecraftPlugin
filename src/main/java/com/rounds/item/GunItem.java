@@ -236,7 +236,7 @@ public class GunItem implements Listener {
 
         long shieldDuration = (long) SHIELD_DURATION_TICKS;
         if (data.shieldsUp > 0) {
-            shieldDuration += (long) (data.shieldsUp * 10);
+            shieldDuration += (long) (data.shieldsUp * 20);
         }
         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
             activeShields.remove(uuid);

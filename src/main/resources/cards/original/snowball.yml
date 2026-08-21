@@ -6,7 +6,8 @@ description:
   ru: "За каждую выигранный раунд +10% урона и +5% скорости до конца текушей игры"
   en: "For each won round: +10% damage and +5% speed until the end of the current game"
 material: SNOWBALL
-rarity: LEGENDARY
 enabled: true
-effects:
-  snowball: 1
+variations:
+  - rarity: LEGENDARY
+    effects:
+      snowball: 1

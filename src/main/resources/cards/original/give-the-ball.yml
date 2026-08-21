@@ -6,7 +6,8 @@ description:
   ru: "Пули сильно отбрасывают врагов"
   en: "Bullets knock enemies back hard"
 material: CLAY_BALL
-rarity: COMMON
 enabled: true
-effects:
-  truster: 1
+variations:
+  - rarity: COMMON
+    effects:
+      truster: 1

@@ -6,8 +6,9 @@ description:
   ru: "Возрождение один раз после смерти, -35% ХП"
   en: "Respawn once on death, -35% HP"
 material: BLAZE_POWDER
-rarity: LEGENDARY
 enabled: true
-effects:
-  phoenix: 1
-  hp: -0.35
+variations:
+  - rarity: LEGENDARY
+    effects:
+      phoenix: 1
+      hp: -0.35

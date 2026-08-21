@@ -17,6 +17,7 @@ public class Card {
     private static final Pattern COLOR_PATTERN = Pattern.compile("&([0-9a-fk-or])");
 
     private final int id;
+    private final int familyId;
     private final Map<String, String> names;
     private final Map<String, String> descriptions;
     private final Material material;
@@ -26,11 +27,12 @@ public class Card {
     private final List<String> commands;
     private final String customScript;
 
-    public Card(int id, Map<String, String> names, Map<String, String> descriptions,
+    public Card(int id, int familyId, Map<String, String> names, Map<String, String> descriptions,
                 Material material,
                 CardRegistry.Rarity rarity, boolean enabled, Map<String, Double> effects,
                 List<String> commands, String customScript) {
         this.id = id;
+        this.familyId = familyId;
         this.names = names;
         this.descriptions = descriptions;
         this.material = material;
@@ -141,6 +143,10 @@ public class Card {
     }
 
     public ItemStack createItemStack(String lang) {
+        return createItemStack(lang, true);
+    }
+
+    public ItemStack createItemStack(String lang, boolean withSelectHint) {
         ItemStack item;
         try {
             item = new ItemStack(material);
@@ -157,8 +163,10 @@ public class Card {
         if (!desc.isEmpty()) {
             lore.add(ChatColor.GRAY + desc);
         }
-        lore.add("");
-        lore.add(ChatColor.YELLOW + Messages.get("card.click-to-select"));
+        if (withSelectHint) {
+            lore.add("");
+            lore.add(ChatColor.YELLOW + Messages.get("card.click-to-select"));
+        }
 
         meta.setLore(lore);
         item.setItemMeta(meta);
@@ -194,6 +202,7 @@ public class Card {
     }
 
     public int getId() { return id; }
+    public int getFamilyId() { return familyId; }
     public Map<String, String> getNames() { return Collections.unmodifiableMap(names); }
     public Map<String, String> getDescriptions() { return Collections.unmodifiableMap(descriptions); }
     public Material getMaterial() { return material; }

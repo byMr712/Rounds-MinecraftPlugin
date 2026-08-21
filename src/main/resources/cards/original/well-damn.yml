@@ -6,7 +6,8 @@ description:
   ru: "Рывок вперёд при блоке"
   en: "Dash forward when blocking"
 material: SUGAR
-rarity: RARE
 enabled: true
-effects:
-  teleport: 1
+variations:
+  - rarity: RARE
+    effects:
+      teleport: 1

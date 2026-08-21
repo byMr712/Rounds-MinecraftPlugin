@@ -6,8 +6,9 @@ description:
   ru: "Пуля взрывается при попадании, -30% скорость атаки"
   en: "Bullet explodes on impact, -30% ATKSPD"
 material: FIRE_CHARGE
-rarity: RARE
 enabled: true
-effects:
-  bomb_bullet: 1
-  attack_speed: -0.3
+variations:
+  - rarity: RARE
+    effects:
+      bomb_bullet: 1
+      attack_speed: -0.3

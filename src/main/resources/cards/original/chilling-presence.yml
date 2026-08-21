@@ -6,8 +6,9 @@ description:
   ru: "Замедляет ближайших врагов, +25% ХП"
   en: "Slow nearby enemies, +25% HP"
 material: SNOWBALL
-rarity: RARE
 enabled: true
-effects:
-  cold: 1
-  hp: 0.25
+variations:
+  - rarity: RARE
+    effects:
+      cold: 1
+      hp: 0.25

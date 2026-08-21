@@ -6,6 +6,7 @@ import com.rounds.cards.CardManager;
 import com.rounds.game.GameManager;
 import com.rounds.util.Messages;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -17,7 +18,10 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -47,6 +51,33 @@ public class CardGUIListener implements Listener {
         player.openInventory(inv);
     }
 
+    public void openShow(Player viewer, Player target) {
+        String title = "\u00A78[\u00A76Rounds\u00A78] " + Messages.get("card.show-title", target.getName());
+        Inventory inv = Bukkit.createInventory(new CardsShowHolder(), 54, title);
+
+        List<Card> owned = new ArrayList<>();
+        for (int id : plugin.getPlayerDataManager().getData(target).getOwnedCards()) {
+            Card card = plugin.getCardManager().getRegistry().getCard(id);
+            if (card != null) owned.add(card);
+        }
+        owned.sort(Comparator.comparingInt(Card::getFamilyId).thenComparingInt(Card::getId));
+
+        if (owned.isEmpty()) {
+            ItemStack empty = new ItemStack(Material.BARRIER);
+            ItemMeta meta = empty.getItemMeta();
+            meta.setDisplayName(ChatColor.RED + Messages.get("card.show-empty"));
+            empty.setItemMeta(meta);
+            inv.setItem(13, empty);
+        } else {
+            String lang = Messages.getLanguage();
+            for (int i = 0; i < owned.size() && i < 54; i++) {
+                inv.setItem(i, owned.get(i).createItemStack(lang, false));
+            }
+        }
+
+        viewer.openInventory(inv);
+    }
+
     public void rotateAllCards() {
         for (Map.Entry<UUID, List<Card>> entry : openGUIs.entrySet()) {
             Player player = Bukkit.getPlayer(entry.getKey());
@@ -67,8 +98,10 @@ public class CardGUIListener implements Listener {
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
-        if (!(event.getInventory().getHolder() instanceof CardGUIHolder)) return;
+        boolean isShowGui = event.getInventory().getHolder() instanceof CardsShowHolder;
+        if (!isShowGui && !(event.getInventory().getHolder() instanceof CardGUIHolder)) return;
         event.setCancelled(true);
+        if (isShowGui) return;
 
         int rawSlot = event.getRawSlot();
         if (rawSlot < 0 || rawSlot >= SIZE) return;
@@ -98,8 +131,9 @@ public class CardGUIListener implements Listener {
 
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) return;
-        if (!(event.getInventory().getHolder() instanceof CardGUIHolder)) return;
+        if (!(event.getWhoClicked() instanceof Player)) return;
+        if (!(event.getInventory().getHolder() instanceof CardGUIHolder)
+                && !(event.getInventory().getHolder() instanceof CardsShowHolder)) return;
         event.setCancelled(true);
     }
 
@@ -150,6 +184,13 @@ public class CardGUIListener implements Listener {
     }
 
     public static class CardGUIHolder implements InventoryHolder {
+        @Override
+        public Inventory getInventory() {
+            return null;
+        }
+    }
+
+    public static class CardsShowHolder implements InventoryHolder {
         @Override
         public Inventory getInventory() {
             return null;

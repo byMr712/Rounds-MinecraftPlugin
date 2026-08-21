@@ -6,7 +6,8 @@ description:
   ru: "Получить две случайные карты обычной редкости"
   en: "Receive two random common rarity cards"
 material: CHEST
-rarity: LEGENDARY
 enabled: true
-effects:
-  card-bonus: 2
+variations:
+  - rarity: LEGENDARY
+    effects:
+      card-bonus: 2

@@ -6,7 +6,8 @@ description:
   ru: "Блок держится дольше"
   en: "Block lasts longer"
 material: GOLDEN_APPLE
-rarity: UNCOMMON
 enabled: true
-effects:
-  shields-up: 1
+variations:
+  - rarity: UNCOMMON
+    effects:
+      shields-up: 1

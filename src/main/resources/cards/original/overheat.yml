@@ -6,7 +6,8 @@ description:
   ru: "Даёт возможность также стрелять без перезарядки, каждая пуля -10% ХП, лучше перезарядись."
   en: "Also allows shooting without reloading, each bullet costs -10% HP, better reload."
 material: MAGMA_CREAM
-rarity: LEGENDARY
 enabled: true
-effects:
-  overheat: 0.1
+variations:
+  - rarity: LEGENDARY
+    effects:
+      overheat: 0.1

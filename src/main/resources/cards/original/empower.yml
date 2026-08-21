@@ -6,7 +6,8 @@ description:
   ru: "Блок усиливает урон следующего выстрела"
   en: "Block boosts next shot damage"
 material: GLOWSTONE_DUST
-rarity: COMMON
 enabled: true
-effects:
-  empower: 1
+variations:
+  - rarity: COMMON
+    effects:
+      empower: 1

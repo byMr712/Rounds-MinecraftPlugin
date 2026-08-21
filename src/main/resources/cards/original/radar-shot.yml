@@ -6,8 +6,9 @@ description:
   ru: "Авто-прицеливание при блоке, +50% ХП"
   en: "Auto-aim on block, +50% HP"
 material: COMPASS
-rarity: RARE
 enabled: true
-effects:
-  homing: 1
-  hp: 0.5
+variations:
+  - rarity: RARE
+    effects:
+      homing: 1
+      hp: 0.5

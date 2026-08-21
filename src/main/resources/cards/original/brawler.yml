@@ -3,10 +3,24 @@ name:
   ru: "&cБоец"
   en: "&cBrawler"
 description:
-  ru: "+200% ХП после нанесения урона"
-  en: "+200% HP after dealing damage"
+  ru: "+{v} ХП после нанесения урона"
+  en: "+{v} HP after dealing damage"
 material: IRON_SWORD
-rarity: RARE
 enabled: true
-effects:
-  hp_boost_on_hit: 2.0
+variations:
+  - rarity: RARE
+    value: "200%"
+    effects:
+      hp_boost_on_hit: 2.0
+  - rarity: COMMON
+    value: "100%"
+    effects:
+      hp_boost_on_hit: 1.0
+  - rarity: UNCOMMON
+    value: "150%"
+    effects:
+      hp_boost_on_hit: 1.5
+  - rarity: EPIC
+    value: "250%"
+    effects:
+      hp_boost_on_hit: 2.5

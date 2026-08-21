@@ -6,7 +6,8 @@ description:
   ru: "Волна отталкивания при блоке"
   en: "Push wave when blocking"
 material: BELL
-rarity: UNCOMMON
 enabled: true
-effects:
-  shockwave: 1
+variations:
+  - rarity: UNCOMMON
+    effects:
+      shockwave: 1

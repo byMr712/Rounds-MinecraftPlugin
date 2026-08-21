@@ -6,7 +6,8 @@ description:
   ru: "При блоке враги рядом 7с не могут ставить блок и перезаряжаться (КД способности 30с)"
   en: "On block, nearby enemies can't block or reload for 7s (30s ability cooldown)"
 material: GRAY_DYE
-rarity: RARE
 enabled: true
-effects:
-  no-party: 1
+variations:
+  - rarity: RARE
+    effects:
+      no-party: 1

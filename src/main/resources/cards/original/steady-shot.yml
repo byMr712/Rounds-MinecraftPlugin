@@ -3,12 +3,32 @@ name:
   ru: "&fВерный выстрел"
   en: "&fSteady Shot"
 description:
-  ru: "+40% ХП, +100% скорость пули, +10% перезарядки"
-  en: "+40% HP, +100% Bullet speed, +10% Reload time"
+  ru: "+{0} ХП, +{1} скорость пули, +{2} перезарядки"
+  en: "+{0} HP, +{1} Bullet speed, +{2} Reload time"
 material: GOLDEN_HELMET
-rarity: COMMON
 enabled: true
-effects:
-  hp: 0.4
-  bullet_speed: 1.0
-  reload: 1
+variations:
+  - rarity: COMMON
+    values: ["40%", "100%", "10%"]
+    effects:
+      hp: 0.4
+      bullet_speed: 1.0
+      reload: 1
+  - rarity: UNCOMMON
+    values: ["60%", "130%", "15%"]
+    effects:
+      hp: 0.6
+      bullet_speed: 1.3
+      reload: 1.5
+  - rarity: RARE
+    values: ["80%", "160%", "20%"]
+    effects:
+      hp: 0.8
+      bullet_speed: 1.6
+      reload: 2
+  - rarity: EPIC
+    values: ["100%", "200%", "25%"]
+    effects:
+      hp: 1.0
+      bullet_speed: 2.0
+      reload: 2.5

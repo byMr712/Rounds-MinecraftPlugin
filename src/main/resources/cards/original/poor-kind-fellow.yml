@@ -6,7 +6,8 @@ description:
   ru: "Вытягивает ХП у врагов рядом"
   en: "Drains HP from nearby enemies"
 material: CAKE
-rarity: RARE
 enabled: true
-effects:
-  lifesteal-aura: 1
+variations:
+  - rarity: RARE
+    effects:
+      lifesteal-aura: 1

@@ -1,12 +1,26 @@
 id: 109
 name:
   ru: "&7Стартуем!"
-  en: "&fLet's Start!"
+  en: "&7Let's Start!"
 description:
-  ru: "+2 патрона"
-  en: "+2 ammo"
+  ru: "Патроны: +{v}"
+  en: "Ammo: +{v}"
 material: POWERED_RAIL
-rarity: COMMON
 enabled: true
-effects:
-  ammo: 2
+variations:
+  - rarity: COMMON
+    value: "2"
+    effects:
+      ammo: 2
+  - rarity: UNCOMMON
+    value: "3"
+    effects:
+      ammo: 3
+  - rarity: RARE
+    value: "4"
+    effects:
+      ammo: 4
+  - rarity: EPIC
+    value: "5"
+    effects:
+      ammo: 5

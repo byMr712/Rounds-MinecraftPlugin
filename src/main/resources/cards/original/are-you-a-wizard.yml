@@ -6,7 +6,8 @@ description:
   ru: "После блока следующий выстрел усилен"
   en: "After blocking, your next shot is empowered"
 material: BREWING_STAND
-rarity: RARE
 enabled: true
-effects:
-  empower: 1
+variations:
+  - rarity: RARE
+    effects:
+      empower: 1

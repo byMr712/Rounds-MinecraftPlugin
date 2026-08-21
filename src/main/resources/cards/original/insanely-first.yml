@@ -3,10 +3,24 @@ name:
   ru: "&7Безумно можно быть первым..."
   en: "&fInsanely You Can Be First..."
 description:
-  ru: "Скорость рядом с врагом"
-  en: "Speed near enemies"
+  ru: "Скорость рядом с врагом (радиус {v})"
+  en: "Speed near enemies (radius {v})"
 material: GOLDEN_BOOTS
-rarity: COMMON
 enabled: true
-effects:
-  speed: 1
+variations:
+  - rarity: COMMON
+    value: "8"
+    effects:
+      speed: 1
+  - rarity: UNCOMMON
+    value: "9.5"
+    effects:
+      speed: 1.5
+  - rarity: RARE
+    value: "11"
+    effects:
+      speed: 2
+  - rarity: EPIC
+    value: "14"
+    effects:
+      speed: 3

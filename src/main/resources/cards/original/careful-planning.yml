@@ -3,12 +3,32 @@ name:
   ru: "&6Тщательный расчёт"
   en: "&6Careful Planning"
 description:
-  ru: "+100% урона, -150% скорости атаки, +10% перезарядки"
-  en: "+100% DMG, -150% ATKSPD, +10% Reload time"
+  ru: "+{0} урона, -{1} скорости атаки, +{2} перезарядки"
+  en: "+{0} DMG, -{1} ATKSPD, +{2} Reload time"
 material: BOOK
-rarity: RARE
 enabled: true
-effects:
-  damage: 1.0
-  attack_speed: -1.5
-  reload: 1
+variations:
+  - rarity: RARE
+    values: ["100%", "150%", "10%"]
+    effects:
+      damage: 1.0
+      attack_speed: -1.5
+      reload: 1
+  - rarity: COMMON
+    values: ["50%", "75%", "5%"]
+    effects:
+      damage: 0.5
+      attack_speed: -0.75
+      reload: 0.5
+  - rarity: UNCOMMON
+    values: ["75%", "110%", "8%"]
+    effects:
+      damage: 0.75
+      attack_speed: -1.1
+      reload: 0.8
+  - rarity: EPIC
+    values: ["125%", "190%", "13%"]
+    effects:
+      damage: 1.25
+      attack_speed: -1.9
+      reload: 1.3

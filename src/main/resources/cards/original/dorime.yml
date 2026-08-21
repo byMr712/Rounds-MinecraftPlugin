@@ -3,11 +3,28 @@ name:
   ru: "&dДориме"
   en: "&dDorime"
 description:
-  ru: "+10% ХП, регенерация при блоке"
-  en: "+10% HP, regeneration on block"
+  ru: "+{v} ХП, регенерация при блоке"
+  en: "+{v} HP, regeneration on block"
 material: NOTE_BLOCK
-rarity: UNCOMMON
 enabled: true
-effects:
-  hp: 0.1
-  heal: 1
+variations:
+  - rarity: UNCOMMON
+    value: "10%"
+    effects:
+      hp: 0.1
+      heal: 1
+  - rarity: COMMON
+    value: "5%"
+    effects:
+      hp: 0.05
+      heal: 1
+  - rarity: RARE
+    value: "20%"
+    effects:
+      hp: 0.2
+      heal: 1
+  - rarity: EPIC
+    value: "30%"
+    effects:
+      hp: 0.3
+      heal: 1

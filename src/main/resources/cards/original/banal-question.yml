@@ -6,7 +6,8 @@ description:
   ru: "При блоке урон вокруг = 15% от твоего ХП"
   en: "On block, deal AoE damage equal to 15% of your HP"
 material: IRON_BARS
-rarity: RARE
 enabled: true
-effects:
-  overpower: 1
+variations:
+  - rarity: RARE
+    effects:
+      overpower: 1

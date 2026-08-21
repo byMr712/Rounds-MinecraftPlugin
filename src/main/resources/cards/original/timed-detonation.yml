@@ -6,8 +6,9 @@ description:
   ru: "Пули создают бомбы, -15% урона"
   en: "Bullets spawn bombs, -15% DMG"
 material: CLOCK
-rarity: RARE
 enabled: true
-effects:
-  bomb_bullet: 1
-  damage: -0.15
+variations:
+  - rarity: RARE
+    effects:
+      bomb_bullet: 1
+      damage: -0.15

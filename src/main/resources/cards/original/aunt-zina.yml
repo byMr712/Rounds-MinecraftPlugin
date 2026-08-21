@@ -3,11 +3,28 @@ name:
   ru: "&aТётя Зина"
   en: "&aAunt Zina"
 description:
-  ru: "+15% ХП, регенерация при блоке"
-  en: "+15% HP, regeneration on block"
+  ru: "+{v} ХП, регенерация при блоке"
+  en: "+{v} HP, regeneration on block"
 material: BREAD
-rarity: UNCOMMON
 enabled: true
-effects:
-  hp: 0.15
-  heal: 1
+variations:
+  - rarity: UNCOMMON
+    value: "15%"
+    effects:
+      hp: 0.15
+      heal: 1
+  - rarity: COMMON
+    value: "8%"
+    effects:
+      hp: 0.08
+      heal: 1
+  - rarity: RARE
+    value: "25%"
+    effects:
+      hp: 0.25
+      heal: 1
+  - rarity: EPIC
+    value: "35%"
+    effects:
+      hp: 0.35
+      heal: 1

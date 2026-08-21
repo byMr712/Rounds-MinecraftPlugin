@@ -5,7 +5,6 @@ import com.rounds.player.PlayerData;
 import com.rounds.teams.TeamManager.GameTeam;
 import com.rounds.util.Messages;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
@@ -55,18 +54,21 @@ public class CardManager {
         GameTeam team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
         plugin.getPlayerDataManager().savePlayerFullData(player.getUniqueId(), team, null);
 
-        String lang = Messages.getLanguage();
-        String msg = Messages.get("card.picked", player.getName(), card.getColoredName(lang), card.getDescription(lang));
-        plugin.getServer().broadcastMessage(msg);
+        boolean revealed = grantChainedCards(player, data, card);
 
-        grantChainedCards(player, data, card);
+        if (!revealed) {
+            String lang = Messages.getLanguage();
+            String msg = Messages.get("card.picked", player.getName(), card.getColoredName(lang), card.getDescription(lang));
+            plugin.getServer().broadcastMessage(msg);
+        }
 
         if (allPicksDone()) {
             plugin.getGameManager().onAllCardsPicked();
         }
     }
 
-    private void grantChainedCards(Player player, PlayerData data, Card source) {
+    private boolean grantChainedCards(Player player, PlayerData data, Card source) {
+        boolean revealedAny = false;
         for (Map.Entry<String, Double> entry : source.getEffects().entrySet()) {
             String key = entry.getKey().replace('_', '-');
             int count = (int) Math.round(entry.getValue());
@@ -86,9 +88,12 @@ public class CardManager {
                 bonus.apply(player, data);
                 data.setCard(bonus.getId(), true);
                 syncPlayerHP(player, data);
-                player.sendMessage(ChatColor.GOLD + Messages.get("card.bonus-received", bonus.getColoredName(lang)));
+                String msg = Messages.get("card.picked", player.getName(), bonus.getColoredName(lang), bonus.getDescription(lang));
+                plugin.getServer().broadcastMessage(msg);
+                revealedAny = true;
             }
         }
+        return revealedAny;
     }
 
     public void resetAllCards() {

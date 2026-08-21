@@ -1,0 +1,26 @@
+id: 73
+name:
+  ru: "&fДоки Доки"
+  en: "&fDoki Doki"
+description:
+  ru: "+{v} к высоте прыжка"
+  en: "+{v} Jump Height"
+material: SLIME_BLOCK
+enabled: true
+variations:
+  - rarity: COMMON
+    value: "20%"
+    effects:
+      jump-height: 0.2
+  - rarity: UNCOMMON
+    value: "30%"
+    effects:
+      jump-height: 0.3
+  - rarity: RARE
+    value: "40%"
+    effects:
+      jump-height: 0.4
+  - rarity: EPIC
+    value: "50%"
+    effects:
+      jump-height: 0.5

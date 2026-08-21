@@ -6,7 +6,8 @@ description:
   ru: "25% шанс при попадании вызвать молнию"
   en: "25% chance to call lightning on hit"
 material: LIGHTNING_ROD
-rarity: LEGENDARY
 enabled: true
-effects:
-  storm-caller: 0.25
+variations:
+  - rarity: LEGENDARY
+    effects:
+      storm-caller: 0.25

@@ -3,11 +3,11 @@ name:
   ru: "&9Щиты подняты"
   en: "&9Shields Up"
 description:
-  ru: "Последняя пуля запускает блок, отключение автоперезарядки"
-  en: "Last bullet triggers block, disable auto-reload"
+  ru: "Последняя пуля запускает блок, +1 сек действия щита"
+  en: "The final bullet triggers a lockdown and extends the shield duration by 1 second."
 material: SHIELD
-rarity: RARE
 enabled: true
-effects:
-  shields_up: 1
-  auto_reload: -1
+variations:
+  - rarity: LEGENDARY
+    effects:
+      shields_up: 1

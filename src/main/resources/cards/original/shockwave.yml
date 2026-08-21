@@ -6,8 +6,9 @@ description:
   ru: "Отбрасывает врагов при блоке, +50% ХП"
   en: "Push enemies on block, +50% HP"
 material: BREWING_STAND
-rarity: RARE
 enabled: true
-effects:
-  shockwave: 1
-  hp: 0.5
+variations:
+  - rarity: RARE
+    effects:
+      shockwave: 1
+      hp: 0.5

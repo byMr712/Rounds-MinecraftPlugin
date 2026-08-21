@@ -6,7 +6,8 @@ description:
   ru: "После получения урона +60% к урону на 3 секунды."
   en: "After taking damage: +60% damage for 3 seconds."
 material: REDSTONE
-rarity: LEGENDARY
 enabled: true
-effects:
-  blood-furry: 0.6
+variations:
+  - rarity: LEGENDARY
+    effects:
+      blood-furry: 0.6

@@ -6,7 +6,8 @@ description:
   ru: "Пули замедляют врагов"
   en: "Bullets slow enemies"
 material: POTION
-rarity: COMMON
 enabled: true
-effects:
-  cold: 1
+variations:
+  - rarity: COMMON
+    effects:
+      cold: 1

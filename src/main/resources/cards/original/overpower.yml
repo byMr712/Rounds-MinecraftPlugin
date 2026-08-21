@@ -3,10 +3,11 @@ name:
   ru: "&cПодавление"
   en: "&cOverpower"
 description:
-  ru: "Наносит % от максимального ХП врагу при блоке"
-  en: "Deal max HP % to enemies on block"
+  ru: "Наносит % от максимального ХП всем вокруг при блоке"
+  en: "Deal max HP %, to enemies on block"
 material: NETHERITE_SWORD
-rarity: RARE
 enabled: true
-effects:
-  overpower: 1
+variations:
+  - rarity: RARE
+    effects:
+      overpower: 1

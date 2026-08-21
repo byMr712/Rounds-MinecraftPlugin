@@ -3,11 +3,28 @@ name:
   ru: "&fБыстрый мяч"
   en: "&fFastball"
 description:
-  ru: "+250% скорость пули, -50% скорость атаки"
-  en: "+250% Bullet speed, -50% ATKSPD"
+  ru: "+{0} скорость пули, -{1} скорость атаки"
+  en: "+{0} Bullet speed, -{1} ATKSPD"
 material: SNOWBALL
-rarity: COMMON
 enabled: true
-effects:
-  bullet_speed: 2.5
-  attack_speed: -0.5
+variations:
+  - rarity: COMMON
+    values: ["250%", "50%"]
+    effects:
+      bullet_speed: 2.5
+      attack_speed: -0.5
+  - rarity: UNCOMMON
+    values: ["350%", "60%"]
+    effects:
+      bullet_speed: 3.5
+      attack_speed: -0.6
+  - rarity: RARE
+    values: ["450%", "70%"]
+    effects:
+      bullet_speed: 4.5
+      attack_speed: -0.7
+  - rarity: EPIC
+    values: ["550%", "80%"]
+    effects:
+      bullet_speed: 5.5
+      attack_speed: -0.8

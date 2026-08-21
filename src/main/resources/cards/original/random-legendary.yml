@@ -6,7 +6,8 @@ description:
   ru: "Даёт случайную легендарную карту"
   en: "Gives a random legendary card"
 material: ENDER_CHEST
-rarity: LEGENDARY
 enabled: true
-effects:
-  random-legendary: 1
+variations:
+  - rarity: LEGENDARY
+    effects:
+      random-legendary: 1

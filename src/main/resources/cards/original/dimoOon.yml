@@ -6,7 +6,8 @@ description:
   ru: "Пули наводятся на врага"
   en: "Bullets home in on enemies"
 material: COMPASS
-rarity: RARE
 enabled: true
-effects:
-  homing: 1
+variations:
+  - rarity: EPIC
+    effects:
+      homing: 1

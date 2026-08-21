@@ -3,12 +3,32 @@ name:
   ru: "&bРикошет"
   en: "&bRicochet"
 description:
-  ru: "+2 отскока, +25% скорость атаки, +10% перезарядки"
-  en: "+2 Bounces, +25% ATKSPD, +10% Reload time"
+  ru: "Доп. отскоки пуль: {0}, {1} скорость атаки, {2} перезарядки"
+  en: "Extra bullet bounces: {0}, {1} ATKSPD, {2} Reload time"
 material: DIAMOND
-rarity: RARE
 enabled: true
-effects:
-  bounce: 2
-  attack_speed: 0.25
-  reload: 1
+variations:
+  - rarity: RARE
+    values: ["2", "+25%", "+10%"]
+    effects:
+      bounce: 2
+      attack_speed: 0.25
+      reload: 1
+  - rarity: COMMON
+    values: ["1", "+10%", "+5%"]
+    effects:
+      bounce: 1
+      attack_speed: 0.1
+      reload: 0.5
+  - rarity: UNCOMMON
+    values: ["2", "+18%", "+8%"]
+    effects:
+      bounce: 2
+      attack_speed: 0.18
+      reload: 0.8
+  - rarity: EPIC
+    values: ["4", "+40%", "+15%"]
+    effects:
+      bounce: 4
+      attack_speed: 0.4
+      reload: 1.5

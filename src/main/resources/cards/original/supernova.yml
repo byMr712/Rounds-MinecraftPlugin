@@ -6,9 +6,10 @@ description:
   ru: "Притягивает и оглушает врагов, +50% ХП"
   en: "Pull + stun enemies, +50% HP"
 material: END_CRYSTAL
-rarity: LEGENDARY
 enabled: true
-effects:
-  implode: 1
-  stun: 1
-  hp: 0.5
+variations:
+  - rarity: LEGENDARY
+    effects:
+      implode: 1
+      stun: 1
+      hp: 0.5

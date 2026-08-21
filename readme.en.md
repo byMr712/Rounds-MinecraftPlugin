@@ -1,12 +1,12 @@
 # RoundsPlugin v1.0
 
-Minecraft minigame plugin "Rounds". 4 teams, card system with 65 cards, shooting, up to 20 rounds, map block-based spawn system, configurable world rules.
+"Rounds" Minecraft minigame plugin. Features 4 teams, an extensible and modifiable card system, up to 20 rounds, and a special block system for rapid map integration.
 
 ---
 
 ## Requirements
 
-- Paper 1.20.4 - 26.2
+- Purpur/Paper 1.20.4 - 26.2
 - Java 17+
 - Optional: [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.13006/) for placeholder support
 - Optional: [TAB](https://www.spigotmc.org/resources/tab.57806/) for scoreboard and game status display
@@ -55,9 +55,14 @@ This gives all special blocks to inventory and switches to survival mode. Place 
 
 #### Control block
 
-| Block | Material | Function |
-|-------|----------|----------|
-| **Tagshields CD** | Iron Block | Start the game (requires `rounds.admin`) |
+| Block | Material | Action |
+|-------|----------|--------|
+| **Game Start Block** | Iron Block | Starts the game (requires `rounds.admin`) |
+| **Game End Block** | Redstone Block | Ends the game (requires `rounds.admin`) |
+| **Blue Team Lobby Block** | Blue Wool | Adds the player to the Blue team |
+| **Red Team Lobby Block** | Red Wool | Adds the player to the Red team |
+| **Yellow Team Lobby Block** | Yellow Wool | Adds the player to the Yellow team |
+| **Green Team Lobby Block** | Green Wool | Adds the player to the Green team |
 
 ### 2. Set up map blocks
 

@@ -3,10 +3,24 @@ name:
   ru: "&aКотлетки с пюрешкой"
   en: "&aCutlets With Mash"
 description:
-  ru: "+20% ХП"
-  en: "+20% HP"
+  ru: "+{v} ХП"
+  en: "+{v} HP"
 material: COOKED_BEEF
-rarity: COMMON
 enabled: true
-effects:
-  hp: 0.2
+variations:
+  - rarity: COMMON
+    value: "20%"
+    effects:
+      hp: 0.2
+  - rarity: UNCOMMON
+    value: "35%"
+    effects:
+      hp: 0.35
+  - rarity: RARE
+    value: "50%"
+    effects:
+      hp: 0.5
+  - rarity: EPIC
+    value: "70%"
+    effects:
+      hp: 0.7

@@ -3,11 +3,12 @@ name:
   ru: "&8Пила"
   en: "&8Saw"
 description:
-  ru: "Вращающаяся пила при блоке, +50% ХП"
-  en: "Spinning saw on block, +50% HP"
+  ru: "Вращающаяся пила при блоке, +25% ХП"
+  en: "Spinning saw on block, +25% HP"
 material: IRON_AXE
-rarity: RARE
 enabled: true
-effects:
-  saw: 1
-  hp: 0.5
+variations:
+  - rarity: RARE
+    effects:
+      saw: 1
+      hp: 0.25

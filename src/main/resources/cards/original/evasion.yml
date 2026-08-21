@@ -6,7 +6,8 @@ description:
   ru: "30% шанс полностью уклониться от пули"
   en: "30% chance to fully dodge a bullet"
 material: FEATHER
-rarity: LEGENDARY
 enabled: true
-effects:
-  evasion: 0.3
+variations:
+  - rarity: LEGENDARY
+    effects:
+      evasion: 0.3

@@ -6,7 +6,8 @@ description:
   ru: "Выстрелы по врагу с ХП ниже 20% наносят двойной урон, шанс моментального убийства +1%"
   en: "Shots at enemies below 20% HP deal double damage, +1% instant kill chance"
 material: IRON_AXE
-rarity: LEGENDARY
 enabled: true
-effects:
-  executioner: 1
+variations:
+  - rarity: LEGENDARY
+    effects:
+      executioner: 1

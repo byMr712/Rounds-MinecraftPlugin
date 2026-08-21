@@ -6,7 +6,8 @@ description:
   ru: "Пули взрываются при попадании"
   en: "Bullets explode on impact"
 material: GUNPOWDER
-rarity: RARE
 enabled: true
-effects:
-  bomb-bullet: 1
+variations:
+  - rarity: RARE
+    effects:
+      bomb-bullet: 1

@@ -3,12 +3,32 @@ name:
   ru: "&7Танк"
   en: "&7Tank"
 description:
-  ru: "+100% ХП, -25% скорость атаки, +10% перезарядки"
-  en: "+100% HP, -25% ATKSPD, +10% Reload time"
+  ru: "+{0} ХП, -{1} скорость атаки, +{2} перезарядки"
+  en: "+{0} HP, -{1} ATKSPD, +{2} Reload time"
 material: IRON_CHESTPLATE
-rarity: COMMON
 enabled: true
-effects:
-  hp: 1.0
-  attack_speed: -0.25
-  reload: 1
+variations:
+  - rarity: COMMON
+    values: ["100%", "25%", "10%"]
+    effects:
+      hp: 1.0
+      attack_speed: -0.25
+      reload: 1
+  - rarity: UNCOMMON
+    values: ["130%", "30%", "15%"]
+    effects:
+      hp: 1.3
+      attack_speed: -0.3
+      reload: 1.5
+  - rarity: RARE
+    values: ["160%", "40%", "20%"]
+    effects:
+      hp: 1.6
+      attack_speed: -0.4
+      reload: 2
+  - rarity: EPIC
+    values: ["200%", "50%", "25%"]
+    effects:
+      hp: 2.0
+      attack_speed: -0.5
+      reload: 2.5

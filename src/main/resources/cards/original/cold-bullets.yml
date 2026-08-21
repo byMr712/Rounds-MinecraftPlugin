@@ -6,9 +6,10 @@ description:
   ru: "+70% замедления пулями, +60% перезарядки"
   en: "+70% Bullet slow, +60% Reload time"
 material: ICE
-rarity: COMMON
 enabled: true
-effects:
-  cold: 1
-  cold_lvl: 1
-  reload: 6
+variations:
+  - rarity: COMMON
+    effects:
+      cold: 1
+      cold_lvl: 1
+      reload: 6

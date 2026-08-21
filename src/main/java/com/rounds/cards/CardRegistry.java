@@ -14,6 +14,7 @@ import java.util.logging.Level;
 public class CardRegistry {
 
     private final Map<Integer, Card> cards = new LinkedHashMap<>();
+    private int loadedFiles = 0;
     private final Random random = new Random();
     private final File dataFolder;
     private final File originalDir;
@@ -48,6 +49,7 @@ public class CardRegistry {
 
     public void loadCards() {
         cards.clear();
+        loadedFiles = 0;
         originalDir.mkdirs();
         customDir.mkdirs();
 
@@ -148,51 +150,146 @@ public class CardRegistry {
         Arrays.sort(files, Comparator.comparing(File::getName));
 
         for (File file : files) {
+            loadedFiles++;
             YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
             try {
-                int id = config.getInt("id");
-                if (id <= 0) continue;
+                int baseId = config.getInt("id");
+                if (baseId <= 0) continue;
 
-                String materialStr = config.getString("material", "PAPER");
-                String rarityStr = config.getString("rarity", "COMMON");
-                boolean enabled = config.getBoolean("enabled", true);
-
-                Material material;
-                try {
-                    material = Material.valueOf(materialStr.toUpperCase());
-                } catch (IllegalArgumentException e) {
-                    material = Material.PAPER;
-                }
-
-                Rarity rarity;
-                try {
-                    rarity = Rarity.valueOf(rarityStr.toUpperCase());
-                } catch (IllegalArgumentException e) {
-                    rarity = Rarity.COMMON;
-                }
-
-                Map<String, String> names = loadLocalizedMap(config, "name");
-                if (names.isEmpty()) names.put("en", "Card #" + id);
-
-                Map<String, String> descriptions = loadLocalizedMap(config, "description");
-
-                Map<String, Double> effects = new LinkedHashMap<>();
-                ConfigurationSection effectsSection = config.getConfigurationSection("effects");
-                if (effectsSection != null) {
-                    for (String effectKey : effectsSection.getKeys(false)) {
-                        effects.put(effectKey.toLowerCase(), effectsSection.getDouble(effectKey));
+                List<Map<?, ?>> variations = config.getMapList("variations");
+                if (variations.isEmpty()) {
+                    registerCard(parseSingleCard(config, baseId), file);
+                } else {
+                    for (int i = 0; i < variations.size(); i++) {
+                        int fallbackId = (i == 0) ? baseId : baseId * 100 + i + 1;
+                        Card card = parseVariationCard(config, variations.get(i), fallbackId, baseId);
+                        if (card != null) registerCard(card, file);
                     }
                 }
-
-                List<String> commands = config.getStringList("commands");
-                String customScript = config.getString("script", null);
-
-                Card card = new Card(id, names, descriptions, material,
-                        rarity, enabled, effects, commands, customScript);
-                cards.put(id, card);
             } catch (Exception e) {
-                // skip broken card file
+                plugin.getLogger().warning("Failed to load card '" + file.getName() + "': " + e.getMessage());
             }
+        }
+    }
+
+    // One file = one card family. No "variations" list -> single card (legacy format).
+    // Each variation entry: rarity, description {ru/en}, effects; optional: id, material.
+    // Default ids: first variation inherits the file id, the rest get id*100+index (e.g. 30 -> 3002, 3003...).
+    private Card parseSingleCard(YamlConfiguration config, int id) {
+        Map<String, String> names = loadLocalizedMap(config, "name");
+        if (names.isEmpty()) names.put("en", "Card #" + id);
+
+        return new Card(id, id, names, loadLocalizedMap(config, "description"),
+                parseMaterial(config.getString("material", "PAPER")),
+                parseRarity(config.getString("rarity", "COMMON")),
+                config.getBoolean("enabled", true),
+                loadEffects(config),
+                config.getStringList("commands"), config.getString("script", null));
+    }
+
+    private Card parseVariationCard(YamlConfiguration config, Map<?, ?> variation, int fallbackId, int familyId) {
+        int id = fallbackId;
+        if (variation.get("id") instanceof Number explicit) id = explicit.intValue();
+
+        String materialStr = variation.get("material") != null
+                ? String.valueOf(variation.get("material"))
+                : config.getString("material", "PAPER");
+        String rarityStr = variation.get("rarity") != null
+                ? String.valueOf(variation.get("rarity"))
+                : config.getString("rarity", "COMMON");
+
+        Map<String, String> names = loadLocalizedMap(config, "name");
+        if (names.isEmpty()) names.put("en", "Card #" + id);
+
+        Map<String, String> descriptions = resolveVariationDescriptions(config, variation);
+
+        Map<String, Double> effects = new LinkedHashMap<>();
+        if (variation.get("effects") instanceof Map<?, ?> varEffects) {
+            for (Map.Entry<?, ?> e : varEffects.entrySet()) {
+                if (e.getKey() == null || e.getValue() == null) continue;
+                double val = 0;
+                if (e.getValue() instanceof Number n) val = n.doubleValue();
+                else {
+                    try { val = Double.parseDouble(e.getValue().toString()); } catch (NumberFormatException ignored) {}
+                }
+                effects.put(String.valueOf(e.getKey()).toLowerCase(), val);
+            }
+        }
+
+        return new Card(id, familyId, names, descriptions, parseMaterial(materialStr), parseRarity(rarityStr),
+                config.getBoolean("enabled", true), effects,
+                config.getStringList("commands"), config.getString("script", null));
+    }
+
+    // Description is declared once at the top as a template with {v} / {0},{1},... placeholders.
+    // Each variation supplies "value: ..." or "values: [...]"; a variation may also fully
+    // override the description with its own description {ru/en} block.
+    private Map<String, String> resolveVariationDescriptions(YamlConfiguration config, Map<?, ?> variation) {
+        Map<String, String> descriptions = loadLocalizedMap(config, "description");
+
+        if (variation.get("description") instanceof Map<?, ?> varDesc) {
+            Map<String, String> overridden = new LinkedHashMap<>();
+            for (Map.Entry<?, ?> e : varDesc.entrySet()) {
+                if (e.getKey() != null && e.getValue() != null) {
+                    overridden.put(String.valueOf(e.getKey()), String.valueOf(e.getValue()));
+                }
+            }
+            return overridden;
+        }
+
+        List<String> values = new ArrayList<>();
+        if (variation.get("values") instanceof List<?> list) {
+            for (Object o : list) values.add(String.valueOf(o));
+        } else if (variation.get("value") != null) {
+            values.add(String.valueOf(variation.get("value")));
+        }
+        if (values.isEmpty()) return descriptions;
+
+        Map<String, String> result = new LinkedHashMap<>();
+        for (Map.Entry<String, String> e : descriptions.entrySet()) {
+            String text = e.getValue();
+            for (int i = 0; i < values.size(); i++) {
+                text = text.replace("{" + i + "}", values.get(i));
+            }
+            text = text.replace("{v}", values.get(0));
+            result.put(e.getKey(), text);
+        }
+        return result;
+    }
+
+    private Map<String, Double> loadEffects(YamlConfiguration config) {
+        Map<String, Double> effects = new LinkedHashMap<>();
+        ConfigurationSection section = config.getConfigurationSection("effects");
+        if (section != null) {
+            for (String key : section.getKeys(false)) {
+                effects.put(key.toLowerCase(), section.getDouble(key));
+            }
+        }
+        return effects;
+    }
+
+    private Material parseMaterial(String str) {
+        try {
+            return Material.valueOf(str.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return Material.PAPER;
+        }
+    }
+
+    private Rarity parseRarity(String str) {
+        try {
+            return Rarity.valueOf(str.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return Rarity.COMMON;
+        }
+    }
+
+    private void registerCard(Card card, File file) {
+        Card previous = cards.put(card.getId(), card);
+        if (previous != null) {
+            cards.put(previous.getId(), previous);
+            plugin.getLogger().warning("Duplicate card id " + card.getId()
+                    + " in '" + file.getName() + "', keeping earlier definition");
         }
     }
 
@@ -248,6 +345,10 @@ public class CardRegistry {
         return Collections.unmodifiableCollection(cards.values());
     }
 
+    public int getLoadedFileCount() {
+        return loadedFiles;
+    }
+
     public List<Card> getEnabledCards() {
         List<Card> enabled = new ArrayList<>();
         for (Card c : cards.values()) {
@@ -275,7 +376,8 @@ public class CardRegistry {
                 }
             }
             result.add(chosen);
-            pool.remove(chosen);
+            int family = chosen.getFamilyId();
+            pool.removeIf(c -> c.getFamilyId() == family);
             totalWeight = 0;
             for (Card c : pool) totalWeight += c.getRarity().getWeight();
         }
@@ -284,13 +386,22 @@ public class CardRegistry {
 
     public List<Card> getRandomCardsByRarity(Rarity rarity, int count, Integer excludeId) {
         List<Card> pool = new ArrayList<>();
+        int excludeFamily = (excludeId != null && getCard(excludeId) != null)
+                ? getCard(excludeId).getFamilyId() : Integer.MIN_VALUE;
         for (Card c : getEnabledCards()) {
             if (c.getRarity() != rarity) continue;
-            if (excludeId != null && c.getId() == excludeId) continue;
+            if (c.getFamilyId() == excludeFamily) continue;
             pool.add(c);
         }
         Collections.shuffle(pool, random);
-        if (pool.size() <= count) return pool;
-        return new ArrayList<>(pool.subList(0, count));
+
+        List<Card> result = new ArrayList<>();
+        Set<Integer> usedFamilies = new HashSet<>();
+        for (Card c : pool) {
+            if (result.size() >= count) break;
+            if (!usedFamilies.add(c.getFamilyId())) continue;
+            result.add(c);
+        }
+        return result;
     }
 }

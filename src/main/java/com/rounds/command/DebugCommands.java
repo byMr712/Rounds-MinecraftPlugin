@@ -3,7 +3,6 @@ package com.rounds.command;
 import com.rounds.RoundsConfig;
 import com.rounds.RoundsKeys;
 import com.rounds.RoundsPlugin;
-import com.rounds.entity.RoundsEntities;
 import com.rounds.game.GameManager;
 import com.rounds.item.GunItem;
 import com.rounds.placeholder.RoundsPlaceholders;
@@ -92,7 +91,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     }
 
     private void boxSection(CommandSender sender, String title) {
-        boxSection(sender, A, title);
+        boxSection(sender, R, title);
     }
 
     private void boxSection(CommandSender sender, String colorPrefix, String title) {
@@ -137,7 +136,8 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         boolean freeplayActive = plugin.getRoundsConfig().isFreeplay();
-        if (!sender.hasPermission("rounds.admin") && !(freeplayActive && FREEPLAY_COMMANDS.contains(sub))) {
+        boolean admin = sender.hasPermission("rounds.admin");
+        if (!admin && !(freeplayActive && FREEPLAY_COMMANDS.contains(sub)) && !PUBLIC_COMMANDS.contains(sub)) {
             sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
             return true;
         }
@@ -161,10 +161,6 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "setlanguage" -> handleSetLanguage(sender, args);
             case "effect" -> handleEffect(sender, args);
             case "heal" -> handleHeal(sender, args);
-            case "spawnbomb" -> handleSpawnBomb(sender);
-            case "spawnheal" -> handleSpawnHeal(sender);
-            case "spawntoxic" -> handleSpawnToxic(sender);
-            case "spawnshield" -> handleSpawnShield(sender);
             case "cards" -> handleCards(sender, args);
             case "resetstats" -> handleResetStats(sender);
             case "reload" -> handleReload(sender);
@@ -188,7 +184,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     private void sendHelp(CommandSender sender) {
         boxHeader(sender, Messages.get("debug.title"));
 
-        boxSection(sender, G, Messages.get("debug.help-section-game"));
+        boxSection(sender, R, Messages.get("debug.help-section-game"));
         boxKv(sender, "/rdebug start", Messages.get("debug.help-start"));
         boxKv(sender, "/rdebug stop", Messages.get("debug.help-stop"));
         boxKv(sender, "/rdebug status", Messages.get("debug.help-status"));
@@ -197,24 +193,23 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxKv(sender, "/rdebug join", Messages.get("debug.help-join"));
         boxKv(sender, "/rdebug freeplay on|off", Messages.get("debug.help-freeplay"));
 
-        boxSection(sender, Y, Messages.get("debug.help-section-map-blocks"));
+        boxSection(sender, R, Messages.get("debug.help-section-map-blocks"));
         boxKv(sender, "/rdebug giveblocks", Messages.get("debug.help-giveblocks"));
         boxKv(sender, "/rdebug setlobby", Messages.get("debug.help-setlobby"));
-        boxKv(sender, "/rdebug jumppos1/pos2/set", Messages.get("debug.help-jumppos"));
-        boxKv(sender, "/rdebug uppos1/pos2/set", Messages.get("debug.help-uppos"));
+        boxKv(sender, "/rdebug jumppos1 | jumppos2 | jumpset", Messages.get("debug.help-jumppos"));
+        boxKv(sender, "/rdebug uppos1 | uppos2 | upset", Messages.get("debug.help-uppos"));
 
-        boxSection(sender, A, Messages.get("debug.help-section-cards"));
-        boxKv(sender, "/rdebug cards", Messages.get("debug.help-cards"));
+        boxSection(sender, R, Messages.get("debug.help-section-cards"));
         boxKv(sender, "/rdebug cards reload", Messages.get("debug.help-cards-reload"));
-        boxKv(sender, "/rdebug cards test [id]", Messages.get("debug.help-cards-test"));
+        boxKv(sender, "/rdebug cards show [player]", Messages.get("debug.help-cards-show"));
         boxKv(sender, "/rdebug cards add <name>", Messages.get("debug.help-cards-add"));
         boxKv(sender, "/rdebug wheel on|off", Messages.get("debug.help-wheel"));
 
-        boxSection(sender, LP, Messages.get("debug.help-section-scoreboard"));
+        boxSection(sender, R, Messages.get("debug.help-section-scoreboard"));
         boxKv(sender, "/rdebug tab on|off", Messages.get("debug.help-tab"));
         boxKv(sender, "/rdebug tab name <title>", Messages.get("debug.help-tab-name"));
 
-        boxSection(sender, W, Messages.get("debug.help-section-items"));
+        boxSection(sender, R, Messages.get("debug.help-section-items"));
         boxKv(sender, "/rdebug givegun [player|@a]", Messages.get("debug.help-givegun"));
 
         boxSection(sender, R, Messages.get("debug.help-section-debug"));
@@ -225,13 +220,13 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxKv(sender, "/rdebug setlanguage <ru|en>", Messages.get("debug.help-setlanguage"));
         boxKv(sender, "/rdebug effect <type> <amp> <dur>", Messages.get("debug.help-effect"));
         boxKv(sender, "/rdebug heal [amount]", Messages.get("debug.help-heal"));
-        boxKv(sender, "/rdebug spawnbomb/heal/toxic/shield", Messages.get("debug.help-spawn"));
         boxKv(sender, "/rdebug resetstats", Messages.get("debug.help-resetstats"));
         boxKv(sender, "/rdebug reload", Messages.get("debug.help-reload"));
 
-        boxSection(sender, GR, Messages.get("debug.help-section-placeholders"));
+        boxSection(sender, R, Messages.get("debug.help-section-placeholders"));
         boxKv(sender, "/rdebug placeholders", Messages.get("debug.help-placeholders"));
 
+        boxLine(sender, GR, Messages.get("debug.help-public-note"));
         boxFooter(sender);
     }
 
@@ -435,13 +430,20 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxKv(sender, Messages.get("command.version", plugin.getDescription().getVersion()));
         boxKv(sender, Messages.get("command.state", gm.getState()));
         boxKv(sender, Messages.get("command.rounds-to-win-cmd", (int) gm.getRounds()));
+        boxKv(sender, Messages.get("command.players-online", Bukkit.getOnlinePlayers().size()));
+        String onOff = plugin.getRoundsConfig().isFreeplay()
+                ? Messages.get("command.state-on") : Messages.get("command.state-off");
+        boxKv(sender, Messages.get("command.freeplay-status", onOff));
+        boxKv(sender, Messages.get("command.lang-current", Messages.getLanguage()));
         boxSection(sender, Messages.get("debug.section-teams"));
         for (GameTeam team : GameTeam.values()) {
             String teamName = Messages.get("team." + team.name().toLowerCase());
             boxLine(sender, team.getColor(), Messages.get("command.team-info", teamName, (int) tm.getWins(team), tm.getPlayerCount(team)));
         }
         boxSection(sender, Messages.get("debug.section-cards"));
-        boxKv(sender, Messages.get("command.cards-loaded", plugin.getCardManager().getRegistry().getAllCards().size()));
+        boxKv(sender, Messages.get("command.cards-loaded",
+                plugin.getCardManager().getRegistry().getAllCards().size(),
+                plugin.getCardManager().getRegistry().getLoadedFileCount()));
         boxFooter(sender);
     }
 
@@ -475,6 +477,11 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     // === CARDS ===
 
     private void handleCards(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("rounds.admin")) {
+            if (!(sender instanceof Player viewer)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
+            plugin.getCardGUI().openShow(viewer, viewer);
+            return;
+        }
         if (args.length < 2) {
             if (!(sender instanceof Player player)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
             plugin.getCardManager().openCardSelection(player, GameTeam.BLUE);
@@ -483,7 +490,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
         switch (args[1].toLowerCase()) {
             case "reload" -> handleCardsReload(sender);
-            case "test" -> handleCardsTest(sender, args);
+            case "show" -> handleCardsShow(sender, args);
             case "add" -> handleCardsAdd(sender, args);
             default -> sender.sendMessage(ChatColor.RED + Messages.get("debug.unknown-command", args[0] + " " + args[1]));
         }
@@ -491,7 +498,21 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
     private void handleCardsReload(CommandSender sender) {
         plugin.getCardManager().reload();
-        sender.sendMessage(ChatColor.GREEN + Messages.get("command.cards-reloaded", plugin.getCardManager().getRegistry().getAllCards().size()));
+        sender.sendMessage(ChatColor.GREEN + Messages.get("command.cards-reloaded",
+                plugin.getCardManager().getRegistry().getAllCards().size(),
+                plugin.getCardManager().getRegistry().getLoadedFileCount()));
+    }
+
+    private void handleCardsShow(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player viewer)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
+        Player target;
+        if (args.length >= 3) {
+            target = Bukkit.getPlayer(args[2]);
+            if (target == null) { sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[2])); return; }
+        } else {
+            target = viewer;
+        }
+        plugin.getCardGUI().openShow(viewer, target);
     }
 
     private void handleCardsAdd(CommandSender sender, String[] args) {
@@ -508,26 +529,15 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.GREEN + Messages.get("command.applied-card", card.getColoredName(Messages.getLanguage())));
     }
 
-    private void handleCardsTest(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
-        if (args.length >= 3) {
-            try {
-                int cardId = Integer.parseInt(args[2]);
-                var card = plugin.getCardManager().getRegistry().getCard(cardId);
-                if (card == null) { sender.sendMessage(ChatColor.RED + Messages.get("command.card-not-found", cardId)); return; }
-                var data = plugin.getPlayerDataManager().getData(player);
-                card.apply(player, data);
-                data.setCard(cardId, true);
-                sender.sendMessage(ChatColor.GREEN + Messages.get("command.applied-card", card.getColoredName(Messages.getLanguage())));
-            } catch (NumberFormatException e) { sender.sendMessage(ChatColor.RED + Messages.get("command.invalid-card-id")); }
-        } else {
-            plugin.getCardManager().openCardSelection(player, GameTeam.BLUE);
-        }
-    }
-
     // === STATS ===
 
     private void handleStats(CommandSender sender, String[] args) {
+        boolean canModify = sender.hasPermission("rounds.admin");
+        if (!canModify && args.length >= 2) {
+            sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
+            return;
+        }
+
         Player target;
         if (args.length >= 2) {
             target = Bukkit.getPlayer(args[1]);
@@ -739,32 +749,6 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.GREEN + Messages.get("debug.healed", maxHP));
     }
 
-    // === SPAWNS ===
-
-    private void handleSpawnBomb(CommandSender sender) {
-        if (!(sender instanceof Player player)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
-        RoundsEntities.spawnBomb(player.getLocation(), player.getUniqueId());
-        sender.sendMessage(ChatColor.GREEN + Messages.get("debug.bomb-spawned"));
-    }
-
-    private void handleSpawnHeal(CommandSender sender) {
-        if (!(sender instanceof Player player)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
-        RoundsEntities.spawnHealRing(player.getLocation(), player.getUniqueId());
-        sender.sendMessage(ChatColor.GREEN + Messages.get("debug.heal-ring-spawned"));
-    }
-
-    private void handleSpawnToxic(CommandSender sender) {
-        if (!(sender instanceof Player player)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
-        RoundsEntities.spawnToxicRing(player.getLocation(), player.getUniqueId());
-        sender.sendMessage(ChatColor.GREEN + Messages.get("debug.toxic-ring-spawned"));
-    }
-
-    private void handleSpawnShield(CommandSender sender) {
-        if (!(sender instanceof Player player)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
-        RoundsEntities.spawnBombShield(player.getLocation(), player.getUniqueId());
-        sender.sendMessage(ChatColor.GREEN + Messages.get("debug.shield-bomb-spawned"));
-    }
-
     // === MISC ===
 
     private void handleFreeplay(CommandSender sender, String[] args) {
@@ -891,13 +875,15 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         "help", "start", "stop", "status", "rounds", "info",
         "givegun", "cards", "giveblocks", "join", "freeplay",
         "stats", "setstat", "setteam", "setlanguage", "effect", "heal",
-        "spawnbomb", "spawnheal", "spawntoxic", "spawnshield",
         "resetstats", "reload", "setlobby",
         "jumppos1", "jumppos2", "jumpset", "uppos1", "uppos2", "upset",
         "wheel", "tab"
     );
     private static final List<String> FREEPLAY_COMMANDS = Arrays.asList(
-        "start", "stop", "rounds", "stats", "givegun", "wheel"
+        "start", "stop", "rounds", "givegun", "wheel"
+    );
+    private static final List<String> PUBLIC_COMMANDS = Arrays.asList(
+        "info", "stats", "cards"
     );
     private static final List<String> TEAM_COLORS = Arrays.asList("BLUE", "RED", "YELLOW", "GREEN");
 
@@ -909,12 +895,18 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
         String input = args[args.length - 1].toLowerCase();
 
-        if (args.length == 1) {
-            if (admin) return filterStartsWith(SUBCOMMANDS, input);
-            return filterStartsWith(FREEPLAY_COMMANDS, input);
+        if (!admin) {
+            List<String> allowed = new ArrayList<>(PUBLIC_COMMANDS);
+            if (freeplay) allowed.addAll(FREEPLAY_COMMANDS);
+            if (args.length == 1) return filterStartsWith(allowed, input);
+            String root = args[0].toLowerCase();
+            boolean rootAllowed = PUBLIC_COMMANDS.contains(root)
+                    || (freeplay && FREEPLAY_COMMANDS.contains(root));
+            if (!rootAllowed) return Collections.emptyList();
+            if (root.equals("stats")) return Collections.emptyList();
+        } else {
+            if (args.length == 1) return filterStartsWith(SUBCOMMANDS, input);
         }
-
-        if (!admin && !FREEPLAY_COMMANDS.contains(args[0].toLowerCase())) return Collections.emptyList();
 
         return switch (args[0].toLowerCase()) {
             case "givegun", "giveblocks" -> {
@@ -961,12 +953,15 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 yield Collections.emptyList();
             }
             case "cards" -> {
-                if (args.length == 2) yield filterStartsWith(Arrays.asList("reload", "test", "add"), input);
-                if (args.length == 3 && args[1].equalsIgnoreCase("test")) {
+                if (!admin) {
+                    yield args.length == 2
+                            ? filterStartsWith(Collections.singletonList("show"), input)
+                            : Collections.emptyList();
+                }
+                if (args.length == 2) yield filterStartsWith(Arrays.asList("reload", "show", "add"), input);
+                if (args.length == 3 && args[1].equalsIgnoreCase("show")) {
                     List<String> list = new ArrayList<>();
-                    for (com.rounds.cards.Card card : plugin.getCardManager().getRegistry().getAllCards()) {
-                        list.add(String.valueOf(card.getId()));
-                    }
+                    Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
                     yield filterStartsWith(list, input);
                 }
                 if (args.length == 3 && args[1].equalsIgnoreCase("add")) {

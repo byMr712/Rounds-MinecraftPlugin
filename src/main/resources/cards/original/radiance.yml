@@ -6,8 +6,9 @@ description:
   ru: "Противники светятся при блоке, +50% ХП"
   en: "Enemies glow when you block, +50% HP"
 material: LIGHT
-rarity: RARE
 enabled: true
-effects:
-  radiance: 1
-  hp: 0.5
+variations:
+  - rarity: RARE
+    effects:
+      radiance: 1
+      hp: 0.5

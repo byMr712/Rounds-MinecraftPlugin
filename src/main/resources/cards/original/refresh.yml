@@ -6,7 +6,8 @@ description:
   ru: "Нанесение урона сбрасывает КД блока"
   en: "Dealing damage resets block CD"
 material: LAPIS_LAZULI
-rarity: RARE
 enabled: true
-effects:
-  refresh: 1
+variations:
+  - rarity: RARE
+    effects:
+      refresh: 1

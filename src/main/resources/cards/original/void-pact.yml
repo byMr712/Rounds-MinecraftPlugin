@@ -6,8 +6,9 @@ description:
   ru: "+150% урона, -50% ХП"
   en: "+150% damage, -50% HP"
 material: OBSIDIAN
-rarity: LEGENDARY
 enabled: true
-effects:
-  damage: 1.5
-  hp: -0.5
+variations:
+  - rarity: LEGENDARY
+    effects:
+      damage: 1.5
+      hp: -0.5

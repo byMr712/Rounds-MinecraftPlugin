@@ -6,8 +6,9 @@ description:
   ru: "Крадёт ХП рядом с врагом, +25% ХП"
   en: "Steal HP when near enemy, +25% HP"
 material: NETHER_WART
-rarity: RARE
 enabled: true
-effects:
-  lifesteal_aura: 1
-  hp: 0.25
+variations:
+  - rarity: RARE
+    effects:
+      lifesteal_aura: 1
+      hp: 0.25

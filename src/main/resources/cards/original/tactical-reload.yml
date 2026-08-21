@@ -6,8 +6,9 @@ description:
   ru: "Блок перезаряжает оружие, +КД блока"
   en: "Block reloads weapon, +Block CD"
 material: TRIPWIRE_HOOK
-rarity: COMMON
 enabled: true
-effects:
-  tactical_reload: 1
-  block_cd: 0.5
+variations:
+  - rarity: COMMON
+    effects:
+      tactical_reload: 1
+      block_cd: 0.5

@@ -6,7 +6,8 @@ description:
   ru: "Противнику наносится 10% урона своего же урона при попадании по вам"
   en: "The attacker takes 10% of their own damage when hitting you"
 material: CACTUS
-rarity: LEGENDARY
 enabled: true
-effects:
-  spikes: 0.1
+variations:
+  - rarity: LEGENDARY
+    effects:
+      spikes: 0.1

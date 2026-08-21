@@ -6,8 +6,9 @@ description:
   ru: "Пули отталкивают цели, +10% перезарядки"
   en: "Bullets push targets, +10% Reload time"
 material: PISTON
-rarity: COMMON
 enabled: true
-effects:
-  truster: 1
-  reload: 1
+variations:
+  - rarity: COMMON
+    effects:
+      truster: 1
+      reload: 1

@@ -6,8 +6,9 @@ description:
   ru: "Блокирует способности врагов при блоке, +25% ХП"
   en: "Silence enemies on block, +25% HP"
 material: OBSIDIAN
-rarity: RARE
 enabled: true
-effects:
-  silence: 1
-  hp: 0.25
+variations:
+  - rarity: RARE
+    effects:
+      silence: 1
+      hp: 0.25

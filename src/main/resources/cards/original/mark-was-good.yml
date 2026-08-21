@@ -10,4 +10,4 @@ enabled: true
 variations:
   - rarity: UNCOMMON
     effects:
-      radiance: 1
+      highlight: 1

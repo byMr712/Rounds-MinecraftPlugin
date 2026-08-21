@@ -650,6 +650,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "cold" -> data.cold = value;
             case "poison" -> data.poison = value;
             case "toxic_cloud" -> data.toxicCloud = value;
+            case "highlight" -> data.highlight = value;
             case "leech" -> data.leech = value;
             case "homing" -> data.homing = value;
             case "poison_lvl" -> data.poisonLvl = value;

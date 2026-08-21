@@ -3,6 +3,7 @@ package com.rounds.player;
 import com.rounds.DefaultStats;
 
 import java.util.HashSet;
+import java.util.Collections;
 import java.util.Set;
 
 public class PlayerData {
@@ -80,6 +81,7 @@ public class PlayerData {
     public double overpower = 0;
     public double refresh = 0;
     public double radiance = 0;
+    public double highlight = 0;
     public double lifestealAura = 0;
     public double phoenix = 0;
     public double abyssal = 0;
@@ -146,7 +148,7 @@ public class PlayerData {
     }
 
     public Set<Integer> getOwnedCards() {
-        return ownedCards;
+        return Collections.unmodifiableSet(ownedCards);
     }
 
     public void resetAllCards() {
@@ -207,6 +209,7 @@ public class PlayerData {
         overpower = 0;
         refresh = 0;
         radiance = 0;
+        highlight = 0;
         lifestealAura = 0;
         phoenix = 0;
         abyssal = 0;

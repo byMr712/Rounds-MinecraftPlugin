@@ -28,8 +28,53 @@ public class RoundsEntities implements Listener {
     private static RoundsPlugin plugin;
     private static final Map<UUID, Integer> bounceCounters = new HashMap<>();
     private static final Map<UUID, Vector> lastBulletVelocity = new HashMap<>();
-    private static final Map<UUID, Double> hpBoostBaseHP = new HashMap<>();
+    private static final Map<UUID, Double> hpBoostPending = new HashMap<>();
     private static final Map<UUID, Integer> hpBoostTasks = new HashMap<>();
+    private static final List<CloudFx> activeClouds = new ArrayList<>();
+    private static int cloudTickId = -1;
+    private static final Particle.DustOptions TOXIC_DUST =
+            new Particle.DustOptions(Color.fromRGB(0, 200, 0), 1.5f);
+
+    private static class CloudFx {
+        final Location center;
+        final double radius;
+        final int duration;
+        int elapsed = 0;
+
+        CloudFx(Location center, double radius, int duration) {
+            this.center = center;
+            this.radius = radius;
+            this.duration = duration;
+        }
+    }
+
+    private static void startCloudTicker() {
+        if (cloudTickId != -1) return;
+        cloudTickId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
+            Iterator<CloudFx> it = activeClouds.iterator();
+            while (it.hasNext()) {
+                CloudFx fx = it.next();
+                if (fx.elapsed >= fx.duration) {
+                    it.remove();
+                    continue;
+                }
+                for (int i = 0; i < 4; i++) {
+                    double angle = Math.random() * Math.PI * 2;
+                    double r = Math.random() * fx.radius;
+                    double x = fx.center.getX() + Math.cos(angle) * r;
+                    double z = fx.center.getZ() + Math.sin(angle) * r;
+                    Location p = new Location(fx.center.getWorld(), x,
+                            fx.center.getY() + Math.random() * 0.5, z);
+                    p.getWorld().spawnParticle(Particle.REDSTONE, p, 1, 0.1, 0.1, 0.1, TOXIC_DUST);
+                }
+                fx.elapsed += 2;
+            }
+            if (activeClouds.isEmpty()) {
+                Bukkit.getScheduler().cancelTask(cloudTickId);
+                cloudTickId = -1;
+            }
+        }, 0L, 2L);
+    }
 
     private static final Map<UUID, BulletData> activeBullets = new HashMap<>();
     private static int centralizedTickId = -1;
@@ -56,6 +101,7 @@ public class RoundsEntities implements Listener {
         final String spawnLoc;
         Vector lastVelocity;
         Location prevLoc;
+        LivingEntity homingTarget;
 
         BulletData(UUID ownerId, double damage, int maxBounce, double scale,
                    double homing, double tgBounce, double drill, double sneaky,
@@ -89,15 +135,16 @@ public class RoundsEntities implements Listener {
     }
 
     private static void processAllBullets() {
-        Iterator<Map.Entry<UUID, BulletData>> it = activeBullets.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry<UUID, BulletData> entry = it.next();
-            UUID arrowId = entry.getKey();
-            BulletData data = entry.getValue();
+        if (activeBullets.isEmpty()) return;
+        // Обработка пули может менять activeBullets (попадание, отражение щитом,
+        // рикошет) — итерируемся по снимку ключей, иначе ConcurrentModificationException.
+        for (UUID arrowId : activeBullets.keySet().toArray(new UUID[0])) {
+            BulletData data = activeBullets.get(arrowId);
+            if (data == null) continue; // пуля уже обработана в этом тике
 
             Entity entity = Bukkit.getEntity(arrowId);
             if (entity == null || !(entity instanceof Arrow arrow) || !arrow.isValid() || arrow.isDead()) {
-                it.remove();
+                activeBullets.remove(arrowId);
                 lastBulletVelocity.remove(arrowId);
                 continue;
             }
@@ -114,7 +161,16 @@ public class RoundsEntities implements Listener {
         }
 
         if (data.homing > 0) {
-            LivingEntity nearest = findNearestEnemy(arrow, data.ownerId);
+            // Цель ищем не каждый тик: кэшируем и обновляем раз в 10 тиков или при потере.
+            boolean targetInvalid = data.homingTarget == null || !data.homingTarget.isValid()
+                    || data.homingTarget.isDead()
+                    || arrow.getLocation().distance(data.homingTarget.getLocation()) > 20.0
+                    || (data.homingTarget instanceof Player ht
+                        && (!ht.isOnline() || ht.getGameMode() == GameMode.SPECTATOR));
+            if (targetInvalid || arrow.getTicksLived() % 10 == 0) {
+                data.homingTarget = findNearestEnemy(arrow, data.ownerId);
+            }
+            LivingEntity nearest = data.homingTarget;
             if (nearest != null) {
                 Vector toTarget = nearest.getEyeLocation().toVector().subtract(arrow.getLocation().toVector());
                 double dist = toTarget.length();
@@ -167,59 +223,63 @@ public class RoundsEntities implements Listener {
 
         double hitRadius = data.scale > 1.0 ? HIT_RADIUS_BIG : HIT_RADIUS;
 
-        List<Location> checkpoints = new ArrayList<>();
-        if (dist > 0.1) {
-            int steps = Math.min((int) Math.ceil(dist / 0.6), MAX_CHECKPOINTS);
-            Vector step = traveled.multiply(1.0 / steps);
-            for (int i = 0; i <= steps; i++) {
-                checkpoints.add(data.prevLoc.clone().add(step.clone().multiply(i)));
-            }
-        } else {
-            checkpoints.add(aLoc.clone());
+        // Один запрос по охватывающему bbox всего отрезка полёта вместо чекпоинт-цикла.
+        Vector segStart = data.prevLoc.toVector();
+        Vector segEnd = aLoc.toVector();
+        org.bukkit.util.BoundingBox sweepBox = org.bukkit.util.BoundingBox.of(data.prevLoc, aLoc)
+                .expand(hitRadius + 0.5);
+        List<Entity> candidates = new ArrayList<>();
+        for (Entity entity : aLoc.getWorld().getNearbyEntities(sweepBox)) {
+            if (!(entity instanceof LivingEntity living)) continue;
+            if (entity.getUniqueId().equals(data.ownerId)) continue;
+            if (entity instanceof org.bukkit.entity.ArmorStand) continue;
+            candidates.add(living);
         }
+        // Ближайший к стрелку по траектории хит обрабатывается первым.
+        candidates.sort(Comparator.comparingDouble(e ->
+                projectionT(segStart, segEnd, e.getLocation().toVector())));
 
         boolean reflected = false;
-        for (Location check : checkpoints) {
-            for (Entity entity : check.getWorld().getNearbyEntities(check, hitRadius, hitRadius, hitRadius)) {
-                if (!(entity instanceof LivingEntity living)) continue;
-                if (entity.getUniqueId().equals(data.ownerId)) continue;
-                if (entity instanceof org.bukkit.entity.ArmorStand) continue;
-                if (entity instanceof Player p) {
-                    if (!plugin.getGameManager().isTargetable(p)) continue;
-                    GameTeam ownerTeam = plugin.getTeamManager().getPlayerTeam(data.ownerId);
-                    GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-                    if (ownerTeam != null && targetTeam != null && ownerTeam == targetTeam) continue;
-                    if (GunItem.isShieldActive(p.getUniqueId())) {
-                        reflectBulletFromPlayer(arrow, p, arrow.getPersistentDataContainer());
-                        BulletData reflectedData = activeBullets.get(arrow.getUniqueId());
-                        if (reflectedData != null) {
-                            reflectedData.ownerId = p.getUniqueId();
-                        }
-                        reflected = true;
-                        break;
-                    }
-                }
-                double entityDist = living.getLocation().distance(check) - 0.5;
-                if (entityDist > hitRadius) continue;
-                if (!arrow.isValid()) return;
-                if (!arrow.getPersistentDataContainer().has(RoundsKeys.IS_BULLET, PersistentDataType.BYTE)) return;
+        for (Entity entity : candidates) {
+            LivingEntity living = (LivingEntity) entity;
+            Vector hitPos = closestPointOnSegment(segStart, segEnd, living.getLocation().toVector());
+            double segmentDist = hitPos.distance(living.getLocation().toVector()) - 0.5;
+            if (segmentDist > hitRadius) continue;
 
-                double finalDmg = data.damage * 2.0;
-                PlayerData shooterData = plugin.getPlayerDataManager().getData(data.ownerId);
-                if (shooterData != null) {
-                    if (!data.spawnLoc.isEmpty() && shooterData.grow > 0) {
-                        try {
-                            String[] parts = data.spawnLoc.split(",");
-                            Location sLoc = new Location(
-                                Bukkit.getWorld(parts[0]),
-                                Double.parseDouble(parts[1]),
-                                Double.parseDouble(parts[2]),
-                                Double.parseDouble(parts[3]));
-                            double d = check.distance(sLoc);
-                            double growMult = 1.0 + Math.min(d * 0.1 * shooterData.grow, 2.0);
-                            finalDmg *= growMult;
-                        } catch (Exception ignored) {}
+            if (living instanceof Player p) {
+                if (!plugin.getGameManager().isTargetable(p)) continue;
+                GameTeam ownerTeam = plugin.getTeamManager().getPlayerTeam(data.ownerId);
+                GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+                if (ownerTeam != null && targetTeam != null && ownerTeam == targetTeam) continue;
+                if (GunItem.isShieldActive(p.getUniqueId())) {
+                    reflectBulletFromPlayer(arrow, p, arrow.getPersistentDataContainer());
+                    BulletData reflectedData = activeBullets.get(arrow.getUniqueId());
+                    if (reflectedData != null) {
+                        reflectedData.ownerId = p.getUniqueId();
                     }
+                    reflected = true;
+                    break;
+                }
+            }
+            if (!arrow.isValid()) return;
+            if (!arrow.getPersistentDataContainer().has(RoundsKeys.IS_BULLET, PersistentDataType.BYTE)) return;
+
+            double finalDmg = data.damage * 2.0;
+            PlayerData shooterData = plugin.getPlayerDataManager().getData(data.ownerId);
+            if (shooterData != null) {
+                if (!data.spawnLoc.isEmpty() && shooterData.grow > 0) {
+                    try {
+                        String[] parts = data.spawnLoc.split(",");
+                        Location sLoc = new Location(
+                            Bukkit.getWorld(parts[0]),
+                            Double.parseDouble(parts[1]),
+                            Double.parseDouble(parts[2]),
+                            Double.parseDouble(parts[3]));
+                        double d = sLoc.toVector().distance(hitPos);
+                        double growMult = 1.0 + Math.min(d * 0.1 * shooterData.grow, 2.0);
+                        finalDmg *= growMult;
+                    } catch (Exception ignored) {}
+                }
                     int bounces = bounceCounters.getOrDefault(arrow.getUniqueId(), 0);
                     if (bounces > 0 && shooterData.damagePerBounce > 0) {
                         finalDmg *= (1.0 + bounces * shooterData.damagePerBounce);
@@ -276,10 +336,23 @@ public class RoundsEntities implements Listener {
                 bounceCounters.remove(arrow.getUniqueId());
                 lastBulletVelocity.remove(arrow.getUniqueId());
                 return;
-            }
-            if (reflected) break;
         }
         data.prevLoc = aLoc.clone();
+    }
+
+    private static double projectionT(Vector a, Vector b, Vector p) {
+        Vector ab = b.clone().subtract(a);
+        double lenSq = ab.lengthSquared();
+        if (lenSq < 1.0E-8) return 0.0;
+        return p.clone().subtract(a).dot(ab) / lenSq;
+    }
+
+    private static Vector closestPointOnSegment(Vector a, Vector b, Vector p) {
+        Vector ab = b.clone().subtract(a);
+        double lenSq = ab.lengthSquared();
+        if (lenSq < 1.0E-8) return a.clone();
+        double t = Math.max(0.0, Math.min(1.0, p.clone().subtract(a).dot(ab) / lenSq));
+        return a.clone().add(ab.multiply(t));
     }
 
     // ==================== Utilities ====================
@@ -385,11 +458,48 @@ public class RoundsEntities implements Listener {
     }
 
     public static void clearAllState() {
+        // Отложенные восстановления HP: отменяем задачи и применяем откат сразу.
+        for (int taskId : hpBoostTasks.values()) {
+            Bukkit.getScheduler().cancelTask(taskId);
+        }
+        hpBoostTasks.clear();
+        for (Map.Entry<UUID, Double> entry : hpBoostPending.entrySet()) {
+            Player p = Bukkit.getPlayer(entry.getKey());
+            if (p == null || !p.isOnline()) continue;
+            var attr = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+            if (attr != null) {
+                double restored = Math.max(1.0, attr.getBaseValue() - entry.getValue());
+                attr.setBaseValue(restored);
+                p.setHealth(Math.min(p.getHealth(), restored));
+            }
+        }
+        hpBoostPending.clear();
+
         bounceCounters.clear();
         lastBulletVelocity.clear();
-        hpBoostBaseHP.clear();
-        hpBoostTasks.clear();
         activeBullets.clear();
+        activeClouds.clear();
+        if (cloudTickId != -1) {
+            Bukkit.getScheduler().cancelTask(cloudTickId);
+            cloudTickId = -1;
+        }
+        removeMarkedEntities();
+    }
+
+    private static void removeMarkedEntities() {
+        for (World world : Bukkit.getWorlds()) {
+            for (Entity entity : world.getEntitiesByClasses(Arrow.class, AreaEffectCloud.class)) {
+                PersistentDataContainer pdc = entity.getPersistentDataContainer();
+                boolean isBulletArrow = entity instanceof Arrow
+                        && pdc.has(RoundsKeys.IS_BULLET, PersistentDataType.BYTE);
+                boolean isEffectCloud = entity instanceof AreaEffectCloud
+                        && (pdc.has(RoundsKeys.IS_HEAL_RING, PersistentDataType.BYTE)
+                            || pdc.has(RoundsKeys.IS_TOXIC_RING, PersistentDataType.BYTE));
+                if (isBulletArrow || isEffectCloud) {
+                    entity.remove();
+                }
+            }
+        }
     }
 
     // ==================== Spawn bullet ====================
@@ -663,26 +773,8 @@ public class RoundsEntities implements Listener {
         });
 
         Location particleCenter = loc.clone().add(0, 0.5, 0);
-        new org.bukkit.scheduler.BukkitRunnable() {
-            int ticks = 0;
-            @Override
-            public void run() {
-                if (!cloud.isValid() || ticks >= duration) {
-                    cancel();
-                    return;
-                }
-                Particle.DustOptions toxicDust = new Particle.DustOptions(Color.fromRGB(0, 200, 0), 1.5f);
-                for (int i = 0; i < 4; i++) {
-                    double angle = Math.random() * Math.PI * 2;
-                    double r = Math.random() * radius;
-                    double x = particleCenter.getX() + Math.cos(angle) * r;
-                    double z = particleCenter.getZ() + Math.sin(angle) * r;
-                    Location p = new Location(loc.getWorld(), x, particleCenter.getY() + Math.random() * 0.5, z);
-                    p.getWorld().spawnParticle(Particle.REDSTONE, p, 1, 0.1, 0.1, 0.1, toxicDust);
-                }
-                ticks += 2;
-            }
-        }.runTaskTimer(plugin, 0L, 2L);
+        activeClouds.add(new CloudFx(particleCenter, radius, duration));
+        startCloudTicker();
 
         loc.getWorld().playSound(loc, Sound.BLOCK_HONEY_BLOCK_PLACE, 0.8f, 0.6f);
         loc.getWorld().spawnParticle(Particle.SMOKE_LARGE, loc.clone().add(0, 0.5, 0),
@@ -843,26 +935,32 @@ public class RoundsEntities implements Listener {
                 }
                 if (data.hpBoostOnHit > 0 && arrow.getShooter() instanceof Player hpShooter) {
                     UUID shooterUUID = hpShooter.getUniqueId();
-                    if (!hpBoostBaseHP.containsKey(shooterUUID)) {
+                    if (!hpBoostPending.containsKey(shooterUUID)) {
                         var hpAttr = hpShooter.getAttribute(Attribute.GENERIC_MAX_HEALTH);
                         if (hpAttr != null) {
                             double baseMaxHP = hpAttr.getValue();
-                            hpBoostBaseHP.put(shooterUUID, baseMaxHP);
                             double boost = baseMaxHP * data.hpBoostOnHit;
                             double newMax = Math.min(baseMaxHP + boost, PlayerData.MAX_HEALTH);
                             double actualBoost = Math.max(0, newMax - baseMaxHP);
-                            hpAttr.setBaseValue(newMax);
-                            hpShooter.setHealth(Math.min(hpShooter.getHealth() + actualBoost, newMax));
-                            int taskId = Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-                                hpBoostBaseHP.remove(shooterUUID);
-                                hpBoostTasks.remove(shooterUUID);
-                                var restoreAttr = hpShooter.getAttribute(Attribute.GENERIC_MAX_HEALTH);
-                                if (restoreAttr != null) {
-                                    restoreAttr.setBaseValue(baseMaxHP);
-                                    hpShooter.setHealth(Math.min(hpShooter.getHealth(), baseMaxHP));
-                                }
-                            }, 40L);
-                            hpBoostTasks.put(shooterUUID, taskId);
+                            if (actualBoost > 0) {
+                                // Храним применённый буст, а не исходный максимум:
+                                // восстановление вычитает буст из текущего значения,
+                                // чтобы не затирать бонусы от карт здоровья.
+                                hpBoostPending.put(shooterUUID, actualBoost);
+                                hpAttr.setBaseValue(newMax);
+                                hpShooter.setHealth(Math.min(hpShooter.getHealth() + actualBoost, newMax));
+                                int taskId = Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                                    hpBoostPending.remove(shooterUUID);
+                                    hpBoostTasks.remove(shooterUUID);
+                                    var restoreAttr = hpShooter.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+                                    if (restoreAttr != null) {
+                                        double restored = Math.max(1.0, restoreAttr.getBaseValue() - actualBoost);
+                                        restoreAttr.setBaseValue(restored);
+                                        hpShooter.setHealth(Math.min(hpShooter.getHealth(), restored));
+                                    }
+                                }, 40L);
+                                hpBoostTasks.put(shooterUUID, taskId);
+                            }
                         }
                     }
                 }

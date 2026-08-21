@@ -94,8 +94,9 @@ public class PlayerDataManager implements Listener {
     public void clearActivePlayers() {
         activePlayers.clear();
         savedData.clear();
-        saveActivePlayers();
+        playerStore = new YamlConfiguration();
         clearActiveFile();
+        playerStore = null;
     }
 
     // ==================== Full player data save/load (per-UUID) ====================
@@ -104,7 +105,7 @@ public class PlayerDataManager implements Listener {
         PlayerData data = cache.get(uuid);
         if (data == null) data = new PlayerData();
 
-        YamlConfiguration yml = loadYaml();
+        YamlConfiguration yml = store();
         String path = "players." + uuid.toString();
 
         yml.set(path + ".team", team != null ? team.name() : null);
@@ -152,7 +153,7 @@ public class PlayerDataManager implements Listener {
         }
         yml.set(path + ".cards", ownedCards);
 
-        saveYaml(yml);
+        flushStore();
     }
 
     public void saveAllFullData(List<Integer> pendingCardIds) {
@@ -163,7 +164,7 @@ public class PlayerDataManager implements Listener {
     }
 
     public SavedPlayerData loadPlayerFullData(UUID uuid) {
-        YamlConfiguration yml = loadYaml();
+        YamlConfiguration yml = store();
         String path = "players." + uuid.toString();
         if (!yml.contains(path)) return null;
 
@@ -241,7 +242,7 @@ public class PlayerDataManager implements Listener {
 
         List<Integer> pendingCardIds = plugin.getCardManager().getPendingCardIds(uuid);
 
-        YamlConfiguration yml = loadYaml();
+        YamlConfiguration yml = store();
         String path = "players." + uuid.toString();
         yml.set(path + ".team", team != null ? team.name() : null);
         yml.set(path + ".name", data.playerName);
@@ -289,24 +290,21 @@ public class PlayerDataManager implements Listener {
         }
         yml.set(path + ".cards", ownedCards);
 
-        saveYaml(yml);
+        flushStore();
     }
 
     // ==================== Legacy active-players.yml tracking ====================
 
     private void saveActivePlayers() {
-        YamlConfiguration config = new YamlConfiguration();
+        // Пишем в общий кэш, а не в новый конфиг — иначе терялись бы секции players.*.
+        YamlConfiguration config = store();
         config.set("version", 2);
         List<String> uuids = new ArrayList<>();
         for (UUID uuid : activePlayers) {
             uuids.add(uuid.toString());
         }
         config.set("active-list", uuids);
-        try {
-            config.save(activeFile);
-        } catch (IOException e) {
-            plugin.getLogger().warning("Failed to save active players: " + e.getMessage());
-        }
+        flushStore();
     }
 
     private void loadActivePlayers() {
@@ -337,25 +335,30 @@ public class PlayerDataManager implements Listener {
 
     // ==================== Internal YAML helpers ====================
 
-    private YamlConfiguration loadYaml() {
-        File f = new File(plugin.getDataFolder(), "active-players.yml");
-        if (!f.exists()) return new YamlConfiguration();
-        return YamlConfiguration.loadConfiguration(f);
+    // Кэш конфига в памяти: чтение файла один раз, запись — синхронная (crash-safe).
+    private YamlConfiguration playerStore;
+
+    private YamlConfiguration store() {
+        if (playerStore == null) {
+            playerStore = activeFile.exists()
+                    ? YamlConfiguration.loadConfiguration(activeFile)
+                    : new YamlConfiguration();
+        }
+        return playerStore;
     }
 
-    private void saveYaml(YamlConfiguration yml) {
-        File f = new File(plugin.getDataFolder(), "active-players.yml");
+    private void flushStore() {
         try {
-            yml.save(f);
+            store().save(activeFile);
         } catch (IOException e) {
             plugin.getLogger().warning("Failed to save active players YAML: " + e.getMessage());
         }
     }
 
     public void removePlayerData(UUID uuid) {
-        YamlConfiguration yml = loadYaml();
+        YamlConfiguration yml = store();
         yml.set("players." + uuid.toString(), null);
-        saveYaml(yml);
+        flushStore();
     }
 
     // ==================== Standard cache + PDC ====================
@@ -403,7 +406,8 @@ public class PlayerDataManager implements Listener {
                             pdata.resetAllCards();
                         }
                         plugin.getGameManager().clearCardEffects(player);
-                        com.rounds.item.GunItem.cancelReload(uuid);
+        com.rounds.item.GunItem.cancelReload(uuid);
+        com.rounds.item.GunItem.clearPlayer(uuid);
                         player.getInventory().clear();
                         var attr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
                         if (attr != null) attr.setBaseValue(20);
@@ -529,7 +533,12 @@ public class PlayerDataManager implements Listener {
         setStat(pdc, "atks_reload", data.atksReload);
 
         for (int id : getRegisteredCardIds()) {
-            pdc.set(new NamespacedKey("rounds", "card_" + id), PersistentDataType.DOUBLE, data.getCard(id) ? 1.0 : 0.0);
+            NamespacedKey cardKey = new NamespacedKey("rounds", "card_" + id);
+            if (data.getCard(id)) {
+                pdc.set(cardKey, PersistentDataType.DOUBLE, 1.0);
+            } else if (pdc.has(cardKey, PersistentDataType.DOUBLE)) {
+                pdc.remove(cardKey);
+            }
         }
     }
 

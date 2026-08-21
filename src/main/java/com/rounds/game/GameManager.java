@@ -19,6 +19,7 @@ import com.rounds.teams.TeamManager.GameTeam;
 import com.rounds.util.Messages;
 import org.bukkit.GameRule;
 import org.bukkit.World;
+import com.rounds.RoundsKeys;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
@@ -62,6 +63,9 @@ public class GameManager implements Listener {
     private final com.rounds.util.TabCompat tabCompat;
     private boolean wheelEnabled = false;
     private final Set<Integer> scheduledTaskIds = new HashSet<>();
+    private final Set<Integer> phantomTaskIds = new HashSet<>();
+    private int gameGeneration = 0;
+    private static final Random RANDOM = new Random();
     private final Set<UUID> pendingCardJoiners = new HashSet<>();
     private final Set<UUID> returningJoiners = new HashSet<>();
     private final Map<GameRule<?>, Object> savedGameRules = new HashMap<>();
@@ -118,6 +122,7 @@ public class GameManager implements Listener {
 
         resetWins();
         resetAllCards();
+        gameGeneration++;
         musicTick = 0;
         currentRound = 0;
         deadPlayers.clear();
@@ -178,12 +183,20 @@ public class GameManager implements Listener {
             }
         }
 
-        new BukkitRunnable() {
+        BukkitRunnable countdown = new BukkitRunnable() {
             int count = 3;
+            final int gen = gameGeneration;
 
             @Override
             public void run() {
+                if (gen != gameGeneration) {
+                    // Игра была остановлена/перезапущена во время отсчёта — отменяем.
+                    scheduledTaskIds.remove(getTaskId());
+                    cancel();
+                    return;
+                }
                 if (count <= 0) {
+                    scheduledTaskIds.remove(getTaskId());
                     cancel();
                     finishStart(readyPlayers, teamsWithPlayers);
                     return;
@@ -198,7 +211,9 @@ public class GameManager implements Listener {
                 }
                 count--;
             }
-        }.runTaskTimer(plugin, 20L, 20L);
+        };
+        countdown.runTaskTimer(plugin, 20L, 20L);
+        scheduledTaskIds.add(countdown.getTaskId());
     }
 
     private void finishStart(List<Player> readyPlayers, Set<GameTeam> teamsWithPlayers) {
@@ -270,16 +285,26 @@ public class GameManager implements Listener {
             if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) == null) continue;
             if (deadPlayers.contains(p.getUniqueId())) continue;
             PlayerData data = plugin.getPlayerDataManager().getData(p);
-            if (data.radiance > 0) {
-                for (Entity entity : p.getNearbyEntities(8.0, 8.0, 8.0)) {
-                    if (entity instanceof Player radTarget && !radTarget.equals(p)) {
-                        if (radTarget.getGameMode() == GameMode.SPECTATOR) continue;
-                        GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-                        GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(radTarget.getUniqueId());
-                        if (myTeam != targetTeam) {
-                            radTarget.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                                PotionEffectType.GLOWING, 30, 0));
-                        }
+            GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+
+            // Один общий запрос сущностей по максимальному нужному радиусу.
+            double maxRadius = 0;
+            if (data.highlight > 0) maxRadius = Math.max(maxRadius, 8.0);
+            if (data.lifestealAura > 0) maxRadius = Math.max(maxRadius, 2.5);
+            if (data.silenceAura > 0) maxRadius = Math.max(maxRadius, 5.0);
+            if (data.speed > 0) maxRadius = Math.max(maxRadius, 5.0 + data.speed * 3.0);
+            List<Entity> nearby = maxRadius > 0 ? p.getNearbyEntities(maxRadius, maxRadius, maxRadius)
+                    : Collections.emptyList();
+
+            if (data.highlight > 0) {
+                for (Entity entity : nearby) {
+                    if (!(entity instanceof Player radTarget) || radTarget.equals(p)) continue;
+                    if (radTarget.getLocation().distanceSquared(p.getLocation()) > 64.0) continue; // 8^2
+                    if (radTarget.getGameMode() == GameMode.SPECTATOR) continue;
+                    GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(radTarget.getUniqueId());
+                    if (myTeam != targetTeam) {
+                        radTarget.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                            PotionEffectType.GLOWING, 30, 0));
                     }
                 }
             }
@@ -290,13 +315,13 @@ public class GameManager implements Listener {
                 data.ammo = Math.min(data.ammo, data.maxAmmo);
             }
             if (data.lifestealAura > 0) {
-                for (Entity entity : p.getNearbyEntities(2.5, 2.5, 2.5)) {
+                for (Entity entity : nearby) {
                     if (!(entity instanceof Player enemy)) continue;
                     if (enemy.getUniqueId().equals(p.getUniqueId())) continue;
+                    if (enemy.getLocation().distanceSquared(p.getLocation()) > 6.25) continue; // 2.5^2
                     if (enemy.getGameMode() == GameMode.SPECTATOR) continue;
                     if (!enemy.isOnline() || !enemy.isValid() || enemy.getHealth() <= 0) continue;
                     if (deadPlayers.contains(enemy.getUniqueId()) || pendingCardJoiners.contains(enemy.getUniqueId())) continue;
-                    GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
                     GameTeam enemyTeam = plugin.getTeamManager().getPlayerTeam(enemy.getUniqueId());
                     if (myTeam != null && enemyTeam != null && myTeam != enemyTeam) {
                         double steal = Math.max(Math.ceil(data.lifestealAura * 0.5), 1);
@@ -309,23 +334,22 @@ public class GameManager implements Listener {
             }
             if (data.silenceAura > 0) {
                 long now = System.currentTimeMillis();
-                for (Entity entity : p.getNearbyEntities(5.0, 5.0, 5.0)) {
-                    if (entity instanceof LivingEntity enemy && !enemy.getUniqueId().equals(p.getUniqueId())) {
-                        if (entity instanceof Player silenceTarget) {
-                            if (silenceTarget.getGameMode() == GameMode.SPECTATOR) continue;
-                            GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-                            GameTeam enemyTeam = plugin.getTeamManager().getPlayerTeam(silenceTarget.getUniqueId());
-                            if (myTeam != null && enemyTeam != null && myTeam != enemyTeam) {
-                                Long lastSilence = lastSilenceAuraTime.get(silenceTarget.getUniqueId());
-                                if (lastSilence == null || now - lastSilence >= 2500) {
-                                    GunItem.silencePlayer(silenceTarget.getUniqueId());
-                                    GunItem.cancelReload(silenceTarget.getUniqueId());
-                                    GunItem.resetShieldActive(silenceTarget.getUniqueId());
-                                    lastSilenceAuraTime.put(silenceTarget.getUniqueId(), now);
-                                    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-                                        GunItem.unsilencePlayer(silenceTarget.getUniqueId());
-                                    }, 60L);
-                                }
+                for (Entity entity : nearby) {
+                    if (!(entity instanceof LivingEntity enemy) || enemy.getUniqueId().equals(p.getUniqueId())) continue;
+                    if (enemy.getLocation().distanceSquared(p.getLocation()) > 25.0) continue; // 5^2
+                    if (entity instanceof Player silenceTarget) {
+                        if (silenceTarget.getGameMode() == GameMode.SPECTATOR) continue;
+                        GameTeam enemyTeam = plugin.getTeamManager().getPlayerTeam(silenceTarget.getUniqueId());
+                        if (myTeam != null && enemyTeam != null && myTeam != enemyTeam) {
+                            Long lastSilence = lastSilenceAuraTime.get(silenceTarget.getUniqueId());
+                            if (lastSilence == null || now - lastSilence >= 2500) {
+                                GunItem.silencePlayer(silenceTarget.getUniqueId());
+                                GunItem.cancelReload(silenceTarget.getUniqueId());
+                                GunItem.resetShieldActive(silenceTarget.getUniqueId());
+                                lastSilenceAuraTime.put(silenceTarget.getUniqueId(), now);
+                                Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                                    GunItem.unsilencePlayer(silenceTarget.getUniqueId());
+                                }, 60L);
                             }
                         }
                     }
@@ -336,11 +360,11 @@ public class GameManager implements Listener {
                 Location currentLoc = p.getLocation();
                 if (lastLoc != null && lastLoc.distanceSquared(currentLoc) < 0.25) {
                     data.abyssalTicks++;
-                    int remaining = 30 - data.abyssalTicks;
+                    int remaining = 20 - data.abyssalTicks;
                     if (remaining > 0 && remaining % 5 == 0) {
                         p.sendTitle("", ChatColor.DARK_PURPLE + "Призыв... " + remaining + "с", 0, 25, 0);
                     }
-                    if (data.abyssalTicks >= 30) {
+                    if (data.abyssalTicks >= 20) {
                         data.abyssalTicks = 0;
                         spawnAbyssalPhantom(p, data);
                     }
@@ -394,10 +418,10 @@ public class GameManager implements Listener {
                 chameleonLastLoc.put(p.getUniqueId(), cur.clone());
             }
             if (data.speed > 0) {
-                double speedRange = 5.0 + data.speed * 3.0;
-                for (Entity entity : p.getNearbyEntities(speedRange, speedRange, speedRange)) {
+                double speedRangeSq = Math.pow(5.0 + data.speed * 3.0, 2);
+                for (Entity entity : nearby) {
                     if (entity instanceof LivingEntity enemy && !enemy.getUniqueId().equals(p.getUniqueId())) {
-                        GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+                        if (enemy.getLocation().distanceSquared(p.getLocation()) > speedRangeSq) continue;
                         GameTeam enemyTeam = plugin.getTeamManager().getPlayerTeam(enemy.getUniqueId());
                         if (myTeam != null && enemyTeam != null && myTeam != enemyTeam) {
                             p.addPotionEffect(new org.bukkit.potion.PotionEffect(
@@ -420,21 +444,25 @@ public class GameManager implements Listener {
             var attr = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
             if (attr != null) attr.setBaseValue(10);
             p.setHealth(10);
+            p.getPersistentDataContainer().set(RoundsKeys.SUMMONED_PHANTOM,
+                org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
         });
 
         UUID summonerUUID = summoner.getUniqueId();
         summoner.sendTitle("", ChatColor.DARK_PURPLE + "Фантом призван!", 10, 40, 10);
         summoner.getWorld().playSound(spawnLoc, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0f, 0.5f);
 
-        new BukkitRunnable() {
+        BukkitRunnable phantomTask = new BukkitRunnable() {
             int ticks = 0;
             boolean hasDamaged = false;
             int deathCountdown = -1;
+            LivingEntity target = null;
 
             @Override
             public void run() {
                 if (!phantom.isValid() || phantom.isDead() || ticks >= 400) {
                     if (phantom.isValid()) phantom.remove();
+                    phantomTaskIds.remove(getTaskId());
                     cancel();
                     return;
                 }
@@ -443,12 +471,20 @@ public class GameManager implements Listener {
                     deathCountdown++;
                     if (deathCountdown >= 100) {
                         if (phantom.isValid()) phantom.remove();
+                        phantomTaskIds.remove(getTaskId());
                         cancel();
                         return;
                     }
                 }
 
-                LivingEntity target = findNearestEnemyForPhantom(phantom, summoner, summonerTeam);
+                boolean targetInvalid = target == null || !target.isValid() || target.isDead()
+                        || (target instanceof Player tp && (!tp.isOnline() || tp.getGameMode() == GameMode.SPECTATOR))
+                        || deadPlayers.contains(target.getUniqueId());
+                // Цель ищем раз в 10 тиков или когда кэш стал невалиден — не каждый тик.
+                if (targetInvalid || ticks % 10 == 0) {
+                    target = findNearestEnemyForPhantom(phantom, summoner, summonerTeam);
+                }
+
                 if (target != null) {
                     phantom.setTarget(target);
                     Vector direction = target.getLocation().add(0, 1, 0).toVector()
@@ -470,7 +506,24 @@ public class GameManager implements Listener {
 
                 ticks++;
             }
-        }.runTaskTimer(plugin, 0L, 1L);
+        };
+        phantomTask.runTaskTimer(plugin, 0L, 1L);
+        phantomTaskIds.add(phantomTask.getTaskId());
+    }
+
+    public void removeAllPhantoms() {
+        for (int id : phantomTaskIds) {
+            Bukkit.getScheduler().cancelTask(id);
+        }
+        phantomTaskIds.clear();
+        for (World world : Bukkit.getWorlds()) {
+            for (Phantom phantom : world.getEntitiesByClass(Phantom.class)) {
+                if (phantom.getPersistentDataContainer().has(RoundsKeys.SUMMONED_PHANTOM,
+                        org.bukkit.persistence.PersistentDataType.BYTE)) {
+                    phantom.remove();
+                }
+            }
+        }
     }
 
     private static final double PHANTOM_TARGET_RADIUS = 100.0;
@@ -506,7 +559,9 @@ public class GameManager implements Listener {
 
     private void gameTick() {
         musicTick++;
-        checkRoundEnd();
+        if (musicTick % 10 == 0) {
+            checkRoundEnd();
+        }
         if (musicTick % 20 == 0) {
             applyPeriodicEffects();
         }
@@ -605,7 +660,7 @@ public class GameManager implements Listener {
         List<BlockStorage.MapBlock> zones = bs.getMapBlocks();
         if (zones.isEmpty()) return;
 
-        int chosen = new Random().nextInt(zones.size());
+        int chosen = RANDOM.nextInt(zones.size());
         currentZoneCenter = zones.get(chosen).center.clone();
 
         List<Location> spawns = bs.getSpawnBlocksInZone(zones.get(chosen));
@@ -654,11 +709,28 @@ public class GameManager implements Listener {
         }
     }
 
+    /**
+     * Мгновенная очистка боевого состояния: пули, кольца/облака, фантомы,
+     * таймеры (пилы, перезарядка, hpBoost), зелья-эффекты.
+     * Вызывается при конце раунда, конце игры и /rdebug stop.
+     */
+    public void cleanupRoundCombatState() {
+        cancelScheduledTasks();
+        removeAllPhantoms();
+        RoundsEntities.clearAllState();
+        GunItem.resetRoundState();
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            clearCardEffects(p);
+            p.setNoDamageTicks(0);
+        }
+    }
+
     private void endRound(GameTeam winner) {
         plugin.getTeamManager().addWin(winner);
         state = GameState.ROUND_END;
         losingTeams.clear();
         saveState();
+        cleanupRoundCombatState();
 
         for (UUID uuid : plugin.getTeamManager().getTeamPlayers(winner)) {
             Player wp = Bukkit.getPlayer(uuid);
@@ -727,6 +799,7 @@ public class GameManager implements Listener {
         state = GameState.ROUND_END;
         losingTeams.clear();
         saveState();
+        cleanupRoundCombatState();
         plugin.getServer().broadcastMessage(ChatColor.YELLOW + Messages.get("game.draw"));
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
@@ -763,6 +836,7 @@ public class GameManager implements Listener {
         state = GameState.GAME_END;
         saveState();
         stopGameTick();
+        cleanupRoundCombatState();
 
         String teamName = Messages.get("team." + winner.name().toLowerCase());
         plugin.getServer().broadcastMessage(ChatColor.GREEN + Messages.get("game.game-over"));
@@ -1082,12 +1156,12 @@ public class GameManager implements Listener {
 
     public void stopGame() {
         if (state == GameState.WAITING) return;
+        gameGeneration++;
         stopGameTick();
         cancelScheduledTasks();
         plugin.getCardManager().clearPendingPicks();
         plugin.getCardManager().resetAllCards();
-        GunItem.resetRoundState();
-        RoundsEntities.clearAllState();
+        cleanupRoundCombatState();
         restoreGameRules();
         removeDarkness();
         teamSpawns.clear();
@@ -1165,7 +1239,7 @@ public class GameManager implements Listener {
             }
         }
         if (alive.isEmpty()) return null;
-        return alive.get(new Random().nextInt(alive.size()));
+        return alive.get(RANDOM.nextInt(alive.size()));
     }
 
     public GameTeam findSmallestTeam() {
@@ -1181,7 +1255,7 @@ public class GameManager implements Listener {
                 candidates.add(team);
             }
         }
-        return candidates.get(new Random().nextInt(candidates.size()));
+        return candidates.get(RANDOM.nextInt(candidates.size()));
     }
 
     public void markPendingCardJoiner(UUID uuid, boolean returning) {
@@ -1412,9 +1486,7 @@ public class GameManager implements Listener {
 
         obj.getScore(DIV).setScore(score);
 
-        for (Player p : plugin.getServer().getOnlinePlayers()) {
-            p.setScoreboard(sb);
-        }
+        player.setScoreboard(sb);
     }
 
     public void removeScoreboard() {

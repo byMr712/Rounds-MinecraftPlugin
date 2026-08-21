@@ -27,6 +27,8 @@ public final class RoundsKeys {
     public static final NamespacedKey IS_TOXIC_RING = key("is_toxic_ring");
     public static final NamespacedKey IS_SHIELD_BOMB = key("is_shield_bomb");
 
+    public static final NamespacedKey SUMMONED_PHANTOM = key("summoned_phantom");
+
     public static final NamespacedKey JOIN_BLOCK = key("join_block");
     public static final NamespacedKey CDSHOOT_BLOCK = key("cdshoot_block");
     public static final NamespacedKey LOBBY_BLOCK = key("lobby_block");

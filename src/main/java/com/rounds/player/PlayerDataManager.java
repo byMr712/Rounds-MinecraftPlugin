@@ -42,7 +42,7 @@ public class PlayerDataManager implements Listener {
             "poison_lvl", "cold_lvl", "parazit_lvl", "parazit",
             "hp", "shield_cooldown", "bomb_bullet", "bomb_on_block", "explode_bullets",
             "bullet_speed", "empower", "empower_charge", "dark_strength",
-            "barage", "big_bullet", "grow", "truster_lvl", "dark",
+            "barage", "big_bullet", "grow", "truster_lvl", "jump_height", "dark",
             "card_select_1", "card_select_2", "card_select_3",
             "card_select_4", "card_select_5", "card_uses", "rare_card",
             "player_use", "atks_reload", "pristine_perseverance"
@@ -141,6 +141,7 @@ public class PlayerDataManager implements Listener {
         yml.set(path + ".stats.big-bullet", data.bigBullet);
         yml.set(path + ".stats.grow", data.grow);
         yml.set(path + ".stats.truster-lvl", data.trusterLvl);
+        yml.set(path + ".stats.jump-height", data.jumpHeight);
         yml.set(path + ".stats.dark", data.dark);
         yml.set(path + ".stats.atks-reload", data.atksReload);
         yml.set(path + ".stats.pristine-perseverance", data.pristinePerseverance);
@@ -221,6 +222,7 @@ public class PlayerDataManager implements Listener {
         data.bigBullet = saved.stats.getOrDefault("big_bullet", 0.0);
         data.grow = saved.stats.getOrDefault("grow", 0.0);
         data.trusterLvl = saved.stats.getOrDefault("truster_lvl", 0.0);
+        data.jumpHeight = saved.stats.getOrDefault("jump_height", 0.0);
         data.dark = saved.stats.getOrDefault("dark", 0.0);
         data.atksReload = saved.stats.getOrDefault("atks_reload", 0.0);
         data.pristinePerseverance = saved.stats.getOrDefault("pristine_perseverance", 0.0);
@@ -276,6 +278,7 @@ public class PlayerDataManager implements Listener {
         yml.set(path + ".stats.big-bullet", data.bigBullet);
         yml.set(path + ".stats.grow", data.grow);
         yml.set(path + ".stats.truster-lvl", data.trusterLvl);
+        yml.set(path + ".stats.jump-height", data.jumpHeight);
         yml.set(path + ".stats.dark", data.dark);
         yml.set(path + ".stats.atks-reload", data.atksReload);
         yml.set(path + ".stats.pristine-perseverance", data.pristinePerseverance);
@@ -512,6 +515,7 @@ public class PlayerDataManager implements Listener {
         setStat(pdc, "big_bullet", data.bigBullet);
         setStat(pdc, "grow", data.grow);
         setStat(pdc, "truster_lvl", data.trusterLvl);
+        setStat(pdc, "jump_height", data.jumpHeight);
         setStat(pdc, "dark", data.dark);
         setStat(pdc, "pristine_perseverance", data.pristinePerseverance);
         setStat(pdc, "card_select_1", data.cardSelect1);
@@ -565,6 +569,7 @@ public class PlayerDataManager implements Listener {
         data.bigBullet = getStat(pdc, "big_bullet", 0);
         data.grow = getStat(pdc, "grow", 0);
         data.trusterLvl = getStat(pdc, "truster_lvl", 0);
+        data.jumpHeight = getStat(pdc, "jump_height", 0);
         data.dark = getStat(pdc, "dark", 0);
         data.pristinePerseverance = getStat(pdc, "pristine_perseverance", 0);
         data.cardSelect1 = getStat(pdc, "card_select_1", 0);

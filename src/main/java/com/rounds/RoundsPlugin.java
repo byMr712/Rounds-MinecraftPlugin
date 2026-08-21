@@ -7,6 +7,7 @@ import com.rounds.entity.RoundsEntities;
 import com.rounds.game.GameManager;
 import com.rounds.gui.CardGUIListener;
 import com.rounds.item.GunItem;
+import com.rounds.listener.JumpListener;
 import com.rounds.placeholder.RoundsPlaceholders;
 import com.rounds.player.PlayerDataManager;
 import com.rounds.teams.TeamManager;
@@ -50,6 +51,7 @@ public class RoundsPlugin extends JavaPlugin {
         GunItem.setInstance(gunItem);
         getServer().getPluginManager().registerEvents(gunItem, this);
         getServer().getPluginManager().registerEvents(new RoundsEntities(), this);
+        getServer().getPluginManager().registerEvents(new JumpListener(this), this);
 
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new RoundsPlaceholders(this).register();

@@ -62,6 +62,7 @@ public class GameManager implements Listener {
     private boolean wheelEnabled = false;
     private final Set<Integer> scheduledTaskIds = new HashSet<>();
     private final Set<UUID> pendingCardJoiners = new HashSet<>();
+    private final Set<UUID> returningJoiners = new HashSet<>();
     private final Map<GameRule<?>, Object> savedGameRules = new HashMap<>();
     private final Map<GameTeam, Location> teamSpawns = new HashMap<>();
     private Location currentZoneCenter = null;
@@ -512,7 +513,7 @@ public class GameManager implements Listener {
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) == null
                     && !deadPlayers.contains(p.getUniqueId())) {
-                p.sendActionBar(ChatColor.GOLD + msg);
+                p.sendActionBar(ChatColor.GREEN + msg);
             }
         }
     }
@@ -782,6 +783,7 @@ public class GameManager implements Listener {
             }
         }
         pendingCardJoiners.clear();
+        returningJoiners.clear();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
             if (!pickers.contains(p.getUniqueId())) {
@@ -803,6 +805,7 @@ public class GameManager implements Listener {
             }
         }
         pendingCardJoiners.clear();
+        returningJoiners.clear();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
         }
@@ -1113,12 +1116,17 @@ public class GameManager implements Listener {
         return candidates.get(new Random().nextInt(candidates.size()));
     }
 
-    public void markPendingCardJoiner(UUID uuid) {
+    public void markPendingCardJoiner(UUID uuid, boolean returning) {
         pendingCardJoiners.add(uuid);
+        if (returning) returningJoiners.add(uuid); else returningJoiners.remove(uuid);
     }
 
     public boolean isPendingCardJoiner(UUID uuid) {
         return pendingCardJoiners.contains(uuid);
+    }
+
+    public boolean isReturningJoiner(UUID uuid) {
+        return returningJoiners.contains(uuid);
     }
 
     public void hideNameTagsInGame() {

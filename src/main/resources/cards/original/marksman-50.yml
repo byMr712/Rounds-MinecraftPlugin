@@ -1,0 +1,12 @@
+id: 72
+name:
+  ru: "&fМастер стрельбы"
+  en: "&fMarksman"
+description:
+  ru: "+50% урона"
+  en: "+50% DMG"
+material: SPECTRAL_ARROW
+rarity: EPIC
+enabled: true
+effects:
+  damage: 0.5

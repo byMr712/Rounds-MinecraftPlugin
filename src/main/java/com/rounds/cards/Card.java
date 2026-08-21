@@ -79,6 +79,7 @@ public class Card {
             case "target-bounce": data.tgBounce = PlayerData.round2(Math.max(data.tgBounce + value, 0)); break;
             case "shield": data.shieldCooldown = PlayerData.round2(Math.max(data.shieldCooldown + value, 0)); break;
             case "truster": data.trusterLvl = PlayerData.round2(Math.max(data.trusterLvl + value, 0)); break;
+            case "jump-height": data.jumpHeight = PlayerData.round2(Math.max(data.jumpHeight + value, 0)); break;
             case "grow": data.grow = PlayerData.round2(Math.max(data.grow + value, 0)); break;
             case "attack-speed-reload": data.atksReload = PlayerData.round2(Math.max(data.atksReload + value, 0)); break;
             case "reload": data.atksReload = PlayerData.round2(Math.max(data.atksReload + value, 0)); break;
@@ -137,7 +138,7 @@ public class Card {
         meta.setDisplayName(colorize(getName(lang)));
 
         List<String> lore = new ArrayList<>();
-        lore.add(rarity.getColor() + rarity.name());
+        lore.add(rarity.getColor() + Messages.get("rarity." + rarity.name().toLowerCase()));
         String desc = getDescription(lang);
         if (!desc.isEmpty()) {
             lore.add(ChatColor.GRAY + desc);

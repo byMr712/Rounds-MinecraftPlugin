@@ -1,0 +1,12 @@
+id: 69
+name:
+  ru: "&fМастер стрельбы"
+  en: "&fMarksman"
+description:
+  ru: "+20% урона"
+  en: "+20% DMG"
+material: ARROW
+rarity: COMMON
+enabled: true
+effects:
+  damage: 0.2

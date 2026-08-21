@@ -1,0 +1,12 @@
+id: 70
+name:
+  ru: "&fМастер стрельбы"
+  en: "&fMarksman"
+description:
+  ru: "+30% урона"
+  en: "+30% DMG"
+material: BOW
+rarity: UNCOMMON
+enabled: true
+effects:
+  damage: 0.3

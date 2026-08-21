@@ -1,0 +1,12 @@
+id: 71
+name:
+  ru: "&fМастер стрельбы"
+  en: "&fMarksman"
+description:
+  ru: "+40% урона"
+  en: "+40% DMG"
+material: CROSSBOW
+rarity: RARE
+enabled: true
+effects:
+  damage: 0.4

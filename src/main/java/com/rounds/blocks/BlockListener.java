@@ -37,6 +37,7 @@ public class BlockListener implements Listener {
 
     private final Map<Location, GameTeam> joinBlocks = new HashMap<>();
     private final Set<Location> cdshootBlocks = new HashSet<>();
+    private final Set<Location> endBlocks = new HashSet<>();
     private final Set<Location> jumpBlocks = new HashSet<>();
     private final Set<Location> upBlocks = new HashSet<>();
     private final Set<UUID> stepCooldown = new HashSet<>();
@@ -125,17 +126,27 @@ public class BlockListener implements Listener {
         ItemStack item = new ItemStack(mat);
         ItemMeta meta = item.getItemMeta();
         String teamName = Messages.get("team." + team.name().toLowerCase());
-        meta.setDisplayName(team.getColor() + Messages.get("team.join-block", teamName));
+        String adjGen = Messages.get("team.adj-gen-" + team.name().toLowerCase());
+        meta.setDisplayName(team.getColor() + Messages.get("team.join-block", teamName, adjGen));
         meta.getPersistentDataContainer().set(RoundsKeys.JOIN_BLOCK, PersistentDataType.STRING, team.name());
         item.setItemMeta(meta);
         return item;
     }
 
-    public static ItemStack createCDShootBlock() {
+    public static ItemStack createStartBlock() {
         ItemStack item = new ItemStack(Material.IRON_BLOCK);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(ChatColor.GRAY + Messages.get("block.tagshield-cd"));
+        meta.setDisplayName(ChatColor.GRAY + Messages.get("block.start-block"));
         meta.getPersistentDataContainer().set(RoundsKeys.CDSHOOT_BLOCK, PersistentDataType.BYTE, (byte) 1);
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    public static ItemStack createEndBlock() {
+        ItemStack item = new ItemStack(Material.REDSTONE_BLOCK);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName(ChatColor.RED + Messages.get("block.end-block"));
+        meta.getPersistentDataContainer().set(RoundsKeys.END_BLOCK, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);
         return item;
     }
@@ -198,7 +209,8 @@ public class BlockListener implements Listener {
         for (GameTeam team : GameTeam.values()) {
             addItem64(player, createJoinBlock(team));
         }
-        addItem64(player, createCDShootBlock());
+        addItem64(player, createStartBlock());
+        addItem64(player, createEndBlock());
         addItem64(player, createLobbyBlock());
         addItem64(player, createMapBlock50());
         addItem64(player, createMapBlock100());
@@ -245,15 +257,11 @@ public class BlockListener implements Listener {
         }
 
         if (cdshootBlocks.contains(loc)) {
-            if (stepCooldown.contains(player.getUniqueId())) return;
-            stepCooldown.add(player.getUniqueId());
-            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> stepCooldown.remove(player.getUniqueId()), 20L);
-            if (!player.hasPermission("rounds.admin")) return;
-            if (plugin.getGameManager().isGameStarted()) {
-                player.sendMessage(ChatColor.RED + Messages.get("debug.game-already-started"));
-                return;
-            }
-            plugin.getGameManager().startGame();
+            handleStartEndBlockStep(player, true);
+        }
+
+        if (endBlocks.contains(loc)) {
+            handleStartEndBlockStep(player, false);
         }
 
         if (jumpBlocks.contains(loc)) {
@@ -286,6 +294,50 @@ public class BlockListener implements Listener {
                     ticks++;
                 }
             }.runTaskTimer(plugin, 0L, 1L);
+        }
+    }
+
+    private void handleStartEndBlockStep(Player player, boolean start) {
+        if (stepCooldown.contains(player.getUniqueId())) return;
+        stepCooldown.add(player.getUniqueId());
+        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> stepCooldown.remove(player.getUniqueId()), 20L);
+        boolean admin = player.hasPermission("rounds.admin");
+        if (!admin && !plugin.getRoundsConfig().isFreeplay()) return;
+        com.rounds.game.GameManager gm = plugin.getGameManager();
+        if (start) {
+            if (gm.isGameStarted()) {
+                player.sendMessage(ChatColor.RED + Messages.get("debug.game-already-started"));
+                return;
+            }
+            gm.startGame();
+            if (admin) player.sendMessage(ChatColor.GREEN + Messages.get("block.game-started-admin"));
+        } else {
+            if (!gm.isGameStarted()) {
+                player.sendMessage(ChatColor.RED + Messages.get("debug.game-not-started"));
+                return;
+            }
+            stopGameFromBlock(gm);
+            if (admin) player.sendMessage(ChatColor.YELLOW + Messages.get("block.game-stopped-admin"));
+        }
+    }
+
+    private void stopGameFromBlock(com.rounds.game.GameManager gm) {
+        gm.stopGame();
+        plugin.getTeamManager().clearAll();
+        plugin.getPlayerDataManager().clearActivePlayers();
+        gm.getStateManager().clear();
+        Location lobbyLoc = blockStorage.getLobbyBlock();
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            p.getInventory().clear();
+            var attr = p.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
+            if (attr != null) attr.setBaseValue(20);
+            p.setHealth(20);
+            p.setFoodLevel(20);
+            p.setGameMode(GameMode.ADVENTURE);
+            gm.clearCardEffects(p);
+            if (lobbyLoc != null) {
+                p.teleport(lobbyLoc.clone().add(0, 1, 0));
+            }
         }
     }
 
@@ -345,6 +397,12 @@ public class BlockListener implements Listener {
             saveBlocks();
             return;
         }
+        if (pdc.has(RoundsKeys.END_BLOCK, PersistentDataType.BYTE)) {
+            endBlocks.add(loc);
+            placer.sendMessage(ChatColor.GREEN + Messages.get("block.end-placed"));
+            saveBlocks();
+            return;
+        }
     }
 
     @EventHandler
@@ -352,6 +410,7 @@ public class BlockListener implements Listener {
         Location loc = event.getBlock().getLocation();
         boolean removed = joinBlocks.remove(loc) != null;
         removed |= cdshootBlocks.remove(loc);
+        removed |= endBlocks.remove(loc);
         removed |= jumpBlocks.remove(loc);
         removed |= upBlocks.remove(loc);
         if (blockStorage.getLobbyBlock() != null && blockStorage.getLobbyBlock().equals(loc)) {
@@ -379,6 +438,16 @@ public class BlockListener implements Listener {
         i = 0;
         for (Location loc : cdshootBlocks) {
             String path = "cdshoot." + i;
+            if (loc.getWorld() == null) { i++; continue; }
+            config.set(path + ".world", loc.getWorld().getName());
+            config.set(path + ".x", loc.getBlockX());
+            config.set(path + ".y", loc.getBlockY());
+            config.set(path + ".z", loc.getBlockZ());
+            i++;
+        }
+        i = 0;
+        for (Location loc : endBlocks) {
+            String path = "end." + i;
             if (loc.getWorld() == null) { i++; continue; }
             config.set(path + ".world", loc.getWorld().getName());
             config.set(path + ".x", loc.getBlockX());
@@ -436,6 +505,7 @@ public class BlockListener implements Listener {
         }
 
         loadLocationSet(config, "cdshoot", cdshootBlocks);
+        loadLocationSet(config, "end", endBlocks);
         loadLocationSet(config, "jump", jumpBlocks);
         loadLocationSet(config, "up", upBlocks);
     }

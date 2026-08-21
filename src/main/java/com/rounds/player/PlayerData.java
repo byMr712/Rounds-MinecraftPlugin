@@ -57,6 +57,7 @@ public class PlayerData {
     public double bigBullet = 0;
     public double grow = 0;
     public double trusterLvl = 0;
+    public double jumpHeight = 0;
     public double dark = 0;
 
     public double speed = 0;
@@ -168,6 +169,7 @@ public class PlayerData {
         bigBullet = 0;
         grow = 0;
         trusterLvl = 0;
+        jumpHeight = 0;
         dark = 0;
         speed = 0;
         speedBoost = 0;

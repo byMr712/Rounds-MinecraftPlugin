@@ -87,6 +87,7 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
             new PlaceholderEntry("stat_parazit_lvl",   "ph-desc.stat-parazit-lvl"),
             new PlaceholderEntry("stat_leech",         "ph-desc.stat-leech"),
             new PlaceholderEntry("stat_truster",       "ph-desc.stat-truster"),
+            new PlaceholderEntry("stat_jump_height",   "ph-desc.stat-jump-height"),
             new PlaceholderEntry("stat_empower",       "ph-desc.stat-empower"),
             new PlaceholderEntry("stat_empower_charge","ph-desc.stat-empower-charge"),
             new PlaceholderEntry("stat_dark_strength", "ph-desc.stat-dark-strength"),
@@ -190,6 +191,7 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
             case "parazit_lvl"    -> d.parazitLvl;
             case "leech"          -> d.leech;
             case "truster"        -> d.trusterLvl;
+            case "jump_height"    -> d.jumpHeight;
             case "empower"        -> d.empower;
             case "empower_charge" -> d.empowerCharge;
             case "dark_strength"  -> d.darkStrength;

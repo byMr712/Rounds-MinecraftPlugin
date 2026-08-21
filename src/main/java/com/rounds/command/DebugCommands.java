@@ -36,7 +36,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         "toxic_cloud", "leech", "homing", "poison_lvl", "cold_lvl", "parazit", "hp",
         "bomb_bullet", "bomb_on_block", "explode_bullets", "bullet_speed", "empower",
         "empower_charge", "dark_strength", "barage", "big_bullet", "grow",
-        "truster_lvl", "dark", "atks_reload"
+        "truster_lvl", "jump_height", "dark", "atks_reload"
     );
     private static final List<String> EFFECTS = Arrays.asList(
         "SPEED", "SLOW", "FAST_DIGGING", "SLOW_DIGGING", "INCREASE_DAMAGE",
@@ -258,17 +258,18 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
         GameManager gm = plugin.getGameManager();
         if (!gm.isGameStarted()) {
-            sender.sendMessage(ChatColor.RED + Messages.get("game.not-started"));
+            sender.sendMessage(ChatColor.RED + Messages.get("debug.game-not-started"));
             return;
         }
         GameTeam existingTeam = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
         if (existingTeam != null) {
             if (gm.isPendingCardJoiner(player.getUniqueId())) {
                 String teamName = Messages.get("team." + existingTeam.name().toLowerCase());
-                sender.sendMessage(ChatColor.GOLD + Messages.get("game.restored-team", existingTeam.getColor() + teamName));
+                String msgKey = gm.isReturningJoiner(player.getUniqueId()) ? "team.restored-team" : "team.joined-team";
+                sender.sendMessage(ChatColor.GOLD + Messages.get(msgKey, existingTeam.getColor() + teamName));
                 return;
             }
-            sender.sendMessage(ChatColor.GOLD + Messages.get("game.already-has-team"));
+            sender.sendMessage(ChatColor.GOLD + Messages.get("team.already-has-team"));
             return;
         }
 
@@ -291,7 +292,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
 
         GameTeam finalTeam = plugin.getTeamManager().getPlayerTeam(uuid);
-        gm.markPendingCardJoiner(uuid);
+        gm.markPendingCardJoiner(uuid, returning);
         gm.applyTeamColor(player);
         gm.buildScoreboard(player);
 
@@ -308,9 +309,9 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
         String teamName = Messages.get("team." + finalTeam.name().toLowerCase());
         if (returning) {
-            sender.sendMessage(ChatColor.GOLD + Messages.get("game.restored-team", finalTeam.getColor() + teamName));
+            sender.sendMessage(ChatColor.GOLD + Messages.get("team.restored-team", finalTeam.getColor() + teamName));
         } else {
-            sender.sendMessage(ChatColor.GOLD + Messages.get("game.joined-team", finalTeam.getColor() + teamName));
+            sender.sendMessage(ChatColor.GOLD + Messages.get("team.joined-team", finalTeam.getColor() + teamName));
         }
     }
 
@@ -579,6 +580,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxStat(sender, "stat-parazit-lvl", data.parazitLvl);
         boxStat(sender, "stat-leech", data.leech);
         boxStat(sender, "stat-truster", data.trusterLvl);
+        boxStat(sender, "stat-jump-height", data.jumpHeight);
 
         boxSection(sender, Messages.get("debug.special-section"));
         boxStat(sender, "stat-grow", data.grow);
@@ -660,6 +662,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "big_bullet" -> data.bigBullet = value;
             case "grow" -> data.grow = value;
             case "truster_lvl" -> data.trusterLvl = value;
+            case "jump_height" -> data.jumpHeight = value;
             case "dark" -> data.dark = value;
             case "atks_reload" -> data.atksReload = value;
             default -> { return false; }

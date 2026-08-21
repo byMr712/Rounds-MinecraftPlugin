@@ -1,0 +1,12 @@
+id: 76
+name:
+  ru: "&fДоки Доки"
+  en: "&fDoki Doki"
+description:
+  ru: "+50% к высоте прыжка"
+  en: "+50% Jump Height"
+material: HONEY_BLOCK
+rarity: EPIC
+enabled: true
+effects:
+  jump-height: 0.5

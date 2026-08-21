@@ -1,0 +1,12 @@
+id: 74
+name:
+  ru: "&fДоки Доки"
+  en: "&fDoki Doki"
+description:
+  ru: "+30% к высоте прыжка"
+  en: "+30% Jump Height"
+material: RABBIT_FOOT
+rarity: UNCOMMON
+enabled: true
+effects:
+  jump-height: 0.3

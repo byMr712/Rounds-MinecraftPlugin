@@ -48,7 +48,11 @@ en:
     adj-red: "red"
     adj-yellow: "yellow"
     adj-green: "green"
-    join-block: "{0} Join Block"
+    adj-gen-blue: "blue"
+    adj-gen-red: "red"
+    adj-gen-yellow: "yellow"
+    adj-gen-green: "green"
+    join-block: "{0} Team Lobby Block"
     no-permission: "You don't have permission to join teams!"
     game-in-progress: "Game is in progress!"
     joined: "You joined {0}!"
@@ -61,8 +65,20 @@ en:
   block:
     counter: "Counter"
     tagshield: "Tagshields"
-    tagshield-cd: "Tagshields CD"
+    start-block: "Game Start Block"
+    end-block: "Game End Block"
+    end-placed: "Game End Block placed"
+    game-started-admin: "You started the game. If you want regular players to use this block, type: /rdebug freeplay on"
+    game-stopped-admin: "You stopped the game. If you want regular players to use this block, type: /rdebug freeplay on"
     received-blocks: "Received all blocks!"
+
+  # Rarity
+  rarity:
+    common: "Common"
+    uncommon: "Uncommon"
+    rare: "Rare"
+    epic: "Epic"
+    legendary: "Legendary"
 
   # Cards
   card:
@@ -199,6 +215,7 @@ en:
     help-cards-reload: "cards reload"
     help-cards-test: "test card"
     help-resetstats: "Reset all stats"
+    blocks-given: "All blocks given!"
     help-setteam: "set team"
     help-setlanguage: "change language"
     # setteam / setstat / setlanguage messages
@@ -216,8 +233,8 @@ en:
     wheel-off: "DISABLED"
     wheel-usage: "Usage: /rdebug wheel on|off"
     game-already-started: "Game already in progress! Stop first (/rdebug stop)"
-    debug-wheel-enabled: "Card wheel ENABLED"
-    debug-wheel-disabled: "Card wheel DISABLED"
+    wheel-enabled: "Card wheel ENABLED"
+    wheel-disabled: "Card wheel DISABLED"
     help-tab: "Toggle built-in scoreboard"
     help-tab-name: "Set scoreboard title"
     tab-usage: "Usage: /rdebug tab on|off|name <title>"
@@ -244,6 +261,7 @@ en:
     stat-parazit-lvl: "Leech Level"
     stat-leech: "Leech"
     stat-truster: "Truster"
+    stat-jump-height: "Jump Height"
     stat-grow: "Grow"
     stat-empower: "Empower"
     stat-empower-charge: "Empower Charge"
@@ -293,6 +311,7 @@ en:
     ph-desc.stat-parazit-lvl: "Leech Level"
     ph-desc.stat-leech: "Leech"
     ph-desc.stat-truster: "Truster"
+    ph-desc.stat-jump-height: "Jump Height"
     ph-desc.stat-empower: "Empower"
     ph-desc.stat-empower-charge: "Empower Charge"
     ph-desc.stat-dark-strength: "Dark Strength"
@@ -359,7 +378,11 @@ ru:
     adj-red: "\u043A\u0440\u0430\u0441\u043D\u044B\u0439"
     adj-yellow: "\u0436\u0451\u043B\u0442\u044B\u0439"
     adj-green: "\u0437\u0435\u043B\u0451\u043D\u044B\u0439"
-    join-block: "{0} \u0411\u043B\u043E\u043A \u0432\u0445\u043E\u0434\u0430"
+    adj-gen-blue: "\u0441\u0438\u043D\u0435\u0439"
+    adj-gen-red: "\u043A\u0440\u0430\u0441\u043D\u043E\u0439"
+    adj-gen-yellow: "\u0436\u0451\u043B\u0442\u043E\u0439"
+    adj-gen-green: "\u0437\u0435\u043B\u0451\u043D\u043E\u0439"
+    join-block: "\u0411\u043B\u043E\u043A {1} \u043A\u043E\u043C\u0430\u043D\u0434\u044B \u0434\u043B\u044F \u043B\u043E\u0431\u0431\u0438"
     no-permission: "\u0423 \u0432\u0430\u0441 \u043D\u0435\u0442 \u043F\u0440\u0430\u0432\u0430 \u043D\u0430 \u0432\u0445\u043E\u0434 \u0432 \u043A\u043E\u043C\u0430\u043D\u0434\u044B!"
     game-in-progress: "\u0418\u0433\u0440\u0430 \u0443\u0436\u0435 \u0438\u0434\u0451\u0442!"
     joined: "\u0412\u044B \u043F\u0440\u0438\u0441\u043E\u0435\u0434\u0438\u043D\u0438\u043B\u0438\u0441\u044C \u043A {0}!"
@@ -372,8 +395,20 @@ ru:
   block:
     counter: "\u0421\u0447\u0451\u0442\u0447\u0438\u043A"
     tagshield: "\u0422\u044D\u0433\u0449\u0438\u0442\u043E\u0432"
-    tagshield-cd: "\u0422\u044D\u0433\u0449\u0438\u0442\u043E\u0432 CD"
+    start-block: "\u0411\u043B\u043E\u043A \u0441\u0442\u0430\u0440\u0442\u0430 \u0438\u0433\u0440\u044B"
+    end-block: "\u0411\u043B\u043E\u043A \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0438\u044F \u0438\u0433\u0440\u044B"
+    end-placed: "\u0411\u043B\u043E\u043A \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0438\u044F \u0438\u0433\u0440\u044B \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D"
+    game-started-admin: "\u0412\u044B \u0437\u0430\u043F\u0443\u0441\u0442\u0438\u043B\u0438 \u0438\u0433\u0440\u0443. \u0415\u0441\u043B\u0438 \u0445\u043E\u0442\u0438\u0442\u0435, \u0447\u0442\u043E\u0431 \u044D\u0442\u0438\u043C \u0431\u043B\u043E\u043A\u043E\u043C \u043C\u043E\u0433\u043B\u0438 \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u044C\u0441\u044F \u043E\u0431\u044B\u0447\u043D\u044B\u0435 \u0438\u0433\u0440\u043E\u043A\u0438, \u0432\u0432\u0435\u0434\u0438\u0442\u0435: /rdebug freeplay on"
+    game-stopped-admin: "\u0412\u044B \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u043B\u0438 \u0438\u0433\u0440\u0443. \u0415\u0441\u043B\u0438 \u0445\u043E\u0442\u0438\u0442\u0435, \u0447\u0442\u043E\u0431 \u044D\u0442\u0438\u043C \u0431\u043B\u043E\u043A\u043E\u043C \u043C\u043E\u0433\u043B\u0438 \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u044C\u0441\u044F \u043E\u0431\u044B\u0447\u043D\u044B\u0435 \u0438\u0433\u0440\u043E\u043A\u0438, \u0432\u0432\u0435\u0434\u0438\u0442\u0435: /rdebug freeplay on"
     received-blocks: "\u041F\u043E\u043B\u0443\u0447\u0435\u043D\u044B \u0432\u0441\u0435 \u0431\u043B\u043E\u043A\u0438!"
+
+  # Rarity / Редкость
+  rarity:
+    common: "\u041E\u0431\u044B\u0447\u043D\u0430\u044F"
+    uncommon: "\u041D\u0435\u043E\u0431\u044B\u0447\u043D\u0430\u044F"
+    rare: "\u0420\u0435\u0434\u043A\u0430\u044F"
+    epic: "\u042D\u043F\u0438\u0447\u0435\u0441\u043A\u0430\u044F"
+    legendary: "\u041B\u0435\u0433\u0435\u043D\u0434\u0430\u0440\u043D\u0430\u044F"
 
   # Cards / Карты
   card:
@@ -530,8 +565,8 @@ ru:
     wheel-off: "\u0412\u042B\u041A\u041B\u042E\u0427\u0415\u041D\u0410"
     wheel-usage: "\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u0438\u0435: /rdebug wheel on|off"
     game-already-started: "\u0418\u0433\u0440\u0430 \u0443\u0436\u0435 \u0438\u0434\u0451\u0442! \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u0435 \u0442\u0435\u043A\u0443\u0449\u0443\u044E \u0438\u0433\u0440\u0443 (/rdebug stop)"
-    debug-wheel-enabled: "\u041F\u0440\u043E\u043A\u0440\u0443\u0442\u043A\u0430 \u043A\u0430\u0440\u0442\u043E\u0447\u0435\u043A \u0412\u041A\u041B\u042E\u0427\u0415\u041D\u0410"
-    debug-wheel-disabled: "\u041F\u0440\u043E\u043A\u0440\u0443\u0442\u043A\u0430 \u043A\u0430\u0440\u0442\u043E\u0447\u0435\u043A \u0412\u042B\u041A\u041B\u042E\u0427\u0415\u041D\u0410"
+    wheel-enabled: "\u041F\u0440\u043E\u043A\u0440\u0443\u0442\u043A\u0430 \u043A\u0430\u0440\u0442\u043E\u0447\u0435\u043A \u0412\u041A\u041B\u042E\u0427\u0415\u041D\u0410"
+    wheel-disabled: "\u041F\u0440\u043E\u043A\u0440\u0443\u0442\u043A\u0430 \u043A\u0430\u0440\u0442\u043E\u0447\u0435\u043A \u0412\u042B\u041A\u041B\u042E\u0427\u0415\u041D\u0410"
     help-tab: "\u0412\u043A\u043B/\u0432\u044B\u043A\u043B \u0432\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u044B\u0439 scoreboard"
     help-tab-name: "\u0417\u0430\u0434\u0430\u0442\u044C \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043E\u043A scoreboard"
     tab-usage: "\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u0438\u0435: /rdebug tab on|off|name <title>"
@@ -558,6 +593,7 @@ ru:
     stat-parazit-lvl: "\u0423\u0440. \u0432\u044B\u0441\u0430\u0441\u044B\u0432\u0430\u043D\u0438\u044F"
     stat-leech: "\u0412\u044B\u0441\u0430\u0441\u044B\u0432\u0430\u043D\u0438\u0435"
     stat-truster: "\u0422\u0440\u0443\u0441\u0442\u0435\u0440"
+    stat-jump-height: "\u0412\u044B\u0441\u043E\u0442\u0430 \u043F\u0440\u044B\u0436\u043A\u0430"
     stat-grow: "\u0420\u043E\u0441\u0442"
     stat-empower: "\u0423\u0441\u0438\u043B\u0435\u043D\u0438\u0435"
     stat-empower-charge: "\u0417\u0430\u0440\u044F\u0434 \u0443\u0441\u0438\u043B\u0435\u043D\u0438\u044F"
@@ -607,6 +643,7 @@ ru:
     ph-desc.stat-parazit-lvl: "\u0423\u0440. \u0432\u044B\u0441\u0430\u0441\u044B\u0432\u0430\u043D\u0438\u044F"
     ph-desc.stat-leech: "\u0412\u044B\u0441\u0430\u0441\u044B\u0432\u0430\u043D\u0438\u0435"
     ph-desc.stat-truster: "\u0422\u0440\u0443\u0441\u0442\u0435\u0440"
+    ph-desc.stat-jump-height: "\u0412\u044B\u0441\u043E\u0442\u0430 \u043F\u0440\u044B\u0436\u043A\u0430"
     ph-desc.stat-empower: "\u0423\u0441\u0438\u043B\u0435\u043D\u0438\u0435"
     ph-desc.stat-empower-charge: "\u0417\u0430\u0440\u044F\u0434 \u0443\u0441\u0438\u043B\u0435\u043D\u0438\u044F"
     ph-desc.stat-dark-strength: "\u0421\u0438\u043B\u0430 \u0442\u044C\u043C\u044B"

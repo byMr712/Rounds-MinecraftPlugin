@@ -1,0 +1,7 @@
+# animations.yml - Правильная анимация для TAB 6.2
+
+scoreboard-switcher:
+  change-interval: 5000  # 10 секунд в миллисекундах
+  texts:
+    - "1"  # Первый кадр — скорборд game
+    - "2"  # Второй кадр — скорборд stats

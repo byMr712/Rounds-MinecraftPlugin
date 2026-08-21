@@ -1,0 +1,109 @@
+header-footer:
+  enabled: false
+tablist-name-formatting:
+  enabled: true
+  disable-condition: ''
+scoreboard-teams:
+  enabled: true
+  enable-collision: true
+  invisible-nametags: false
+  sorting-types: []
+  case-sensitive-sorting: false
+  can-see-friendly-invisibles: false
+  disable-condition: ''
+playerlist-objective:
+  enabled: true
+  value: '%ping%'
+  fancy-value: '&a%ping% ms'
+  title: Ping
+  render-type: INTEGER
+  disable-condition: ''
+belowname-objective:
+  enabled: false
+  fancy-value-default: NPC
+  fancy-value: '&c%health%'
+prevent-spectator-effect:
+  enabled: false
+bossbar:
+  enabled: false
+# config.yml
+scoreboard:
+  enabled: true
+  toggle-command: /sb
+  remember-toggle-choice: false
+  hidden-by-default: false
+  delay-on-join-milliseconds: 0
+
+  scoreboards:
+    # ---------- ИГРОВОЙ СКОРБОРД ----------
+    game:
+      title: "&6&lROUNDS"
+      display-condition: "%animation:scoreboard-switcher%=1"
+      lines:
+        - "&7&m════════"
+        - " &fВы: &e%rounds_team%"
+        - " "
+        - "     Победы  "
+        - " &bСиние: ||&b%rounds_blue_wins%"
+        - " &cКрасные: ||&c%rounds_red_wins%"
+        - " &eЖёлтые:  ||&e%rounds_yellow_wins%"
+        - " &aЗелёные: ||&a%rounds_green_wins%"
+        - "&7&m════════"
+
+    # ---------- СКОРБОРД СО СТАТАМИ ----------
+    stats:
+      title: "&b&lМои статы"
+      display-condition: "%animation:scoreboard-switcher%=2"
+      lines:
+        - "&7&m════════"
+        - " &fХП: || &a%rounds_stat_hp%"
+        - " &fУрон: || &c%rounds_stat_dmg%"
+        - " &fКарт: || &d%rounds_stat_cards%"
+        - " &fПуль: || &6%rounds_stat_bullets%"
+        - " &fПатрон: || &e%rounds_stat_max_ammo%"
+        - "&7&m════════"
+layout:
+  enabled: false
+ping-spoof:
+  enabled: false
+global-playerlist:
+  enabled: false
+  update-latency: false
+placeholders:
+  date-format: dd.MM.yyyy
+  time-format: HH:mm:ss
+  time-offset: 0
+  register-tab-expansion: false
+  locale: ru-RU
+placeholder-output-replacements:
+  '%essentials_vanished%':
+    'yes': '&7| Vanished'
+    'no': ''
+conditions: {}
+placeholder-refresh-intervals:
+  default-refresh-interval: 500
+  '%player_ping%': 1000
+  '%viaversion_version%': 5000
+  '%player_health%': 200
+  '%PLACE_DAMAGE%': 500
+  '%PLACE_AMMO%': 500
+  '%PLACE_BULLETS%': 500
+  '%PLACE_CARDS%': 500
+assign-groups-by-permissions: false
+primary-group-finding-list:
+- default
+permission-refresh-interval: 1000
+debug: false
+mysql:
+  enabled: false
+proxy-support:
+  enabled: false
+components:
+  minimessage-support: true
+  disable-shadow-for-heads: true
+config-version: 7
+per-world-playerlist:
+  enabled: false
+compensate-for-packetevents-bug: false
+use-bukkit-permissions-manager: false
+use-online-uuid-in-tablist: true

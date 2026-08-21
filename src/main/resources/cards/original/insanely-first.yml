@@ -1,0 +1,12 @@
+id: 108
+name:
+  ru: "&7Безумно можно быть первым..."
+  en: "&fInsanely You Can Be First..."
+description:
+  ru: "Скорость рядом с врагом"
+  en: "Speed near enemies"
+material: GOLDEN_BOOTS
+rarity: COMMON
+enabled: true
+effects:
+  speed: 1

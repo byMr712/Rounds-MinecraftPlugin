@@ -1,0 +1,13 @@
+id: 94
+name:
+  ru: "&dДориме"
+  en: "&dDorime"
+description:
+  ru: "+10% ХП, регенерация при блоке"
+  en: "+10% HP, regeneration on block"
+material: NOTE_BLOCK
+rarity: UNCOMMON
+enabled: true
+effects:
+  hp: 0.1
+  heal: 1

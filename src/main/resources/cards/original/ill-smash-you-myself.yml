@@ -1,0 +1,13 @@
+id: 106
+name:
+  ru: "&dЯ тебя сам трахну"
+  en: "&dI'll Smash You Myself"
+description:
+  ru: "+20% вампиризм, ускорение при попадании"
+  en: "+20% lifesteal, speed boost on hit"
+material: SWEET_BERRIES
+rarity: EPIC
+enabled: true
+effects:
+  leech: 0.2
+  speed-boost: 1

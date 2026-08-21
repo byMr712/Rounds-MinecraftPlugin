@@ -1,0 +1,13 @@
+id: 99
+name:
+  ru: "&aТётя Зина"
+  en: "&aAunt Zina"
+description:
+  ru: "+15% ХП, регенерация при блоке"
+  en: "+15% HP, regeneration on block"
+material: BREAD
+rarity: UNCOMMON
+enabled: true
+effects:
+  hp: 0.15
+  heal: 1

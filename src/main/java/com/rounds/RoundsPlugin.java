@@ -52,6 +52,7 @@ public class RoundsPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(gunItem, this);
         getServer().getPluginManager().registerEvents(new RoundsEntities(), this);
         getServer().getPluginManager().registerEvents(new JumpListener(this), this);
+        getServer().getPluginManager().registerEvents(new com.rounds.listener.LegendaryEffects(this), this);
 
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new RoundsPlaceholders(this).register();

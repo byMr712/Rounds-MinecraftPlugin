@@ -1,0 +1,12 @@
+id: 113
+name:
+  ru: "&aПродаю бананы, людей - шучу, не бананы"
+  en: "&aSelling Bananas, People - Kidding, Not Bananas"
+description:
+  ru: "Полпатрона возвращается за каждое попадание"
+  en: "Half an ammo returned per hit"
+material: YELLOW_DYE
+rarity: UNCOMMON
+enabled: true
+effects:
+  ammo-per-hit: 0.5

@@ -1,0 +1,12 @@
+id: 112
+name:
+  ru: "&bЖалко этого добряка"
+  en: "&bPoor Kind Fellow"
+description:
+  ru: "Вытягивает ХП у врагов рядом"
+  en: "Drains HP from nearby enemies"
+material: CAKE
+rarity: RARE
+enabled: true
+effects:
+  lifesteal-aura: 1

@@ -59,8 +59,35 @@ public class CardManager {
         String msg = Messages.get("card.picked", player.getName(), card.getColoredName(lang), card.getDescription(lang));
         plugin.getServer().broadcastMessage(msg);
 
+        grantChainedCards(player, data, card);
+
         if (allPicksDone()) {
             plugin.getGameManager().onAllCardsPicked();
+        }
+    }
+
+    private void grantChainedCards(Player player, PlayerData data, Card source) {
+        for (Map.Entry<String, Double> entry : source.getEffects().entrySet()) {
+            String key = entry.getKey().replace('_', '-');
+            int count = (int) Math.round(entry.getValue());
+            if (count <= 0) continue;
+
+            List<Card> granted;
+            if (key.equals("card-bonus")) {
+                granted = registry.getRandomCardsByRarity(CardRegistry.Rarity.COMMON, count, null);
+            } else if (key.equals("random-legendary")) {
+                granted = registry.getRandomCardsByRarity(CardRegistry.Rarity.LEGENDARY, count, source.getId());
+            } else {
+                continue;
+            }
+
+            String lang = Messages.getLanguage();
+            for (Card bonus : granted) {
+                bonus.apply(player, data);
+                data.setCard(bonus.getId(), true);
+                syncPlayerHP(player, data);
+                player.sendMessage(ChatColor.GOLD + Messages.get("card.bonus-received", bonus.getColoredName(lang)));
+            }
         }
     }
 

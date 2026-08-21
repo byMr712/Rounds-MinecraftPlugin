@@ -1,0 +1,12 @@
+id: 110
+name:
+  ru: "&aЯ просто похлопаю"
+  en: "&aI'm Just Gonna Clap"
+description:
+  ru: "Волна отталкивания при блоке"
+  en: "Push wave when blocking"
+material: BELL
+rarity: UNCOMMON
+enabled: true
+effects:
+  shockwave: 1

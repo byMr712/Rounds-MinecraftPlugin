@@ -39,9 +39,14 @@ public class GunItem implements Listener {
     private static final Set<UUID> reloadingPlayers = new HashSet<>();
     private static final Set<UUID> activeSaws = new HashSet<>();
     private static final Set<UUID> shotThisTick = new HashSet<>();
+    private static final Set<UUID> partyLocked = new HashSet<>();
+    private static final Map<UUID, Long> noPartyCooldowns = new HashMap<>();
 
     private static final double SHIELD_DURATION_TICKS = 20;
     private static final long SHIELD_COOLDOWN_MS = 10000;
+    private static final long NO_PARTY_COOLDOWN_MS = 30000;
+    private static final long NO_PARTY_LOCK_TICKS = 140;
+    private static final double NO_PARTY_RADIUS = 5.0;
 
     public static void register(RoundsPlugin pl) {
         plugin = pl;
@@ -121,11 +126,16 @@ public class GunItem implements Listener {
 
         PlayerData data = plugin.getPlayerDataManager().getData(player);
 
+        boolean overheated = false;
         if (data.ammo <= 0) {
-            if (!isReloading(uuid) && !reloadingPlayers.contains(uuid)) {
-                startReload(player, data);
+            if (data.overheat > 0) {
+                overheated = true;
+            } else {
+                if (!isReloading(uuid) && !reloadingPlayers.contains(uuid)) {
+                    startReload(player, data);
+                }
+                return;
             }
-            return;
         }
 
         double cooldownTicks = Math.max(data.atks * (1.0 - data.atkSpeed) + data.atksReload, 2);
@@ -158,28 +168,16 @@ public class GunItem implements Listener {
         }
         data.consumeEmpowerCharge();
 
-        if (data.echo > 0) {
-            int echoDelay = bulletCount * 3;
-            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-                if (player.isOnline()) {
-                    for (int i = 0; i < bulletCount; i++) {
-                        Vector vel = direction.clone();
-                        double spread = 0.05;
-                        vel.setX(vel.getX() + (Math.random() - 0.5) * spread);
-                        vel.setY(vel.getY() + (Math.random() - 0.5) * spread);
-                        vel.setZ(vel.getZ() + (Math.random() - 0.5) * spread);
-                        double speed = 3.0 * Math.max(data.bulletSpeed, 0.1);
-                        vel = vel.normalize().multiply(speed);
-                        RoundsEntities.spawnBullet(player, player.getEyeLocation(), vel, data);
-                    }
-                }
-            }, echoDelay + 5L);
+        if (!overheated) {
+            data.ammo -= 1;
         }
-
-        data.ammo -= 1;
         if (data.hpCost > 0 && player.isOnline() && player.isValid()) {
             player.setNoDamageTicks(0);
             player.damage(player.getMaxHealth() * data.hpCost);
+        }
+        if (overheated && player.isOnline() && player.isValid()) {
+            player.setNoDamageTicks(0);
+            player.damage(player.getMaxHealth() * data.overheat);
         }
         player.sendActionBar(ChatColor.GRAY + Messages.get("gun.ammo-display", (int) data.ammo, (int) data.maxAmmo));
         player.getWorld().playSound(bulletOrigin, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 0.5f, 1.5f);
@@ -194,6 +192,11 @@ public class GunItem implements Listener {
 
         if (silencedPlayers.contains(uuid)) {
             player.sendActionBar(ChatColor.RED + "You are silenced!");
+            return;
+        }
+
+        if (partyLocked.contains(uuid)) {
+            player.sendActionBar(ChatColor.RED + Messages.get("gun.party-locked"));
             return;
         }
 
@@ -238,6 +241,15 @@ public class GunItem implements Listener {
         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
             activeShields.remove(uuid);
         }, shieldDuration);
+
+        if (data.noParty > 0) {
+            long lastParty = noPartyCooldowns.getOrDefault(uuid, 0L);
+            long nowMs = System.currentTimeMillis();
+            if (nowMs - lastParty >= NO_PARTY_COOLDOWN_MS) {
+                noPartyCooldowns.put(uuid, nowMs);
+                applyNoParty(player);
+            }
+        }
 
         if (data.empower > 0) {
             data.empowerCharge = 1;
@@ -430,6 +442,10 @@ public class GunItem implements Listener {
 
     private void startReload(Player player, PlayerData data) {
         UUID uuid = player.getUniqueId();
+        if (partyLocked.contains(uuid)) {
+            player.sendActionBar(ChatColor.RED + Messages.get("gun.party-locked"));
+            return;
+        }
         reloadingPlayers.add(uuid);
         double reloadDurationTicks = Math.max(100 * (1.0 - Math.min(data.reloadSpeed, 0.95)) * (1.0 + data.atksReload * 0.1), 4);
 
@@ -457,6 +473,39 @@ public class GunItem implements Listener {
     public static void unsilencePlayer(UUID uuid) { silencedPlayers.remove(uuid); }
     public static boolean isSilenced(UUID uuid) { return silencedPlayers.contains(uuid); }
 
+    private void applyNoParty(Player player) {
+        UUID casterId = player.getUniqueId();
+        GameTeam casterTeam = plugin.getTeamManager().getPlayerTeam(casterId);
+        Location center = player.getLocation();
+        int locked = 0;
+
+        for (Entity entity : center.getNearbyEntities(NO_PARTY_RADIUS, NO_PARTY_RADIUS, NO_PARTY_RADIUS)) {
+            if (!(entity instanceof Player target)) continue;
+            if (target.getUniqueId().equals(casterId)) continue;
+            if (target.getGameMode() == GameMode.SPECTATOR) continue;
+            GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(target.getUniqueId());
+            if (casterTeam != null && targetTeam != null && casterTeam == targetTeam) continue;
+            partyLockPlayer(target.getUniqueId(), NO_PARTY_LOCK_TICKS);
+            target.sendActionBar(ChatColor.RED + Messages.get("gun.party-locked"));
+            locked++;
+        }
+
+        if (locked > 0) {
+            player.getWorld().playSound(center, Sound.BLOCK_GLASS_BREAK, 0.7f, 0.6f);
+        }
+    }
+
+    public static boolean isPartyLocked(UUID uuid) {
+        return partyLocked.contains(uuid);
+    }
+
+    public static void partyLockPlayer(UUID uuid, long durationTicks) {
+        partyLocked.add(uuid);
+        cancelReload(uuid);
+        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> partyLocked.remove(uuid), durationTicks);
+    }
+
+
     public static void resetBlockCooldown(UUID uuid) {
         shieldCooldowns.remove(uuid);
     }
@@ -471,6 +520,8 @@ public class GunItem implements Listener {
         reloadingPlayers.clear();
         activeSaws.clear();
         shotThisTick.clear();
+        partyLocked.clear();
+        noPartyCooldowns.clear();
     }
 
     public static boolean consumeShotThisTick(UUID uuid) {

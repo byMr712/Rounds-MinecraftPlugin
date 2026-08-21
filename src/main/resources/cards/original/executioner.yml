@@ -1,0 +1,12 @@
+id: 78
+name:
+  ru: "&4Палач"
+  en: "&4Executioner"
+description:
+  ru: "Выстрелы по врагу с ХП ниже 20% наносят двойной урон, шанс моментального убийства +1%"
+  en: "Shots at enemies below 20% HP deal double damage, +1% instant kill chance"
+material: IRON_AXE
+rarity: LEGENDARY
+enabled: true
+effects:
+  executioner: 1

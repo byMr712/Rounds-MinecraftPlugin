@@ -109,7 +109,6 @@ public class Card {
                 data.phoenixUses = (int) data.phoenix; break;
             case "abyssal": data.abyssal = PlayerData.round2(Math.max(data.abyssal + value, 0)); break;
             case "implode": data.implode = PlayerData.round2(Math.max(data.implode + value, 0)); break;
-            case "echo": data.echo = PlayerData.round2(Math.max(data.echo + value, 0)); break;
             case "drill": data.drill = PlayerData.round2(Math.max(data.drill + value, 0)); break;
             case "remote": data.remote = PlayerData.round2(Math.max(data.remote + value, 0)); break;
             case "splash": data.splash = PlayerData.round2(Math.max(data.splash + value, 0)); break;
@@ -118,6 +117,21 @@ public class Card {
             case "ammo-per-hit": data.ammoPerHit = PlayerData.round2(Math.max(data.ammoPerHit + value, 0)); break;
             case "hp-boost-on-hit": data.hpBoostOnHit = PlayerData.round2(Math.max(data.hpBoostOnHit + value, 0)); break;
             case "pristine-perseverance": data.pristinePerseverance = PlayerData.round2(Math.max(data.pristinePerseverance + value, 0)); break;
+            case "blood-furry": data.bloodFurry = PlayerData.round2(Math.max(data.bloodFurry + value, 0)); break;
+            case "executioner": data.executioner = PlayerData.round2(Math.max(data.executioner + value, 0)); break;
+            case "storm-caller": data.stormCaller = PlayerData.round2(Math.max(data.stormCaller + value, 0)); break;
+            case "evasion": data.evasion = PlayerData.round2(Math.max(data.evasion + value, 0)); break;
+            case "chameleon": data.chameleon = PlayerData.round2(Math.max(data.chameleon + value, 0)); break;
+            case "snowball": data.snowball = PlayerData.round2(Math.max(data.snowball + value, 0)); break;
+            case "skyfall": data.skyfall = PlayerData.round2(Math.max(data.skyfall + value, 0)); break;
+            case "berserk": data.berserk = PlayerData.round2(Math.max(data.berserk + value, 0)); break;
+            case "overheat": data.overheat = PlayerData.round2(Math.max(data.overheat + value, 0)); break;
+            case "second-wind": data.secondWind = PlayerData.round2(Math.max(data.secondWind + value, 0)); break;
+            case "spikes": data.spikes = PlayerData.round2(Math.max(data.spikes + value, 0)); break;
+            case "chikibamboni": data.chikibamboni = PlayerData.round2(Math.max(data.chikibamboni + value, 0)); break;
+            case "bullet-rain": data.bulletRain = PlayerData.round2(Math.max(data.bulletRain + value, 0)); break;
+            case "frost-armor": data.frostArmor = PlayerData.round2(Math.max(data.frostArmor + value, 0)); break;
+            case "no-party": data.noParty = PlayerData.round2(Math.max(data.noParty + value, 0)); break;
         }
     }
 

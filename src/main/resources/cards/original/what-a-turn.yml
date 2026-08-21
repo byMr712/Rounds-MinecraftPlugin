@@ -1,0 +1,12 @@
+id: 96
+name:
+  ru: "&7Вот это па-па-па-паворот"
+  en: "&fWhat A Turn!"
+description:
+  ru: "Пули отскакивают от стен +1 раз"
+  en: "Bullets bounce off walls +1 time"
+material: PISTON
+rarity: COMMON
+enabled: true
+effects:
+  bounce: 1

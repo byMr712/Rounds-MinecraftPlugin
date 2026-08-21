@@ -1,0 +1,12 @@
+id: 118
+name:
+  ru: "&aКотлетки с пюрешкой"
+  en: "&aCutlets With Mash"
+description:
+  ru: "+20% ХП"
+  en: "+20% HP"
+material: COOKED_BEEF
+rarity: COMMON
+enabled: true
+effects:
+  hp: 0.2

@@ -1,0 +1,12 @@
+id: 98
+name:
+  ru: "&bДимооон"
+  en: "&bDimoOon"
+description:
+  ru: "Пули наводятся на врага"
+  en: "Bullets home in on enemies"
+material: COMPASS
+rarity: RARE
+enabled: true
+effects:
+  homing: 1

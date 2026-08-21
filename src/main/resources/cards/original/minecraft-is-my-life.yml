@@ -1,0 +1,12 @@
+id: 103
+name:
+  ru: "&aМАЙНКРААААФТ ЭТО МОЯ ЖИЗНЬ"
+  en: "&aMINECRAFT IS MY LIFE"
+description:
+  ru: "Блок перезаряжается на 20% быстрее"
+  en: "Block recharges 20% faster"
+material: GRASS_BLOCK
+rarity: UNCOMMON
+enabled: true
+effects:
+  block-cd: 0.2

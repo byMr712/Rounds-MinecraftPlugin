@@ -1,0 +1,12 @@
+id: 97
+name:
+  ru: "&7Я из Африки приехал"
+  en: "&fI Came From Africa"
+description:
+  ru: "+5 к дальности атаки"
+  en: "+5 attack range"
+material: SAND
+rarity: COMMON
+enabled: true
+effects:
+  attack-range: 5

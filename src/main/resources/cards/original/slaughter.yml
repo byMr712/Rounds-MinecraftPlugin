@@ -1,0 +1,13 @@
+id: 100
+name:
+  ru: "&cРезня"
+  en: "&cSlaughter"
+description:
+  ru: "+35% урона, +10% скорострельность"
+  en: "+35% damage, +10% fire rate"
+material: IRON_SWORD
+rarity: EPIC
+enabled: true
+effects:
+  damage: 0.35
+  attack-speed: 0.1

@@ -1,0 +1,12 @@
+id: 105
+name:
+  ru: "&bБанальный вопрос - анальный ответ"
+  en: "&bBanal Question - Anal Answer"
+description:
+  ru: "При блоке урон вокруг = 15% от твоего ХП"
+  en: "On block, deal AoE damage equal to 15% of your HP"
+material: IRON_BARS
+rarity: RARE
+enabled: true
+effects:
+  overpower: 1

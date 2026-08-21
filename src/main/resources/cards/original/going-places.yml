@@ -1,0 +1,13 @@
+id: 115
+name:
+  ru: "&6Пацан к успеху шел"
+  en: "&6The Kid Was Going Places"
+description:
+  ru: "+50% урона, -30% ХП"
+  en: "+50% damage, -30% HP"
+material: GOLD_INGOT
+rarity: EPIC
+enabled: true
+effects:
+  damage: 0.5
+  hp: -0.3

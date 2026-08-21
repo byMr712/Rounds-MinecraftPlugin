@@ -1,0 +1,12 @@
+id: 116
+name:
+  ru: "&aМарк был хороший"
+  en: "&aMark Was Good"
+description:
+  ru: "Враги рядом подсвечиваются"
+  en: "Nearby enemies are highlighted"
+material: POPPY
+rarity: UNCOMMON
+enabled: true
+effects:
+  radiance: 1

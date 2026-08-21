@@ -1,0 +1,12 @@
+id: 109
+name:
+  ru: "&7Стартуем!"
+  en: "&fLet's Start!"
+description:
+  ru: "+2 патрона"
+  en: "+2 ammo"
+material: POWERED_RAIL
+rarity: COMMON
+enabled: true
+effects:
+  ammo: 2

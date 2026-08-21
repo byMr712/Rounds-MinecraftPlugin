@@ -124,9 +124,19 @@ public class RoundsEntities implements Listener {
                     if (shooterData != null && shooterData.overpower > 0) {
                         finalDamage *= (1.0 + shooterData.overpower * 0.2);
                     }
+                    finalDamage = applyLegendaryDamageMultipliers(shooterData, data.ownerId, nearest, finalDamage);
+                    if (tryDodge(nearest)) {
+                        removeBullet(arrow);
+                        return;
+                    }
                     nearest.setNoDamageTicks(0);
-                    nearest.damage(finalDamage);
+                    if (shouldExecute(shooterData, nearest)) {
+                        executeTarget(nearest);
+                    } else {
+                        nearest.damage(finalDamage);
+                    }
                     nearest.getWorld().playSound(nearest.getLocation(), Sound.ENTITY_PLAYER_HURT, 1f, 1f);
+                    applyPostHitEffects(data.ownerId, shooterData, nearest, finalDamage);
                     if (shooterData != null && shooterData.leech > 0) {
                         Player shooterPlayer = Bukkit.getPlayer(data.ownerId);
                         if (shooterPlayer != null && shooterPlayer.isOnline() && shooterPlayer.isValid()) {
@@ -218,9 +228,19 @@ public class RoundsEntities implements Listener {
                         finalDmg *= (1.0 + shooterData.overpower * 0.2);
                     }
                 }
+                finalDmg = applyLegendaryDamageMultipliers(shooterData, data.ownerId, living, finalDmg);
+                if (tryDodge(living)) {
+                    removeBullet(arrow);
+                    return;
+                }
                 living.setNoDamageTicks(0);
-                living.damage(finalDmg);
+                if (shouldExecute(shooterData, living)) {
+                    executeTarget(living);
+                } else {
+                    living.damage(finalDmg);
+                }
                 living.getWorld().playSound(living.getLocation(), Sound.ENTITY_PLAYER_HURT, 1f, 1f);
+                applyPostHitEffects(data.ownerId, shooterData, living, finalDmg);
                 if (shooterData != null) {
                     if (shooterData.trusterLvl > 0) {
                         safeKnockback(living, arrow.getVelocity(), shooterData.trusterLvl * 3.0);
@@ -275,6 +295,93 @@ public class RoundsEntities implements Listener {
         if (isFinite(newVel)) {
             target.setVelocity(newVel);
         }
+    }
+
+    // ==================== Legendary combat effects ====================
+
+    private static boolean tryDodge(LivingEntity target) {
+        if (!(target instanceof Player p)) return false;
+        PlayerData d = plugin.getPlayerDataManager().getData(p.getUniqueId());
+        if (d == null || d.evasion <= 0) return false;
+        if (Math.random() >= d.evasion) return false;
+        p.getWorld().playSound(p.getLocation(), Sound.ENTITY_BAT_TAKEOFF, 1f, 1.5f);
+        p.getWorld().spawnParticle(Particle.CLOUD, p.getLocation().add(0, 1, 0), 10, 0.3, 0.5, 0.3, 0.05);
+        return true;
+    }
+
+    private static double applyLegendaryDamageMultipliers(PlayerData shooter, UUID shooterId, LivingEntity target, double damage) {
+        double dmg = damage;
+        if (shooter != null) {
+            if (shooter.bloodFurry > 0 && com.rounds.listener.LegendaryEffects.isRaging(shooterId)) {
+                dmg *= (1.0 + shooter.bloodFurry);
+            }
+            if (shooter.berserk > 0) {
+                Player sp = Bukkit.getPlayer(shooterId);
+                if (sp != null && sp.isOnline() && sp.isValid() && sp.getMaxHealth() > 0) {
+                    double ratio = sp.getHealth() / sp.getMaxHealth();
+                    double missing = Math.max(0.0, Math.min((1.0 - ratio) / 0.8, 1.0));
+                    dmg *= (1.0 + shooter.berserk * missing);
+                }
+            }
+            if (shooter.snowball > 0 && shooter.snowballWins > 0) {
+                dmg *= (1.0 + 0.1 * shooter.snowballWins);
+            }
+            if ((shooter.executioner > 0 || shooter.chikibamboni > 0) && target instanceof Player tp && tp.getMaxHealth() > 0) {
+                double ratio = tp.getHealth() / tp.getMaxHealth();
+                if (shooter.executioner > 0 && ratio < 0.2) {
+                    dmg *= 2.0;
+                }
+            }
+        }
+        return dmg;
+    }
+
+    private static boolean shouldExecute(PlayerData shooter, LivingEntity target) {
+        if (shooter == null) return false;
+        if (!(target instanceof Player tp)) return false;
+        if (tp.getMaxHealth() <= 0) return false;
+        double ratio = tp.getHealth() / tp.getMaxHealth();
+        if (shooter.chikibamboni > 0 && ratio < 0.15) return true;
+        if (shooter.executioner > 0 && ratio < 0.2 && Math.random() < 0.01) return true;
+        return false;
+    }
+
+    private static void executeTarget(LivingEntity target) {
+        target.setNoDamageTicks(0);
+        target.damage(Math.max(target.getHealth(), 1) * 100.0);
+        target.getWorld().playSound(target.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.8f, 1.8f);
+    }
+
+    private static void applyPostHitEffects(UUID ownerId, PlayerData shooter, LivingEntity target, double damageDealt) {
+        if (target instanceof Player tp) {
+            PlayerData td = plugin.getPlayerDataManager().getData(tp.getUniqueId());
+            if (td.spikes > 0) {
+                Player attacker = Bukkit.getPlayer(ownerId);
+                if (attacker != null && attacker.isOnline() && attacker.isValid()) {
+                    attacker.setNoDamageTicks(0);
+                    attacker.damage(Math.max(damageDealt * td.spikes, 0.5));
+                }
+            }
+            if (td.frostArmor > 0) {
+                Player attacker = Bukkit.getPlayer(ownerId);
+                if (attacker != null && attacker.isOnline() && attacker.isValid()) {
+                    attacker.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                        PotionEffectType.SLOW, 60, 0));
+                }
+            }
+        }
+        if (shooter != null && shooter.stormCaller > 0 && Math.random() < shooter.stormCaller) {
+            target.getWorld().strikeLightningEffect(target.getLocation());
+            target.setNoDamageTicks(0);
+            target.damage(5.0);
+        }
+    }
+
+    private static void removeBullet(Arrow arrow) {
+        arrow.remove();
+        activeBullets.remove(arrow.getUniqueId());
+        bounceCounters.remove(arrow.getUniqueId());
+        lastBulletVelocity.remove(arrow.getUniqueId());
     }
 
     public static void clearAllState() {
@@ -661,9 +768,22 @@ public class RoundsEntities implements Listener {
                     finalDamage *= (1.0 + data.overpower * 0.2);
                 }
             }
+            finalDamage = applyLegendaryDamageMultipliers(data, ownerId, living, finalDamage);
+            if (tryDodge(living)) {
+                arrow.remove();
+                activeBullets.remove(arrow.getUniqueId());
+                bounceCounters.remove(arrow.getUniqueId());
+                lastBulletVelocity.remove(arrow.getUniqueId());
+                return;
+            }
             living.setNoDamageTicks(0);
-            living.damage(finalDamage);
+            if (shouldExecute(data, living)) {
+                executeTarget(living);
+            } else {
+                living.damage(finalDamage);
+            }
             living.getWorld().playSound(living.getLocation(), Sound.ENTITY_PLAYER_HURT, 1f, 1f);
+            applyPostHitEffects(ownerId, data, living, finalDamage);
 
             if (data != null) {
                 if (data.stun > 0 && living instanceof Player stunTarget) {

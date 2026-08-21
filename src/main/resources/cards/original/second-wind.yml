@@ -1,0 +1,12 @@
+id: 89
+name:
+  ru: "&aЧекай как могу"
+  en: "&aSecond Wind"
+description:
+  ru: "При смертельном ударе остаёшься на 1 ХП и получаешь 2с неуязвимости"
+  en: "On lethal hit survive with 1 HP and gain 2s of invulnerability"
+material: TOTEM_OF_UNDYING
+rarity: LEGENDARY
+enabled: true
+effects:
+  second-wind: 1

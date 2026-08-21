@@ -1,0 +1,12 @@
+id: 83
+name:
+  ru: "&eНет, Ёжик, это же кара небесная"
+  en: "&eSkyfall"
+description:
+  ru: "Падение с большой высоты создаёт взрыв"
+  en: "Falling from great height creates an explosion"
+material: TNT
+rarity: LEGENDARY
+enabled: true
+effects:
+  skyfall: 1

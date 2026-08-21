@@ -281,4 +281,16 @@ public class CardRegistry {
         }
         return result;
     }
+
+    public List<Card> getRandomCardsByRarity(Rarity rarity, int count, Integer excludeId) {
+        List<Card> pool = new ArrayList<>();
+        for (Card c : getEnabledCards()) {
+            if (c.getRarity() != rarity) continue;
+            if (excludeId != null && c.getId() == excludeId) continue;
+            pool.add(c);
+        }
+        Collections.shuffle(pool, random);
+        if (pool.size() <= count) return pool;
+        return new ArrayList<>(pool.subList(0, count));
+    }
 }

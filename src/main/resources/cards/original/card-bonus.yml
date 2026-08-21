@@ -1,0 +1,12 @@
+id: 86
+name:
+  ru: "&aЧеремша"
+  en: "&aCard Bonus"
+description:
+  ru: "Получить две случайные карты обычной редкости"
+  en: "Receive two random common rarity cards"
+material: CHEST
+rarity: LEGENDARY
+enabled: true
+effects:
+  card-bonus: 2

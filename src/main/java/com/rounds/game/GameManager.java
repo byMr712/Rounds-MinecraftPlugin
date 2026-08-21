@@ -21,6 +21,7 @@ import org.bukkit.GameRule;
 import org.bukkit.World;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Phantom;
@@ -66,6 +67,9 @@ public class GameManager implements Listener {
     private final Map<GameRule<?>, Object> savedGameRules = new HashMap<>();
     private final Map<GameTeam, Location> teamSpawns = new HashMap<>();
     private Location currentZoneCenter = null;
+    private final Map<UUID, Location> chameleonLastLoc = new HashMap<>();
+    private final Map<UUID, Integer> chameleonStillTicks = new HashMap<>();
+    private static final UUID SNOWBALL_MOD_ID = UUID.nameUUIDFromBytes("rounds_snowball".getBytes());
 
     public GameManager(RoundsPlugin plugin) {
         this.plugin = plugin;
@@ -120,6 +124,9 @@ public class GameManager implements Listener {
         abyssalLastLocations.clear();
         lastSilenceAuraTime.clear();
         teamSpawns.clear();
+        chameleonLastLoc.clear();
+        chameleonStillTicks.clear();
+        com.rounds.listener.LegendaryEffects.resetAll();
 
         saveState();
         updateScoreboard();
@@ -370,6 +377,22 @@ public class GameManager implements Listener {
                     }
                 }
             }
+            if (data.chameleon > 0) {
+                Location cur = p.getLocation();
+                Location last = chameleonLastLoc.get(p.getUniqueId());
+                if (last != null && last.distanceSquared(cur) < 0.01) {
+                    int still = chameleonStillTicks.getOrDefault(p.getUniqueId(), 0) + 1;
+                    if (still >= 5) {
+                        still = 0;
+                        p.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                            PotionEffectType.INVISIBILITY, 140, 0, false, false, false));
+                    }
+                    chameleonStillTicks.put(p.getUniqueId(), still);
+                } else {
+                    chameleonStillTicks.remove(p.getUniqueId());
+                }
+                chameleonLastLoc.put(p.getUniqueId(), cur.clone());
+            }
             if (data.speed > 0) {
                 double speedRange = 5.0 + data.speed * 3.0;
                 for (Entity entity : p.getNearbyEntities(speedRange, speedRange, speedRange)) {
@@ -535,6 +558,8 @@ public class GameManager implements Listener {
         deadPlayers.clear();
         saveState();
         GunItem.resetRoundState();
+        com.rounds.listener.LegendaryEffects.clearRoundState();
+        chameleonStillTicks.clear();
 
         plugin.getServer().broadcastMessage(ChatColor.YELLOW + Messages.get("game.round-start", currentRound));
 
@@ -546,7 +571,14 @@ public class GameManager implements Listener {
                 p.getInventory().clear();
                 giveGun(p);
                 PlayerData roundData = plugin.getPlayerDataManager().getData(p);
-                if (roundData != null) roundData.ammo = roundData.maxAmmo;
+                if (roundData != null) {
+                    roundData.ammo = roundData.maxAmmo;
+                    if (roundData.bulletRain > 0) {
+                        roundData.maxAmmo += roundData.bulletRain;
+                        roundData.ammo += roundData.bulletRain;
+                    }
+                    applySnowballSpeed(p, roundData);
+                }
                 clearCardEffects(p);
                 applyPlayerHP(p);
                 applyRoundEffects(p);
@@ -627,6 +659,17 @@ public class GameManager implements Listener {
         state = GameState.ROUND_END;
         losingTeams.clear();
         saveState();
+
+        for (UUID uuid : plugin.getTeamManager().getTeamPlayers(winner)) {
+            Player wp = Bukkit.getPlayer(uuid);
+            if (wp == null || !wp.isOnline() || !wp.isValid()) continue;
+            PlayerData wd = plugin.getPlayerDataManager().getData(wp);
+            if (wd.snowball > 0) {
+                wd.snowballWins++;
+                applySnowballSpeed(wp, wd);
+            }
+        }
+
         for (GameTeam team : GameTeam.values()) {
             if (team != winner && plugin.getTeamManager().getTeamPlayers(team).size() > 0) {
                 losingTeams.add(team);
@@ -757,6 +800,7 @@ public class GameManager implements Listener {
                 p.setNoDamageTicks(0);
                 p.setGameMode(GameMode.ADVENTURE);
                 clearCardEffects(p);
+                removeSnowballModifiers(p);
                 Location lobby = plugin.getBlockListener().getBlockStorage().getLobbyBlock();
                 if (lobby != null) p.teleport(lobby.clone().add(0, 1, 0));
             }
@@ -814,6 +858,26 @@ public class GameManager implements Listener {
     public void clearCardEffects(Player player) {
         for (PotionEffectType type : PotionEffectType.values()) {
             player.removePotionEffect(type);
+        }
+    }
+
+    private void applySnowballSpeed(Player player, PlayerData data) {
+        var attr = player.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+        if (attr == null) return;
+        removeSnowballModifiers(player);
+        if (data.snowballWins > 0) {
+            attr.addModifier(new AttributeModifier(SNOWBALL_MOD_ID, "rounds_snowball",
+                0.05 * data.snowballWins, AttributeModifier.Operation.ADD_SCALAR));
+        }
+    }
+
+    private void removeSnowballModifiers(Player player) {
+        var attr = player.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+        if (attr == null) return;
+        for (AttributeModifier mod : new ArrayList<>(attr.getModifiers())) {
+            if (mod.getName().equals("rounds_snowball")) {
+                attr.removeModifier(mod);
+            }
         }
     }
 
@@ -1031,6 +1095,9 @@ public class GameManager implements Listener {
         deadPlayers.clear();
         abyssalLastLocations.clear();
         lastSilenceAuraTime.clear();
+        chameleonLastLoc.clear();
+        chameleonStillTicks.clear();
+        com.rounds.listener.LegendaryEffects.resetAll();
         state = GameState.WAITING;
         saveState();
         removeScoreboard();
@@ -1052,6 +1119,7 @@ public class GameManager implements Listener {
             p.setNoDamageTicks(0);
             p.setGameMode(GameMode.ADVENTURE);
             clearCardEffects(p);
+            removeSnowballModifiers(p);
             if (lobbyLoc != null) {
                 p.teleport(lobbyLoc.clone().add(0, 1, 0));
             }

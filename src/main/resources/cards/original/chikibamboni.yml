@@ -1,0 +1,12 @@
+id: 91
+name:
+  ru: "&6Чикибамбони"
+  en: "&6Executioner"
+description:
+  ru: "Если у врага менее 15% ХП, ваш выстрел убивает моментально"
+  en: "If the enemy is below 15% HP, your shot kills instantly"
+material: STONE_AXE
+rarity: LEGENDARY
+enabled: true
+effects:
+  chikibamboni: 1

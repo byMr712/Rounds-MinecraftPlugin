@@ -1,0 +1,12 @@
+id: 101
+name:
+  ru: "&bИбрагим - вам что-нибудь говорит?"
+  en: "&bIbrahim - Ring Any Bells?"
+description:
+  ru: "Пули взрываются при попадании"
+  en: "Bullets explode on impact"
+material: GUNPOWDER
+rarity: RARE
+enabled: true
+effects:
+  bomb-bullet: 1

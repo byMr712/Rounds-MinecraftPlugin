@@ -1,0 +1,13 @@
+id: 107
+name:
+  ru: "&5Сдохни или умри"
+  en: "&5Die Or Perish"
+description:
+  ru: "+40% урона, 5% ХП за выстрел"
+  en: "+40% damage, 5% HP per shot"
+material: WITHER_ROSE
+rarity: EPIC
+enabled: true
+effects:
+  damage: 0.4
+  hp-cost: 0.05

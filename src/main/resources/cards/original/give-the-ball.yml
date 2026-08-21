@@ -1,0 +1,12 @@
+id: 120
+name:
+  ru: "&7Давай мячо!"
+  en: "&fGive The Ball!"
+description:
+  ru: "Пули сильно отбрасывают врагов"
+  en: "Bullets knock enemies back hard"
+material: CLAY_BALL
+rarity: COMMON
+enabled: true
+effects:
+  truster: 1

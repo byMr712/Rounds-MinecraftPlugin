@@ -1,0 +1,12 @@
+id: 87
+name:
+  ru: "&dА в чём разница? В спец. эффектах!"
+  en: "&dRandom Legendary"
+description:
+  ru: "Даёт случайную легендарную карту"
+  en: "Gives a random legendary card"
+material: ENDER_CHEST
+rarity: LEGENDARY
+enabled: true
+effects:
+  random-legendary: 1

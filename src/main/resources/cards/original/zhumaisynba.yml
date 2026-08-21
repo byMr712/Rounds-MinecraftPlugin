@@ -1,0 +1,12 @@
+id: 117
+name:
+  ru: "&7Шампунь Жумайсынба"
+  en: "&fZhumaisynba Shampoo"
+description:
+  ru: "Пули замедляют врагов"
+  en: "Bullets slow enemies"
+material: POTION
+rarity: COMMON
+enabled: true
+effects:
+  cold: 1

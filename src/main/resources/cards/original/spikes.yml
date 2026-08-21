@@ -1,0 +1,12 @@
+id: 90
+name:
+  ru: "&2Я не нормис!"
+  en: "&2Spikes"
+description:
+  ru: "Противнику наносится 10% урона своего же урона при попадании по вам"
+  en: "The attacker takes 10% of their own damage when hitting you"
+material: CACTUS
+rarity: LEGENDARY
+enabled: true
+effects:
+  spikes: 0.1

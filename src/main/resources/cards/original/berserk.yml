@@ -1,0 +1,12 @@
+id: 85
+name:
+  ru: "&cВоздухан"
+  en: "&cBerserk"
+description:
+  ru: "Чем меньше ХП, тем больше урон (до +100% урона при менее 20% ХП)"
+  en: "The less HP, the more damage (up to +100% damage below 20% HP)"
+material: GOLDEN_AXE
+rarity: LEGENDARY
+enabled: true
+effects:
+  berserk: 1

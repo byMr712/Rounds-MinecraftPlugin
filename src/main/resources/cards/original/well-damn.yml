@@ -1,0 +1,12 @@
+id: 102
+name:
+  ru: "&bНу нахер..."
+  en: "&bWell Damn..."
+description:
+  ru: "Рывок вперёд при блоке"
+  en: "Dash forward when blocking"
+material: SUGAR
+rarity: RARE
+enabled: true
+effects:
+  teleport: 1

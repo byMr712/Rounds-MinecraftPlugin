@@ -1,7 +1,7 @@
 # Rounds Plugin Configuration
 
-# Language: "ru" or "en"
-language: en
+# Language: id of a file from plugins/<Plugin>/lang/ without .txt (legacy "ru"/"en" values are still accepted)
+language: EN_en
 
 # Default player stats (reset each round)
 defaults:

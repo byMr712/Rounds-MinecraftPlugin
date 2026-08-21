@@ -332,7 +332,7 @@ public class CardRegistry {
     public List<String> getCardNameSuggestions() {
         List<String> list = new ArrayList<>();
         String lang = "en";
-        try { lang = com.rounds.util.Messages.getLanguage(); } catch (Exception ignored) {}
+        try { lang = com.rounds.util.Messages.getLanguageCode(); } catch (Exception ignored) {}
         for (Card c : cards.values()) {
             String name = c.getName(lang);
             name = ChatColor.stripColor(name.replaceAll("&[0-9a-fk-or]", ""));

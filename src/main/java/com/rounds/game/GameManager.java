@@ -552,9 +552,44 @@ public class GameManager implements Listener {
     private void startGameTick() {
         if (tickTaskId != -1) Bukkit.getScheduler().cancelTask(tickTaskId);
         tickTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
+            if (state == GameState.WAITING || state == GameState.GAME_END) return;
+            // Авто-финиш: кто-то в сети, но продолжать не может меньше двух участников
+            // (например, после ничьей вышли оба, а затем зашёл только один игрок).
+            if (!plugin.getServer().getOnlinePlayers().isEmpty() && countContinuablePlayers() < 2) {
+                autoStopInsufficientPlayers();
+                return;
+            }
             if (state == GameState.PLAYING) gameTick();
             else if (state == GameState.CARDS) cardTick();
         }, 0L, 1L);
+    }
+
+    /**
+     * Сколько игроков в сети могут продолжать игру: состоят в команде,
+     * выбирают карты или ожидают выбора карт после переподключения.
+     */
+    private int countContinuablePlayers() {
+        var cm = plugin.getCardManager();
+        int count = 0;
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) != null
+                    || cm.isPendingPick(p.getUniqueId())
+                    || pendingCardJoiners.contains(p.getUniqueId())) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private void autoStopInsufficientPlayers() {
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            p.sendTitle(Messages.get("title.game-won"), "", 10, 100, 20);
+            p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+            p.sendMessage(ChatColor.GREEN + Messages.get("game.auto-stop-single"));
+        }
+        stopGame();
+        plugin.getTeamManager().clearAll();
+        getStateManager().clear();
     }
 
     private void gameTick() {

@@ -69,7 +69,7 @@ public class CardGUIListener implements Listener {
             empty.setItemMeta(meta);
             inv.setItem(13, empty);
         } else {
-            String lang = Messages.getLanguage();
+            String lang = Messages.getLanguageCode();
             for (int i = 0; i < owned.size() && i < 54; i++) {
                 inv.setItem(i, owned.get(i).createItemStack(lang, false));
             }

@@ -217,7 +217,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxKv(sender, "/rdebug stats <player> <stat> <value>", Messages.get("debug.help-stats-set"));
         boxKv(sender, "/rdebug setstat <stat> <value> [player]", Messages.get("debug.help-setstat"));
         boxKv(sender, "/rdebug setteam <COLOR>", Messages.get("debug.help-setteam"));
-        boxKv(sender, "/rdebug setlanguage <ru|en>", Messages.get("debug.help-setlanguage"));
+        boxKv(sender, "/rdebug setlanguage <lang>", Messages.get("debug.help-setlanguage"));
         boxKv(sender, "/rdebug effect <type> <amp> <dur>", Messages.get("debug.help-effect"));
         boxKv(sender, "/rdebug heal [amount]", Messages.get("debug.help-heal"));
         boxKv(sender, "/rdebug resetstats", Messages.get("debug.help-resetstats"));
@@ -526,7 +526,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         PlayerData data = plugin.getPlayerDataManager().getData(player);
         card.apply(player, data);
         data.setCard(card.getId(), true);
-        sender.sendMessage(ChatColor.GREEN + Messages.get("command.applied-card", card.getColoredName(Messages.getLanguage())));
+        sender.sendMessage(ChatColor.GREEN + Messages.get("command.applied-card", card.getColoredName(Messages.getLanguageCode())));
     }
 
     // === STATS ===
@@ -576,7 +576,9 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxStat(sender, "stat-ammo", data.ammo);
         boxStat(sender, "stat-bullets", data.bullets);
         boxStat(sender, "stat-bullet-speed", data.bulletSpeed);
-        boxStat(sender, "stat-reload-time", Math.max(100 * (1.0 - Math.min(data.reloadSpeed, 0.95)) * (1.0 + data.atksReload * 0.1), 4) / 20.0);
+        double bigPenalty = data.bigBullet > 0 ? 1.0 + 0.3 * data.bigBullet : 1.0;
+        boxStat(sender, "stat-reload-time", Math.max(
+                100 * (1.0 - Math.min(data.reloadSpeed, 0.95)) * (1.0 + data.atksReload * 0.1) * bigPenalty, 4) / 20.0);
         boxStat(sender, "stat-bounce", data.bouncePl);
         boxStat(sender, "stat-homing", data.homing);
         boxStat(sender, "stat-big-bullet", data.bigBullet);
@@ -711,9 +713,10 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     private void handleSetLanguage(CommandSender sender, String[] args) {
         if (args.length < 2) { sender.sendMessage(ChatColor.RED + Messages.get("debug.usage-setlanguage")); return; }
 
-        String lang = args[1].toLowerCase();
-        if (!lang.equals("ru") && !lang.equals("en")) {
-            sender.sendMessage(ChatColor.RED + Messages.get("debug.language-invalid", lang));
+        String lang = Messages.resolveLanguage(args[1]);
+        if (lang == null) {
+            sender.sendMessage(ChatColor.RED + Messages.get("debug.language-invalid", args[1],
+                    String.join(", ", Messages.getAvailableLanguages())));
             return;
         }
 
@@ -944,7 +947,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 yield Collections.emptyList();
             }
             case "setlanguage" -> {
-                if (args.length == 2) yield filterStartsWith(Arrays.asList("ru", "en"), input);
+                if (args.length == 2) yield filterStartsWith(new ArrayList<>(Messages.getAvailableLanguages()), input);
                 yield Collections.emptyList();
             }
             case "effect" -> {

@@ -2,16 +2,12 @@
 
 Minecraft плагин мини-игры "Rounds". 4 команды, карточная система с возможностью добавления и модификации, до 20 раундов, система спец. блоков для более быстрого внедрения плагина на карту.
 
----
-
 ## Требования
 
 - Purpur/Paper 1.20.4 - 26.2
 - Java 17+
 - Опционально: [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.13006/) для поддержки плейсхолдеров
 - Опционально: [TAB](https://www.spigotmc.org/resources/tab.57806/) для отображения счёта и статуса игры
-
----
 
 ## Установка
 
@@ -20,8 +16,6 @@ Minecraft плагин мини-игры "Rounds". 4 команды, карто�
 3. Настройте `plugins/RoundsPlugin/config.yml` (по умолчанию уже настроено)
 4. Настройте карты в `plugins/RoundsPlugin/cards/` (по умолчанию 65 карт)
 5. Получите блоки командой `/rdebug giveblocks` и расставьте в мире
-
----
 
 ## Быстрый старт
 
@@ -33,7 +27,8 @@ Minecraft плагин мини-игры "Rounds". 4 команды, карто�
 /rdebug giveblocks
 ```
 
-Это выдаст все специальные блоки в инвентарь и переключит в режим выживания. Разместите блоки в мире:
+Это выдаст все специальные блоки в инвентарь и переключит в творческий режим. 
+Затем разместите блоки в мире (пояснение как они работают будет написано позже)
 
 #### Блоки вступления в команды
 
@@ -97,15 +92,13 @@ Minecraft плагин мини-игры "Rounds". 4 команды, карто�
 8. **Следующий раунд** — плагин выбирает **случайную зону карты** (с повторами), распределяет спавны заново, все телепортируются
 9. Когда команда набирает нужное количество побед — **конец игры**, всех телепортирует в лобби
 
----
-
 ## Настройка
 
 ### config.yml
 
 ```yaml
-# Язык: "ru" или "en"
-language: ru
+# Язык: id файла из plugins/RoundsPlugin/lang/ без .txt (старые "ru"/"en" тоже принимаются)
+language: RU_ru
 
 # Статы игроков по умолчанию (сбрасываются каждый раунд)
 defaults:
@@ -161,26 +154,65 @@ builtin-scoreboard:
 
 Карты хранятся в формате **отдельных YAML-файлов** в папке `plugins/RoundsPlugin/cards/original/`. Пользовательские карты добавляются в `plugins/RoundsPlugin/cards/custom/`.
 
-#### Формат карты (пример `barrage.yml`):
+#### Формат обычной карты (пример `burst.yml`):
 
 ```yaml
-id: 1
+id: 8
 name:
-  ru: "&cБараж"
-  en: "&cBarrage"
+  ru: "&aОчередь"
+  en: "&aBurst"
 description:
-  ru: "Стреляет 5 пулями, -70% урона"
-  en: "Fires 5 bullets, -70% damage"
+  ru: "+2 пули, +3 патрона, -60% урона, +10% перезарядки"
+  en: "+2 Bullets, +3 Ammo, -60% DMG, +10% Reload time"
 material: ARROW
-custom-model-data: 10001
-rarity: RARE
 enabled: true
-effects:
-  damage: -0.7
-  bullets: 5
-potion-effects: []
-commands: []
+variations:
+  - rarity: COMMON
+    effects:
+      bullets: 2
+      ammo: 3
+      damage: -0.6
+      reload: 1
 ```
+
+#### Формат карты с вариативностью (пример `combine.yml`):
+```yaml
+id: 13
+name:
+  ru: "&4Объединение"
+  en: "&4Combine"
+description:
+  ru: "+{0} урона, -{1} патрона, +{2} перезарядки"
+  en: "+{0} DMG, -{1} Ammo, +{2} Reload time"
+material: REDSTONE
+enabled: true
+variations:
+  - rarity: RARE
+    values: ["100%", "2", "10%"]
+    effects:
+      damage: 1.0
+      ammo: -2
+      reload: 1
+  - rarity: COMMON
+    values: ["50%", "1", "5%"]
+    effects:
+      damage: 0.5
+      ammo: -1
+      reload: 0.5
+  - rarity: UNCOMMON
+    values: ["75%", "2", "8%"]
+    effects:
+      damage: 0.75
+      ammo: -2
+      reload: 0.8
+  - rarity: EPIC
+    values: ["125%", "3", "13%"]
+    effects:
+      damage: 1.25
+      ammo: -3
+      reload: 1.3
+```
+
 
 #### Параметры эффектов:
 
@@ -203,7 +235,7 @@ commands: []
 | `homing` | Самонаведение пуль |
 | `empower` + `empower-charge` | Усиление урона (расходуется за выстрел) |
 | `dark-strength` | Сила тёмной энергии (+0.5 урона за стак) |
-| `big-bullet` | Большая пуля |
+| `big-bullet` | Большая пуля (стакуется): +70% визуального размера и радиуса попадания за стак, перезарядка +30% за стак |
 | `bomb-bullet` | Взрывные пули (TNT при попадании) |
 | `bomb-on-block` | Бомба при блокировке щитом |
 | `explode-bullets` | Взрывающиеся пули (AoE) |
@@ -260,8 +292,6 @@ commands: []
 ```
 
 Каждые 6 секунд все открытые GUI выбора карт обновляются новыми случайными картами.
-
----
 
 ## Система блоков карты
 
@@ -348,13 +378,13 @@ commands: []
 | `/rdebug stats [игрок]` | | Показать все статы игрока |
 | `/rdebug setstat <стат> <значение> [игрок]` | | Установить значение стата |
 | `/rdebug setteam <ЦВЕТ> [игрок]` | | Установить команду |
-| `/rdebug setlanguage <ru\|en>` | | Сменить язык |
+| `/rdebug setlanguage <язык>` | | Сменить язык; таб-комплит показывает все найденные языки из папки `lang/` |
 | `/rdebug effect <тип> <ур> <длит>` | | Наложить зелье |
 | `/rdebug heal [кол-во]` | | Вылечить до максимума |
 | `/rdebug spawnbomb/heal/toxic/shield` | | Создать сущность |
 | `/rdebug entities` | | Показать кастомные сущности в радиусе 20 блоков |
 | `/rdebug resetstats` | | Сбросить все статы и карты |
-| `/rdebug reload` | | Перезагрузить config.yml, messages.yml, карты |
+| `/rdebug reload` | | Перезагрузить config.yml, карты и языковые пакеты (lang/*.txt) |
 | `/rdebug version` | | Версия плагина и сервера |
 | `/rdebug killround` | | Убить всех врагов (только во время раунда) |
 | `/rdebug iteminfo` | | Информация о предмете в руке |
@@ -462,17 +492,22 @@ commands: []
 
 ## Локализация
 
-Плагин поддерживает **русский** и **английский** языки. Для смены:
+Языковые пакеты хранятся в папке `plugins/RoundsPlugin/lang/` — **один файл `<Имя>.txt` = один язык** (например, `RU_ru.txt`, `EN_en.txt`). Внутри — YAML-подобный формат строк интерфейса; имя файла без `.txt` является id языка.
 
-1. Откройте `plugins/RoundsPlugin/config.yml`
-2. Измените `language: ru` на `language: en`
-3. Перезапустите сервер
+Смена языка:
 
-Все тексты хранятся в `plugins/RoundsPlugin/messages.yml`. Чтобы добавить свой язык — скопируйте секцию `ru:` или `en:` и замените тексты.
+1. Командой `/rdebug setlanguage <язык>` — таб-комплит показывает все найденные языки
+2. Или в `config.yml` указать `language: RU_ru` и перезапустить сервер
 
-Карты поддерживают локализацию в формате `name.ru` / `name.en` и `description.ru` / `description.en`.
+Добавление своего языка:
 
----
+1. Скопируйте `lang/RU_ru.txt`, переименуйте в `<Имя>.txt` и переведите строки
+2. Положите файл в `plugins/RoundsPlugin/lang/`
+3. Выполните `/rdebug reload` или перезапустите сервер — новый язык появится в таб-комплите `/rdebug setlanguage`
+
+Плагин сканирует папку при каждом запуске и `/rdebug reload`, поэтому сторонние языковые пакеты подхватываются автоматически. Дефолтные `RU_ru.txt` / `EN_en.txt` восстанавливаются из jar, если их удалить. Если файл текущего языка недоступен, плагин откатывается на `EN_en`.
+
+Карты поддерживают локализацию в формате `name.ru` / `name.en` и `description.ru` / `description.en`. Код языка для карт берётся из части id до `_` (`DE_de` → `de`); если такой секции в карточке нет — используется английский текст.
 
 ## Права
 
@@ -481,14 +516,12 @@ commands: []
 | `rounds.admin` | Все команды управления игрой и отладки |
 | `rounds.join` | Возможность вступать в команды через блоки (по умолчанию у всех) |
 
----
-
 ## Файлы
 
 | Файл | Описание |
 |------|----------|
 | `plugins/RoundsPlugin/config.yml` | Основная конфигурация |
-| `plugins/RoundsPlugin/messages.yml` | Тексты интерфейса (ru/en) |
+| `plugins/RoundsPlugin/lang/` | Языковые пакеты (`*.txt`; один файл = один язык, сторонние подхватываются автоматически) |
 | `plugins/RoundsPlugin/cards/original/` | Стандартные карты (65 файлов) |
 | `plugins/RoundsPlugin/cards/custom/` | Пользовательские карты |
 | `plugins/RoundsPlugin/playerdata/` | Данные игроков (автоматически) |
@@ -496,8 +529,6 @@ commands: []
 | `plugins/RoundsPlugin/active-players.yml` | Активные игроки в сессии |
 | `< world >/rounds-blocks.yml` | Блоки вступления в команды |
 | `< world >/rounds-map-blocks.yml` | Блоки лобби, карт и спавнов |
-
----
 
 ## Сборка
 

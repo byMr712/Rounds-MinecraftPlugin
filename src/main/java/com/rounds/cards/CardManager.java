@@ -57,7 +57,7 @@ public class CardManager {
         boolean revealed = grantChainedCards(player, data, card);
 
         if (!revealed) {
-            String lang = Messages.getLanguage();
+            String lang = Messages.getLanguageCode();
             String msg = Messages.get("card.picked", player.getName(), card.getColoredName(lang), card.getDescription(lang));
             plugin.getServer().broadcastMessage(msg);
         }
@@ -83,7 +83,7 @@ public class CardManager {
                 continue;
             }
 
-            String lang = Messages.getLanguage();
+            String lang = Messages.getLanguageCode();
             for (Card bonus : granted) {
                 bonus.apply(player, data);
                 data.setCard(bonus.getId(), true);

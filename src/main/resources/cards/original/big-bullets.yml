@@ -3,8 +3,8 @@ name:
   ru: "&fБольшие пули"
   en: "&fBig Bullets"
 description:
-  ru: "Пули больше, перезарядка медленнее"
-  en: "Bigger bullets, slower reload"
+  ru: "Размер пули +70%, перезарядка +30%"
+  en: "Bullet size +70%, reload +30%"
 material: IRON_NUGGET
 enabled: true
 variations:

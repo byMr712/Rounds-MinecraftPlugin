@@ -139,7 +139,7 @@ public class Card {
     }
 
     public ItemStack createItemStack() {
-        String lang = Messages.getLanguage();
+        String lang = Messages.getLanguageCode();
         return createItemStack(lang);
     }
 

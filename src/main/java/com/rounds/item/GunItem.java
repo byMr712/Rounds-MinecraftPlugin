@@ -29,6 +29,9 @@ import java.util.*;
 
 public class GunItem implements Listener {
 
+    // Максимум физических пуль на один выстрел: остальное — стеки репрезентативов.
+    private static final int MAX_BULLET_REPRESENTATIVES = 20;
+
     private static RoundsPlugin plugin;
     private static GunItem instance;
     private static final Map<UUID, ReloadTask> reloadTasks = new HashMap<>();
@@ -147,10 +150,16 @@ public class GunItem implements Listener {
         cancelReload(uuid);
 
         int bulletCount = (int) Math.max(data.bullets, 1);
+        // Залпы больше капа летят репрезентативами: каждая сущность несёт стек
+        // (урон/эффекты масштабируются), физика считается только 20 раз.
+        int reps = Math.min(bulletCount, MAX_BULLET_REPRESENTATIVES);
+        long cohortId = RoundsEntities.nextCohortId();
+        int baseStack = bulletCount / reps;
+        int remainder = bulletCount % reps;
         Vector direction = player.getLocation().getDirection();
         final Location bulletOrigin = player.getEyeLocation();
 
-        for (int i = 0; i < bulletCount; i++) {
+        for (int i = 0; i < reps; i++) {
             Vector vel = direction.clone();
             double spread = 0.05;
             vel.setX(vel.getX() + (Math.random() - 0.5) * spread);
@@ -160,7 +169,8 @@ public class GunItem implements Listener {
             double speed = 3.0 * Math.max(data.bulletSpeed, 0.1);
             vel = vel.normalize().multiply(speed);
 
-            RoundsEntities.spawnBullet(player, bulletOrigin, vel, data);
+            RoundsEntities.spawnBullet(player, bulletOrigin, vel, data,
+                cohortId, baseStack + (i < remainder ? 1 : 0));
         }
         data.consumeEmpowerCharge();
 
@@ -461,7 +471,10 @@ public class GunItem implements Listener {
             return;
         }
         reloadingPlayers.add(uuid);
-        double reloadDurationTicks = Math.max(100 * (1.0 - Math.min(data.reloadSpeed, 0.95)) * (1.0 + data.atksReload * 0.1), 4);
+        // Крупная пуля замедляет перезарядку: +30% за каждую выбранную карту.
+        double bigPenalty = data.bigBullet > 0 ? 1.0 + 0.3 * data.bigBullet : 1.0;
+        double reloadDurationTicks = Math.max(
+                100 * (1.0 - Math.min(data.reloadSpeed, 0.95)) * (1.0 + data.atksReload * 0.1) * bigPenalty, 4);
 
         ReloadTask task = new ReloadTask(player, data, (int) reloadDurationTicks);
         reloadTasks.put(uuid, task);

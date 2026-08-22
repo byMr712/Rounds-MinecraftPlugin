@@ -23,6 +23,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Arrow;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.AreaEffectCloudApplyEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.inventory.ItemStack;
@@ -938,6 +939,21 @@ public class RoundsEntities implements Listener {
     }
 
     // ==================== Event handlers ====================
+
+    @EventHandler
+    public void onAreaEffectCloudApply(AreaEffectCloudApplyEvent event) {
+        var pdc = event.getEntity().getPersistentDataContainer();
+        if (!pdc.has(RoundsKeys.IS_TOXIC_RING, PersistentDataType.BYTE)) return;
+        String ownerStr = pdc.get(RoundsKeys.BULLET_OWNER, PersistentDataType.STRING);
+        if (ownerStr == null) return;
+        UUID ownerId;
+        try {
+            ownerId = UUID.fromString(ownerStr);
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+        event.getAffectedEntities().removeIf(e -> e.getUniqueId().equals(ownerId));
+    }
 
     @EventHandler
     public void onProjectileLaunch(ProjectileLaunchEvent event) {

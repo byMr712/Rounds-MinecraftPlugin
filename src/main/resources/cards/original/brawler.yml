@@ -9,18 +9,18 @@ material: IRON_SWORD
 enabled: true
 variations:
   - rarity: RARE
-    value: "200%"
+    value: "20%"
     effects:
       hp_boost_on_hit: 2.0
   - rarity: COMMON
-    value: "100%"
+    value: "10%"
     effects:
       hp_boost_on_hit: 1.0
   - rarity: UNCOMMON
-    value: "150%"
+    value: "15%"
     effects:
       hp_boost_on_hit: 1.5
   - rarity: EPIC
-    value: "250%"
+    value: "25%"
     effects:
       hp_boost_on_hit: 2.5

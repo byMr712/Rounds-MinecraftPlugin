@@ -41,6 +41,7 @@ public class BlockListener implements Listener {
     private final Set<Location> jumpBlocks = new HashSet<>();
     private final Set<Location> upBlocks = new HashSet<>();
     private final Set<UUID> stepCooldown = new HashSet<>();
+    private final Map<UUID, Long> jumpCooldown = new HashMap<>();
     private final Set<UUID> liftingPlayers = new HashSet<>();
 
     private Location jumpPos1;
@@ -227,12 +228,17 @@ public class BlockListener implements Listener {
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         if (event.getTo() == null) return;
-        if (event.getFrom().getBlockX() == event.getTo().getBlockX()
-                && event.getFrom().getBlockY() == event.getTo().getBlockY()
-                && event.getFrom().getBlockZ() == event.getTo().getBlockZ()) return;
 
         Player player = event.getPlayer();
         Location loc = event.getTo().clone().subtract(0, 1, 0).getBlock().getLocation();
+
+        if (jumpBlocks.contains(loc)) {
+            handleJumpBlock(player);
+        }
+
+        if (event.getFrom().getBlockX() == event.getTo().getBlockX()
+                && event.getFrom().getBlockY() == event.getTo().getBlockY()
+                && event.getFrom().getBlockZ() == event.getTo().getBlockZ()) return;
 
         GameTeam team = joinBlocks.get(loc);
         if (team != null) {
@@ -266,15 +272,7 @@ public class BlockListener implements Listener {
         }
 
         if (jumpBlocks.contains(loc)) {
-            if (stepCooldown.contains(player.getUniqueId())) return;
-            stepCooldown.add(player.getUniqueId());
-            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> stepCooldown.remove(player.getUniqueId()), 10L);
-            double maxHp = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue();
-            double damage = maxHp * plugin.getRoundsConfig().getJumpBlockDamagePercent() / 100.0;
-            player.damage(damage);
-            double launchHeight = plugin.getRoundsConfig().getJumpBlockLaunchHeight();
-            player.setVelocity(new org.bukkit.util.Vector(0, launchHeight * 0.2, 0));
-            player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.5f);
+            handleJumpBlock(player);
         }
 
         if (upBlocks.contains(loc)) {
@@ -296,6 +294,37 @@ public class BlockListener implements Listener {
                 }
             }.runTaskTimer(plugin, 0L, 1L);
         }
+    }
+
+    private static final long JUMP_BLOCK_COOLDOWN_MS = 500;
+
+    private void handleJumpBlock(Player player) {
+        UUID uuid = player.getUniqueId();
+        long now = System.currentTimeMillis();
+        Long last = jumpCooldown.get(uuid);
+        if (last != null && now - last < JUMP_BLOCK_COOLDOWN_MS) return;
+        jumpCooldown.put(uuid, now);
+
+        double maxHp = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue();
+        double damage = maxHp * plugin.getRoundsConfig().getJumpBlockDamagePercent() / 100.0;
+        player.damage(damage);
+        double launchHeight = plugin.getRoundsConfig().getJumpBlockLaunchHeight();
+        float velocityY = (float) (launchHeight * 0.2);
+        new org.bukkit.scheduler.BukkitRunnable() {
+            int ticks = 0;
+            @Override
+            public void run() {
+                if (ticks >= 3 || !player.isOnline() || player.isDead()) {
+                    cancel();
+                    return;
+                }
+                org.bukkit.util.Vector v = player.getVelocity();
+                v.setY(Math.max(v.getY(), velocityY));
+                player.setVelocity(v);
+                ticks++;
+            }
+        }.runTaskTimer(plugin, 1L, 1L);
+        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.5f);
     }
 
     private void handleStartEndBlockStep(Player player, boolean start) {

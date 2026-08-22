@@ -323,7 +323,7 @@ public class GameManager implements Listener {
                     }
                 }
             }
-            if (data.autoReload > 0 && p.getGameMode() == GameMode.SURVIVAL) {
+            if (data.autoReload > 0 && p.getGameMode() != GameMode.SPECTATOR) {
                 if (data.ammo < data.maxAmmo && !GunItem.isReloading(p.getUniqueId())) {
                     data.ammo = Math.min(data.ammo + data.autoReload * 0.1, data.maxAmmo);
                 }
@@ -690,7 +690,7 @@ public class GameManager implements Listener {
                 applyPlayerHP(p);
                 applyRoundEffects(p);
                 applyTeamColor(p);
-                p.setGameMode(GameMode.SURVIVAL);
+                p.setGameMode(GameMode.ADVENTURE);
                 p.setFoodLevel(20);
                 p.setSaturation(5.0f);
                 p.setExhaustion(0f);
@@ -1175,7 +1175,7 @@ public class GameManager implements Listener {
             } else if (state == GameState.ROUND_END) {
                 player.setInvulnerable(true);
             }
-            player.setGameMode(GameMode.SURVIVAL);
+            player.setGameMode(GameMode.ADVENTURE);
             player.setFoodLevel(20);
             player.setSaturation(5.0f);
             player.setExhaustion(0f);
@@ -1506,9 +1506,9 @@ public class GameManager implements Listener {
                 if (state == GameState.PLAYING) {
                     giveGun(player);
                     applyPlayerHP(player);
-                    player.setGameMode(GameMode.SURVIVAL);
+                    player.setGameMode(GameMode.ADVENTURE);
                 } else if (state == GameState.CARDS) {
-                    player.setGameMode(GameMode.SURVIVAL);
+                    player.setGameMode(GameMode.ADVENTURE);
                 }
             }
             updateScoreboard();

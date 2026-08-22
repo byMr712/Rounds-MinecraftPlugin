@@ -35,6 +35,10 @@ game:
   you-eliminated: "You were eliminated! Waiting for round end..."
   action-bar-round: "Round: {0}/{1}"
   spectator-hint: "Use /rdebug join to join a team"
+  # Auto random player death (toggle: /rdebug autodeath): warning one minute before the kill
+  auto-death-warning: "If you keep surviving, a random player will be destroyed in 1 minute."
+  # Message after a random player is destroyed ({0} - victim name)
+  auto-death-killed: "A random player ({0}) was destroyed. If you keep surviving, another one will be destroyed in 1 minute."
   enemy-picking-cards: "Opponent\nis picking cards"
   auto-stop-single: "Game ended, only one player remained"
 

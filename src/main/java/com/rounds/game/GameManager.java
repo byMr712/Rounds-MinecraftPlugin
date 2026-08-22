@@ -77,6 +77,11 @@ public class GameManager implements Listener {
     private final Map<UUID, Integer> chameleonStillTicks = new HashMap<>();
     private static final UUID SNOWBALL_MOD_ID = UUID.nameUUIDFromBytes("rounds_snowball".getBytes());
     private boolean gameActive = false;
+    private boolean autoDeathEnabled = true;
+    private long autoDeathNextEvent = 0;
+    private boolean autoDeathNextIsKill = false;
+    private static final long AUTO_DEATH_DELAY_MS = 240_000L;
+    private static final long AUTO_DEATH_INTERVAL_MS = 60_000L;
 
     public GameManager(RoundsPlugin plugin) {
         this.plugin = plugin;
@@ -87,6 +92,8 @@ public class GameManager implements Listener {
 
     public boolean isWheelEnabled() { return wheelEnabled; }
     public void setWheelEnabled(boolean enabled) { this.wheelEnabled = enabled; }
+    public boolean isAutoDeathEnabled() { return autoDeathEnabled; }
+    public void setAutoDeathEnabled(boolean enabled) { this.autoDeathEnabled = enabled; }
 
     private void cancelScheduledTasks() {
         for (int id : scheduledTaskIds) {
@@ -611,6 +618,7 @@ public class GameManager implements Listener {
 
     private void gameTick() {
         musicTick++;
+        if (autoDeathEnabled) checkAutoDeath();
         if (musicTick % 10 == 0) {
             checkRoundEnd();
         }
@@ -620,6 +628,38 @@ public class GameManager implements Listener {
         if (musicTick % 40 == 0) {
             sendSpectatorActionbar();
         }
+    }
+
+    private void checkAutoDeath() {
+        long now = System.currentTimeMillis();
+        int guard = 0;
+        while (now >= autoDeathNextEvent && guard++ < 10) {
+            if (autoDeathNextIsKill) {
+                killRandomPlayer();
+                autoDeathNextIsKill = false;
+            } else {
+                Bukkit.broadcastMessage(ChatColor.DARK_RED + Messages.get("game.auto-death-warning"));
+                autoDeathNextIsKill = true;
+            }
+            autoDeathNextEvent += AUTO_DEATH_INTERVAL_MS;
+        }
+        if (now - autoDeathNextEvent > AUTO_DEATH_INTERVAL_MS * 10) autoDeathNextEvent = now;
+    }
+
+    private void killRandomPlayer() {
+        List<Player> alive = new ArrayList<>();
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            UUID uuid = p.getUniqueId();
+            if (plugin.getTeamManager().getPlayerTeam(uuid) == null) continue;
+            if (deadPlayers.contains(uuid) || pendingCardJoiners.contains(uuid)) continue;
+            if (!p.isValid() || p.isDead() || p.getHealth() <= 0) continue;
+            alive.add(p);
+        }
+        if (alive.size() <= 1) return;
+        Player victim = alive.get(RANDOM.nextInt(alive.size()));
+        Bukkit.broadcastMessage(ChatColor.DARK_RED + Messages.get("game.auto-death-killed", victim.getName()));
+        victim.getWorld().playSound(victim.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.7f, 1.2f);
+        victim.setHealth(0.0);
     }
 
     private void cardTick() {
@@ -667,6 +707,8 @@ public class GameManager implements Listener {
         GunItem.resetRoundState();
         com.rounds.listener.LegendaryEffects.clearRoundState();
         chameleonStillTicks.clear();
+        autoDeathNextEvent = System.currentTimeMillis() + AUTO_DEATH_DELAY_MS - AUTO_DEATH_INTERVAL_MS;
+        autoDeathNextIsKill = false;
 
         plugin.getServer().broadcastMessage(ChatColor.YELLOW + Messages.get("game.round-start", currentRound));
 

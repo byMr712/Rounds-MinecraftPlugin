@@ -57,7 +57,7 @@ public class Card {
     private void applyEffect(PlayerData data, String key, double value) {
         switch (key) {
             case "damage": data.dmg = PlayerData.round2(data.dmg * (1.0 + value)); break;
-            case "attack-speed": data.atkSpeed = PlayerData.round2(Math.max(data.atkSpeed + value, -0.9)); break;
+            case "attack-speed": data.atkSpeed = PlayerData.round2(Math.max(data.atkSpeed + value, -0.99)); break;
             case "attack-range": data.atkr = PlayerData.round2(Math.max(data.atkr + value, 0)); break;
             case "bullets": data.bullets = PlayerData.round2(Math.max(data.bullets + value, 1)); break;
             case "ammo": data.ammo = Math.max(data.ammo + value, 1); data.maxAmmo = Math.max(data.maxAmmo + value, 1); break;

@@ -9,11 +9,11 @@ material: FLOWER
 enabled: true
 variations:
   - rarity: RARE
-    values: ["100%", "60%", "100%"]
+    values: ["100%", "60%", "50%"]
     effects:
       bullet_speed: 1.0
       damage: 0.6
-      attack_speed: -1.0
+      attack_speed: -0.5
   - rarity: COMMON
     values: ["100%", "30%", "50%"]
     effects:
@@ -27,8 +27,8 @@ variations:
       damage: 0.45
       attack_speed: -0.75
   - rarity: EPIC
-    values: ["150%", "75%", "125%"]
+    values: ["150%", "75%", "62.5%"]
     effects:
       bullet_speed: 1.5
       damage: 0.75
-      attack_speed: -1.25
+      attack_speed: -0.625

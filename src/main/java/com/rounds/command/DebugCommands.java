@@ -153,6 +153,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "status", "state" -> handleState(sender);
             case "stop" -> handleStop(sender);
             case "rounds" -> handleRounds(sender, args);
+            case "autodeath" -> handleAutoDeath(sender, args);
             case "info" -> handleInfo(sender);
             case "stats" -> handleStats(sender, args);
             case "givegun" -> handleGiveGun(sender, args);
@@ -414,12 +415,31 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         if (args.length < 2) { sender.sendMessage(ChatColor.RED + Messages.get("command.usage-rounds")); return; }
         try {
             double amount = Double.parseDouble(args[1]);
-            int max = plugin.getRoundsConfig().getMaxRounds();
-            if (amount < 1 || amount > max) { sender.sendMessage(ChatColor.RED + Messages.get("command.amount-between", max)); return; }
+            if (amount < 1) { sender.sendMessage(ChatColor.RED + Messages.get("command.amount-between", Integer.MAX_VALUE)); return; }
             plugin.getGameManager().setRounds((int) amount);
             Bukkit.broadcastMessage(ChatColor.GOLD + Messages.get("command.rounds-set", String.format("%.0f", amount)));
         } catch (NumberFormatException e) {
             sender.sendMessage(ChatColor.RED + Messages.get("command.invalid-number", args[1]));
+        }
+    }
+
+    private void handleAutoDeath(CommandSender sender, String[] args) {
+        GameManager gm = plugin.getGameManager();
+        if (args.length < 2) {
+            sender.sendMessage(ChatColor.YELLOW + "Автосмерть сейчас: "
+                    + (gm.isAutoDeathEnabled() ? ChatColor.GREEN + "вкл" : ChatColor.RED + "выкл"));
+            sender.sendMessage(ChatColor.GRAY + "/rdebug autodeath <on|off>");
+            return;
+        }
+        String arg = args[1].toLowerCase();
+        if (arg.equals("on") || arg.equals("вкл")) {
+            gm.setAutoDeathEnabled(true);
+            sender.sendMessage(ChatColor.GREEN + "Вы включили режим автоматической смерти случайного игрока, если раунд длится уже более 4 минуты");
+        } else if (arg.equals("off") || arg.equals("выкл")) {
+            gm.setAutoDeathEnabled(false);
+            sender.sendMessage(ChatColor.GREEN + "Вы отключили режим автоматической смерти случайного игрока, если раунд длится уже более 4 минуты");
+        } else {
+            sender.sendMessage(ChatColor.RED + "/rdebug autodeath <on|off>");
         }
     }
 
@@ -785,8 +805,8 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     }
 
     private void handleReload(CommandSender sender) {
-        Messages.reload();
         plugin.getRoundsConfig().reload();
+        Messages.reload();
         plugin.getCardManager().reload();
         sender.sendMessage(ChatColor.GREEN + Messages.get("command.cards-reloaded", plugin.getCardManager().getRegistry().getAllCards().size()));
     }
@@ -877,7 +897,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
     private static final List<String> SUBCOMMANDS = Arrays.asList(
         "help", "start", "stop", "status", "rounds", "info",
-        "givegun", "cards", "giveblocks", "join", "freeplay",
+        "givegun", "cards", "giveblocks", "join", "freeplay", "autodeath",
         "stats", "setstat", "setteam", "setlanguage", "effect", "heal",
         "resetstats", "reload", "setlobby",
         "jumppos1", "jumppos2", "jumpset", "uppos1", "uppos2", "upset",
@@ -973,7 +993,8 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 }
                 yield Collections.emptyList();
             }
-            case "rounds" -> filterStartsWith(Arrays.asList("1", "5", "10", "15", "20"), input);
+            case "rounds" -> filterStartsWith(Arrays.asList("1", "5", "10", "15", "20", "50", "100", "500"), input);
+            case "autodeath" -> filterStartsWith(Arrays.asList("on", "off"), input);
             case "freeplay" -> filterStartsWith(Arrays.asList("on", "off"), input);
             case "wheel" -> filterStartsWith(Arrays.asList("on", "off"), input);
             case "tab" -> {

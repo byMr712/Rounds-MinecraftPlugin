@@ -9,10 +9,10 @@ material: BOOK
 enabled: true
 variations:
   - rarity: RARE
-    values: ["100%", "150%", "10%"]
+    values: ["100%", "75%", "10%"]
     effects:
       damage: 1.0
-      attack_speed: -1.5
+      attack_speed: -0.75
       reload: 1
   - rarity: COMMON
     values: ["50%", "75%", "5%"]
@@ -21,14 +21,14 @@ variations:
       attack_speed: -0.75
       reload: 0.5
   - rarity: UNCOMMON
-    values: ["75%", "110%", "8%"]
+    values: ["75%", "55%", "8%"]
     effects:
       damage: 0.75
-      attack_speed: -1.1
+      attack_speed: -0.55
       reload: 0.8
   - rarity: EPIC
-    values: ["125%", "190%", "13%"]
+    values: ["125%", "95%", "13%"]
     effects:
       damage: 1.25
-      attack_speed: -1.9
+      attack_speed: -0.95
       reload: 1.3

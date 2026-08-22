@@ -44,6 +44,7 @@ public class GunItem implements Listener {
     private static final Set<UUID> shotThisTick = new HashSet<>();
     private static final Set<UUID> partyLocked = new HashSet<>();
     private static final Map<UUID, Long> noPartyCooldowns = new HashMap<>();
+    private static final Map<UUID, Long> homingBuffUntil = new HashMap<>();
 
     private static final double SHIELD_DURATION_TICKS = 20;
     private static final long SHIELD_COOLDOWN_MS = 10000;
@@ -141,7 +142,7 @@ public class GunItem implements Listener {
             }
         }
 
-        double cooldownTicks = Math.max(data.atks * (1.0 - data.atkSpeed) + data.atksReload, 2);
+        double cooldownTicks = Math.max(data.atks / (1.0 + data.atkSpeed) + data.atksReload, 1);
         if (!GunCooldowns.canShoot(uuid, cooldownTicks)) {
             return;
         }
@@ -259,6 +260,10 @@ public class GunItem implements Listener {
 
         if (data.empower > 0) {
             data.empowerCharge = 1;
+        }
+
+        if (data.homingOnBlock > 0) {
+            homingBuffUntil.put(uuid, System.currentTimeMillis() + (long) (data.homingOnBlock * 1000L));
         }
 
         player.addPotionEffect(new org.bukkit.potion.PotionEffect(
@@ -500,6 +505,7 @@ public class GunItem implements Listener {
         shotThisTick.remove(uuid);
         partyLocked.remove(uuid);
         noPartyCooldowns.remove(uuid);
+        homingBuffUntil.remove(uuid);
     }
 
     public static boolean isReloading(UUID uuid) {
@@ -514,6 +520,18 @@ public class GunItem implements Listener {
     public static void silencePlayer(UUID uuid) { silencedPlayers.add(uuid); }
     public static void unsilencePlayer(UUID uuid) { silencedPlayers.remove(uuid); }
     public static boolean isSilenced(UUID uuid) { return silencedPlayers.contains(uuid); }
+
+    private static final double HOMING_BUFF_STRENGTH = 1.0;
+
+    public static double getBonusHoming(UUID uuid) {
+        Long until = homingBuffUntil.get(uuid);
+        if (until == null) return 0;
+        if (System.currentTimeMillis() >= until) {
+            homingBuffUntil.remove(uuid);
+            return 0;
+        }
+        return HOMING_BUFF_STRENGTH;
+    }
 
     private void applyNoParty(Player player) {
         UUID casterId = player.getUniqueId();

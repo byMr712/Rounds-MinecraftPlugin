@@ -233,6 +233,7 @@ reload: 1.3
 | `parazit` + `parazit-level` | Chance and level of exhaustion (wither) |
 | `leech' | Suction of health |
 | `homing' | Bullet homing |
+| `homing-on-block` | Bullet homing for N seconds on block |
 | `empower` + `empower-charge` | Damage amplification (consumed per shot) |
 | `dark-strength' | The power of dark energy (+0.5 damage per stack) |
 | `big-bullet` | Large bullet (knocks): +70% visual size and hit radius per stack, recharge +30% per stack |
@@ -266,7 +267,6 @@ reload: 1.3
 | `implode' | Explosion to death |
 | `echo' | Echo (second volley in 0.25 seconds) |
 | `drill` | Drill cartridges (passing through walls) |
-| `remote' | Remote control |
 | 'splash' | Sharp damage |
 | `teleport` | Teleport when blocked |
 | `tactical-reload' | Tactical recharge (instant recharge when locked) |

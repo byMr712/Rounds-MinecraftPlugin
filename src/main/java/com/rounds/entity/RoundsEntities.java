@@ -636,7 +636,7 @@ public class RoundsEntities implements Listener {
                 var hpAttr = shooterPlayer.getAttribute(Attribute.GENERIC_MAX_HEALTH);
                 if (hpAttr != null) {
                     double baseMaxHP = hpAttr.getValue();
-                    double boost = baseMaxHP * data.hpBoostOnHit;
+                    double boost = baseMaxHP * data.hpBoostOnHit * 0.1;
                     double newMax = Math.min(baseMaxHP + boost, PlayerData.MAX_HEALTH);
                     double actualBoost = Math.max(0, newMax - baseMaxHP);
                     if (actualBoost > 0) {
@@ -682,10 +682,23 @@ public class RoundsEntities implements Listener {
         if (data.poison > 0) {
             living.addPotionEffect(new org.bukkit.potion.PotionEffect(
                 PotionEffectType.POISON, 60, (int) Math.max(data.poisonLvl, 1)));
+            applyPoisonDamage(living);
         }
         if (data.leech > 0 && shooterPlayer != null && shooterPlayer.isOnline() && shooterPlayer.isValid()) {
             double heal = Math.max(Math.ceil(finalDamage * data.leech), 1);
             shooterPlayer.setHealth(Math.min(shooterPlayer.getHealth() + heal, shooterPlayer.getMaxHealth()));
+        }
+    }
+
+    private static void applyPoisonDamage(LivingEntity target) {
+        var attr = target.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+        double maxHp = attr != null ? attr.getValue() : target.getMaxHealth();
+        for (int i = 1; i <= 4; i++) {
+            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                if (!target.isValid() || target.isDead()) return;
+                target.setNoDamageTicks(0);
+                target.damage(maxHp * 0.025);
+            }, 15L * i);
         }
     }
 
@@ -777,7 +790,7 @@ public class RoundsEntities implements Listener {
             data.getEffectiveDamage(),
             (int) data.bouncePl,
             scale,
-            data.homing,
+            Math.max(data.homing, GunItem.getBonusHoming(shooter.getUniqueId())),
             data.tgBounce,
             data.drill,
             data.sneaky,

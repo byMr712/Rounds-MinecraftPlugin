@@ -54,9 +54,15 @@ public class CardRegistry {
         customDir.mkdirs();
 
         extractBuiltinCards();
+        removeDeletedBuiltinCards();
         migrateLegacyIfNeeded();
         loadFromDir(originalDir);
         loadFromDir(customDir);
+
+        long legendaries = cards.values().stream().filter(c -> c.isEnabled()
+                && c.getRarity() == Rarity.LEGENDARY).count();
+        plugin.getLogger().info("Loaded " + cards.size() + " cards from " + loadedFiles
+                + " files (" + legendaries + " enabled legendaries)");
     }
 
     private void extractBuiltinCards() {
@@ -66,21 +72,41 @@ public class CardRegistry {
             while (entries.hasMoreElements()) {
                 java.util.jar.JarEntry entry = entries.nextElement();
                 String name = entry.getName();
-                if (name.startsWith("cards/original/") && name.endsWith(".yml")) {
-                    File target = new File(dataFolder, name);
-                    if (!target.exists()) {
-                        target.getParentFile().mkdirs();
-                        try (java.io.InputStream in = jar.getInputStream(entry);
-                             java.io.OutputStream out = new java.io.FileOutputStream(target)) {
-                            byte[] buf = new byte[4096];
-                            int len;
-                            while ((len = in.read(buf)) > 0) out.write(buf, 0, len);
-                        }
-                    }
+                if (!name.startsWith("cards/original/") || !name.endsWith(".yml")) continue;
+                File target = new File(dataFolder, name);
+                byte[] jarBytes;
+                try (java.io.InputStream in = jar.getInputStream(entry)) {
+                    jarBytes = in.readAllBytes();
+                }
+                if (!needsUpdate(target, jarBytes)) continue;
+                target.getParentFile().mkdirs();
+                try (java.io.OutputStream out = new java.io.FileOutputStream(target)) {
+                    out.write(jarBytes);
                 }
             }
         } catch (Exception e) {
             plugin.getLogger().warning("Failed to extract builtin cards: " + e.getMessage());
+        }
+    }
+
+    private static boolean needsUpdate(File target, byte[] jarBytes) {
+        if (!target.exists()) return true;
+        try {
+            byte[] diskBytes = java.nio.file.Files.readAllBytes(target.toPath());
+            return !java.util.Arrays.equals(diskBytes, jarBytes);
+        } catch (IOException e) {
+            return true;
+        }
+    }
+
+    private static final Set<String> REMOVED_BUILTIN_CARDS = new HashSet<>(List.of("remote.yml"));
+
+    private void removeDeletedBuiltinCards() {
+        for (String name : REMOVED_BUILTIN_CARDS) {
+            File stale = new File(originalDir, name);
+            if (stale.isFile() && stale.delete()) {
+                plugin.getLogger().info("Removed removed builtin card: " + name);
+            }
         }
     }
 

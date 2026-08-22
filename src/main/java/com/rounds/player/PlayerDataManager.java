@@ -39,6 +39,7 @@ public class PlayerDataManager implements Listener {
         String[] stats = {
             "dmg", "atks", "atk-speed", "atkr", "bounce", "ammo", "max-ammo", "bullets",
             "cold", "poison", "toxic_cloud", "leech", "tg_bounce", "homing",
+            "homing_on_block",
             "poison_lvl", "cold_lvl", "parazit_lvl", "parazit",
             "hp", "shield_cooldown", "bomb_bullet", "bomb_on_block", "explode_bullets",
             "bullet_speed", "empower", "empower_charge", "dark_strength",
@@ -126,6 +127,7 @@ public class PlayerDataManager implements Listener {
         yml.set(path + ".stats.leech", data.leech);
         yml.set(path + ".stats.tg-bounce", data.tgBounce);
         yml.set(path + ".stats.homing", data.homing);
+        yml.set(path + ".stats.homing-on-block", data.homingOnBlock);
         yml.set(path + ".stats.poison-lvl", data.poisonLvl);
         yml.set(path + ".stats.cold-lvl", data.coldLvl);
         yml.set(path + ".stats.parazit-lvl", data.parazitLvl);
@@ -208,6 +210,7 @@ public class PlayerDataManager implements Listener {
         data.leech = saved.stats.getOrDefault("leech", 0.0);
         data.tgBounce = saved.stats.getOrDefault("tg_bounce", 0.0);
         data.homing = saved.stats.getOrDefault("homing", 0.0);
+        data.homingOnBlock = saved.stats.getOrDefault("homing_on_block", 0.0);
         data.poisonLvl = saved.stats.getOrDefault("poison_lvl", 0.0);
         data.coldLvl = saved.stats.getOrDefault("cold_lvl", 0.0);
         data.parazitLvl = saved.stats.getOrDefault("parazit_lvl", 0.0);
@@ -263,6 +266,7 @@ public class PlayerDataManager implements Listener {
         yml.set(path + ".stats.leech", data.leech);
         yml.set(path + ".stats.tg-bounce", data.tgBounce);
         yml.set(path + ".stats.homing", data.homing);
+        yml.set(path + ".stats.homing-on-block", data.homingOnBlock);
         yml.set(path + ".stats.poison-lvl", data.poisonLvl);
         yml.set(path + ".stats.cold-lvl", data.coldLvl);
         yml.set(path + ".stats.parazit-lvl", data.parazitLvl);
@@ -386,7 +390,7 @@ public class PlayerDataManager implements Listener {
                 if (plugin.getTeamManager().getPlayerTeam(uuid) != null) {
                     plugin.getTeamManager().leaveTeam(uuid);
                 }
-                plugin.getGameManager().hideNameTagsInGame();
+                plugin.getGameManager().showNameTagsInGame();
                 Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                     player.setGameMode(GameMode.SPECTATOR);
                     player.setInvulnerable(true);
@@ -448,6 +452,13 @@ public class PlayerDataManager implements Listener {
         com.rounds.item.GunItem.cancelReload(uuid);
         if (plugin.getGameManager().getState() == GameManager.GameState.CARDS) {
             plugin.getCardManager().removePendingPick(uuid);
+            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                GameManager checkGm = plugin.getGameManager();
+                if (checkGm.getState() == GameManager.GameState.CARDS
+                        && plugin.getCardManager().allPicksDone()) {
+                    checkGm.onAllCardsPicked();
+                }
+            }, 10L);
         }
         cache.remove(uuid);
         GunCooldowns.clear(uuid);
@@ -504,6 +515,7 @@ public class PlayerDataManager implements Listener {
         setStat(pdc, "leech", data.leech);
         setStat(pdc, "tg_bounce", data.tgBounce);
         setStat(pdc, "homing", data.homing);
+        setStat(pdc, "homing_on_block", data.homingOnBlock);
         setStat(pdc, "poison_lvl", data.poisonLvl);
         setStat(pdc, "cold_lvl", data.coldLvl);
         setStat(pdc, "parazit_lvl", data.parazitLvl);
@@ -563,6 +575,7 @@ public class PlayerDataManager implements Listener {
         data.leech = getStat(pdc, "leech", 0);
         data.tgBounce = getStat(pdc, "tg_bounce", 0);
         data.homing = getStat(pdc, "homing", 0);
+        data.homingOnBlock = getStat(pdc, "homing_on_block", 0);
         data.poisonLvl = getStat(pdc, "poison_lvl", 0);
         data.coldLvl = getStat(pdc, "cold_lvl", 0);
         data.parazitLvl = getStat(pdc, "parazit_lvl", 0);

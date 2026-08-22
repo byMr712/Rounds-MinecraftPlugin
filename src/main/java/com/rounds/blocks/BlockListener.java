@@ -241,7 +241,8 @@ public class BlockListener implements Listener {
             Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> stepCooldown.remove(player.getUniqueId()), 20L);
 
             if (!player.hasPermission("rounds.join")) return;
-            if (plugin.getGameManager().isGameStarted()) {
+            if (plugin.getGameManager().isGameStarted()
+                    || plugin.getGameManager().isGameActive()) {
                 player.sendMessage(ChatColor.RED + Messages.get("team.game-in-progress"));
                 return;
             }
@@ -305,7 +306,7 @@ public class BlockListener implements Listener {
         if (!admin && !plugin.getRoundsConfig().isFreeplay()) return;
         com.rounds.game.GameManager gm = plugin.getGameManager();
         if (start) {
-            if (gm.isGameStarted()) {
+            if (gm.isGameStarted() || gm.isGameActive()) {
                 player.sendMessage(ChatColor.RED + Messages.get("debug.game-already-started"));
                 return;
             }

@@ -57,7 +57,7 @@ public class Card {
     private void applyEffect(PlayerData data, String key, double value) {
         switch (key) {
             case "damage": data.dmg = PlayerData.round2(data.dmg * (1.0 + value)); break;
-            case "attack-speed": data.atkSpeed = PlayerData.round2(Math.max(1.0 - (1.0 - data.atkSpeed) * (1.0 - value), 0)); break;
+            case "attack-speed": data.atkSpeed = PlayerData.round2(Math.max(data.atkSpeed + value, -0.9)); break;
             case "attack-range": data.atkr = PlayerData.round2(Math.max(data.atkr + value, 0)); break;
             case "bullets": data.bullets = PlayerData.round2(Math.max(data.bullets + value, 1)); break;
             case "ammo": data.ammo = Math.max(data.ammo + value, 1); data.maxAmmo = Math.max(data.maxAmmo + value, 1); break;
@@ -71,6 +71,7 @@ public class Card {
             case "toxic-cloud": data.toxicCloud = PlayerData.round2(Math.max(data.toxicCloud + value, 0)); break;
             case "poison-level": data.poisonLvl = PlayerData.round2(Math.max(data.poisonLvl + value, 0)); break;
             case "homing": data.homing = PlayerData.round2(Math.max(data.homing + value, 0)); break;
+            case "homing-on-block": data.homingOnBlock = PlayerData.round2(Math.max(data.homingOnBlock + value, 0)); break;
             case "leech": data.leech = PlayerData.round2(Math.max(data.leech + value, 0)); break;
             case "empower": data.empower = PlayerData.round2(Math.max(data.empower + value, 0)); break;
             case "empower-charge": data.empowerCharge = PlayerData.round2(Math.max(data.empowerCharge + value, 0)); break;
@@ -113,8 +114,6 @@ public class Card {
             case "abyssal": data.abyssal = PlayerData.round2(Math.max(data.abyssal + value, 0)); break;
             case "implode": data.implode = PlayerData.round2(Math.max(data.implode + value, 0)); break;
             case "drill": data.drill = PlayerData.round2(Math.max(data.drill + value, 0)); break;
-            case "remote": data.remote = PlayerData.round2(Math.max(data.remote + value, 0)); break;
-            case "splash": data.splash = PlayerData.round2(Math.max(data.splash + value, 0)); break;
             case "teleport": data.teleport = PlayerData.round2(Math.max(data.teleport + value, 0)); break;
             case "tactical-reload": data.tacticalReload = PlayerData.round2(Math.max(data.tacticalReload + value, 0)); break;
             case "ammo-per-hit": data.ammoPerHit = PlayerData.round2(Math.max(data.ammoPerHit + value, 0)); break;

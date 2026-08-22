@@ -43,6 +43,7 @@ public class PlayerData {
     public double leech = 0;
     public double tgBounce = 0;
     public double homing = 0;
+    public double homingOnBlock = 0;
     public double poisonLvl = 0;
     public double coldLvl = 0;
     public double parazitLvl = 0;
@@ -88,7 +89,6 @@ public class PlayerData {
     public int abyssalTicks = 0;
     public double implode = 0;
     public double drill = 0;
-    public double remote = 0;
     public double splash = 0;
     public double teleport = 0;
     public double tacticalReload = 0;
@@ -171,6 +171,7 @@ public class PlayerData {
         leech = 0;
         tgBounce = 0;
         homing = 0;
+        homingOnBlock = 0;
         poisonLvl = 0;
         coldLvl = 0;
         parazitLvl = 0;
@@ -216,7 +217,6 @@ public class PlayerData {
         abyssalTicks = 0;
         implode = 0;
         drill = 0;
-        remote = 0;
         splash = 0;
         teleport = 0;
         tacticalReload = 0;

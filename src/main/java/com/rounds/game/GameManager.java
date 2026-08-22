@@ -3,6 +3,7 @@ package com.rounds.game;
 import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Objects;
 import org.bukkit.util.Vector;
 import com.rounds.RoundsConfig;
@@ -58,6 +59,7 @@ public class GameManager implements Listener {
     private final Set<UUID> deadPlayers = new HashSet<>();
     private final Map<UUID, Location> abyssalLastLocations = new HashMap<>();
     private final Map<UUID, Long> lastSilenceAuraTime = new HashMap<>();
+    private final Map<UUID, Integer> syncedHearts = new HashMap<>();
     private final Set<GameTeam> losingTeams = new HashSet<>();
     private final GameStateManager stateManager;
     private final com.rounds.util.TabCompat tabCompat;
@@ -74,6 +76,7 @@ public class GameManager implements Listener {
     private final Map<UUID, Location> chameleonLastLoc = new HashMap<>();
     private final Map<UUID, Integer> chameleonStillTicks = new HashMap<>();
     private static final UUID SNOWBALL_MOD_ID = UUID.nameUUIDFromBytes("rounds_snowball".getBytes());
+    private boolean gameActive = false;
 
     public GameManager(RoundsPlugin plugin) {
         this.plugin = plugin;
@@ -119,6 +122,8 @@ public class GameManager implements Listener {
             plugin.getServer().broadcastMessage(ChatColor.RED + Messages.get("game.not-enough-teams"));
             return;
         }
+        if (isGameActive()) return;
+        gameActive = true;
 
         resetWins();
         resetAllCards();
@@ -128,6 +133,7 @@ public class GameManager implements Listener {
         deadPlayers.clear();
         abyssalLastLocations.clear();
         lastSilenceAuraTime.clear();
+        syncedHearts.clear();
         teamSpawns.clear();
         chameleonLastLoc.clear();
         chameleonStillTicks.clear();
@@ -135,7 +141,7 @@ public class GameManager implements Listener {
 
         saveState();
         updateScoreboard();
-        hideNameTagsInGame();
+        showNameTagsInGame();
 
         plugin.getCardManager().clearPendingPicks();
         plugin.getPlayerDataManager().clearActivePlayers();
@@ -287,6 +293,15 @@ public class GameManager implements Listener {
             PlayerData data = plugin.getPlayerDataManager().getData(p);
             GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
 
+            if (plugin.getRoundsConfig().isColorNicknames()) {
+                int hearts = getHeartCount(p);
+                Integer lastSent = syncedHearts.get(p.getUniqueId());
+                if (lastSent == null || lastSent != hearts) {
+                    syncedHearts.put(p.getUniqueId(), hearts);
+                    updateColoredName(p, myTeam);
+                }
+            }
+
             // Один общий запрос сущностей по максимальному нужному радиусу.
             double maxRadius = 0;
             if (data.highlight > 0) maxRadius = Math.max(maxRadius, 8.0);
@@ -324,7 +339,9 @@ public class GameManager implements Listener {
                     if (deadPlayers.contains(enemy.getUniqueId()) || pendingCardJoiners.contains(enemy.getUniqueId())) continue;
                     GameTeam enemyTeam = plugin.getTeamManager().getPlayerTeam(enemy.getUniqueId());
                     if (myTeam != null && enemyTeam != null && myTeam != enemyTeam) {
-                        double steal = Math.max(Math.ceil(data.lifestealAura * 0.5), 1);
+                        var victimAttr = enemy.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+                        double victimMaxHp = victimAttr != null ? victimAttr.getValue() : enemy.getMaxHealth();
+                        double steal = victimMaxHp * 0.05 * data.lifestealAura;
                         enemy.setNoDamageTicks(0);
                         enemy.damage(steal);
                         p.setHealth(Math.min(p.getHealth() + steal, p.getMaxHealth()));
@@ -891,6 +908,7 @@ public class GameManager implements Listener {
 
         scheduleDelayed(() -> {
             state = GameState.WAITING;
+            gameActive = false;
             saveState();
             removeScoreboard();
             resetAllNameColors();
@@ -975,8 +993,12 @@ public class GameManager implements Listener {
         if (attr == null) return;
         removeSnowballModifiers(player);
         if (data.snowballWins > 0) {
-            attr.addModifier(new AttributeModifier(SNOWBALL_MOD_ID, "rounds_snowball",
-                0.05 * data.snowballWins, AttributeModifier.Operation.ADD_SCALAR));
+            AttributeModifier mod = new AttributeModifier(SNOWBALL_MOD_ID, "rounds_snowball",
+                0.05 * data.snowballWins, AttributeModifier.Operation.ADD_SCALAR);
+            try {
+                attr.addModifier(mod);
+            } catch (IllegalArgumentException ignored) {
+            }
         }
     }
 
@@ -984,10 +1006,21 @@ public class GameManager implements Listener {
         var attr = player.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
         if (attr == null) return;
         for (AttributeModifier mod : new ArrayList<>(attr.getModifiers())) {
-            if (mod.getName().equals("rounds_snowball")) {
+            if (!isSnowballModifier(mod)) continue;
+            try {
                 attr.removeModifier(mod);
+            } catch (IllegalArgumentException ignored) {
             }
         }
+    }
+
+    private boolean isSnowballModifier(AttributeModifier mod) {
+        try {
+            if (SNOWBALL_MOD_ID.equals(mod.getUniqueId())) return true;
+        } catch (Throwable ignored) {
+        }
+        String name = mod.getName();
+        return name != null && name.toLowerCase(Locale.ROOT).contains("rounds_snowball");
     }
 
     private void applyDarkness() {
@@ -1191,6 +1224,7 @@ public class GameManager implements Listener {
 
     public void stopGame() {
         if (state == GameState.WAITING) return;
+        gameActive = false;
         gameGeneration++;
         stopGameTick();
         cancelScheduledTasks();
@@ -1204,6 +1238,7 @@ public class GameManager implements Listener {
         deadPlayers.clear();
         abyssalLastLocations.clear();
         lastSilenceAuraTime.clear();
+        syncedHearts.clear();
         chameleonLastLoc.clear();
         chameleonStillTicks.clear();
         com.rounds.listener.LegendaryEffects.resetAll();
@@ -1244,6 +1279,7 @@ public class GameManager implements Listener {
     }
 
     public GameState getState() { return state; }
+    public boolean isGameActive() { return gameActive || state != GameState.WAITING; }
     public Map<GameTeam, Location> getTeamSpawns() { return teamSpawns; }
     public int getRounds() { return roundsToWin; }
     public void setRounds(int rounds) { this.roundsToWin = rounds; }
@@ -1306,36 +1342,13 @@ public class GameManager implements Listener {
         return returningJoiners.contains(uuid);
     }
 
-    public void hideNameTagsInGame() {
-        if (tabCompat.isActive()) {
-            for (Player p : plugin.getServer().getOnlinePlayers()) {
-                tabCompat.hideNametag(p);
-            }
-            return;
-        }
-        Scoreboard mainSb = Bukkit.getScoreboardManager().getMainScoreboard();
-        Team hidden = mainSb.getTeam("rounds_hidden");
-        if (hidden == null) {
-            hidden = mainSb.registerNewTeam("rounds_hidden");
-            hidden.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
-        }
-        for (Player p : plugin.getServer().getOnlinePlayers()) {
-            for (Team t : new ArrayList<>(mainSb.getTeams())) {
-                if (t.getName().startsWith("rounds_") && !t.getName().equals("rounds_hidden")) {
-                    t.removePlayer(p);
-                }
-            }
-            hidden.addPlayer(p);
-        }
-    }
-
-    public void restoreNameTags() {
+    public void showNameTagsInGame() {
         if (tabCompat.isActive()) {
             for (Player p : plugin.getServer().getOnlinePlayers()) {
                 tabCompat.showNametag(p);
                 GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-                if (team != null) {
-                    tabCompat.setColoredName(p, team.getColor());
+                if (team != null && plugin.getRoundsConfig().isColorNicknames()) {
+                    updateColoredName(p, team);
                 } else {
                     tabCompat.resetName(p);
                 }
@@ -1348,25 +1361,56 @@ public class GameManager implements Listener {
         if (!plugin.getRoundsConfig().isColorNicknames()) return;
         refreshTeamScoreboards();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
-            GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-            p.setPlayerListName(team != null ? team.getColor() + p.getName() : p.getName());
+            updateColoredName(p, plugin.getTeamManager().getPlayerTeam(p.getUniqueId()));
+        }
+    }
+
+    public static int getHeartCount(Player p) {
+        return Math.max(0, (int) Math.ceil(p.getHealth() / 2.0));
+    }
+
+    private String heartsSuffix(ChatColor color, Player p) {
+        return color.toString() + "\u2665" + getHeartCount(p);
+    }
+
+    private void updateColoredName(Player p, GameTeam team) {
+        if (tabCompat.isActive()) {
+            if (team != null) {
+                tabCompat.setColoredName(p, team.getColor(), heartsSuffix(team.getColor(), p));
+            } else {
+                tabCompat.resetName(p);
+            }
+        } else {
+            if (team != null) {
+                ChatColor c = team.getColor();
+                p.setPlayerListName(c + p.getName() + heartsSuffix(c, p));
+            } else {
+                p.setPlayerListName(p.getName());
+            }
+        }
+    }
+
+    public void restoreNameTags() {
+        if (tabCompat.isActive()) {
+            for (Player p : plugin.getServer().getOnlinePlayers()) {
+                tabCompat.showNametag(p);
+                updateColoredName(p, plugin.getTeamManager().getPlayerTeam(p.getUniqueId()));
+            }
+            return;
+        }
+        Scoreboard mainSb = Bukkit.getScoreboardManager().getMainScoreboard();
+        Team hidden = mainSb.getTeam("rounds_hidden");
+        if (hidden != null) hidden.unregister();
+        if (!plugin.getRoundsConfig().isColorNicknames()) return;
+        refreshTeamScoreboards();
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            updateColoredName(p, plugin.getTeamManager().getPlayerTeam(p.getUniqueId()));
         }
     }
 
     public void applyTeamColor(Player player) {
         if (!plugin.getRoundsConfig().isColorNicknames()) return;
-        GameTeam team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
-        if (tabCompat.isActive()) {
-            if (team != null) {
-                tabCompat.setColoredName(player, team.getColor());
-            } else {
-                tabCompat.resetName(player);
-            }
-        } else if (team != null) {
-            player.setPlayerListName(team.getColor() + player.getName());
-        } else {
-            player.setPlayerListName(player.getName());
-        }
+        updateColoredName(player, plugin.getTeamManager().getPlayerTeam(player.getUniqueId()));
         refreshTeamScoreboards();
     }
 
@@ -1426,6 +1470,7 @@ public class GameManager implements Listener {
         if (saved == null) return;
 
         state = saved.state;
+        gameActive = state != GameState.WAITING;
         currentRound = saved.currentRound;
         roundsToWin = saved.roundsToWin;
         losingTeams.addAll(saved.lastLosers);

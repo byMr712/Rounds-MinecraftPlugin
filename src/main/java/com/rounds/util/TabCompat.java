@@ -11,12 +11,12 @@ public class TabCompat {
 
     private boolean active = false;
     private Object api;
-    private Class<?> tabPlayerClass;
     private Method mGetTabListFormatManager;
     private Method mGetNameTagManager;
     private Method mGetPlayer;
     private Method mSetName;
     private Method mSetPrefix;
+    private Method mSetSuffix;
     private Method mHideNametag;
     private Method mShowNametag;
 
@@ -29,17 +29,25 @@ public class TabCompat {
             mGetTabListFormatManager = apiClass.getMethod("getTabListFormatManager");
             mGetNameTagManager = apiClass.getMethod("getNameTagManager");
             mGetPlayer = apiClass.getMethod("getPlayer", UUID.class);
-            tabPlayerClass = mGetPlayer.getReturnType();
+            Class<?> tabPlayerClass = mGetPlayer.getReturnType();
+            Class<?> tlfClass = Class.forName("me.neznamy.tab.api.tablist.TabListFormatManager");
+            Class<?> ntmClass = Class.forName("me.neznamy.tab.api.nametag.NameTagManager");
             Object tlf = mGetTabListFormatManager.invoke(api);
             Object ntm = mGetNameTagManager.invoke(api);
-            if (tlf == null || ntm == null) return;
-            mSetName = tlf.getClass().getMethod("setName", tabPlayerClass, String.class);
-            mSetPrefix = ntm.getClass().getMethod("setPrefix", tabPlayerClass, String.class);
-            mHideNametag = ntm.getClass().getMethod("hideNametag", tabPlayerClass);
-            mShowNametag = ntm.getClass().getMethod("showNametag", tabPlayerClass);
+            if (tlf == null && ntm == null) return;
+            mSetName = tlfClass.getMethod("setName", tabPlayerClass, String.class);
+            mSetPrefix = ntmClass.getMethod("setPrefix", tabPlayerClass, String.class);
+            mSetSuffix = ntmClass.getMethod("setSuffix", tabPlayerClass, String.class);
+            mHideNametag = ntmClass.getMethod("hideNameTag", tabPlayerClass);
+            mShowNametag = ntmClass.getMethod("showNameTag", tabPlayerClass);
+            for (Method m : new Method[]{mGetTabListFormatManager, mGetNameTagManager, mGetPlayer,
+                    mSetName, mSetPrefix, mSetSuffix, mHideNametag, mShowNametag}) {
+                m.setAccessible(true);
+            }
             active = true;
-        } catch (Exception ignored) {
+        } catch (Exception e) {
             active = false;
+            Bukkit.getLogger().warning("[Rounds] TAB detected but integration failed: " + e);
         }
     }
 
@@ -53,7 +61,7 @@ public class TabCompat {
         }
     }
 
-    public void setColoredName(Player player, ChatColor color) {
+    public void setColoredName(Player player, ChatColor color, String suffix) {
         if (!active) return;
         try {
             Object tp = tabPlayer(player);
@@ -61,7 +69,10 @@ public class TabCompat {
             Object tlf = mGetTabListFormatManager.invoke(api);
             if (tlf != null) mSetName.invoke(tlf, tp, color + player.getName());
             Object ntm = mGetNameTagManager.invoke(api);
-            if (ntm != null) mSetPrefix.invoke(ntm, tp, color.toString());
+            if (ntm != null) {
+                mSetPrefix.invoke(ntm, tp, color.toString());
+                mSetSuffix.invoke(ntm, tp, suffix == null ? null : suffix);
+            }
         } catch (Exception ignored) {}
     }
 
@@ -73,7 +84,10 @@ public class TabCompat {
             Object tlf = mGetTabListFormatManager.invoke(api);
             if (tlf != null) mSetName.invoke(tlf, tp, player.getName());
             Object ntm = mGetNameTagManager.invoke(api);
-            if (ntm != null) mSetPrefix.invoke(ntm, tp, "");
+            if (ntm != null) {
+                mSetPrefix.invoke(ntm, tp, null);
+                mSetSuffix.invoke(ntm, tp, null);
+            }
         } catch (Exception ignored) {}
     }
 

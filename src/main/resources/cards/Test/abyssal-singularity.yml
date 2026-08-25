@@ -1,0 +1,15 @@
+id: 210
+name:
+  ru: "&5Бездонная сингулярность"
+  en: "&5Abyssal Singularity"
+description:
+  ru: "Призывает тёмную силу, усиливающую урон на +100%, но снижающую ХП на -30%"
+  en: "Summons abyssal power: +100% DMG, -30% HP"
+material: ENDER_EYE
+enabled: true
+variations:
+  - rarity: LEGENDARY
+    effects:
+      abyssal: 1
+      damage: 1.0
+      hp: -0.3

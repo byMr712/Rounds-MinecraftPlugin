@@ -1,4 +1,4 @@
-# RoundsPlugin v1.0
+# RoundsPlugin
 
 > **Language:** English · [Русский](readme.md)
 
@@ -13,7 +13,7 @@ Minecraft plugin for the "Rounds" mini-game. 4 teams, a card system with the abi
 
 ## Installation
 
-1. Copy `RoundsPlugin-1.0.jar` into the `plugins/` folder
+1. Copy `RoundsPlugin.jar` into the `plugins/` folder
 2. Restart the server
 3. Configure `plugins/RoundsPlugin/config.yml` (already configured by default)
 4. Set up cards in `plugins/RoundsPlugin/cards/` (65 cards by default)

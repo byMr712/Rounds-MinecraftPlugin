@@ -1,0 +1,15 @@
+id: 231
+name:
+  ru: "&6Сердце вечного феникса"
+  en: "&6Heart of the Eternal Phoenix"
+description:
+  ru: "Дарует возрождение и второе дыхание при получении смертельного урона, +20% ХП"
+  en: "Grants phoenix revival and second wind upon lethal damage, +20% HP"
+material: TOTEM_OF_UNDYING
+enabled: true
+variations:
+  - rarity: LEGENDARY
+    effects:
+      phoenix: 1
+      second_wind: 1
+      hp: 0.2

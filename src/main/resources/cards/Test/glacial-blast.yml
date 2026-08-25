@@ -1,0 +1,28 @@
+id: 205
+name:
+  ru: "&bЛедяной порыв"
+  en: "&bGlacial Blast"
+description:
+  ru: "+{0} заморозки, +{1} пуль, {2} скорострельности"
+  en: "+{0} Cold, +{1} Bullets, {2} Attack speed"
+material: PACKED_ICE
+enabled: true
+variations:
+  - rarity: COMMON
+    values: ["1.5", "1", "-15%"]
+    effects:
+      cold: 1.5
+      bullets: 1
+      attack_speed: -0.15
+  - rarity: UNCOMMON
+    values: ["2.5", "2", "-20%"]
+    effects:
+      cold: 2.5
+      bullets: 2
+      attack_speed: -0.2
+  - rarity: RARE
+    values: ["4.0", "2", "-10%"]
+    effects:
+      cold: 4.0
+      bullets: 2
+      attack_speed: -0.1

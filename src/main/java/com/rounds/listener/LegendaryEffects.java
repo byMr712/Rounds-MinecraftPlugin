@@ -117,9 +117,14 @@ public class LegendaryEffects implements Listener {
         double dmgBase = data.getEffectiveDamage();
         double mult = dmgBase <= 20.0 ? 2.0 : 1.5;
         double maxDmg = Math.max(dmgBase * mult * Math.max(data.skyfall, 1), 1.0);
+        com.rounds.teams.TeamManager.GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
         for (LivingEntity entity : loc.getNearbyLivingEntities(4.0)) {
             if (entity.getUniqueId().equals(player.getUniqueId())) continue;
-            if (entity instanceof Player tp && tp.getGameMode() == GameMode.SPECTATOR) continue;
+            if (entity instanceof Player tp) {
+                if (tp.getGameMode() == GameMode.SPECTATOR) continue;
+                com.rounds.teams.TeamManager.GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(tp.getUniqueId());
+                if (myTeam != null && targetTeam != null && myTeam == targetTeam) continue;
+            }
             try {
                 double dist = entity.getLocation().distance(loc);
                 double dmg = Math.max(0, maxDmg * (1.0 - dist / 4.0));

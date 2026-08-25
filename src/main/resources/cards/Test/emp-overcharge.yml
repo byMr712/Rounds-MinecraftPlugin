@@ -1,0 +1,28 @@
+id: 214
+name:
+  ru: "&9ЭМИ Перегрузка"
+  en: "&9EMP Overcharge"
+description:
+  ru: "+{0} ЭМИ, +{1} глушения, {2} патронов"
+  en: "+{0} EMP, +{1} Silence, {2} Ammo"
+material: LIGHTNING_ROD
+enabled: true
+variations:
+  - rarity: COMMON
+    values: ["1", "1", "-1"]
+    effects:
+      emp: 1
+      silence: 1
+      ammo: -1
+  - rarity: UNCOMMON
+    values: ["2", "1", "0"]
+    effects:
+      emp: 2
+      silence: 1
+      ammo: 0
+  - rarity: RARE
+    values: ["3", "2", "+1"]
+    effects:
+      emp: 3
+      silence: 2
+      ammo: 1

@@ -116,7 +116,7 @@ public class GunItem implements Listener {
         UUID uuid = player.getUniqueId();
 
         if (silencedPlayers.contains(uuid)) {
-            player.sendActionBar(ChatColor.RED + "You are silenced!");
+            player.sendActionBar(ChatColor.RED + Messages.get("gun.silenced"));
             return;
         }
 
@@ -198,7 +198,7 @@ public class GunItem implements Listener {
         UUID uuid = player.getUniqueId();
 
         if (silencedPlayers.contains(uuid)) {
-            player.sendActionBar(ChatColor.RED + "You are silenced!");
+            player.sendActionBar(ChatColor.RED + Messages.get("gun.silenced"));
             return;
         }
 

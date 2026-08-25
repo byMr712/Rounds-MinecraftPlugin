@@ -16,6 +16,7 @@ gun:
   shield-active: "Block already active!"
   shield-cooldown: "Block cooldown: {0}s"
   party-locked: "No party for you! Can't block or reload!"
+  silenced: "You are silenced!"
 
 # Game
 game:
@@ -41,6 +42,8 @@ game:
   auto-death-killed: "A random player ({0}) was destroyed. If you keep surviving, another one will be destroyed in 1 minute."
   enemy-picking-cards: "Opponent\nis picking cards"
   auto-stop-single: "Game ended, only one player remained"
+  phoenix-revived: "Phoenix revived you!"
+  refresh-ammo: "Refresh! Ammo refilled!"
 
 # Teams
 team:
@@ -72,6 +75,11 @@ block:
   start-block: "Game Start Block"
   end-block: "Game End Block"
   end-placed: "Game End Block placed"
+  lobby-placed: "Lobby block placed at {0}"
+  map-placed: "Map block {0}x{0} placed"
+  spawn-placed: "Spawn block placed"
+  jump-placed: "Jump block placed"
+  up-placed: "Up block placed"
   game-started-admin: "You started the game. If you want regular players to use this block, type: /rdebug freeplay on"
   game-stopped-admin: "You stopped the game. If you want regular players to use this block, type: /rdebug freeplay on"
   received-blocks: "Received all blocks!"
@@ -94,6 +102,9 @@ card:
   picked: "&e{0} picks card \u2014 {1}: {2}"
   bonus-received: "&6You also received: {0}"
 
+  show-prev: "← Previous page ({0}/{1})"
+  show-next: "Next page ({0}/{1}) →"
+  show-page: "Page {0}/{1} (Total: {2})"
 gui:
   hp: "Health"
   damage: "Damage"
@@ -195,6 +206,13 @@ debug:
   help-heal: "heal"
   help-spawn: "spawn entities"
   help-giveblocks: "get special blocks and creative mode"
+  help-blocks: "Give blocks"
+  pos-set: "{0} pos{1} set at {2}"
+  pos-need-both: "Set {0}pos1 and {0}pos2 first"
+  pos-filled: "Placed {0} {1}-blocks"
+  autodeath-status: "Auto-death current: {0}"
+  autodeath-on: "You enabled automatic death of a random player when the round lasts more than 4 minutes"
+  autodeath-off: "You disabled automatic death of a random player when the round lasts more than 4 minutes"
   help-cards: "open card GUI"
   help-cards-add: "add card by name"
   help-reset: "reset all"

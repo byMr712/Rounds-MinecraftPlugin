@@ -1,0 +1,34 @@
+id: 223
+name:
+  ru: "&cШипастый оплот"
+  en: "&cSpiked Bulwark"
+description:
+  ru: "+{0} шипов, +{1} ХП, {2} скорости"
+  en: "+{0} Spikes, +{1} HP, {2} Speed"
+material: POINTED_DRIPSTONE
+enabled: true
+variations:
+  - rarity: COMMON
+    values: ["1", "+20%", "-15%"]
+    effects:
+      spikes: 1
+      hp: 0.2
+      speed: -0.15
+  - rarity: UNCOMMON
+    values: ["2", "+35%", "-10%"]
+    effects:
+      spikes: 2
+      hp: 0.35
+      speed: -0.1
+  - rarity: RARE
+    values: ["3", "+55%", "-5%"]
+    effects:
+      spikes: 3
+      hp: 0.55
+      speed: -0.05
+  - rarity: EPIC
+    values: ["4", "+80%", "0%"]
+    effects:
+      spikes: 4
+      hp: 0.8
+      speed: 0.0

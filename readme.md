@@ -1,4 +1,4 @@
-# RoundsPlugin v1.0
+# RoundsPlugin
 
 > **Язык:** Русский · [English](readme.en.md)
 
@@ -13,7 +13,7 @@ Minecraft плагин мини-игры "Rounds". 4 команды, карто�
 
 ## Установка
 
-1. Скопируйте `RoundsPlugin-1.0.jar` в папку `plugins/`
+1. Скопируйте `RoundsPlugin.jar` в папку `plugins/`
 2. Перезапустите сервер
 3. Настройте `plugins/RoundsPlugin/config.yml` (по умолчанию уже настроено)
 4. Настройте карты в `plugins/RoundsPlugin/cards/` (по умолчанию 65 карт)

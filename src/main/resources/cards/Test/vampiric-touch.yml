@@ -1,0 +1,34 @@
+id: 201
+name:
+  ru: "&4Вампирическое касание"
+  en: "&4Vampiric Touch"
+description:
+  ru: "+{0} вампиризма, {1} ХП, {2} урона"
+  en: "+{0} Leech, {1} HP, {2} DMG"
+material: FERMENTED_SPIDER_EYE
+enabled: true
+variations:
+  - rarity: COMMON
+    values: ["25%", "+10%", "-10%"]
+    effects:
+      leech: 0.25
+      hp: 0.1
+      damage: -0.1
+  - rarity: UNCOMMON
+    values: ["40%", "+15%", "-5%"]
+    effects:
+      leech: 0.4
+      hp: 0.15
+      damage: -0.05
+  - rarity: RARE
+    values: ["60%", "+20%", "+0%"]
+    effects:
+      leech: 0.6
+      hp: 0.2
+      damage: 0.0
+  - rarity: EPIC
+    values: ["85%", "+30%", "+10%"]
+    effects:
+      leech: 0.85
+      hp: 0.3
+      damage: 0.1

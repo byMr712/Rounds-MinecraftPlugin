@@ -290,6 +290,10 @@ public class GameManager implements Listener {
     }
 
     private void applyRoundEffects(Player player) {
+        PlayerData data = plugin.getPlayerDataManager().getData(player);
+        if (data != null) {
+            data.phoenixUses = (int) data.phoenix;
+        }
     }
 
     private void applyPeriodicEffects() {
@@ -722,10 +726,6 @@ public class GameManager implements Listener {
                 PlayerData roundData = plugin.getPlayerDataManager().getData(p);
                 if (roundData != null) {
                     roundData.ammo = roundData.maxAmmo;
-                    if (roundData.bulletRain > 0) {
-                        roundData.maxAmmo += roundData.bulletRain;
-                        roundData.ammo += roundData.bulletRain;
-                    }
                     applySnowballSpeed(p, roundData);
                 }
                 clearCardEffects(p);
@@ -1036,7 +1036,7 @@ public class GameManager implements Listener {
         removeSnowballModifiers(player);
         if (data.snowballWins > 0) {
             AttributeModifier mod = new AttributeModifier(SNOWBALL_MOD_ID, "rounds_snowball",
-                0.05 * data.snowballWins, AttributeModifier.Operation.ADD_SCALAR);
+                0.05 * data.snowballWins * Math.max(data.snowball, 1.0), AttributeModifier.Operation.ADD_SCALAR);
             try {
                 attr.addModifier(mod);
             } catch (IllegalArgumentException ignored) {
@@ -1131,7 +1131,7 @@ public class GameManager implements Listener {
             dead.addPotionEffect(new org.bukkit.potion.PotionEffect(
                 PotionEffectType.REGENERATION, 100, 2));
             dead.getWorld().playSound(dead.getLocation(), Sound.ENTITY_BLAZE_SHOOT, 1.0f, 1.0f);
-            dead.sendMessage(ChatColor.RED + "Phoenix revived you!");
+            dead.sendMessage(ChatColor.RED + Messages.get("game.phoenix-revived"));
             return;
         }
 
@@ -1161,7 +1161,7 @@ public class GameManager implements Listener {
                 if (killerData.refresh > 0) {
                     killerData.ammo = killerData.maxAmmo;
                     GunItem.cancelReload(killer.getUniqueId());
-                    killer.sendMessage(ChatColor.GREEN + "Refresh! Ammo refilled!");
+                    killer.sendMessage(ChatColor.GREEN + Messages.get("game.refresh-ammo"));
                 }
                 if (killerData.tacticalReload > 0) {
                     killerData.ammo = killerData.maxAmmo;

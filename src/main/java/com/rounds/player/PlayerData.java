@@ -2,9 +2,9 @@ package com.rounds.player;
 
 import com.rounds.DefaultStats;
 
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Set;
+import java.util.List;
 
 public class PlayerData {
 
@@ -13,7 +13,7 @@ public class PlayerData {
     public String playerName = "";
     public double playerUse = 0;
 
-    private final Set<Integer> ownedCards = new HashSet<>();
+    private final List<Integer> ownedCards = new ArrayList<>();
 
     public double cardSelect1 = 0;
     public double cardSelect2 = 0;
@@ -139,16 +139,28 @@ public class PlayerData {
         return ownedCards.contains(id);
     }
 
+    public int getCardCount(int id) {
+        int count = 0;
+        for (int cid : ownedCards) {
+            if (cid == id) count++;
+        }
+        return count;
+    }
+
+    public void addCard(int id) {
+        ownedCards.add(id);
+    }
+
     public void setCard(int id, boolean value) {
         if (value) {
             ownedCards.add(id);
         } else {
-            ownedCards.remove(id);
+            ownedCards.removeIf(i -> i == id);
         }
     }
 
-    public Set<Integer> getOwnedCards() {
-        return Collections.unmodifiableSet(ownedCards);
+    public List<Integer> getOwnedCards() {
+        return Collections.unmodifiableList(ownedCards);
     }
 
     public void resetAllCards() {

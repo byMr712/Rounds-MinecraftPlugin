@@ -1,0 +1,28 @@
+id: 213
+name:
+  ru: "&eСияющий маяк"
+  en: "&eRadiant Beacon"
+description:
+  ru: "+{0} сияния, +{1} ХП, +{2} подсвечивания"
+  en: "+{0} Radiance, +{1} HP, +{2} Highlight"
+material: BEACON
+enabled: true
+variations:
+  - rarity: COMMON
+    values: ["1", "15%", "1"]
+    effects:
+      radiance: 1
+      hp: 0.15
+      highlight: 1
+  - rarity: UNCOMMON
+    values: ["2", "25%", "1"]
+    effects:
+      radiance: 2
+      hp: 0.25
+      highlight: 1
+  - rarity: RARE
+    values: ["3", "40%", "2"]
+    effects:
+      radiance: 3
+      hp: 0.4
+      highlight: 2

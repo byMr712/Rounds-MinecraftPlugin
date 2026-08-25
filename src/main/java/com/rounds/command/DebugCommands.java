@@ -162,7 +162,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "setlanguage" -> handleSetLanguage(sender, args);
             case "effect" -> handleEffect(sender, args);
             case "heal" -> handleHeal(sender, args);
-            case "cards" -> handleCards(sender, args);
+            case "cards", "card" -> handleCards(sender, args);
             case "resetstats" -> handleResetStats(sender);
             case "reload" -> handleReload(sender);
             case "giveblocks" -> handleBlocks(sender, args);
@@ -357,8 +357,8 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
         org.bukkit.Location loc = player.getLocation().getBlock().getLocation();
         plugin.getBlockListener().getBlockStorage().setLobbyBlock(loc);
-        sender.sendMessage(ChatColor.GREEN + "Блок лобби установлен на " +
-            String.format("(%d, %d, %d)", loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
+        sender.sendMessage(ChatColor.GREEN + Messages.get("block.lobby-placed",
+            String.format("(%d, %d, %d)", loc.getBlockX(), loc.getBlockY(), loc.getBlockZ())));
     }
 
     private void handleJumpPos(CommandSender sender, int posNum) {
@@ -372,18 +372,18 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         } else {
             plugin.getBlockListener().setJumpPos2(pos);
         }
-        sender.sendMessage(ChatColor.GREEN + "Jump pos" + posNum + " установлен на " +
-            String.format("(%d, %d, %d)", pos.getBlockX(), pos.getBlockY(), pos.getBlockZ()));
+        sender.sendMessage(ChatColor.GREEN + Messages.get("debug.pos-set", "Jump", posNum,
+            String.format("(%d, %d, %d)", pos.getBlockX(), pos.getBlockY(), pos.getBlockZ())));
     }
 
     private void handleJumpSet(CommandSender sender) {
         com.rounds.blocks.BlockListener bl = plugin.getBlockListener();
         if (bl.getJumpPos1() == null || bl.getJumpPos2() == null) {
-            sender.sendMessage(ChatColor.RED + "Сначала установи jumppos1 и jumppos2");
+            sender.sendMessage(ChatColor.RED + Messages.get("debug.pos-need-both", "jump"));
             return;
         }
         Set<org.bukkit.Location> filled = bl.fillJumpBlocks();
-        sender.sendMessage(ChatColor.GREEN + "Установлено " + filled.size() + " jump-блоков");
+        sender.sendMessage(ChatColor.GREEN + Messages.get("debug.pos-filled", filled.size(), "jump"));
     }
 
     private void handleUpPos(CommandSender sender, int posNum) {
@@ -397,18 +397,18 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         } else {
             plugin.getBlockListener().setUpPos2(pos);
         }
-        sender.sendMessage(ChatColor.GREEN + "Up pos" + posNum + " установлен на " +
-            String.format("(%d, %d, %d)", pos.getBlockX(), pos.getBlockY(), pos.getBlockZ()));
+        sender.sendMessage(ChatColor.GREEN + Messages.get("debug.pos-set", "Up", posNum,
+            String.format("(%d, %d, %d)", pos.getBlockX(), pos.getBlockY(), pos.getBlockZ())));
     }
 
     private void handleUpSet(CommandSender sender) {
         com.rounds.blocks.BlockListener bl = plugin.getBlockListener();
         if (bl.getUpPos1() == null || bl.getUpPos2() == null) {
-            sender.sendMessage(ChatColor.RED + "Сначала установи uppos1 и uppos2");
+            sender.sendMessage(ChatColor.RED + Messages.get("debug.pos-need-both", "up"));
             return;
         }
         Set<org.bukkit.Location> filled = bl.fillUpBlocks();
-        sender.sendMessage(ChatColor.GREEN + "Установлено " + filled.size() + " up-блоков");
+        sender.sendMessage(ChatColor.GREEN + Messages.get("debug.pos-filled", filled.size(), "up"));
     }
 
     private void handleRounds(CommandSender sender, String[] args) {
@@ -426,18 +426,20 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     private void handleAutoDeath(CommandSender sender, String[] args) {
         GameManager gm = plugin.getGameManager();
         if (args.length < 2) {
-            sender.sendMessage(ChatColor.YELLOW + "Автосмерть сейчас: "
-                    + (gm.isAutoDeathEnabled() ? ChatColor.GREEN + "вкл" : ChatColor.RED + "выкл"));
+            String status = gm.isAutoDeathEnabled()
+                    ? ChatColor.GREEN + Messages.get("command.state-on")
+                    : ChatColor.RED + Messages.get("command.state-off");
+            sender.sendMessage(ChatColor.YELLOW + Messages.get("debug.autodeath-status", status));
             sender.sendMessage(ChatColor.GRAY + "/rdebug autodeath <on|off>");
             return;
         }
         String arg = args[1].toLowerCase();
         if (arg.equals("on") || arg.equals("вкл")) {
             gm.setAutoDeathEnabled(true);
-            sender.sendMessage(ChatColor.GREEN + "Вы включили режим автоматической смерти случайного игрока, если раунд длится уже более 4 минуты");
+            sender.sendMessage(ChatColor.GREEN + Messages.get("debug.autodeath-on"));
         } else if (arg.equals("off") || arg.equals("выкл")) {
             gm.setAutoDeathEnabled(false);
-            sender.sendMessage(ChatColor.GREEN + "Вы отключили режим автоматической смерти случайного игрока, если раунд длится уже более 4 минуты");
+            sender.sendMessage(ChatColor.GREEN + Messages.get("debug.autodeath-off"));
         } else {
             sender.sendMessage(ChatColor.RED + "/rdebug autodeath <on|off>");
         }
@@ -524,15 +526,30 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     }
 
     private void handleCardsShow(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player viewer)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
-        Player target;
-        if (args.length >= 3) {
-            target = Bukkit.getPlayer(args[2]);
-            if (target == null) { sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[2])); return; }
-        } else {
-            target = viewer;
+        if (!(sender instanceof Player viewer)) {
+            sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player"));
+            return;
         }
-        plugin.getCardGUI().openShow(viewer, target);
+        Player target = viewer;
+        int page = 1;
+
+        if (args.length >= 3) {
+            try {
+                page = Integer.parseInt(args[2]);
+            } catch (NumberFormatException notANumber) {
+                target = Bukkit.getPlayer(args[2]);
+                if (target == null) {
+                    sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[2]));
+                    return;
+                }
+                if (args.length >= 4) {
+                    try {
+                        page = Integer.parseInt(args[3]);
+                    } catch (NumberFormatException ignored) {}
+                }
+            }
+        }
+        plugin.getCardGUI().openShow(viewer, target, page);
     }
 
     private void handleCardsAdd(CommandSender sender, String[] args) {
@@ -897,7 +914,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
     private static final List<String> SUBCOMMANDS = Arrays.asList(
         "help", "start", "stop", "status", "rounds", "info",
-        "givegun", "cards", "giveblocks", "join", "freeplay", "autodeath",
+        "givegun", "cards", "card", "giveblocks", "join", "freeplay", "autodeath",
         "stats", "setstat", "setteam", "setlanguage", "effect", "heal",
         "resetstats", "reload", "setlobby",
         "jumppos1", "jumppos2", "jumpset", "uppos1", "uppos2", "upset",
@@ -907,7 +924,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         "start", "stop", "rounds", "givegun", "wheel"
     );
     private static final List<String> PUBLIC_COMMANDS = Arrays.asList(
-        "info", "stats", "cards"
+        "info", "stats", "cards", "card"
     );
     private static final List<String> TEAM_COLORS = Arrays.asList("BLUE", "RED", "YELLOW", "GREEN");
 
@@ -976,7 +993,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 if (args.length == 4) yield filterStartsWith(Arrays.asList("10", "20", "40", "60", "100", "200"), input);
                 yield Collections.emptyList();
             }
-            case "cards" -> {
+            case "cards", "card" -> {
                 if (!admin) {
                     yield args.length == 2
                             ? filterStartsWith(Collections.singletonList("show"), input)

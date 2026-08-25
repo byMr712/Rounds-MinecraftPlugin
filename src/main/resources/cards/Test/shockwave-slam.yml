@@ -1,0 +1,28 @@
+id: 229
+name:
+  ru: "&6Ударная волна"
+  en: "&6Shockwave Slam"
+description:
+  ru: "+{0} ударной волны, +{1} оглушения, {2} перезарядки блока"
+  en: "+{0} Shockwave, +{1} Stun, {2} Block CD"
+material: MACE
+enabled: true
+variations:
+  - rarity: COMMON
+    values: ["1", "1", "+0.5s"]
+    effects:
+      shockwave: 1
+      stun: 1
+      block_cd: 0.5
+  - rarity: UNCOMMON
+    values: ["2", "1", "+0.2s"]
+    effects:
+      shockwave: 2
+      stun: 1
+      block_cd: 0.2
+  - rarity: RARE
+    values: ["3", "2", "-0.3s"]
+    effects:
+      shockwave: 3
+      stun: 2
+      block_cd: -0.3

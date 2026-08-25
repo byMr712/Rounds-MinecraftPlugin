@@ -1,0 +1,28 @@
+id: 221
+name:
+  ru: "&6Бронебойный бур"
+  en: "&6Drill Perforator"
+description:
+  ru: "+{0} бурения сквозь блоки, +{1} урона, {2} патронов"
+  en: "+{0} Drill, +{1} DMG, {2} Ammo"
+material: NETHERITE_UPGRADE_SMITHING_TEMPLATE
+enabled: true
+variations:
+  - rarity: COMMON
+    values: ["1", "+15%", "-1"]
+    effects:
+      drill: 1
+      damage: 0.15
+      ammo: -1
+  - rarity: UNCOMMON
+    values: ["2", "+30%", "-1"]
+    effects:
+      drill: 2
+      damage: 0.3
+      ammo: -1
+  - rarity: RARE
+    values: ["3", "+45%", "0"]
+    effects:
+      drill: 3
+      damage: 0.45
+      ammo: 0

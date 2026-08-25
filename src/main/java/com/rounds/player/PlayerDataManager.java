@@ -149,11 +149,7 @@ public class PlayerDataManager implements Listener {
         yml.set(path + ".stats.atks-reload", data.atksReload);
         yml.set(path + ".stats.pristine-perseverance", data.pristinePerseverance);
 
-        List<Integer> ownedCards = new ArrayList<>();
-        for (int id : getRegisteredCardIds()) {
-            if (data.getCard(id)) ownedCards.add(id);
-        }
-        yml.set(path + ".cards", ownedCards);
+        yml.set(path + ".cards", new ArrayList<>(data.getOwnedCards()));
 
         flushStore();
     }
@@ -193,46 +189,56 @@ public class PlayerDataManager implements Listener {
     public void applySavedData(UUID uuid, SavedPlayerData saved) {
         if (saved == null) return;
         PlayerData data = cache.computeIfAbsent(uuid, u -> new PlayerData());
+        data.resetStats();
+        data.resetAllCards();
 
-        data.dmg = saved.stats.getOrDefault("dmg", 1.0);
-        data.atks = saved.stats.getOrDefault("atks", 20.0);
-        data.atkSpeed = saved.stats.getOrDefault("atk-speed", 0.0);
-        data.atkr = saved.stats.getOrDefault("atkr", 0.0);
-        data.bouncePl = saved.stats.getOrDefault("bounce", 0.0);
-        data.ammo = saved.stats.getOrDefault("ammo", DefaultStats.get().ammo);
-        double restoredMaxAmmo = saved.stats.getOrDefault("max-ammo", 0.0);
-        data.maxAmmo = restoredMaxAmmo >= 1 ? restoredMaxAmmo : DefaultStats.get().maxAmmo;
-        data.ammo = Math.min(Math.max(data.ammo, 1), data.maxAmmo);
-        data.bullets = saved.stats.getOrDefault("bullets", 1.0);
-        data.cold = saved.stats.getOrDefault("cold", 0.0);
-        data.poison = saved.stats.getOrDefault("poison", 0.0);
-        data.toxicCloud = saved.stats.getOrDefault("toxic_cloud", 0.0);
-        data.leech = saved.stats.getOrDefault("leech", 0.0);
-        data.tgBounce = saved.stats.getOrDefault("tg_bounce", 0.0);
-        data.homing = saved.stats.getOrDefault("homing", 0.0);
-        data.homingOnBlock = saved.stats.getOrDefault("homing_on_block", 0.0);
-        data.poisonLvl = saved.stats.getOrDefault("poison_lvl", 0.0);
-        data.coldLvl = saved.stats.getOrDefault("cold_lvl", 0.0);
-        data.parazitLvl = saved.stats.getOrDefault("parazit_lvl", 0.0);
-        data.parazit = saved.stats.getOrDefault("parazit", 0.0);
-        data.hp = saved.stats.getOrDefault("hp", 20.0);
-        data.shieldCooldown = saved.stats.getOrDefault("shield_cooldown", 0.0);
-        data.bombBullet = saved.stats.getOrDefault("bomb_bullet", 0.0);
-        data.bombOnBlock = saved.stats.getOrDefault("bomb_on_block", 0.0);
-        data.bulletSpeed = saved.stats.getOrDefault("bullet_speed", 1.0);
-        data.empower = saved.stats.getOrDefault("empower", 0.0);
-        data.empowerCharge = saved.stats.getOrDefault("empower_charge", 0.0);
-        data.darkStrength = saved.stats.getOrDefault("dark_strength", 0.0);
-        data.bigBullet = saved.stats.getOrDefault("big_bullet", 0.0);
-        data.grow = saved.stats.getOrDefault("grow", 0.0);
-        data.trusterLvl = saved.stats.getOrDefault("truster_lvl", 0.0);
-        data.jumpHeight = saved.stats.getOrDefault("jump_height", 0.0);
-        data.dark = saved.stats.getOrDefault("dark", 0.0);
-        data.atksReload = saved.stats.getOrDefault("atks_reload", 0.0);
-        data.pristinePerseverance = saved.stats.getOrDefault("pristine_perseverance", 0.0);
+        Player player = plugin.getServer().getPlayer(uuid);
 
-        for (int cardId : saved.ownedCards) {
-            data.setCard(cardId, true);
+        if (saved.ownedCards != null && !saved.ownedCards.isEmpty()) {
+            for (int cardId : saved.ownedCards) {
+                data.setCard(cardId, true);
+                Card card = plugin.getCardManager().getRegistry().getCard(cardId);
+                if (card != null) {
+                    card.apply(player, data);
+                }
+            }
+        } else if (saved.stats != null && !saved.stats.isEmpty()) {
+            data.dmg = saved.stats.getOrDefault("dmg", 1.0);
+            data.atks = saved.stats.getOrDefault("atks", 20.0);
+            data.atkSpeed = saved.stats.getOrDefault("atk-speed", 0.0);
+            data.atkr = saved.stats.getOrDefault("atkr", 0.0);
+            data.bouncePl = saved.stats.getOrDefault("bounce", 0.0);
+            data.ammo = saved.stats.getOrDefault("ammo", DefaultStats.get().ammo);
+            double restoredMaxAmmo = saved.stats.getOrDefault("max-ammo", 0.0);
+            data.maxAmmo = restoredMaxAmmo >= 1 ? restoredMaxAmmo : DefaultStats.get().maxAmmo;
+            data.ammo = Math.min(Math.max(data.ammo, 1), data.maxAmmo);
+            data.bullets = saved.stats.getOrDefault("bullets", 1.0);
+            data.cold = saved.stats.getOrDefault("cold", 0.0);
+            data.poison = saved.stats.getOrDefault("poison", 0.0);
+            data.toxicCloud = saved.stats.getOrDefault("toxic_cloud", 0.0);
+            data.leech = saved.stats.getOrDefault("leech", 0.0);
+            data.tgBounce = saved.stats.getOrDefault("tg_bounce", 0.0);
+            data.homing = saved.stats.getOrDefault("homing", 0.0);
+            data.homingOnBlock = saved.stats.getOrDefault("homing_on_block", 0.0);
+            data.poisonLvl = saved.stats.getOrDefault("poison_lvl", 0.0);
+            data.coldLvl = saved.stats.getOrDefault("cold_lvl", 0.0);
+            data.parazitLvl = saved.stats.getOrDefault("parazit_lvl", 0.0);
+            data.parazit = saved.stats.getOrDefault("parazit", 0.0);
+            data.hp = saved.stats.getOrDefault("hp", 20.0);
+            data.shieldCooldown = saved.stats.getOrDefault("shield_cooldown", 0.0);
+            data.bombBullet = saved.stats.getOrDefault("bomb_bullet", 0.0);
+            data.bombOnBlock = saved.stats.getOrDefault("bomb_on_block", 0.0);
+            data.bulletSpeed = saved.stats.getOrDefault("bullet_speed", 1.0);
+            data.empower = saved.stats.getOrDefault("empower", 0.0);
+            data.empowerCharge = saved.stats.getOrDefault("empower_charge", 0.0);
+            data.darkStrength = saved.stats.getOrDefault("dark_strength", 0.0);
+            data.bigBullet = saved.stats.getOrDefault("big_bullet", 0.0);
+            data.grow = saved.stats.getOrDefault("grow", 0.0);
+            data.trusterLvl = saved.stats.getOrDefault("truster_lvl", 0.0);
+            data.jumpHeight = saved.stats.getOrDefault("jump_height", 0.0);
+            data.dark = saved.stats.getOrDefault("dark", 0.0);
+            data.atksReload = saved.stats.getOrDefault("atks_reload", 0.0);
+            data.pristinePerseverance = saved.stats.getOrDefault("pristine_perseverance", 0.0);
         }
     }
 
@@ -288,11 +294,7 @@ public class PlayerDataManager implements Listener {
         yml.set(path + ".stats.atks-reload", data.atksReload);
         yml.set(path + ".stats.pristine-perseverance", data.pristinePerseverance);
 
-        List<Integer> ownedCards = new ArrayList<>();
-        for (int id : getRegisteredCardIds()) {
-            if (data.getCard(id)) ownedCards.add(id);
-        }
-        yml.set(path + ".cards", ownedCards);
+        yml.set(path + ".cards", new ArrayList<>(data.getOwnedCards()));
 
         flushStore();
     }

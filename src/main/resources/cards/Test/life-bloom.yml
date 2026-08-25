@@ -1,0 +1,28 @@
+id: 225
+name:
+  ru: "&aЦветение жизни"
+  en: "&aLife Bloom"
+description:
+  ru: "+{0} ауры вампиризма, +{1} лечения, {2} урона"
+  en: "+{0} Lifesteal aura, +{1} Heal, {2} DMG"
+material: SPORE_BLOSSOM
+enabled: true
+variations:
+  - rarity: COMMON
+    values: ["1", "15%", "-15%"]
+    effects:
+      lifesteal_aura: 1
+      heal: 0.15
+      damage: -0.15
+  - rarity: UNCOMMON
+    values: ["2", "25%", "-10%"]
+    effects:
+      lifesteal_aura: 2
+      heal: 0.25
+      damage: -0.1
+  - rarity: RARE
+    values: ["3", "40%", "-5%"]
+    effects:
+      lifesteal_aura: 3
+      heal: 0.4
+      damage: -0.05

@@ -1,0 +1,28 @@
+id: 230
+name:
+  ru: "&4Кровавая жатва"
+  en: "&4Blood Harvest"
+description:
+  ru: "+{0} бонуса ХП за попадание, +{1} казни, {2} ХП"
+  en: "+{0} HP boost on hit, +{1} Executioner, {2} HP"
+material: REDSTONE
+enabled: true
+variations:
+  - rarity: COMMON
+    values: ["1", "1", "-20%"]
+    effects:
+      hp_boost_on_hit: 1
+      executioner: 1
+      hp: -0.2
+  - rarity: UNCOMMON
+    values: ["2", "2", "-15%"]
+    effects:
+      hp_boost_on_hit: 2
+      executioner: 2
+      hp: -0.15
+  - rarity: RARE
+    values: ["3", "3", "-10%"]
+    effects:
+      hp_boost_on_hit: 3
+      executioner: 3
+      hp: -0.1

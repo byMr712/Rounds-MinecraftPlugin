@@ -22,15 +22,19 @@ public class JumpListener implements Listener {
         Player player = event.getPlayer();
         PlayerData data = plugin.getPlayerDataManager().getData(player.getUniqueId());
         if (data.jumpHeight <= 0) return;
-        double multiplier = Math.sqrt(1.0 + data.jumpHeight);
+        double multiplier = Math.sqrt(Math.max(0.0, 1.0 + data.jumpHeight));
+        if (!Double.isFinite(multiplier)) return;
         new BukkitRunnable() {
             @Override
             public void run() {
                 if (!player.isOnline() || player.isDead()) return;
                 Vector v = player.getVelocity();
-                if (v.getY() > 0) {
-                    v.setY(v.getY() * multiplier);
-                    player.setVelocity(v);
+                if (v.getY() > 0 && Double.isFinite(v.getY())) {
+                    double newY = v.getY() * multiplier;
+                    if (Double.isFinite(newY)) {
+                        v.setY(newY);
+                        player.setVelocity(v);
+                    }
                 }
             }
         }.runTaskLater(plugin, 1L);

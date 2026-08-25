@@ -50,14 +50,15 @@ public class CardRegistry {
     public void loadCards() {
         cards.clear();
         loadedFiles = 0;
+        File cardsRoot = new File(dataFolder, "cards");
+        cardsRoot.mkdirs();
         originalDir.mkdirs();
         customDir.mkdirs();
 
         extractBuiltinCards();
         removeDeletedBuiltinCards();
         migrateLegacyIfNeeded();
-        loadFromDir(originalDir);
-        loadFromDir(customDir);
+        loadFromDir(cardsRoot);
 
         long legendaries = cards.values().stream().filter(c -> c.isEnabled()
                 && c.getRarity() == Rarity.LEGENDARY).count();
@@ -72,7 +73,7 @@ public class CardRegistry {
             while (entries.hasMoreElements()) {
                 java.util.jar.JarEntry entry = entries.nextElement();
                 String name = entry.getName();
-                if (!name.startsWith("cards/original/") || !name.endsWith(".yml")) continue;
+                if (!name.startsWith("cards/") || !name.endsWith(".yml")) continue;
                 File target = new File(dataFolder, name);
                 byte[] jarBytes;
                 try (java.io.InputStream in = jar.getInputStream(entry)) {
@@ -170,12 +171,17 @@ public class CardRegistry {
 
     private void loadFromDir(File dir) {
         if (!dir.exists()) return;
-        File[] files = dir.listFiles((d, name) -> name.endsWith(".yml"));
+        File[] files = dir.listFiles();
         if (files == null) return;
 
         Arrays.sort(files, Comparator.comparing(File::getName));
 
         for (File file : files) {
+            if (file.isDirectory()) {
+                loadFromDir(file);
+                continue;
+            }
+            if (!file.getName().endsWith(".yml")) continue;
             loadedFiles++;
             YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
             try {

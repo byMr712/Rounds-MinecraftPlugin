@@ -1,0 +1,34 @@
+id: 202
+name:
+  ru: "&8Крупный калибр"
+  en: "&8Heavy Caliber"
+description:
+  ru: "+{0} урона, {1} скорости пули, {2} патронов"
+  en: "+{0} DMG, {1} Bullet speed, {2} Max Ammo"
+material: IRON_BLOCK
+enabled: true
+variations:
+  - rarity: COMMON
+    values: ["+30%", "-20%", "-1"]
+    effects:
+      damage: 0.3
+      bullet_speed: -0.2
+      ammo: -1
+  - rarity: UNCOMMON
+    values: ["+45%", "-15%", "-1"]
+    effects:
+      damage: 0.45
+      bullet_speed: -0.15
+      ammo: -1
+  - rarity: RARE
+    values: ["+65%", "-10%", "-2"]
+    effects:
+      damage: 0.65
+      bullet_speed: -0.1
+      ammo: -2
+  - rarity: EPIC
+    values: ["+90%", "+0%", "-2"]
+    effects:
+      damage: 0.9
+      bullet_speed: 0.0
+      ammo: -2

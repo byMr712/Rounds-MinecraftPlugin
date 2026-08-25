@@ -952,7 +952,16 @@ public class RoundsEntities implements Listener {
         } catch (IllegalArgumentException e) {
             return;
         }
-        event.getAffectedEntities().removeIf(e -> e.getUniqueId().equals(ownerId));
+        GameTeam ownerTeam = plugin.getTeamManager().getPlayerTeam(ownerId);
+        event.getAffectedEntities().removeIf(e -> {
+            if (e.getUniqueId().equals(ownerId)) return true;
+            if (e instanceof Player p) {
+                if (p.getGameMode() == GameMode.SPECTATOR) return true;
+                GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+                if (ownerTeam != null && targetTeam != null && ownerTeam == targetTeam) return true;
+            }
+            return false;
+        });
     }
 
     @EventHandler

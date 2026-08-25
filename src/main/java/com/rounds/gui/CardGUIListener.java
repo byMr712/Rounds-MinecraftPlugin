@@ -52,27 +52,69 @@ public class CardGUIListener implements Listener {
     }
 
     public void openShow(Player viewer, Player target) {
-        String title = "\u00A78[\u00A76Rounds\u00A78] " + Messages.get("card.show-title", target.getName());
-        Inventory inv = Bukkit.createInventory(new CardsShowHolder(), 54, title);
+        openShow(viewer, target, 1);
+    }
 
+    public void openShow(Player viewer, Player target, int page) {
         List<Card> owned = new ArrayList<>();
+        // Chronological order: preserves the exact order cards were obtained (oldest first, newest last)
         for (int id : plugin.getPlayerDataManager().getData(target).getOwnedCards()) {
             Card card = plugin.getCardManager().getRegistry().getCard(id);
             if (card != null) owned.add(card);
         }
-        owned.sort(Comparator.comparingInt(Card::getFamilyId).thenComparingInt(Card::getId));
+
+        int pageSize = 45;
+        int maxPage = Math.max(1, (int) Math.ceil((double) owned.size() / pageSize));
+        int curPage = Math.min(Math.max(1, page), maxPage);
+
+        String title = "\u00A78[\u00A76Rounds\u00A78] " + Messages.get("card.show-title", target.getName());
+        Inventory inv = Bukkit.createInventory(new CardsShowHolder(target.getUniqueId(), curPage, maxPage), 54, title);
 
         if (owned.isEmpty()) {
             ItemStack empty = new ItemStack(Material.BARRIER);
             ItemMeta meta = empty.getItemMeta();
             meta.setDisplayName(ChatColor.RED + Messages.get("card.show-empty"));
             empty.setItemMeta(meta);
-            inv.setItem(13, empty);
+            inv.setItem(22, empty);
         } else {
             String lang = Messages.getLanguageCode();
-            for (int i = 0; i < owned.size() && i < 54; i++) {
-                inv.setItem(i, owned.get(i).createItemStack(lang, false));
+            int startIndex = (curPage - 1) * pageSize;
+            int endIndex = Math.min(startIndex + pageSize, owned.size());
+            for (int i = startIndex; i < endIndex; i++) {
+                inv.setItem(i - startIndex, owned.get(i).createItemStack(lang, false));
             }
+        }
+
+        // Bottom control row (slots 45..53)
+        ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        ItemMeta fillerMeta = filler.getItemMeta();
+        fillerMeta.setDisplayName(" ");
+        filler.setItemMeta(fillerMeta);
+
+        for (int slot = 45; slot < 54; slot++) {
+            inv.setItem(slot, filler);
+        }
+
+        if (curPage > 1) {
+            ItemStack prev = new ItemStack(Material.ARROW);
+            ItemMeta prevMeta = prev.getItemMeta();
+            prevMeta.setDisplayName(ChatColor.YELLOW + Messages.get("card.show-prev", curPage - 1, maxPage));
+            prev.setItemMeta(prevMeta);
+            inv.setItem(45, prev);
+        }
+
+        ItemStack info = new ItemStack(Material.BOOK);
+        ItemMeta infoMeta = info.getItemMeta();
+        infoMeta.setDisplayName(ChatColor.GOLD + Messages.get("card.show-page", curPage, maxPage, owned.size()));
+        info.setItemMeta(infoMeta);
+        inv.setItem(49, info);
+
+        if (curPage < maxPage) {
+            ItemStack next = new ItemStack(Material.ARROW);
+            ItemMeta nextMeta = next.getItemMeta();
+            nextMeta.setDisplayName(ChatColor.YELLOW + Messages.get("card.show-next", curPage + 1, maxPage));
+            next.setItemMeta(nextMeta);
+            inv.setItem(53, next);
         }
 
         viewer.openInventory(inv);
@@ -98,10 +140,26 @@ public class CardGUIListener implements Listener {
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
-        boolean isShowGui = event.getInventory().getHolder() instanceof CardsShowHolder;
-        if (!isShowGui && !(event.getInventory().getHolder() instanceof CardGUIHolder)) return;
+        if (event.getInventory().getHolder() instanceof CardsShowHolder showHolder) {
+            event.setCancelled(true);
+            int rawSlot = event.getRawSlot();
+            if (rawSlot == 45 && showHolder.getPage() > 1) {
+                Player target = Bukkit.getPlayer(showHolder.getTargetId());
+                if (target != null) {
+                    openShow(player, target, showHolder.getPage() - 1);
+                    player.playSound(player.getLocation(), org.bukkit.Sound.ITEM_BOOK_PAGE_TURN, 0.8f, 1.2f);
+                }
+            } else if (rawSlot == 53 && showHolder.getPage() < showHolder.getMaxPage()) {
+                Player target = Bukkit.getPlayer(showHolder.getTargetId());
+                if (target != null) {
+                    openShow(player, target, showHolder.getPage() + 1);
+                    player.playSound(player.getLocation(), org.bukkit.Sound.ITEM_BOOK_PAGE_TURN, 0.8f, 1.2f);
+                }
+            }
+            return;
+        }
+        if (!(event.getInventory().getHolder() instanceof CardGUIHolder)) return;
         event.setCancelled(true);
-        if (isShowGui) return;
 
         int rawSlot = event.getRawSlot();
         if (rawSlot < 0 || rawSlot >= SIZE) return;
@@ -191,6 +249,20 @@ public class CardGUIListener implements Listener {
     }
 
     public static class CardsShowHolder implements InventoryHolder {
+        private final UUID targetId;
+        private final int page;
+        private final int maxPage;
+
+        public CardsShowHolder(UUID targetId, int page, int maxPage) {
+            this.targetId = targetId;
+            this.page = page;
+            this.maxPage = maxPage;
+        }
+
+        public UUID getTargetId() { return targetId; }
+        public int getPage() { return page; }
+        public int getMaxPage() { return maxPage; }
+
         @Override
         public Inventory getInventory() {
             return null;

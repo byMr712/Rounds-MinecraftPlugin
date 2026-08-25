@@ -1,0 +1,28 @@
+id: 224
+name:
+  ru: "&4Матрица сокрушения"
+  en: "&4Overpower Matrix"
+description:
+  ru: "+{0} сокрушения ХП, +{1} урона, {2} ХП"
+  en: "+{0} Overpower, +{1} DMG, {2} HP"
+material: REDSTONE_BLOCK
+enabled: true
+variations:
+  - rarity: COMMON
+    values: ["1", "+25%", "-20%"]
+    effects:
+      overpower: 1
+      damage: 0.25
+      hp: -0.2
+  - rarity: UNCOMMON
+    values: ["2", "+40%", "-15%"]
+    effects:
+      overpower: 2
+      damage: 0.4
+      hp: -0.15
+  - rarity: RARE
+    values: ["3", "+60%", "-10%"]
+    effects:
+      overpower: 3
+      damage: 0.6
+      hp: -0.1

@@ -1,0 +1,34 @@
+id: 203
+name:
+  ru: "&fЛегковес"
+  en: "&fFeather Weight"
+description:
+  ru: "+{0} высоты прыжка, +{1} скорости, {2} ХП"
+  en: "+{0} Jump height, +{1} Speed, {2} HP"
+material: FEATHER
+enabled: true
+variations:
+  - rarity: COMMON
+    values: ["30%", "15%", "-15%"]
+    effects:
+      jump_height: 0.3
+      speed: 0.15
+      hp: -0.15
+  - rarity: UNCOMMON
+    values: ["50%", "25%", "-15%"]
+    effects:
+      jump_height: 0.5
+      speed: 0.25
+      hp: -0.15
+  - rarity: RARE
+    values: ["75%", "35%", "-10%"]
+    effects:
+      jump_height: 0.75
+      speed: 0.35
+      hp: -0.1
+  - rarity: EPIC
+    values: ["100%", "50%", "-5%"]
+    effects:
+      jump_height: 1.0
+      speed: 0.5
+      hp: -0.05

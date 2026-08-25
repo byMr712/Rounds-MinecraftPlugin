@@ -1,0 +1,16 @@
+id: 233
+name:
+  ru: "&bНебесный овердрайв"
+  en: "&bCelestial Overdrive"
+description:
+  ru: "Усиливает пули чистой энергией: +300% скорости пули, +50% урона, +2 отскока и подсветка"
+  en: "Empowers bullets with celestial energy: +300% Bullet speed, +50% DMG, +2 Bounces, Highlight"
+material: NETHER_STAR
+enabled: true
+variations:
+  - rarity: LEGENDARY
+    effects:
+      bullet_speed: 3.0
+      damage: 0.5
+      bounce: 2
+      highlight: 1

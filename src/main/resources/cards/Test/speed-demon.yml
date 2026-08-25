@@ -1,0 +1,28 @@
+id: 207
+name:
+  ru: "&eДемон скорости"
+  en: "&eSpeed Demon"
+description:
+  ru: "+{0} скорости бега, +{1} скорострельности, {2} ХП"
+  en: "+{0} Speed, +{1} Attack speed, {2} HP"
+material: SUGAR
+enabled: true
+variations:
+  - rarity: COMMON
+    values: ["25%", "20%", "-20%"]
+    effects:
+      speed: 0.25
+      attack_speed: 0.2
+      hp: -0.2
+  - rarity: UNCOMMON
+    values: ["40%", "35%", "-15%"]
+    effects:
+      speed: 0.4
+      attack_speed: 0.35
+      hp: -0.15
+  - rarity: RARE
+    values: ["60%", "50%", "-10%"]
+    effects:
+      speed: 0.6
+      attack_speed: 0.5
+      hp: -0.1

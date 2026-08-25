@@ -401,29 +401,29 @@ public class BlockListener implements Listener {
         }
         if (pdc.has(RoundsKeys.LOBBY_BLOCK, PersistentDataType.BYTE)) {
             blockStorage.setLobbyBlock(loc);
-            placer.sendMessage(ChatColor.GREEN + "Блок лобби установлен");
+            placer.sendMessage(ChatColor.GREEN + Messages.get("block.lobby-placed", loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ()));
             return;
         }
         Integer mapSize = pdc.get(RoundsKeys.MAP_BLOCK, PersistentDataType.INTEGER);
         if (mapSize != null) {
             blockStorage.addMapBlock(loc, mapSize);
-            placer.sendMessage(ChatColor.GREEN + "Блок карты " + mapSize + "x" + mapSize + " установлен");
+            placer.sendMessage(ChatColor.GREEN + Messages.get("block.map-placed", mapSize));
             return;
         }
         if (pdc.has(RoundsKeys.SPAWN_BLOCK, PersistentDataType.BYTE)) {
             blockStorage.addSpawnBlock(loc);
-            placer.sendMessage(ChatColor.GREEN + "Блок спавна установлен");
+            placer.sendMessage(ChatColor.GREEN + Messages.get("block.spawn-placed"));
             return;
         }
         if (pdc.has(RoundsKeys.JUMP_BLOCK, PersistentDataType.BYTE)) {
             jumpBlocks.add(loc);
-            placer.sendMessage(ChatColor.GREEN + "Блок прыжка установлен");
+            placer.sendMessage(ChatColor.GREEN + Messages.get("block.jump-placed"));
             saveBlocks();
             return;
         }
         if (pdc.has(RoundsKeys.UP_BLOCK, PersistentDataType.BYTE)) {
             upBlocks.add(loc);
-            placer.sendMessage(ChatColor.GREEN + "Блок вверх установлен");
+            placer.sendMessage(ChatColor.GREEN + Messages.get("block.up-placed"));
             saveBlocks();
             return;
         }

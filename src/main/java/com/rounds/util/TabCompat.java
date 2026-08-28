@@ -28,55 +28,70 @@ public class TabCompat {
             Class<?> apiClass = Class.forName("me.neznamy.tab.api.TabAPI");
             api = apiClass.getMethod("getInstance").invoke(null);
             if (api == null) return;
-            mGetTabListFormatManager = apiClass.getMethod("getTabListFormatManager");
-            mGetNameTagManager = apiClass.getMethod("getNameTagManager");
-            mGetPlayer = apiClass.getMethod("getPlayer", UUID.class);
+            try { mGetTabListFormatManager = apiClass.getMethod("getTabListFormatManager"); mGetTabListFormatManager.setAccessible(true); } catch (Exception ignored) {}
+            try { mGetNameTagManager = apiClass.getMethod("getNameTagManager"); mGetNameTagManager.setAccessible(true); } catch (Exception ignored) {}
+            try { mGetPlayer = apiClass.getMethod("getPlayer", UUID.class); mGetPlayer.setAccessible(true); } catch (Exception ignored) {}
+
+            if (mGetPlayer == null) return;
             Class<?> tabPlayerClass = mGetPlayer.getReturnType();
-            Class<?> tlfClass = Class.forName("me.neznamy.tab.api.tablist.TabListFormatManager");
-            Class<?> ntmClass = Class.forName("me.neznamy.tab.api.nametag.NameTagManager");
-            Object tlf = mGetTabListFormatManager.invoke(api);
-            Object ntm = mGetNameTagManager.invoke(api);
-            if (tlf == null && ntm == null) return;
 
-            try {
-                mSetName = tlfClass.getMethod("setName", tabPlayerClass, String.class);
-                mSetName.setAccessible(true);
-            } catch (Exception ignored) {}
-
-            try {
-                mSetPrefix = ntmClass.getMethod("setPrefix", tabPlayerClass, String.class);
-                mSetPrefix.setAccessible(true);
-            } catch (Exception ignored) {}
-
-            try {
-                mSetSuffix = ntmClass.getMethod("setSuffix", tabPlayerClass, String.class);
-                mSetSuffix.setAccessible(true);
-            } catch (Exception ignored) {}
-
-            try {
-                mHideNametag = ntmClass.getMethod("hideNameTag", tabPlayerClass);
-                mHideNametag.setAccessible(true);
-            } catch (Exception ignored) {}
-
-            try {
-                mShowNametag = ntmClass.getMethod("showNameTag", tabPlayerClass);
-                mShowNametag.setAccessible(true);
-            } catch (Exception ignored) {}
-
-            try {
-                mHideNametagToViewer = ntmClass.getMethod("hideNameTag", tabPlayerClass, tabPlayerClass);
-                mHideNametagToViewer.setAccessible(true);
-            } catch (Exception ignored) {}
-
-            try {
-                mShowNametagToViewer = ntmClass.getMethod("showNameTag", tabPlayerClass, tabPlayerClass);
-                mShowNametagToViewer.setAccessible(true);
-            } catch (Exception ignored) {}
-
-            for (Method m : new Method[]{mGetTabListFormatManager, mGetNameTagManager, mGetPlayer}) {
-                m.setAccessible(true);
+            Object tlf = null;
+            if (mGetTabListFormatManager != null) {
+                try { tlf = mGetTabListFormatManager.invoke(api); } catch (Exception ignored) {}
             }
+            Object ntm = null;
+            if (mGetNameTagManager != null) {
+                try { ntm = mGetNameTagManager.invoke(api); } catch (Exception ignored) {}
+            }
+
+            if (tlf != null) {
+                for (Method m : tlf.getClass().getMethods()) {
+                    if (m.getName().equals("setName") && m.getParameterCount() == 2
+                            && m.getParameterTypes()[0].isAssignableFrom(tabPlayerClass)
+                            && m.getParameterTypes()[1] == String.class) {
+                        mSetName = m;
+                        mSetName.setAccessible(true);
+                        break;
+                    }
+                }
+            }
+
+            if (ntm != null) {
+                for (Method m : ntm.getClass().getMethods()) {
+                    if (m.getName().equals("setPrefix") && m.getParameterCount() == 2
+                            && m.getParameterTypes()[0].isAssignableFrom(tabPlayerClass)
+                            && m.getParameterTypes()[1] == String.class) {
+                        mSetPrefix = m;
+                        mSetPrefix.setAccessible(true);
+                    } else if (m.getName().equals("setSuffix") && m.getParameterCount() == 2
+                            && m.getParameterTypes()[0].isAssignableFrom(tabPlayerClass)
+                            && m.getParameterTypes()[1] == String.class) {
+                        mSetSuffix = m;
+                        mSetSuffix.setAccessible(true);
+                    } else if (m.getName().equals("hideNameTag") && m.getParameterCount() == 1
+                            && m.getParameterTypes()[0].isAssignableFrom(tabPlayerClass)) {
+                        mHideNametag = m;
+                        mHideNametag.setAccessible(true);
+                    } else if (m.getName().equals("showNameTag") && m.getParameterCount() == 1
+                            && m.getParameterTypes()[0].isAssignableFrom(tabPlayerClass)) {
+                        mShowNametag = m;
+                        mShowNametag.setAccessible(true);
+                    } else if (m.getName().equals("hideNameTag") && m.getParameterCount() == 2
+                            && m.getParameterTypes()[0].isAssignableFrom(tabPlayerClass)
+                            && m.getParameterTypes()[1].isAssignableFrom(tabPlayerClass)) {
+                        mHideNametagToViewer = m;
+                        mHideNametagToViewer.setAccessible(true);
+                    } else if (m.getName().equals("showNameTag") && m.getParameterCount() == 2
+                            && m.getParameterTypes()[0].isAssignableFrom(tabPlayerClass)
+                            && m.getParameterTypes()[1].isAssignableFrom(tabPlayerClass)) {
+                        mShowNametagToViewer = m;
+                        mShowNametagToViewer.setAccessible(true);
+                    }
+                }
+            }
+
             active = true;
+            Bukkit.getLogger().info("[Rounds] TAB integration active (NameTagManager=" + (ntm != null) + ", TabList=" + (tlf != null) + ")");
         } catch (Exception e) {
             active = false;
             Bukkit.getLogger().warning("[Rounds] TAB detected but integration failed: " + e);

@@ -10,6 +10,7 @@ import com.rounds.util.Messages;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -194,6 +195,10 @@ public class PlayerDataManager implements Listener {
 
         Player player = plugin.getServer().getPlayer(uuid);
 
+        if (saved.team != null) {
+            plugin.getTeamManager().joinTeam(uuid, saved.team);
+        }
+
         if (saved.ownedCards != null && !saved.ownedCards.isEmpty()) {
             for (int cardId : saved.ownedCards) {
                 data.setCard(cardId, true);
@@ -239,6 +244,15 @@ public class PlayerDataManager implements Listener {
             data.dark = saved.stats.getOrDefault("dark", 0.0);
             data.atksReload = saved.stats.getOrDefault("atks_reload", 0.0);
             data.pristinePerseverance = saved.stats.getOrDefault("pristine_perseverance", 0.0);
+        }
+
+        if (player != null && player.isOnline()) {
+            var attr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
+            if (attr != null) {
+                double targetHp = Math.max(data.hp, 2.0);
+                attr.setBaseValue(targetHp);
+                player.setHealth(Math.min(player.getHealth(), targetHp));
+            }
         }
     }
 
@@ -407,7 +421,44 @@ public class PlayerDataManager implements Listener {
                 SavedPlayerData playerSaved = loadPlayerFullData(uuid);
                 if (playerSaved != null) {
                     applySavedData(uuid, playerSaved);
+                    plugin.getCardManager().restorePendingPick(uuid, playerSaved.pendingCardIds);
                 }
+
+                GameManager gm = plugin.getGameManager();
+                GameManager.GameState gameState = gm.getState();
+
+                Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                    if (!player.isOnline()) return;
+                    gm.showNameTagsInGame();
+                    gm.updateScoreboard();
+
+                    if (gameState == GameManager.GameState.PLAYING) {
+                        gm.addDeadPlayer(uuid);
+                        player.setGameMode(GameMode.SPECTATOR);
+                        player.setInvulnerable(true);
+                        GameTeam team = plugin.getTeamManager().getPlayerTeam(uuid);
+                        Location spawn = team != null ? gm.getTeamSpawns().get(team) : null;
+                        if (spawn == null) spawn = gm.getCurrentZoneCenter();
+                        if (spawn != null) player.teleport(spawn);
+                    } else if (gameState == GameManager.GameState.ROUND_END) {
+                        player.setGameMode(GameMode.SPECTATOR);
+                        player.setInvulnerable(true);
+                        GameTeam team = plugin.getTeamManager().getPlayerTeam(uuid);
+                        Location spawn = team != null ? gm.getTeamSpawns().get(team) : null;
+                        if (spawn == null) spawn = gm.getCurrentZoneCenter();
+                        if (spawn != null) player.teleport(spawn);
+                    } else if (gameState == GameManager.GameState.CARDS) {
+                        player.setGameMode(GameMode.ADVENTURE);
+                        player.setInvulnerable(true);
+                        Location spawn = gm.getCurrentZoneCenter();
+                        if (spawn != null) player.teleport(spawn);
+                        if (plugin.getCardManager().isPendingPick(uuid)) {
+                            GameTeam team = plugin.getTeamManager().getPlayerTeam(uuid);
+                            if (team == null) team = GameTeam.BLUE;
+                            plugin.getCardManager().openCardSelection(player, team);
+                        }
+                    }
+                }, 5L);
             } else {
                 // Joining lobby or joining as spectator with a clean slate
                 PlayerData data = new PlayerData();
@@ -422,17 +473,26 @@ public class PlayerDataManager implements Listener {
                     }
                     plugin.getGameManager().showNameTagsInGame();
                     Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                        if (!player.isOnline()) return;
                         player.setGameMode(GameMode.SPECTATOR);
                         player.setInvulnerable(true);
                         Player target = plugin.getGameManager().findRandomAlivePlayer();
                         if (target != null) {
                             player.teleport(target.getLocation());
+                        } else {
+                            Location spawn = plugin.getGameManager().getCurrentZoneCenter();
+                            if (spawn == null) spawn = plugin.getBlockListener().getBlockStorage().getLobbyBlock();
+                            if (spawn != null) player.teleport(spawn);
                         }
                     }, 5L);
                 } else {
                     plugin.getLogger().info("[Join] " + player.getName() + " -> WAITING, scheduling reset");
+                    if (plugin.getTeamManager().getPlayerTeam(uuid) != null) {
+                        plugin.getTeamManager().leaveTeam(uuid);
+                    }
                     Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                         try {
+                            if (!player.isOnline()) return;
                             plugin.getLogger().info("[Join] " + player.getName() + " -> executing reset now");
                             PlayerData pdata = getData(uuid);
                             if (pdata != null) {
@@ -452,6 +512,7 @@ public class PlayerDataManager implements Listener {
                             player.setGameMode(GameMode.ADVENTURE);
                             player.setInvulnerable(false);
                             player.setNoDamageTicks(0);
+                            plugin.getGameManager().restoreNameTags();
                             org.bukkit.Location lobby = plugin.getBlockListener().getBlockStorage().getLobbyBlock();
                             if (lobby != null) {
                                 player.teleport(lobby.clone().add(0, 1, 0));

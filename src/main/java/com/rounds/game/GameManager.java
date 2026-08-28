@@ -627,6 +627,7 @@ public class GameManager implements Listener {
         if (autoDeathEnabled) checkAutoDeath();
         if (musicTick % 10 == 0) {
             checkRoundEnd();
+            updateAllPlayerNametags();
         }
         if (musicTick % 20 == 0) {
             applyPeriodicEffects();
@@ -748,6 +749,7 @@ public class GameManager implements Listener {
             }
         }
         musicTick = 0;
+        showNameTagsInGame();
         updateScoreboard();
     }
 
@@ -839,8 +841,16 @@ public class GameManager implements Listener {
         }
 
         for (GameTeam team : GameTeam.values()) {
-            if (team != winner && plugin.getTeamManager().getTeamPlayers(team).size() > 0) {
+            if (team != winner && (plugin.getTeamManager().getPlayerCount(team) > 0 || !plugin.getTeamManager().getTeamPlayers(team).isEmpty())) {
                 losingTeams.add(team);
+            }
+        }
+        if (losingTeams.isEmpty()) {
+            for (UUID uuid : plugin.getPlayerDataManager().getActivePlayers()) {
+                GameTeam t = plugin.getTeamManager().getPlayerTeam(uuid);
+                if (t != null && t != winner) {
+                    losingTeams.add(t);
+                }
             }
         }
 
@@ -991,10 +1001,12 @@ public class GameManager implements Listener {
         Set<UUID> pickers = new HashSet<>();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-            if (team != null && (allTeams || losingTeams.contains(team) || pendingCardJoiners.contains(p.getUniqueId()))) {
-                if (p.isDead()) continue;
+            boolean shouldPick = team != null && (allTeams || losingTeams.contains(team) || pendingCardJoiners.contains(p.getUniqueId()));
+            if (shouldPick) {
                 pickers.add(p.getUniqueId());
-                plugin.getCardManager().openCardSelection(p, team);
+                if (!p.isDead()) {
+                    plugin.getCardManager().openCardSelection(p, team);
+                }
             }
         }
         pendingCardJoiners.clear();
@@ -1178,6 +1190,7 @@ public class GameManager implements Listener {
             }
         }
         dead.sendMessage(ChatColor.RED + Messages.get("game.you-eliminated"));
+        checkRoundEnd();
     }
 
     @EventHandler
@@ -1218,7 +1231,7 @@ public class GameManager implements Listener {
                 giveGun(player);
                 applyPlayerHP(player);
             } else if (state == GameState.CARDS) {
-                if (team != null && (losingTeams.isEmpty() || losingTeams.contains(team))) {
+                if (team != null && (losingTeams.contains(team) || plugin.getCardManager().isPendingPick(player.getUniqueId()))) {
                     plugin.getCardManager().openCardSelection(player, team);
                 }
                 player.setInvulnerable(true);
@@ -1335,6 +1348,7 @@ public class GameManager implements Listener {
     public void setRounds(int rounds) { this.roundsToWin = rounds; }
     public double getCurrentRound() { return currentRound; }
     public boolean isGameStarted() { return state != GameState.WAITING; }
+    public Location getCurrentZoneCenter() { return currentZoneCenter != null ? currentZoneCenter.clone() : null; }
     public void addDeadPlayer(UUID uuid) { deadPlayers.add(uuid); }
     public Set<GameTeam> getLosingTeams() { return Collections.unmodifiableSet(losingTeams); }
     public Set<UUID> getDeadPlayers() { return Collections.unmodifiableSet(deadPlayers); }
@@ -1393,6 +1407,7 @@ public class GameManager implements Listener {
     }
 
     public void showNameTagsInGame() {
+        refreshTeamScoreboards();
         if (tabCompat.isActive()) {
             for (Player p : plugin.getServer().getOnlinePlayers()) {
                 GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
@@ -1403,15 +1418,20 @@ public class GameManager implements Listener {
                 }
             }
             updateTeamNametagVisibility();
-            return;
+        } else {
+            for (Player p : plugin.getServer().getOnlinePlayers()) {
+                updateColoredName(p, plugin.getTeamManager().getPlayerTeam(p.getUniqueId()));
+            }
         }
-        Scoreboard mainSb = Bukkit.getScoreboardManager().getMainScoreboard();
-        Team hidden = mainSb.getTeam("rounds_hidden");
-        if (hidden != null) hidden.unregister();
+    }
+
+    public void updateAllPlayerNametags() {
         if (!plugin.getRoundsConfig().isColorNicknames()) return;
-        refreshTeamScoreboards();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
-            updateColoredName(p, plugin.getTeamManager().getPlayerTeam(p.getUniqueId()));
+            GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+            if (team != null) {
+                updateColoredName(p, team);
+            }
         }
     }
 
@@ -1449,7 +1469,7 @@ public class GameManager implements Listener {
     }
 
     private String heartsSuffix(ChatColor color, Player p) {
-        return color.toString() + "\u2665" + getHeartCount(p);
+        return " " + color + "\u2665" + getHeartCount(p);
     }
 
     private void updateColoredName(Player p, GameTeam team) {
@@ -1459,17 +1479,17 @@ public class GameManager implements Listener {
             } else {
                 tabCompat.resetName(p);
             }
+        }
+        if (team != null) {
+            ChatColor c = team.getColor();
+            p.setPlayerListName(c + p.getName() + heartsSuffix(c, p));
         } else {
-            if (team != null) {
-                ChatColor c = team.getColor();
-                p.setPlayerListName(c + p.getName() + heartsSuffix(c, p));
-            } else {
-                p.setPlayerListName(p.getName());
-            }
+            p.setPlayerListName(p.getName());
         }
     }
 
     public void restoreNameTags() {
+        refreshTeamScoreboards();
         if (tabCompat.isActive()) {
             tabCompat.resetAllNametagVisibilities();
             for (Player p : plugin.getServer().getOnlinePlayers()) {
@@ -1478,11 +1498,6 @@ public class GameManager implements Listener {
             }
             return;
         }
-        Scoreboard mainSb = Bukkit.getScoreboardManager().getMainScoreboard();
-        Team hidden = mainSb.getTeam("rounds_hidden");
-        if (hidden != null) hidden.unregister();
-        if (!plugin.getRoundsConfig().isColorNicknames()) return;
-        refreshTeamScoreboards();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             updateColoredName(p, plugin.getTeamManager().getPlayerTeam(p.getUniqueId()));
         }

@@ -449,8 +449,6 @@ public class RoundsEntities implements Listener {
                 b.loc.setX(hx + rvx * off);
                 b.loc.setY(hy + rvy * off);
                 b.loc.setZ(hz + rvz * off);
-                // Паритет со старым bounceBullet: после рикошета tgBounce/homing дают
-                // мгновенное перенаправление на ближайшего врага, дальнейший homing гаснет.
                 if (b.tgBounce > 0 || b.homing > 0) {
                     LivingEntity nearest = findNearestEnemy(b.loc, b.ownerId);
                     if (nearest != null) {
@@ -464,7 +462,6 @@ public class RoundsEntities implements Listener {
                             vel.setX(ttx * s); vel.setY(tty * s); vel.setZ(ttz * s);
                         }
                     }
-                    b.homing = 0;
                 }
                 spawnTracer(world, sx, sy, sz, b.loc.getX(), b.loc.getY(), b.loc.getZ(), scale);
                 return;

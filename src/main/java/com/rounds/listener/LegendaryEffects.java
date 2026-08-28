@@ -144,10 +144,9 @@ public class LegendaryEffects implements Listener {
             }
             try {
                 double dist = entity.getLocation().distance(loc);
-                double dmg = Math.max(0, maxDmg * (1.0 - dist / 4.0));
-                if (dmg > 0) {
+                if (dist <= 4.0 && maxDmg > 0) {
                     entity.setNoDamageTicks(0);
-                    entity.damage(dmg);
+                    entity.damage(maxDmg);
                 }
             } catch (IllegalArgumentException ignored) {}
         }

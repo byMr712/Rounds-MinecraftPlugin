@@ -53,6 +53,7 @@ public class TeamManager {
             t.setDisplayName(gt.getColor() + gt.getName());
             t.setColor(gt.getColor());
             t.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.FOR_OWN_TEAM);
+            t.setAllowFriendlyFire(false);
             teams.put(gt, t);
             wins.put(gt, 0);
             playerCounts.put(gt, 0);
@@ -68,6 +69,7 @@ public class TeamManager {
                 team.setDisplayName(gt.getColor() + gt.getName());
                 team.setColor(gt.getColor());
                 team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.FOR_OWN_TEAM);
+                team.setAllowFriendlyFire(false);
             }
             teams.put(gt, team);
         }

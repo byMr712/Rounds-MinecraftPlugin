@@ -197,16 +197,33 @@ public class RoundsEntities implements Listener {
 
         if (b.homing > 0) {
             // Цель ищем не каждый тик: кэшируем и обновляем раз в 10 тиков или при потере.
+            GameTeam ownerTeam = plugin.getTeamManager().getPlayerTeam(b.ownerId);
             LivingEntity cached = b.homingTarget;
             boolean targetInvalid = cached == null || !cached.isValid()
                     || cached.isDead()
                     || b.loc.distanceSquared(cached.getLocation()) > 400.0
                     || (cached instanceof Player ht
-                        && (!ht.isOnline() || ht.getGameMode() == GameMode.SPECTATOR));
+                        && (!plugin.getGameManager().isTargetable(ht)
+                            || plugin.getTeamManager().getPlayerTeam(ht.getUniqueId()) == null
+                            || (ownerTeam != null && ownerTeam == plugin.getTeamManager().getPlayerTeam(ht.getUniqueId()))));
             if (targetInvalid || b.ticksLived % 10 == 0) {
                 b.homingTarget = findNearestEnemy(b.loc, b.ownerId);
             }
             LivingEntity nearest = b.homingTarget;
+            if (nearest != null) {
+                if (nearest instanceof Player p) {
+                    if (!plugin.getGameManager().isTargetable(p)) {
+                        b.homingTarget = null;
+                        nearest = null;
+                    } else {
+                        GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+                        if (targetTeam == null || (ownerTeam != null && ownerTeam == targetTeam)) {
+                            b.homingTarget = null;
+                            nearest = null;
+                        }
+                    }
+                }
+            }
             if (nearest != null) {
                 Location eye = nearest.getEyeLocation();
                 double tx = eye.getX() - b.loc.getX();
@@ -591,9 +608,14 @@ public class RoundsEntities implements Listener {
         }
         if (data.splash > 0) {
             double splashRadius = 2.0 + data.splash;
+            GameTeam ownerTeam = plugin.getTeamManager().getPlayerTeam(ownerId);
             for (Entity entity : living.getNearbyEntities(splashRadius, splashRadius, splashRadius)) {
                 if (entity instanceof LivingEntity splashTarget && !splashTarget.getUniqueId().equals(ownerId)) {
-                    if (splashTarget instanceof Player sp && !plugin.getGameManager().isTargetable(sp)) continue;
+                    if (splashTarget instanceof Player sp) {
+                        if (!plugin.getGameManager().isTargetable(sp)) continue;
+                        GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(sp.getUniqueId());
+                        if (ownerTeam != null && targetTeam != null && ownerTeam == targetTeam) continue;
+                    }
                     splashTarget.setNoDamageTicks(0);
                     splashTarget.damage(finalDamage * 0.5);
                 }
@@ -601,9 +623,14 @@ public class RoundsEntities implements Listener {
             living.getWorld().playSound(living.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 0.5f, 2.0f);
         }
         if (data.shockwave > 0) {
+            GameTeam ownerTeam = plugin.getTeamManager().getPlayerTeam(ownerId);
             for (Entity entity : living.getNearbyEntities(5.0, 5.0, 5.0)) {
                 if (entity instanceof LivingEntity shockTarget && !shockTarget.getUniqueId().equals(ownerId)) {
-                    if (shockTarget instanceof Player sp && !plugin.getGameManager().isTargetable(sp)) continue;
+                    if (shockTarget instanceof Player sp) {
+                        if (!plugin.getGameManager().isTargetable(sp)) continue;
+                        GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(sp.getUniqueId());
+                        if (ownerTeam != null && targetTeam != null && ownerTeam == targetTeam) continue;
+                    }
                     Vector toTarget = shockTarget.getLocation().toVector()
                         .subtract(living.getLocation().toVector());
                     if (isFinite(toTarget) && toTarget.lengthSquared() > 0.001) {
@@ -842,7 +869,7 @@ public class RoundsEntities implements Listener {
             if (entity instanceof Player p) {
                 if (!plugin.getGameManager().isTargetable(p)) continue;
                 GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-                if (ownerTeam != null && targetTeam != null && ownerTeam == targetTeam) continue;
+                if (targetTeam == null || (ownerTeam != null && ownerTeam == targetTeam)) continue;
             }
             double dist = living.getLocation().distanceSquared(center);
             if (dist < closest) {
@@ -862,9 +889,14 @@ public class RoundsEntities implements Listener {
     public static void spawnBomb(Location loc, UUID owner, double bombDamage) {
         loc.getWorld().playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 1.2f);
         loc.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, loc, 1);
+        GameTeam ownerTeam = plugin.getTeamManager().getPlayerTeam(owner);
         for (var entity : loc.getNearbyLivingEntities(5.0)) {
             if (entity.getUniqueId().equals(owner)) continue;
-            if (entity instanceof Player p && !plugin.getGameManager().isTargetable(p)) continue;
+            if (entity instanceof Player p) {
+                if (!plugin.getGameManager().isTargetable(p)) continue;
+                GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+                if (ownerTeam != null && targetTeam != null && ownerTeam == targetTeam) continue;
+            }
             double dmg = Math.max(0, bombDamage);
             if (dmg > 0) {
                 entity.setNoDamageTicks(0);
@@ -927,15 +959,21 @@ public class RoundsEntities implements Listener {
     }
 
     public static void spawnBombShield(Location loc, UUID owner) {
-        loc.getWorld().createExplosion(loc, 2.0f, false, false);
+        loc.getWorld().spawnParticle(Particle.EXPLOSION_HUGE, loc, 1, 0, 0, 0, 0);
+        loc.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, loc, 3, 0.5, 0.5, 0.5, 0.05);
+        loc.getWorld().playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 1.2f);
+        GameTeam ownerTeam = plugin.getTeamManager().getPlayerTeam(owner);
         for (var entity : loc.getNearbyLivingEntities(2.0)) {
             if (entity.getUniqueId().equals(owner)) continue;
-            if (entity instanceof Player sp && !plugin.getGameManager().isTargetable(sp)) continue;
+            if (entity instanceof Player sp) {
+                if (!plugin.getGameManager().isTargetable(sp)) continue;
+                GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(sp.getUniqueId());
+                if (ownerTeam != null && targetTeam != null && ownerTeam == targetTeam) continue;
+            }
             double dist = entity.getLocation().distance(loc);
             double dmg = Math.max(0, 5.0 * (1.0 - dist / 2.0));
             if (dmg > 0) { entity.setNoDamageTicks(0); entity.damage(dmg); }
         }
-        loc.getWorld().playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 1.2f);
     }
 
     // ==================== Event handlers ====================
@@ -980,6 +1018,16 @@ public class RoundsEntities implements Listener {
                 event.setCancelled(true);
             }
             return;
+        }
+        if (event.getEntity() instanceof Player victim) {
+            if (event.getDamager() instanceof Player attacker) {
+                GameTeam victimTeam = plugin.getTeamManager().getPlayerTeam(victim.getUniqueId());
+                GameTeam attackerTeam = plugin.getTeamManager().getPlayerTeam(attacker.getUniqueId());
+                if (victimTeam != null && attackerTeam != null && victimTeam == attackerTeam) {
+                    event.setCancelled(true);
+                    return;
+                }
+            }
         }
         if (event.getDamager() instanceof Player attacker) {
             event.setCancelled(true);

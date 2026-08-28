@@ -1138,18 +1138,24 @@ public class GameManager implements Listener {
         }
 
         if (deadData.implode > 0) {
-            dead.getWorld().createExplosion(dead.getLocation(), 3.0f, false, false);
+            Location deathLoc = dead.getLocation();
+            deathLoc.getWorld().spawnParticle(Particle.EXPLOSION_HUGE, deathLoc, 1, 0, 0, 0, 0);
+            deathLoc.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, deathLoc, 3, 0.5, 0.5, 0.5, 0.05);
             for (Entity entity : dead.getNearbyEntities(4.0, 4.0, 4.0)) {
                 if (entity instanceof LivingEntity target && !target.getUniqueId().equals(dead.getUniqueId())) {
-                    if (target instanceof Player tp && tp.getGameMode() == GameMode.SPECTATOR) continue;
+                    if (target instanceof Player tp) {
+                        if (tp.getGameMode() == GameMode.SPECTATOR) continue;
+                        GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(tp.getUniqueId());
+                        if (deadTeam != null && targetTeam != null && deadTeam == targetTeam) continue;
+                    }
                     try {
-                        double dist = target.getLocation().distance(dead.getLocation());
+                        double dist = target.getLocation().distance(deathLoc);
                         double dmg = Math.max(0, 8.0 * (1.0 - dist / 4.0));
                         if (dmg > 0) target.damage(dmg);
                     } catch (IllegalArgumentException ignored) {}
                 }
             }
-            dead.getWorld().playSound(dead.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 0.8f);
+            dead.getWorld().playSound(deathLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 0.8f);
         }
 
         deadPlayers.add(dead.getUniqueId());

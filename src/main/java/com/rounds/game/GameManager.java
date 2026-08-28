@@ -1,5 +1,6 @@
 package com.rounds.game;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
@@ -1378,22 +1379,9 @@ public class GameManager implements Listener {
     }
 
     public Set<GameTeam> getAvailableTeams() {
-        Set<GameTeam> available = new HashSet<>();
-        if (isGameStarted()) {
-            available.addAll(teamSpawns.keySet());
-            for (Player p : plugin.getServer().getOnlinePlayers()) {
-                GameTeam t = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-                if (t != null && isParticipant(p.getUniqueId())) available.add(t);
-            }
-        } else {
-            Set<GameTeam> fromBlocks = plugin.getBlockListener().getJoinBlockTeams();
-            if (!fromBlocks.isEmpty()) {
-                available.addAll(fromBlocks);
-            }
-        }
+        Set<GameTeam> available = new HashSet<>(plugin.getRoundsConfig().getEnabledTeams());
         if (available.isEmpty()) {
-            available.add(GameTeam.BLUE);
-            available.add(GameTeam.RED);
+            available.addAll(Arrays.asList(GameTeam.values()));
         }
         return available;
     }

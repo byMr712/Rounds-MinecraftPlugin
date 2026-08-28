@@ -1,11 +1,15 @@
 package com.rounds;
 
+import com.rounds.teams.TeamManager.GameTeam;
 import org.bukkit.configuration.file.FileConfiguration;
+
+import java.util.*;
 
 public final class RoundsConfig {
 
     private final RoundsPlugin plugin;
 
+    private List<GameTeam> enabledTeams = new ArrayList<>();
     private int defaultRounds;
     private int maxRounds;
     private int cardSelectionTicks;
@@ -45,6 +49,19 @@ public final class RoundsConfig {
     public void reload() {
         plugin.reloadConfig();
         FileConfiguration c = plugin.getConfig();
+
+        List<String> teamList = c.getStringList("teams.enabled");
+        enabledTeams.clear();
+        if (teamList != null && !teamList.isEmpty()) {
+            for (String s : teamList) {
+                try {
+                    enabledTeams.add(GameTeam.valueOf(s.toUpperCase()));
+                } catch (IllegalArgumentException ignored) {}
+            }
+        }
+        if (enabledTeams.isEmpty()) {
+            enabledTeams.addAll(Arrays.asList(GameTeam.values()));
+        }
 
         defaultRounds = c.getInt("game.default-rounds", 5);
         maxRounds = c.getInt("game.max-rounds", 20);
@@ -134,5 +151,9 @@ public final class RoundsConfig {
         this.builtinScoreboardTitle = title;
         plugin.getConfig().set("builtin-scoreboard.title", title);
         plugin.saveConfig();
+    }
+
+    public List<GameTeam> getEnabledTeams() {
+        return Collections.unmodifiableList(enabledTeams);
     }
 }

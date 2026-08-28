@@ -389,11 +389,11 @@ public class GameManager implements Listener {
                 Location currentLoc = p.getLocation();
                 if (lastLoc != null && lastLoc.distanceSquared(currentLoc) < 0.25) {
                     data.abyssalTicks++;
-                    int remaining = 20 - data.abyssalTicks;
-                    if (remaining > 0 && remaining % 5 == 0) {
+                    int remaining = 10 - data.abyssalTicks;
+                    if (remaining > 0) {
                         p.sendTitle("", ChatColor.DARK_PURPLE + "Призыв... " + remaining + "с", 0, 25, 0);
                     }
-                    if (data.abyssalTicks >= 20) {
+                    if (data.abyssalTicks >= 10) {
                         data.abyssalTicks = 0;
                         spawnAbyssalPhantom(p, data);
                     }
@@ -465,81 +465,86 @@ public class GameManager implements Listener {
 
     private void spawnAbyssalPhantom(Player summoner, PlayerData data) {
         GameTeam summonerTeam = plugin.getTeamManager().getPlayerTeam(summoner.getUniqueId());
-        Location spawnLoc = summoner.getLocation().add(0, 3, 0);
+        int phantomCount = Math.max((int) Math.round(data.abyssal), 1);
 
-        Phantom phantom = summoner.getWorld().spawn(spawnLoc, Phantom.class, p -> {
-            p.setCustomName(ChatColor.DARK_PURPLE + "Тёмный фантом");
-            p.setCustomNameVisible(true);
-            var attr = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
-            if (attr != null) attr.setBaseValue(10);
-            p.setHealth(10);
-            var dmgAttr = p.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
-            if (dmgAttr != null) dmgAttr.setBaseValue(12.0);
-            p.getPersistentDataContainer().set(RoundsKeys.SUMMONED_PHANTOM,
-                org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
-        });
+        Location baseLoc = summoner.getLocation().add(0, 3, 0);
+        summoner.sendTitle("", ChatColor.DARK_PURPLE + (phantomCount > 1 ? "Призвано фантомов: " + phantomCount + "!" : "Фантом призван!"), 10, 40, 10);
+        summoner.getWorld().playSound(baseLoc, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0f, 0.5f);
 
-        UUID summonerUUID = summoner.getUniqueId();
-        summoner.sendTitle("", ChatColor.DARK_PURPLE + "Фантом призван!", 10, 40, 10);
-        summoner.getWorld().playSound(spawnLoc, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0f, 0.5f);
+        for (int i = 0; i < phantomCount; i++) {
+            double angle = phantomCount > 1 ? (2 * Math.PI * i / phantomCount) : 0;
+            Location spawnLoc = baseLoc.clone().add(Math.cos(angle) * 1.5, 0, Math.sin(angle) * 1.5);
 
-        BukkitRunnable phantomTask = new BukkitRunnable() {
-            int ticks = 0;
-            boolean hasDamaged = false;
-            int deathCountdown = -1;
-            LivingEntity target = null;
+            Phantom phantom = summoner.getWorld().spawn(spawnLoc, Phantom.class, p -> {
+                p.setCustomName(ChatColor.DARK_PURPLE + "Тёмный фантом");
+                p.setCustomNameVisible(true);
+                var attr = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+                if (attr != null) attr.setBaseValue(10);
+                p.setHealth(10);
+                var dmgAttr = p.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
+                if (dmgAttr != null) dmgAttr.setBaseValue(12.0);
+                p.getPersistentDataContainer().set(RoundsKeys.SUMMONED_PHANTOM,
+                    org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
+            });
 
-            @Override
-            public void run() {
-                if (!phantom.isValid() || phantom.isDead() || ticks >= 400) {
-                    if (phantom.isValid()) phantom.remove();
-                    phantomTaskIds.remove(getTaskId());
-                    cancel();
-                    return;
-                }
+            BukkitRunnable phantomTask = new BukkitRunnable() {
+                int ticks = 0;
+                boolean hasDamaged = false;
+                int deathCountdown = -1;
+                LivingEntity target = null;
 
-                if (deathCountdown >= 0) {
-                    deathCountdown++;
-                    if (deathCountdown >= 100) {
+                @Override
+                public void run() {
+                    if (!phantom.isValid() || phantom.isDead() || ticks >= 400) {
                         if (phantom.isValid()) phantom.remove();
                         phantomTaskIds.remove(getTaskId());
                         cancel();
                         return;
                     }
-                }
 
-                boolean targetInvalid = target == null || !target.isValid() || target.isDead()
-                        || (target instanceof Player tp && (!tp.isOnline() || tp.getGameMode() == GameMode.SPECTATOR))
-                        || deadPlayers.contains(target.getUniqueId());
-                // Цель ищем раз в 10 тиков или когда кэш стал невалиден — не каждый тик.
-                if (targetInvalid || ticks % 10 == 0) {
-                    target = findNearestEnemyForPhantom(phantom, summoner, summonerTeam);
-                }
-
-                if (target != null) {
-                    phantom.setTarget(target);
-                    Vector direction = target.getLocation().add(0, 1, 0).toVector()
-                        .subtract(phantom.getLocation().toVector());
-                    if (direction.length() > 0) {
-                        phantom.setVelocity(direction.normalize().multiply(0.4));
-                    }
-                    double dist = phantom.getLocation().distance(target.getLocation());
-                    if (dist < 3.0 && ticks % 20 == 0) {
-                        target.damage(12.0);
-                        if (!hasDamaged) {
-                            hasDamaged = true;
-                            deathCountdown = 0;
+                    if (deathCountdown >= 0) {
+                        deathCountdown++;
+                        if (deathCountdown >= 100) {
+                            if (phantom.isValid()) phantom.remove();
+                            phantomTaskIds.remove(getTaskId());
+                            cancel();
+                            return;
                         }
                     }
-                } else {
-                    phantom.setTarget(null);
-                }
 
-                ticks++;
-            }
-        };
-        phantomTask.runTaskTimer(plugin, 0L, 1L);
-        phantomTaskIds.add(phantomTask.getTaskId());
+                    boolean targetInvalid = target == null || !target.isValid() || target.isDead()
+                            || (target instanceof Player tp && (!tp.isOnline() || tp.getGameMode() == GameMode.SPECTATOR))
+                            || deadPlayers.contains(target.getUniqueId());
+                    // Цель ищем раз в 10 тиков или когда кэш стал невалиден — не каждый тик.
+                    if (targetInvalid || ticks % 10 == 0) {
+                        target = findNearestEnemyForPhantom(phantom, summoner, summonerTeam);
+                    }
+
+                    if (target != null) {
+                        phantom.setTarget(target);
+                        Vector direction = target.getLocation().add(0, 1, 0).toVector()
+                            .subtract(phantom.getLocation().toVector());
+                        if (direction.length() > 0) {
+                            phantom.setVelocity(direction.normalize().multiply(0.4));
+                        }
+                        double dist = phantom.getLocation().distance(target.getLocation());
+                        if (dist < 3.0 && ticks % 20 == 0) {
+                            target.damage(12.0);
+                            if (!hasDamaged) {
+                                hasDamaged = true;
+                                deathCountdown = 0;
+                            }
+                        }
+                    } else {
+                        phantom.setTarget(null);
+                    }
+
+                    ticks++;
+                }
+            };
+            phantomTask.runTaskTimer(plugin, 0L, 1L);
+            phantomTaskIds.add(phantomTask.getTaskId());
+        }
     }
 
     public void removeAllPhantoms() {
@@ -1163,7 +1168,7 @@ public class GameManager implements Listener {
                     }
                     try {
                         double dist = target.getLocation().distance(deathLoc);
-                        double dmg = Math.max(0, 8.0 * (1.0 - dist / 4.0));
+                        double dmg = Math.max(0, 8.0 * Math.max(deadData.implode, 1.0) * (1.0 - dist / 4.0));
                         if (dmg > 0) target.damage(dmg);
                     } catch (IllegalArgumentException ignored) {}
                 }

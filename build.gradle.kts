@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.rounds"
-version = "1.1"
+version = "1.4"
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(17))

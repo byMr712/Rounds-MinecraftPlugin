@@ -259,7 +259,9 @@ public class RoundsEntities implements Listener {
                     Vector hvel = b.velocity;
                     double speed = hvel.length();
                     if (speed > 0) {
-                        double k = b.homing * 0.3 / dist;
+                        double speedRatio = speed / 3.0;
+                        double speedResilience = 1.0 + 0.5 * Math.max(0.0, speedRatio - 1.0);
+                        double k = b.homing * 0.3 * speedResilience / dist;
                         double gx = hvel.getX() + tx * k;
                         double gy = hvel.getY() + ty * k;
                         double gz = hvel.getZ() + tz * k;
@@ -558,12 +560,12 @@ public class RoundsEntities implements Listener {
                 }
             }
             if (shooter.snowball > 0 && shooter.snowballWins > 0) {
-                dmg *= (1.0 + 0.1 * shooter.snowballWins);
+                dmg *= (1.0 + 0.1 * shooter.snowballWins * Math.max(shooter.snowball, 1.0));
             }
             if ((shooter.executioner > 0 || shooter.chikibamboni > 0) && target instanceof Player tp && tp.getMaxHealth() > 0) {
                 double ratio = tp.getHealth() / tp.getMaxHealth();
                 if (shooter.executioner > 0 && ratio < 0.2) {
-                    dmg *= 2.0;
+                    dmg *= (1.0 + shooter.executioner);
                 }
             }
         }
@@ -575,8 +577,8 @@ public class RoundsEntities implements Listener {
         if (!(target instanceof Player tp)) return false;
         if (tp.getMaxHealth() <= 0) return false;
         double ratio = tp.getHealth() / tp.getMaxHealth();
-        if (shooter.chikibamboni > 0 && ratio < 0.15) return true;
-        if (shooter.executioner > 0 && ratio < 0.2 && Math.random() < 0.01) return true;
+        if (shooter.chikibamboni > 0 && ratio < Math.min(0.15 * shooter.chikibamboni, 0.5)) return true;
+        if (shooter.executioner > 0 && ratio < 0.2 && Math.random() < 0.01 * shooter.executioner) return true;
         return false;
     }
 
@@ -744,7 +746,7 @@ public class RoundsEntities implements Listener {
                 Player attacker = Bukkit.getPlayer(ownerId);
                 if (attacker != null && attacker.isOnline() && attacker.isValid()) {
                     attacker.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                        PotionEffectType.SLOW, 60, 0));
+                        PotionEffectType.SLOW, (int) (60 * Math.max(td.frostArmor, 1.0)), 0));
                 }
             }
         }

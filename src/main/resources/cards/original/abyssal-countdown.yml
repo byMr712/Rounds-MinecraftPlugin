@@ -3,8 +3,8 @@ name:
   ru: "&5Пикачу - я выбираю тебя!"
   en: "&5Abyssal Countdown"
 description:
-  ru: "Стой на месте 20 сек, чтобы призвать фантома"
-  en: "Stand still for 20s to summon a phantom"
+  ru: "Стой на месте 10 сек, чтобы призвать фантома"
+  en: "Stand still for 10s to summon a phantom"
 material: ENDER_EYE
 enabled: true
 variations:

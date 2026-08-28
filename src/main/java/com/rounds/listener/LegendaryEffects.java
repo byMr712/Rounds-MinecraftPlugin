@@ -26,7 +26,7 @@ public class LegendaryEffects implements Listener {
 
     private final RoundsPlugin plugin;
     private static final Map<UUID, Long> rageUntil = new HashMap<>();
-    private static final Set<UUID> secondWindUsed = new HashSet<>();
+    private static final Map<UUID, Integer> secondWindUses = new HashMap<>();
     private static final Map<UUID, Double> fallPeakY = new HashMap<>();
     private static final Map<UUID, Long> skyfallCooldowns = new HashMap<>();
     private static final long SKYFALL_COOLDOWN_MS = 2500L;
@@ -41,13 +41,13 @@ public class LegendaryEffects implements Listener {
     }
 
     public static void clearRoundState() {
-        secondWindUsed.clear();
+        secondWindUses.clear();
         skyfallCooldowns.clear();
     }
 
     public static void resetAll() {
         rageUntil.clear();
-        secondWindUsed.clear();
+        secondWindUses.clear();
         fallPeakY.clear();
         skyfallCooldowns.clear();
     }
@@ -62,11 +62,13 @@ public class LegendaryEffects implements Listener {
             rageUntil.put(player.getUniqueId(), System.currentTimeMillis() + 3000L);
         }
 
-        if (data.secondWind > 0
-                && !secondWindUsed.contains(player.getUniqueId())
+        int maxUses = (int) Math.round(data.secondWind);
+        int used = secondWindUses.getOrDefault(player.getUniqueId(), 0);
+        if (maxUses > 0
+                && used < maxUses
                 && plugin.getGameManager().isParticipant(player.getUniqueId())
                 && event.getFinalDamage() >= player.getHealth()) {
-            secondWindUsed.add(player.getUniqueId());
+            secondWindUses.put(player.getUniqueId(), used + 1);
             event.setCancelled(true);
             player.setHealth(1.0);
             player.setFallDistance(0);

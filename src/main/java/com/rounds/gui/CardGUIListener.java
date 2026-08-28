@@ -81,7 +81,18 @@ public class CardGUIListener implements Listener {
             int startIndex = (curPage - 1) * pageSize;
             int endIndex = Math.min(startIndex + pageSize, owned.size());
             for (int i = startIndex; i < endIndex; i++) {
-                inv.setItem(i - startIndex, owned.get(i).createItemStack(lang, false));
+                ItemStack item = owned.get(i).createItemStack(lang, false);
+                if (viewer.hasPermission("rounds.admin")) {
+                    ItemMeta meta = item.getItemMeta();
+                    if (meta != null) {
+                        List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
+                        lore.add("");
+                        lore.add(Messages.get("card.show-admin-hint"));
+                        meta.setLore(lore);
+                        item.setItemMeta(meta);
+                    }
+                }
+                inv.setItem(i - startIndex, item);
             }
         }
 
@@ -98,26 +109,95 @@ public class CardGUIListener implements Listener {
         if (curPage > 1) {
             ItemStack prev = new ItemStack(Material.ARROW);
             ItemMeta prevMeta = prev.getItemMeta();
-            prevMeta.setDisplayName(ChatColor.YELLOW + Messages.get("card.show-prev", curPage - 1, maxPage));
+            prevMeta.setDisplayName(ChatColor.GREEN + Messages.get("card.show-prev", curPage - 1, maxPage));
             prev.setItemMeta(prevMeta);
             inv.setItem(45, prev);
+        } else {
+            ItemStack prevInactive = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+            ItemMeta prevMeta = prevInactive.getItemMeta();
+            prevMeta.setDisplayName(ChatColor.GRAY + Messages.get("card.show-no-prev"));
+            prevInactive.setItemMeta(prevMeta);
+            inv.setItem(45, prevInactive);
         }
 
         ItemStack info = new ItemStack(Material.BOOK);
         ItemMeta infoMeta = info.getItemMeta();
-        infoMeta.setDisplayName(ChatColor.GOLD + Messages.get("card.show-page", curPage, maxPage, owned.size()));
+        infoMeta.setDisplayName(ChatColor.GOLD + Messages.get("card.show-page", curPage, maxPage));
+        List<String> infoLore = new ArrayList<>();
+        infoLore.add(ChatColor.YELLOW + Messages.get("card.show-total-cards", owned.size()));
+        if (viewer.hasPermission("rounds.admin")) {
+            infoLore.add("");
+            infoLore.add(ChatColor.GRAY + Messages.get("card.show-admin-hint"));
+        }
+        infoMeta.setLore(infoLore);
         info.setItemMeta(infoMeta);
         inv.setItem(49, info);
 
         if (curPage < maxPage) {
             ItemStack next = new ItemStack(Material.ARROW);
             ItemMeta nextMeta = next.getItemMeta();
-            nextMeta.setDisplayName(ChatColor.YELLOW + Messages.get("card.show-next", curPage + 1, maxPage));
+            nextMeta.setDisplayName(ChatColor.GREEN + Messages.get("card.show-next", curPage + 1, maxPage));
             next.setItemMeta(nextMeta);
             inv.setItem(53, next);
+        } else {
+            ItemStack nextInactive = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+            ItemMeta nextMeta = nextInactive.getItemMeta();
+            nextMeta.setDisplayName(ChatColor.GRAY + Messages.get("card.show-no-next"));
+            nextInactive.setItemMeta(nextMeta);
+            inv.setItem(53, nextInactive);
         }
 
         viewer.openInventory(inv);
+    }
+
+    public void openCardActionMenu(Player admin, Player target, Card card, int cardIndex, int returnPage) {
+        String lang = Messages.getLanguageCode();
+        String title = "\u00A78[\u00A76Rounds\u00A78] " + Messages.get("card.action-menu-title");
+        Inventory inv = Bukkit.createInventory(new CardActionHolder(target.getUniqueId(), card.getId(), cardIndex, returnPage), 27, title);
+
+        ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        ItemMeta fillerMeta = filler.getItemMeta();
+        fillerMeta.setDisplayName(" ");
+        filler.setItemMeta(fillerMeta);
+        for (int i = 0; i < 27; i++) {
+            inv.setItem(i, filler);
+        }
+
+        // Slot 13: Card info
+        inv.setItem(13, card.createItemStack(lang, false));
+
+        // Slot 11: Duplicate button
+        ItemStack dupItem = new ItemStack(Material.EMERALD_BLOCK);
+        ItemMeta dupMeta = dupItem.getItemMeta();
+        dupMeta.setDisplayName(ChatColor.GREEN + "" + ChatColor.BOLD + Messages.get("card.action-duplicate-title"));
+        List<String> dupLore = new ArrayList<>();
+        dupLore.add(ChatColor.GRAY + Messages.get("card.action-duplicate-desc", target.getName()));
+        dupLore.add("");
+        dupLore.add(ChatColor.YELLOW + Messages.get("card.action-click-duplicate"));
+        dupMeta.setLore(dupLore);
+        dupItem.setItemMeta(dupMeta);
+        inv.setItem(11, dupItem);
+
+        // Slot 15: Delete button
+        ItemStack delItem = new ItemStack(Material.REDSTONE_BLOCK);
+        ItemMeta delMeta = delItem.getItemMeta();
+        delMeta.setDisplayName(ChatColor.RED + "" + ChatColor.BOLD + Messages.get("card.action-delete-title"));
+        List<String> delLore = new ArrayList<>();
+        delLore.add(ChatColor.GRAY + Messages.get("card.action-delete-desc", target.getName()));
+        delLore.add("");
+        delLore.add(ChatColor.RED + Messages.get("card.action-click-delete"));
+        delMeta.setLore(delLore);
+        delItem.setItemMeta(delMeta);
+        inv.setItem(15, delItem);
+
+        // Slot 22: Back button
+        ItemStack backItem = new ItemStack(Material.ARROW);
+        ItemMeta backMeta = backItem.getItemMeta();
+        backMeta.setDisplayName(ChatColor.YELLOW + Messages.get("card.action-back"));
+        backItem.setItemMeta(backMeta);
+        inv.setItem(22, backItem);
+
+        admin.openInventory(inv);
     }
 
     public void rotateAllCards() {
@@ -140,24 +220,74 @@ public class CardGUIListener implements Listener {
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
+
         if (event.getInventory().getHolder() instanceof CardsShowHolder showHolder) {
             event.setCancelled(true);
             int rawSlot = event.getRawSlot();
+            Player target = Bukkit.getPlayer(showHolder.getTargetId());
+
             if (rawSlot == 45 && showHolder.getPage() > 1) {
-                Player target = Bukkit.getPlayer(showHolder.getTargetId());
                 if (target != null) {
                     openShow(player, target, showHolder.getPage() - 1);
                     player.playSound(player.getLocation(), org.bukkit.Sound.ITEM_BOOK_PAGE_TURN, 0.8f, 1.2f);
                 }
+                return;
             } else if (rawSlot == 53 && showHolder.getPage() < showHolder.getMaxPage()) {
-                Player target = Bukkit.getPlayer(showHolder.getTargetId());
                 if (target != null) {
                     openShow(player, target, showHolder.getPage() + 1);
                     player.playSound(player.getLocation(), org.bukkit.Sound.ITEM_BOOK_PAGE_TURN, 0.8f, 1.2f);
                 }
+                return;
+            }
+
+            // Check if admin clicked a card (slots 0..44)
+            if (rawSlot >= 0 && rawSlot < 45 && player.hasPermission("rounds.admin")) {
+                if (target == null) return;
+                var data = plugin.getPlayerDataManager().getData(target);
+                int cardIndex = (showHolder.getPage() - 1) * 45 + rawSlot;
+                List<Integer> owned = data.getOwnedCards();
+                if (cardIndex < 0 || cardIndex >= owned.size()) return;
+
+                int cardId = owned.get(cardIndex);
+                Card card = plugin.getCardManager().getRegistry().getCard(cardId);
+                if (card != null) {
+                    openCardActionMenu(player, target, card, cardIndex, showHolder.getPage());
+                    player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 0.8f, 1.0f);
+                }
             }
             return;
         }
+
+        if (event.getInventory().getHolder() instanceof CardActionHolder actionHolder) {
+            event.setCancelled(true);
+            int rawSlot = event.getRawSlot();
+            Player target = Bukkit.getPlayer(actionHolder.getTargetId());
+            Card card = plugin.getCardManager().getRegistry().getCard(actionHolder.getCardId());
+            String lang = Messages.getLanguageCode();
+
+            if (rawSlot == 11) { // Duplicate card
+                if (target != null && card != null) {
+                    plugin.getCardManager().applyCardToPlayer(target, card);
+                    player.sendMessage(ChatColor.GREEN + Messages.get("card.action-duplicated-msg", card.getColoredName(lang), target.getName()));
+                    player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 0.8f, 1.2f);
+                    openShow(player, target, actionHolder.getReturnPage());
+                }
+            } else if (rawSlot == 15) { // Delete card
+                if (target != null && card != null) {
+                    plugin.getCardManager().removeCardFromPlayer(target, actionHolder.getCardIndex());
+                    player.sendMessage(ChatColor.RED + Messages.get("card.action-deleted-msg", card.getColoredName(lang), target.getName()));
+                    player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_ANVIL_BREAK, 0.8f, 1.0f);
+                    openShow(player, target, actionHolder.getReturnPage());
+                }
+            } else if (rawSlot == 22) { // Back
+                if (target != null) {
+                    openShow(player, target, actionHolder.getReturnPage());
+                    player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 0.8f, 1.0f);
+                }
+            }
+            return;
+        }
+
         if (!(event.getInventory().getHolder() instanceof CardGUIHolder)) return;
         event.setCancelled(true);
 
@@ -190,9 +320,11 @@ public class CardGUIListener implements Listener {
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent event) {
         if (!(event.getWhoClicked() instanceof Player)) return;
-        if (!(event.getInventory().getHolder() instanceof CardGUIHolder)
-                && !(event.getInventory().getHolder() instanceof CardsShowHolder)) return;
-        event.setCancelled(true);
+        if (event.getInventory().getHolder() instanceof CardGUIHolder
+                || event.getInventory().getHolder() instanceof CardsShowHolder
+                || event.getInventory().getHolder() instanceof CardActionHolder) {
+            event.setCancelled(true);
+        }
     }
 
     @EventHandler
@@ -262,6 +394,30 @@ public class CardGUIListener implements Listener {
         public UUID getTargetId() { return targetId; }
         public int getPage() { return page; }
         public int getMaxPage() { return maxPage; }
+
+        @Override
+        public Inventory getInventory() {
+            return null;
+        }
+    }
+
+    public static class CardActionHolder implements InventoryHolder {
+        private final UUID targetId;
+        private final int cardId;
+        private final int cardIndex;
+        private final int returnPage;
+
+        public CardActionHolder(UUID targetId, int cardId, int cardIndex, int returnPage) {
+            this.targetId = targetId;
+            this.cardId = cardId;
+            this.cardIndex = cardIndex;
+            this.returnPage = returnPage;
+        }
+
+        public UUID getTargetId() { return targetId; }
+        public int getCardId() { return cardId; }
+        public int getCardIndex() { return cardIndex; }
+        public int getReturnPage() { return returnPage; }
 
         @Override
         public Inventory getInventory() {

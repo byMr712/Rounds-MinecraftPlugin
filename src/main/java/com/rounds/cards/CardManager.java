@@ -79,6 +79,33 @@ public class CardManager {
         return true;
     }
 
+    public boolean removeCardFromPlayer(Player player, int cardIndex) {
+        if (player == null) return false;
+        PlayerData data = plugin.getPlayerDataManager().getData(player);
+        if (!data.removeCardAtIndex(cardIndex)) return false;
+
+        recalculatePlayerStats(player);
+        return true;
+    }
+
+    public void recalculatePlayerStats(Player player) {
+        if (player == null) return;
+        PlayerData data = plugin.getPlayerDataManager().getData(player);
+        data.resetStats();
+
+        // Re-apply remaining cards
+        for (int cardId : data.getOwnedCards()) {
+            Card c = registry.getCard(cardId);
+            if (c != null) {
+                c.apply(player, data);
+            }
+        }
+
+        syncPlayerHP(player, data);
+        GameTeam team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        plugin.getPlayerDataManager().savePlayerFullData(player.getUniqueId(), team, null);
+    }
+
     private boolean grantChainedCards(Player player, PlayerData data, Card source) {
         boolean revealedAny = false;
         for (Map.Entry<String, Double> entry : source.getEffects().entrySet()) {
@@ -115,6 +142,8 @@ public class CardManager {
             PlayerData data = plugin.getPlayerDataManager().getData(p);
             data.resetAllCards();
             data.resetStats();
+            plugin.getPlayerDataManager().clearPDC(p);
+            plugin.getPlayerDataManager().removePlayerData(p.getUniqueId());
         }
     }
 
@@ -178,7 +207,7 @@ public class CardManager {
         var attr = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
         if (attr != null) {
             attr.setBaseValue(maxHP);
-            player.setHealth(Math.min(player.getHealth(), maxHP));
+            player.setHealth(Math.min(player.getHealth(), attr.getValue()));
         }
     }
 

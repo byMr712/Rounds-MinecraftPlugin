@@ -101,15 +101,14 @@ public class Messages {
         if (!file.exists()) file = fallbackFile();
         if (file == null || !file.exists()) return;
 
-        FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-
         InputStream defStream = plugin.getResource("lang/" + file.getName());
         if (defStream != null) {
             YamlConfiguration defConfig = YamlConfiguration.loadConfiguration(
                     new InputStreamReader(defStream, StandardCharsets.UTF_8));
-            config.setDefaults(defConfig);
+            flattenSection("", defConfig, messages);
         }
 
+        FileConfiguration config = YamlConfiguration.loadConfiguration(file);
         flattenSection("", config, messages);
     }
 

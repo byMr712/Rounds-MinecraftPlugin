@@ -8,7 +8,7 @@ import java.util.List;
 
 public class PlayerData {
 
-    public static final double MAX_HEALTH = 1024.0;
+    public static final double MAX_HEALTH = 2048.0;
 
     public String playerName = "";
     public double playerUse = 0;
@@ -157,6 +157,23 @@ public class PlayerData {
         } else {
             ownedCards.removeIf(i -> i == id);
         }
+    }
+
+    public boolean removeCardAtIndex(int index) {
+        if (index >= 0 && index < ownedCards.size()) {
+            ownedCards.remove(index);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean removeOneCard(int id) {
+        int idx = ownedCards.indexOf(id);
+        if (idx != -1) {
+            ownedCards.remove(idx);
+            return true;
+        }
+        return false;
     }
 
     public List<Integer> getOwnedCards() {

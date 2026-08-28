@@ -285,7 +285,7 @@ public class GameManager implements Listener {
         var attr = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
         if (attr != null) {
             attr.setBaseValue(maxHP);
-            player.setHealth(Math.min(maxHP, com.rounds.player.PlayerData.MAX_HEALTH));
+            player.setHealth(Math.min(maxHP, attr.getValue()));
         }
     }
 

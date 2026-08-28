@@ -2,6 +2,7 @@ package com.rounds.blocks;
 
 import com.rounds.RoundsKeys;
 import com.rounds.RoundsPlugin;
+import com.rounds.player.PlayerData;
 import com.rounds.teams.TeamManager;
 import com.rounds.teams.TeamManager.GameTeam;
 import com.rounds.util.Messages;
@@ -253,6 +254,13 @@ public class BlockListener implements Listener {
                 return;
             }
             if (plugin.getTeamManager().joinTeam(player.getUniqueId(), team)) {
+                PlayerData pdata = plugin.getPlayerDataManager().getData(player);
+                if (pdata != null) {
+                    pdata.resetStats();
+                    pdata.resetAllCards();
+                }
+                plugin.getPlayerDataManager().clearPDC(player);
+                plugin.getPlayerDataManager().removePlayerData(player.getUniqueId());
                 plugin.getGameManager().applyTeamColor(player);
                 plugin.getGameManager().buildScoreboard(player);
                 String teamName = Messages.get("team." + team.name().toLowerCase());

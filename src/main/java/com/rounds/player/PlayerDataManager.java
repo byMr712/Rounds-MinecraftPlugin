@@ -377,62 +377,93 @@ public class PlayerDataManager implements Listener {
         return cache.computeIfAbsent(uuid, u -> new PlayerData());
     }
 
+    public void clearPDC(Player player) {
+        if (player == null) return;
+        PersistentDataContainer pdc = player.getPersistentDataContainer();
+        for (NamespacedKey key : STAT_KEYS.values()) {
+            pdc.remove(key);
+        }
+        for (int id : getRegisteredCardIds()) {
+            NamespacedKey cardKey = new NamespacedKey("rounds", "card_" + id);
+            pdc.remove(cardKey);
+        }
+    }
+
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
 
         try {
-            plugin.getLogger().info("[Join] " + player.getName() + " joined, gameStarted=" + plugin.getGameManager().isGameStarted() + " state=" + plugin.getGameManager().getState());
+            boolean isCurrentGameActive = plugin.getGameManager().isGameStarted();
+            boolean wasInCurrentGame = isCurrentGameActive && activePlayers.contains(uuid);
 
-            PlayerData data = loadFromPDC(player);
-            cache.put(uuid, data);
+            plugin.getLogger().info("[Join] " + player.getName() + " joined, gameStarted=" + isCurrentGameActive + " wasActive=" + wasInCurrentGame);
 
-            if (plugin.getGameManager().isGameStarted()) {
-                if (plugin.getTeamManager().getPlayerTeam(uuid) != null) {
-                    plugin.getTeamManager().leaveTeam(uuid);
+            if (wasInCurrentGame) {
+                // Reconnecting player to the currently active match
+                PlayerData data = loadFromPDC(player);
+                cache.put(uuid, data);
+                SavedPlayerData playerSaved = loadPlayerFullData(uuid);
+                if (playerSaved != null) {
+                    applySavedData(uuid, playerSaved);
                 }
-                plugin.getGameManager().showNameTagsInGame();
-                Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-                    player.setGameMode(GameMode.SPECTATOR);
-                    player.setInvulnerable(true);
-                    Player target = plugin.getGameManager().findRandomAlivePlayer();
-                    if (target != null) {
-                        player.teleport(target.getLocation());
-                    }
-                }, 5L);
             } else {
-                plugin.getLogger().info("[Join] " + player.getName() + " -> WAITING, scheduling reset");
-                Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-                    try {
-                        plugin.getLogger().info("[Join] " + player.getName() + " -> executing reset now");
-                        PlayerData pdata = getData(uuid);
-                        if (pdata != null) {
-                            pdata.resetStats();
-                            pdata.resetAllCards();
-                        }
-                        plugin.getGameManager().clearCardEffects(player);
-        com.rounds.item.GunItem.cancelReload(uuid);
-        com.rounds.item.GunItem.clearPlayer(uuid);
-                        player.getInventory().clear();
-                        var attr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
-                        if (attr != null) attr.setBaseValue(20);
-                        player.setHealth(20);
-                        player.setFoodLevel(20);
-                        player.setGameMode(GameMode.ADVENTURE);
-                        player.setInvulnerable(false);
-                        player.setNoDamageTicks(0);
-                        org.bukkit.Location lobby = plugin.getBlockListener().getBlockStorage().getLobbyBlock();
-                        if (lobby != null) {
-                            player.teleport(lobby.clone().add(0, 1, 0));
-                        } else {
-                            plugin.getLogger().warning("[Join] Lobby is null!");
-                        }
-                    } catch (Exception e) {
-                        plugin.getLogger().severe("[Join] Error resetting " + player.getName() + ": " + e.getMessage());
-                        e.printStackTrace();
+                // Joining lobby or joining as spectator with a clean slate
+                PlayerData data = new PlayerData();
+                data.playerName = player.getName();
+                cache.put(uuid, data);
+                clearPDC(player);
+                removePlayerData(uuid);
+
+                if (isCurrentGameActive) {
+                    if (plugin.getTeamManager().getPlayerTeam(uuid) != null) {
+                        plugin.getTeamManager().leaveTeam(uuid);
                     }
-                }, 5L);
+                    plugin.getGameManager().showNameTagsInGame();
+                    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                        player.setGameMode(GameMode.SPECTATOR);
+                        player.setInvulnerable(true);
+                        Player target = plugin.getGameManager().findRandomAlivePlayer();
+                        if (target != null) {
+                            player.teleport(target.getLocation());
+                        }
+                    }, 5L);
+                } else {
+                    plugin.getLogger().info("[Join] " + player.getName() + " -> WAITING, scheduling reset");
+                    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                        try {
+                            plugin.getLogger().info("[Join] " + player.getName() + " -> executing reset now");
+                            PlayerData pdata = getData(uuid);
+                            if (pdata != null) {
+                                pdata.resetStats();
+                                pdata.resetAllCards();
+                            }
+                            clearPDC(player);
+                            removePlayerData(uuid);
+                            plugin.getGameManager().clearCardEffects(player);
+                            com.rounds.item.GunItem.cancelReload(uuid);
+                            com.rounds.item.GunItem.clearPlayer(uuid);
+                            player.getInventory().clear();
+                            var attr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
+                            if (attr != null) attr.setBaseValue(20);
+                            player.setHealth(20);
+                            player.setFoodLevel(20);
+                            player.setGameMode(GameMode.ADVENTURE);
+                            player.setInvulnerable(false);
+                            player.setNoDamageTicks(0);
+                            org.bukkit.Location lobby = plugin.getBlockListener().getBlockStorage().getLobbyBlock();
+                            if (lobby != null) {
+                                player.teleport(lobby.clone().add(0, 1, 0));
+                            } else {
+                                plugin.getLogger().warning("[Join] Lobby is null!");
+                            }
+                        } catch (Exception e) {
+                            plugin.getLogger().severe("[Join] Error resetting " + player.getName() + ": " + e.getMessage());
+                            e.printStackTrace();
+                        }
+                    }, 5L);
+                }
             }
         } catch (Exception e) {
             plugin.getLogger().severe("[Join] Error in onJoin for " + player.getName() + ": " + e.getMessage());
@@ -445,11 +476,12 @@ public class PlayerDataManager implements Listener {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
         PlayerData data = cache.get(uuid);
-        if (data != null) {
+        if (data != null && activePlayers.contains(uuid) && plugin.getGameManager().isGameStarted()) {
             saveToPDC(player, data);
-        }
-        if (activePlayers.contains(uuid)) {
             savePlayerDataOnQuit(uuid);
+        } else {
+            clearPDC(player);
+            removePlayerData(uuid);
         }
         com.rounds.item.GunItem.cancelReload(uuid);
         if (plugin.getGameManager().getState() == GameManager.GameState.CARDS) {

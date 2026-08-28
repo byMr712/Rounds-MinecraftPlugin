@@ -67,6 +67,18 @@ public class CardManager {
         }
     }
 
+    public boolean applyCardToPlayer(Player player, Card card) {
+        if (player == null || card == null) return false;
+        PlayerData data = plugin.getPlayerDataManager().getData(player);
+        card.apply(player, data);
+        data.setCard(card.getId(), true);
+        syncPlayerHP(player, data);
+        GameTeam team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        plugin.getPlayerDataManager().savePlayerFullData(player.getUniqueId(), team, null);
+        grantChainedCards(player, data, card);
+        return true;
+    }
+
     private boolean grantChainedCards(Player player, PlayerData data, Card source) {
         boolean revealedAny = false;
         for (Map.Entry<String, Double> entry : source.getEffects().entrySet()) {

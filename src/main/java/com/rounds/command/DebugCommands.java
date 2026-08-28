@@ -35,7 +35,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         "toxic_cloud", "leech", "homing", "poison_lvl", "cold_lvl", "parazit", "hp",
         "bomb_bullet", "bomb_on_block", "explode_bullets", "bullet_speed", "empower",
         "empower_charge", "dark_strength", "barage", "big_bullet", "grow",
-        "truster_lvl", "jump_height", "dark", "atks_reload"
+        "truster_lvl", "jump_height", "dark", "atks_reload", "block_cd", "shield_cooldown"
     );
     private static final List<String> EFFECTS = Arrays.asList(
         "SPEED", "SLOW", "FAST_DIGGING", "SLOW_DIGGING", "INCREASE_DAMAGE",
@@ -553,17 +553,39 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     }
 
     private void handleCardsAdd(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
-        if (args.length < 3) { sender.sendMessage(ChatColor.RED + "Usage: /rdebug cards add <name>"); return; }
+        if (args.length < 3) {
+            sender.sendMessage(ChatColor.RED + "Usage: /rdebug cards add [player] <name|id>");
+            return;
+        }
 
-        String nameInput = String.join(" ", Arrays.copyOfRange(args, 2, args.length));
+        Player target = null;
+        String nameInput;
+
+        Player candidate = Bukkit.getPlayer(args[2]);
+        if (candidate != null && args.length >= 4) {
+            target = candidate;
+            nameInput = String.join(" ", Arrays.copyOfRange(args, 3, args.length));
+        } else if (sender instanceof Player p) {
+            target = p;
+            nameInput = String.join(" ", Arrays.copyOfRange(args, 2, args.length));
+        } else if (candidate != null) {
+            sender.sendMessage(ChatColor.RED + "Usage: /rdebug cards add <player> <name|id>");
+            return;
+        } else {
+            sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player"));
+            return;
+        }
+
         var card = plugin.getCardManager().getRegistry().findCardByName(nameInput);
-        if (card == null) { sender.sendMessage(ChatColor.RED + Messages.get("command.card-not-found", nameInput)); return; }
+        if (card == null) {
+            sender.sendMessage(ChatColor.RED + Messages.get("command.card-not-found", nameInput));
+            return;
+        }
 
-        PlayerData data = plugin.getPlayerDataManager().getData(player);
-        card.apply(player, data);
-        data.setCard(card.getId(), true);
-        sender.sendMessage(ChatColor.GREEN + Messages.get("command.applied-card", card.getColoredName(Messages.getLanguageCode())));
+        plugin.getCardManager().applyCardToPlayer(target, card);
+        String lang = Messages.getLanguageCode();
+        sender.sendMessage(ChatColor.GREEN + Messages.get("command.applied-card", card.getColoredName(lang))
+                + (target != sender ? " -> " + target.getName() : ""));
     }
 
     // === STATS ===
@@ -644,6 +666,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxKv(sender, Messages.get("debug.stat-shield-active"), data.shieldActive ? "ON" : "OFF");
         boxKv(sender, Messages.get("debug.stat-shield-cd"),
                 String.format("%.1fs", data.shieldCooldown / 20.0));
+        boxStat(sender, "stat-block-cd", data.blockCd);
 
         boxFooter(sender);
     }
@@ -679,23 +702,23 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
     private boolean applyStat(PlayerData data, Player target, String stat, double value) {
         switch (stat) {
-            case "dmg" -> data.dmg = value;
-            case "atks" -> data.atks = value;
-            case "atk_speed" -> data.atkSpeed = value;
-            case "atkr" -> data.atkr = value;
-            case "bounce" -> data.bouncePl = value;
-            case "ammo" -> data.ammo = value;
-            case "bullets" -> data.bullets = value;
-            case "cold" -> data.cold = value;
-            case "poison" -> data.poison = value;
-            case "toxic_cloud" -> data.toxicCloud = value;
-            case "highlight" -> data.highlight = value;
-            case "leech" -> data.leech = value;
-            case "homing" -> data.homing = value;
-            case "poison_lvl" -> data.poisonLvl = value;
-            case "cold_lvl" -> data.coldLvl = value;
-            case "parazit" -> data.parazit = value;
-            case "parazit_lvl" -> data.parazitLvl = value;
+            case "dmg" -> data.dmg = Math.max(value, 0.5);
+            case "atks" -> data.atks = Math.max(value, 1.0);
+            case "atk_speed", "atk-speed" -> data.atkSpeed = Math.max(value, -0.5);
+            case "atkr", "atk-range" -> data.atkr = Math.max(value, 0);
+            case "bounce" -> data.bouncePl = Math.max(value, 0);
+            case "ammo" -> data.ammo = Math.max(value, 1);
+            case "bullets" -> data.bullets = Math.max(value, 1);
+            case "cold" -> data.cold = Math.max(value, 0);
+            case "poison" -> data.poison = Math.max(value, 0);
+            case "toxic_cloud", "toxic-cloud" -> data.toxicCloud = Math.max(value, 0);
+            case "highlight" -> data.highlight = Math.max(value, 0);
+            case "leech" -> data.leech = Math.max(value, 0);
+            case "homing" -> data.homing = Math.max(value, 0);
+            case "poison_lvl", "poison-lvl" -> data.poisonLvl = Math.max(value, 0);
+            case "cold_lvl", "cold-lvl" -> data.coldLvl = Math.max(value, 0);
+            case "parazit" -> data.parazit = Math.max(value, 0);
+            case "parazit_lvl", "parazit-lvl" -> data.parazitLvl = Math.max(value, 0);
             case "hp" -> {
                 double clamped = PlayerData.clampMaxHealth(value);
                 data.hp = clamped;
@@ -703,18 +726,20 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 if (attr != null) attr.setBaseValue(clamped);
                 target.setHealth(Math.min(target.getHealth(), clamped));
             }
-            case "bomb_bullet" -> data.bombBullet = value;
-            case "bomb_on_block" -> data.bombOnBlock = value;
-            case "bullet_speed" -> data.bulletSpeed = value;
-            case "empower" -> data.empower = value;
-            case "empower_charge" -> data.empowerCharge = value;
-            case "dark_strength" -> data.darkStrength = value;
-            case "big_bullet" -> data.bigBullet = value;
-            case "grow" -> data.grow = value;
-            case "truster_lvl" -> data.trusterLvl = value;
-            case "jump_height" -> data.jumpHeight = value;
-            case "dark" -> data.dark = value;
-            case "atks_reload" -> data.atksReload = value;
+            case "bomb_bullet", "bomb-bullet" -> data.bombBullet = Math.max(value, 0);
+            case "bomb_on_block", "bomb-on-block" -> data.bombOnBlock = Math.max(value, 0);
+            case "bullet_speed", "bullet-speed" -> data.bulletSpeed = Math.max(value, 0.5);
+            case "empower" -> data.empower = Math.max(value, 0);
+            case "empower_charge", "empower-charge" -> data.empowerCharge = Math.max(value, 0);
+            case "dark_strength", "dark-strength" -> data.darkStrength = Math.max(value, 0);
+            case "big_bullet", "big-bullet" -> data.bigBullet = Math.max(value, 0);
+            case "grow" -> data.grow = Math.max(value, 0);
+            case "truster_lvl", "truster-lvl" -> data.trusterLvl = Math.max(value, 0);
+            case "jump_height", "jump-height" -> data.jumpHeight = Math.max(value, 0);
+            case "dark" -> data.dark = Math.max(value, 0);
+            case "atks_reload", "atks-reload" -> data.atksReload = Math.max(value, 0);
+            case "block_cd", "block-cd" -> data.blockCd = value;
+            case "shield_cooldown", "shield-cooldown" -> data.shieldCooldown = Math.max(value, 0);
             default -> { return false; }
         }
         return true;
@@ -1006,6 +1031,12 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                     yield filterStartsWith(list, input);
                 }
                 if (args.length == 3 && args[1].equalsIgnoreCase("add")) {
+                    List<String> suggestions = new ArrayList<>();
+                    Bukkit.getOnlinePlayers().forEach(p -> suggestions.add(p.getName()));
+                    suggestions.addAll(plugin.getCardManager().getRegistry().getCardNameSuggestions());
+                    yield filterStartsWith(suggestions, input);
+                }
+                if (args.length >= 4 && args[1].equalsIgnoreCase("add")) {
                     yield filterStartsWith(plugin.getCardManager().getRegistry().getCardNameSuggestions(), input);
                 }
                 yield Collections.emptyList();

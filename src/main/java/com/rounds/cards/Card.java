@@ -58,12 +58,12 @@ public class Card {
 
     private void applyEffect(PlayerData data, String key, double value) {
         switch (key) {
-            case "damage": data.dmg = PlayerData.round2(data.dmg * (1.0 + value)); break;
-            case "attack-speed": data.atkSpeed = PlayerData.round2(Math.max(data.atkSpeed + value, -0.99)); break;
+            case "damage": data.dmg = PlayerData.round2(Math.max(data.dmg * (1.0 + value), 0.5)); break;
+            case "attack-speed": data.atkSpeed = PlayerData.round2(Math.max(data.atkSpeed + value, -0.5)); break;
             case "attack-range": data.atkr = PlayerData.round2(Math.max(data.atkr + value, 0)); break;
             case "bullets": data.bullets = PlayerData.round2(Math.max(data.bullets + value, 1)); break;
             case "ammo": data.ammo = Math.max(data.ammo + value, 1); data.maxAmmo = Math.max(data.maxAmmo + value, 1); break;
-            case "bullet-speed": data.bulletSpeed = PlayerData.round2(Math.max(data.bulletSpeed + value, 0.1)); break;
+            case "bullet-speed": data.bulletSpeed = PlayerData.round2(Math.max(data.bulletSpeed + value, 0.5)); break;
             case "bounce": data.bouncePl = PlayerData.round2(Math.max(data.bouncePl + value, 0)); break;
             case "hp": data.hp = PlayerData.round2(Math.max(data.hp * (1.0 + value), 2)); break;
             case "hp-cost": data.hpCost = PlayerData.round2(Math.max(data.hpCost + value, 0)); break;
@@ -92,7 +92,7 @@ public class Card {
             case "speed": data.speed = PlayerData.round2(Math.max(data.speed + value, 0)); break;
             case "speed-boost": data.speedBoost = PlayerData.round2(Math.max(data.speedBoost + value, 0)); break;
             case "stun": data.stun = PlayerData.round2(Math.max(data.stun + value, 0)); break;
-            case "block-cd": data.blockCd = PlayerData.round2(data.blockCd + value); break;
+            case "block-cd", "block_cd", "block-cooldown", "block_cooldown", "shield-cooldown", "shield_cooldown", "shield-cd", "shield_cd": data.blockCd = PlayerData.round2(data.blockCd + value); break;
             case "reload-speed": data.reloadSpeed = PlayerData.round2(Math.max(Math.min(data.reloadSpeed + value, 0.95), 0)); break;
             case "heal": data.heal = PlayerData.round2(Math.max(data.heal + value, 0)); break;
             case "damage-per-bounce": data.damagePerBounce = PlayerData.round2(data.damagePerBounce + value); break;

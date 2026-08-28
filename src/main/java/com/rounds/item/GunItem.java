@@ -142,7 +142,8 @@ public class GunItem implements Listener {
             }
         }
 
-        double cooldownTicks = Math.max(data.atks / (1.0 + data.atkSpeed) + data.atksReload, 1);
+        double effectiveAtkSpeed = Math.max(1.0 + data.atkSpeed, 0.5);
+        double cooldownTicks = Math.max(data.atks / effectiveAtkSpeed + data.atksReload, 1);
         if (!GunCooldowns.canShoot(uuid, cooldownTicks)) {
             return;
         }
@@ -167,7 +168,7 @@ public class GunItem implements Listener {
             vel.setY(vel.getY() + (Math.random() - 0.5) * spread);
             vel.setZ(vel.getZ() + (Math.random() - 0.5) * spread);
 
-            double speed = 3.0 * Math.max(data.bulletSpeed, 0.1);
+            double speed = 3.0 * Math.max(data.bulletSpeed, 0.5);
             vel = vel.normalize().multiply(speed);
 
             RoundsEntities.spawnBullet(player, bulletOrigin, vel, data,
@@ -213,14 +214,12 @@ public class GunItem implements Listener {
         }
 
         PlayerData data = plugin.getPlayerDataManager().getData(uuid);
-        double cooldownReduction = 1.0;
+        double cooldownMultiplier = 1.0 + data.blockCd;
         if (data.shieldCooldown > 0) {
-            cooldownReduction = Math.max(0.1, 1.0 - data.shieldCooldown * 0.1);
+            cooldownMultiplier -= data.shieldCooldown * 0.1;
         }
-        if (data.blockCd != 0) {
-            cooldownReduction = Math.max(0.1, cooldownReduction + data.blockCd * 0.5);
-        }
-        long actualCooldown = (long) (SHIELD_COOLDOWN_MS * cooldownReduction);
+        cooldownMultiplier = Math.max(0.5, cooldownMultiplier);
+        long actualCooldown = (long) (SHIELD_COOLDOWN_MS * cooldownMultiplier);
 
         Long lastUse = shieldCooldowns.get(uuid);
         long now = System.currentTimeMillis();

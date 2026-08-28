@@ -351,14 +351,40 @@ public class CardRegistry {
     }
 
     public Card findCardByName(String name) {
-        String lower = name.toLowerCase();
+        if (name == null || name.isBlank()) return null;
+        String query = name.trim();
+
+        // 1. Try numeric ID lookup
+        try {
+            int id = Integer.parseInt(query);
+            Card byId = cards.get(id);
+            if (byId != null) return byId;
+        } catch (NumberFormatException ignored) {}
+
+        String cleanQuery = stripAllFormatting(query).toLowerCase();
+        if (cleanQuery.isEmpty()) return null;
+
+        // 2. Exact match across all localized names
         for (Card c : cards.values()) {
             for (String n : c.getNames().values()) {
-                String stripped = ChatColor.stripColor(n).toLowerCase();
-                if (stripped.contains(lower)) return c;
+                String cleanName = stripAllFormatting(n).toLowerCase();
+                if (cleanName.equals(cleanQuery)) return c;
+            }
+        }
+
+        // 3. Substring match across all localized names
+        for (Card c : cards.values()) {
+            for (String n : c.getNames().values()) {
+                String cleanName = stripAllFormatting(n).toLowerCase();
+                if (cleanName.contains(cleanQuery)) return c;
             }
         }
         return null;
+    }
+
+    private static String stripAllFormatting(String text) {
+        if (text == null) return "";
+        return ChatColor.stripColor(text.replaceAll("&[0-9a-fk-orA-FK-OR]", "")).trim();
     }
 
     public List<String> getCardNameSuggestions() {
@@ -367,8 +393,10 @@ public class CardRegistry {
         try { lang = com.rounds.util.Messages.getLanguageCode(); } catch (Exception ignored) {}
         for (Card c : cards.values()) {
             String name = c.getName(lang);
-            name = ChatColor.stripColor(name.replaceAll("&[0-9a-fk-or]", ""));
-            list.add(name);
+            name = stripAllFormatting(name);
+            if (!list.contains(name)) {
+                list.add(name);
+            }
         }
         return list;
     }

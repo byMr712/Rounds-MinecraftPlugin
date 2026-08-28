@@ -5,6 +5,7 @@ import com.rounds.player.PlayerData;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -27,6 +28,8 @@ public class LegendaryEffects implements Listener {
     private static final Map<UUID, Long> rageUntil = new HashMap<>();
     private static final Set<UUID> secondWindUsed = new HashSet<>();
     private static final Map<UUID, Double> fallPeakY = new HashMap<>();
+    private static final Map<UUID, Long> skyfallCooldowns = new HashMap<>();
+    private static final long SKYFALL_COOLDOWN_MS = 2500L;
 
     public LegendaryEffects(RoundsPlugin plugin) {
         this.plugin = plugin;
@@ -39,12 +42,14 @@ public class LegendaryEffects implements Listener {
 
     public static void clearRoundState() {
         secondWindUsed.clear();
+        skyfallCooldowns.clear();
     }
 
     public static void resetAll() {
         rageUntil.clear();
         secondWindUsed.clear();
         fallPeakY.clear();
+        skyfallCooldowns.clear();
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -80,7 +85,7 @@ public class LegendaryEffects implements Listener {
             event.setCancelled(true);
             player.setFallDistance(0);
             fallPeakY.remove(player.getUniqueId());
-            triggerSkyfall(player, data);
+            checkAndTriggerSkyfall(player, data);
         }
     }
 
@@ -104,16 +109,28 @@ public class LegendaryEffects implements Listener {
         if (player.isOnGround()) {
             Double peak = fallPeakY.remove(uuid);
             if (peak != null && peak - y >= 3.0) {
-                triggerSkyfall(player, data);
+                checkAndTriggerSkyfall(player, data);
             }
             return;
         }
         fallPeakY.merge(uuid, y, Math::max);
     }
 
+    private void checkAndTriggerSkyfall(Player player, PlayerData data) {
+        UUID uuid = player.getUniqueId();
+        long now = System.currentTimeMillis();
+        Long last = skyfallCooldowns.get(uuid);
+        if (last != null && now - last < SKYFALL_COOLDOWN_MS) {
+            return;
+        }
+        skyfallCooldowns.put(uuid, now);
+        triggerSkyfall(player, data);
+    }
+
     private void triggerSkyfall(Player player, PlayerData data) {
         Location loc = player.getLocation();
-        loc.getWorld().createExplosion(loc, 2.0f, false, false);
+        loc.getWorld().spawnParticle(Particle.EXPLOSION_HUGE, loc, 1, 0, 0, 0, 0);
+        loc.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, loc, 4, 0.5, 0.5, 0.5, 0.05);
         double dmgBase = data.getEffectiveDamage();
         double mult = dmgBase <= 20.0 ? 2.0 : 1.5;
         double maxDmg = Math.max(dmgBase * mult * Math.max(data.skyfall, 1), 1.0);

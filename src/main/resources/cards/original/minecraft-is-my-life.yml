@@ -11,16 +11,16 @@ variations:
   - rarity: UNCOMMON
     value: "20%"
     effects:
-      block-cd: 0.2
+      block-cd: -0.2
   - rarity: COMMON
     value: "10%"
     effects:
-      block-cd: 0.1
+      block-cd: -0.1
   - rarity: RARE
     value: "35%"
     effects:
-      block-cd: 0.35
+      block-cd: -0.35
   - rarity: EPIC
     value: "50%"
     effects:
-      block-cd: 0.5
+      block-cd: -0.5

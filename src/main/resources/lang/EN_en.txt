@@ -302,6 +302,7 @@ debug:
   stat-bomb-on-block: "Bombs on Block"
   stat-shield-active: "Shield Active"
   stat-shield-cd: "Shield Cooldown"
+  stat-block-cd: "Block CD Modifier"
   help-placeholders: "List all placeholders"
   placeholders-title: "Placeholders"
   ph-game-section: "--- Game ---"

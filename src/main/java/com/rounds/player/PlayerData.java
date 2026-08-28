@@ -261,14 +261,14 @@ public class PlayerData {
     }
 
     public double getEffectiveDamage() {
-        double base = Math.max(dmg, 0.01);
+        double base = Math.max(dmg, 0.5);
         if (darkStrength > 0) {
             base += darkStrength * 0.5;
         }
         if (empower > 0 && empowerCharge > 0) {
             base *= (1.0 + empower * 0.5);
         }
-        return round2(base);
+        return round2(Math.max(base, 0.5));
     }
 
     public void consumeEmpowerCharge() {

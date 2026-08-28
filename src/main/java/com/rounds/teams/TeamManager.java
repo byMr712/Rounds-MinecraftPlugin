@@ -52,7 +52,7 @@ public class TeamManager {
             Team t = scoreboard.registerNewTeam(teamName);
             t.setDisplayName(gt.getColor() + gt.getName());
             t.setColor(gt.getColor());
-            t.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.ALWAYS);
+            t.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.FOR_OWN_TEAM);
             teams.put(gt, t);
             wins.put(gt, 0);
             playerCounts.put(gt, 0);
@@ -67,7 +67,7 @@ public class TeamManager {
                 team = scoreboard.registerNewTeam(teamName);
                 team.setDisplayName(gt.getColor() + gt.getName());
                 team.setColor(gt.getColor());
-                team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.ALWAYS);
+                team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.FOR_OWN_TEAM);
             }
             teams.put(gt, team);
         }

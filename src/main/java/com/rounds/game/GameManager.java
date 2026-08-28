@@ -472,6 +472,8 @@ public class GameManager implements Listener {
             var attr = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
             if (attr != null) attr.setBaseValue(10);
             p.setHealth(10);
+            var dmgAttr = p.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
+            if (dmgAttr != null) dmgAttr.setBaseValue(12.0);
             p.getPersistentDataContainer().set(RoundsKeys.SUMMONED_PHANTOM,
                 org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
         });
@@ -522,7 +524,7 @@ public class GameManager implements Listener {
                     }
                     double dist = phantom.getLocation().distance(target.getLocation());
                     if (dist < 3.0 && ticks % 20 == 0) {
-                        target.damage(6.0);
+                        target.damage(12.0);
                         if (!hasDamaged) {
                             hasDamaged = true;
                             deathCountdown = 0;
@@ -1387,7 +1389,6 @@ public class GameManager implements Listener {
     public void showNameTagsInGame() {
         if (tabCompat.isActive()) {
             for (Player p : plugin.getServer().getOnlinePlayers()) {
-                tabCompat.showNametag(p);
                 GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
                 if (team != null && plugin.getRoundsConfig().isColorNicknames()) {
                     updateColoredName(p, team);
@@ -1395,6 +1396,7 @@ public class GameManager implements Listener {
                     tabCompat.resetName(p);
                 }
             }
+            updateTeamNametagVisibility();
             return;
         }
         Scoreboard mainSb = Bukkit.getScoreboardManager().getMainScoreboard();
@@ -1404,6 +1406,35 @@ public class GameManager implements Listener {
         refreshTeamScoreboards();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             updateColoredName(p, plugin.getTeamManager().getPlayerTeam(p.getUniqueId()));
+        }
+    }
+
+    public void updateTeamNametagVisibility() {
+        if (!isGameStarted() && !isGameActive()) {
+            if (tabCompat.isActive()) {
+                tabCompat.resetAllNametagVisibilities();
+            }
+            return;
+        }
+
+        List<? extends Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
+        for (Player target : players) {
+            GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(target.getUniqueId());
+            for (Player viewer : players) {
+                if (target.equals(viewer)) continue;
+                GameTeam viewerTeam = plugin.getTeamManager().getPlayerTeam(viewer.getUniqueId());
+
+                boolean isTeammate = (targetTeam != null && viewerTeam != null && targetTeam == viewerTeam);
+                if (isTeammate) {
+                    if (tabCompat.isActive()) {
+                        tabCompat.showNametagTo(target, viewer);
+                    }
+                } else {
+                    if (tabCompat.isActive()) {
+                        tabCompat.hideNametagFrom(target, viewer);
+                    }
+                }
+            }
         }
     }
 
@@ -1434,6 +1465,7 @@ public class GameManager implements Listener {
 
     public void restoreNameTags() {
         if (tabCompat.isActive()) {
+            tabCompat.resetAllNametagVisibilities();
             for (Player p : plugin.getServer().getOnlinePlayers()) {
                 tabCompat.showNametag(p);
                 updateColoredName(p, plugin.getTeamManager().getPlayerTeam(p.getUniqueId()));
@@ -1471,6 +1503,10 @@ public class GameManager implements Listener {
     private void refreshTeamScoreboards() {
         if (!plugin.getRoundsConfig().isColorNicknames()) return;
         Scoreboard mainSb = Bukkit.getScoreboardManager().getMainScoreboard();
+        org.bukkit.scoreboard.Team.OptionStatus visibility = (isGameStarted() || isGameActive())
+                ? org.bukkit.scoreboard.Team.OptionStatus.FOR_OWN_TEAM
+                : org.bukkit.scoreboard.Team.OptionStatus.ALWAYS;
+
         for (GameTeam gt : GameTeam.values()) {
             String teamName = "rounds_" + gt.name().toLowerCase();
             org.bukkit.scoreboard.Team team = mainSb.getTeam(teamName);
@@ -1479,7 +1515,7 @@ public class GameManager implements Listener {
             }
             team.setColor(gt.getColor());
             team.setPrefix(gt.getColor().toString());
-            team.setOption(org.bukkit.scoreboard.Team.Option.NAME_TAG_VISIBILITY, org.bukkit.scoreboard.Team.OptionStatus.ALWAYS);
+            team.setOption(org.bukkit.scoreboard.Team.Option.NAME_TAG_VISIBILITY, visibility);
         }
         org.bukkit.scoreboard.Team noTeam = mainSb.getTeam("rounds_noteam");
         if (noTeam != null) noTeam.unregister();

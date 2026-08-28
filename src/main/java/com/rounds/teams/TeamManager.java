@@ -3,6 +3,7 @@ package com.rounds.teams;
 import com.rounds.RoundsPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
@@ -81,18 +82,17 @@ public class TeamManager {
         if (old != null) {
             Team oldTeam = teams.get(old);
             String name = Bukkit.getOfflinePlayer(uuid).getName();
-            if (name != null) {
+            if (name != null && oldTeam != null) {
                 oldTeam.removeEntry(name);
             }
-            playerCounts.merge(old, -1, Integer::sum);
         }
         playerTeams.put(uuid, team);
         Team t = teams.get(team);
         String name = Bukkit.getOfflinePlayer(uuid).getName();
-        if (name != null) {
+        if (name != null && t != null) {
             t.addEntry(name);
         }
-        playerCounts.merge(team, 1, Integer::sum);
+        recalculateCounts();
         return true;
     }
 
@@ -102,10 +102,23 @@ public class TeamManager {
         if (old != null) {
             Team t = teams.get(old);
             String name = Bukkit.getOfflinePlayer(uuid).getName();
-            if (name != null) {
+            if (name != null && t != null) {
                 t.removeEntry(name);
             }
-            playerCounts.merge(old, -1, Integer::sum);
+        }
+        recalculateCounts();
+    }
+
+    public void recalculateCounts() {
+        playerCounts.clear();
+        for (GameTeam gt : GameTeam.values()) {
+            playerCounts.put(gt, 0);
+        }
+        for (Map.Entry<UUID, GameTeam> entry : playerTeams.entrySet()) {
+            Player p = Bukkit.getPlayer(entry.getKey());
+            if (p != null && p.isOnline()) {
+                playerCounts.merge(entry.getValue(), 1, Integer::sum);
+            }
         }
     }
 
@@ -126,19 +139,40 @@ public class TeamManager {
     }
 
     public int getPlayerCount(GameTeam team) {
-        return playerCounts.getOrDefault(team, 0);
+        int count = 0;
+        for (Map.Entry<UUID, GameTeam> entry : playerTeams.entrySet()) {
+            if (entry.getValue() == team) {
+                Player p = Bukkit.getPlayer(entry.getKey());
+                if (p != null && p.isOnline()) {
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 
     public Set<UUID> getTeamPlayers(GameTeam team) {
         Set<UUID> result = new HashSet<>();
-        playerTeams.forEach((uuid, t) -> {
-            if (t == team) result.add(uuid);
-        });
+        for (Map.Entry<UUID, GameTeam> entry : playerTeams.entrySet()) {
+            if (entry.getValue() == team) {
+                Player p = Bukkit.getPlayer(entry.getKey());
+                if (p != null && p.isOnline()) {
+                    result.add(entry.getKey());
+                }
+            }
+        }
         return result;
     }
 
     public int getTotalReadyPlayers() {
-        return playerTeams.size();
+        int count = 0;
+        for (UUID uuid : playerTeams.keySet()) {
+            Player p = Bukkit.getPlayer(uuid);
+            if (p != null && p.isOnline()) {
+                count++;
+            }
+        }
+        return count;
     }
 
     public void clearAll() {
@@ -146,8 +180,10 @@ public class TeamManager {
         ensureTeamsRegistered();
         for (GameTeam gt : GameTeam.values()) {
             Team team = teams.get(gt);
-            for (String entry : new ArrayList<>(team.getEntries())) {
-                team.removeEntry(entry);
+            if (team != null) {
+                for (String entry : new ArrayList<>(team.getEntries())) {
+                    team.removeEntry(entry);
+                }
             }
             playerCounts.put(gt, 0);
         }

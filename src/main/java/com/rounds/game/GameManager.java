@@ -1377,10 +1377,32 @@ public class GameManager implements Listener {
         return alive.get(RANDOM.nextInt(alive.size()));
     }
 
+    public Set<GameTeam> getAvailableTeams() {
+        Set<GameTeam> available = new HashSet<>();
+        if (isGameStarted()) {
+            available.addAll(teamSpawns.keySet());
+            for (Player p : plugin.getServer().getOnlinePlayers()) {
+                GameTeam t = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+                if (t != null && isParticipant(p.getUniqueId())) available.add(t);
+            }
+        } else {
+            Set<GameTeam> fromBlocks = plugin.getBlockListener().getJoinBlockTeams();
+            if (!fromBlocks.isEmpty()) {
+                available.addAll(fromBlocks);
+            }
+        }
+        if (available.isEmpty()) {
+            available.add(GameTeam.BLUE);
+            available.add(GameTeam.RED);
+        }
+        return available;
+    }
+
     public GameTeam findSmallestTeam() {
+        Set<GameTeam> available = getAvailableTeams();
         int minCount = Integer.MAX_VALUE;
         List<GameTeam> candidates = new ArrayList<>();
-        for (GameTeam team : GameTeam.values()) {
+        for (GameTeam team : available) {
             int count = plugin.getTeamManager().getPlayerCount(team);
             if (count < minCount) {
                 minCount = count;
@@ -1390,6 +1412,7 @@ public class GameManager implements Listener {
                 candidates.add(team);
             }
         }
+        if (candidates.isEmpty()) return GameTeam.BLUE;
         return candidates.get(RANDOM.nextInt(candidates.size()));
     }
 

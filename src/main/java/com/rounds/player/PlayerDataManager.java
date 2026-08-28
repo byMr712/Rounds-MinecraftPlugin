@@ -543,6 +543,9 @@ public class PlayerDataManager implements Listener {
         } else {
             clearPDC(player);
             removePlayerData(uuid);
+            if (!plugin.getGameManager().isGameStarted()) {
+                plugin.getTeamManager().leaveTeam(uuid);
+            }
         }
         com.rounds.item.GunItem.cancelReload(uuid);
         if (plugin.getGameManager().getState() == GameManager.GameState.CARDS) {

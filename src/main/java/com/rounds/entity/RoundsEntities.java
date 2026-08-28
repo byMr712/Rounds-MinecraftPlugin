@@ -22,6 +22,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Arrow;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.AreaEffectCloudApplyEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -806,10 +807,6 @@ public class RoundsEntities implements Listener {
         // Крупная пуля не статична: база ×2.0, каждая выбранная карта
         // увеличивает размер ещё на 50% (2.0 → 3.0 → 4.5 ...).
         double scale = data.bigBullet > 0 ? 2.0 * Math.pow(BIG_BULLET_GROWTH, data.bigBullet - 1) : 1.0;
-        Vector dir = (velocity.lengthSquared() > 0.001 && isFinite(velocity))
-            ? velocity.clone().normalize()
-            : new Vector(0, 0, 1);
-        Location spawnPos = loc.clone().add(dir.multiply(0.5));
         Bullet bullet = new Bullet(
             shooter.getUniqueId(),
             data.getEffectiveDamage(),
@@ -820,7 +817,7 @@ public class RoundsEntities implements Listener {
             data.drill,
             data.sneaky,
             loc.clone(),
-            spawnPos,
+            loc.clone(),
             velocity.clone()
         );
         bullet.cohortId = cohortId;
@@ -1007,7 +1004,7 @@ public class RoundsEntities implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onEntityDamage(EntityDamageByEntityEvent event) {
         if (event.getDamager() instanceof Arrow arrow) {
             PersistentDataContainer pdc = arrow.getPersistentDataContainer();
@@ -1016,21 +1013,26 @@ public class RoundsEntities implements Listener {
             }
             return;
         }
-        if (event.getEntity() instanceof Player victim) {
-            if (event.getDamager() instanceof Player attacker) {
+        if (event.getDamager() instanceof Player attacker) {
+            event.setCancelled(true);
+            event.setDamage(0.0);
+
+            if (attacker.getGameMode() == GameMode.CREATIVE || attacker.getGameMode() == GameMode.SPECTATOR) return;
+            if (!plugin.getGameManager().isParticipant(attacker.getUniqueId())) return;
+            if (plugin.getGameManager().getState() != com.rounds.game.GameManager.GameState.PLAYING) return;
+
+            if (event.getEntity() instanceof Player victim) {
                 GameTeam victimTeam = plugin.getTeamManager().getPlayerTeam(victim.getUniqueId());
                 GameTeam attackerTeam = plugin.getTeamManager().getPlayerTeam(attacker.getUniqueId());
                 if (victimTeam != null && attackerTeam != null && victimTeam == attackerTeam) {
-                    event.setCancelled(true);
                     return;
                 }
             }
-        }
-        if (event.getDamager() instanceof Player attacker) {
-            event.setCancelled(true);
-            if (!plugin.getGameManager().isParticipant(attacker.getUniqueId())) return;
-            if (!GunItem.consumeShotThisTick(attacker.getUniqueId()) && GunItem.isGun(attacker.getInventory().getItemInMainHand())) {
-                GunItem.getInstance().doShoot(attacker);
+
+            if (GunItem.isGun(attacker.getInventory().getItemInMainHand())) {
+                if (!GunItem.consumeShotThisTick(attacker.getUniqueId())) {
+                    GunItem.getInstance().doShoot(attacker);
+                }
             }
         }
     }

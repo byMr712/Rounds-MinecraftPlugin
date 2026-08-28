@@ -62,6 +62,7 @@ public class BlockListener implements Listener {
     }
 
     public BlockStorage getBlockStorage() { return blockStorage; }
+    public Set<GameTeam> getJoinBlockTeams() { return new HashSet<>(joinBlocks.values()); }
 
     public Location getJumpPos1() { return jumpPos1; }
     public Location getJumpPos2() { return jumpPos2; }
@@ -251,6 +252,9 @@ public class BlockListener implements Listener {
             if (plugin.getGameManager().isGameStarted()
                     || plugin.getGameManager().isGameActive()) {
                 player.sendMessage(ChatColor.RED + Messages.get("team.game-in-progress"));
+                return;
+            }
+            if (plugin.getTeamManager().getPlayerTeam(player.getUniqueId()) == team) {
                 return;
             }
             if (plugin.getTeamManager().joinTeam(player.getUniqueId(), team)) {

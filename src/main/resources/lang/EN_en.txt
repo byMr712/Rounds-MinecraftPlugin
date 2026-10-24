@@ -159,6 +159,7 @@ title:
   game-won: "&a&lVICTORY!"
   game-lost: "&c&lDEFEAT!"
   draw: "&e&lDRAW!"
+  spectator-won: "{0}{1} won!"
 
 # Scoreboard
 sb:

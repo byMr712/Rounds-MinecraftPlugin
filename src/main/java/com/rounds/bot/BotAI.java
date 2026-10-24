@@ -1,6 +1,7 @@
 package com.rounds.bot;
 
 import com.rounds.RoundsPlugin;
+import com.rounds.blocks.BlockListener;
 import com.rounds.game.GameManager;
 import com.rounds.player.PlayerData;
 import com.rounds.teams.TeamManager.GameTeam;
@@ -9,6 +10,7 @@ import org.bukkit.FluidCollisionMode;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Team;
@@ -79,6 +81,10 @@ public class BotAI extends BukkitRunnable {
     private int consecutiveBounces = 0;
     private float lastTurnSign = 0f;
     private int lockedHeadingTicks = 0;
+
+    // Room confinement & 2x2 doorway escape
+    private Location roomAnchorLoc = null;
+    private int roomConfinementTicks = 0;
 
     // Tactical Jump Pad seeking state
     private Location seekingPadLoc = null;
@@ -173,6 +179,36 @@ public class BotAI extends BukkitRunnable {
 
     public double getPursuitChance() {
         return Math.min(1.0, getSmartBehaviorChance() * 1.20);
+    }
+
+    /**
+     * Gap jump error chances:
+     * Levels 1-3: 30%
+     * Levels 4-7: 20%
+     * Levels 8-9: 10%
+     * Level 10:   0%
+     */
+    public double getJumpErrorChance() {
+        int lvl = bot.getLevel();
+        if (lvl <= 3) return 0.30;
+        if (lvl <= 7) return 0.20;
+        if (lvl <= 9) return 0.10;
+        return 0.0;
+    }
+
+    /**
+     * Platform landing failure error chances:
+     * Levels 1-3: 10%
+     * Levels 4-7: 7%
+     * Levels 8-9: 5%
+     * Level 10:   1%
+     */
+    public double getLandingErrorChance() {
+        int lvl = bot.getLevel();
+        if (lvl <= 3) return 0.10;
+        if (lvl <= 7) return 0.07;
+        if (lvl <= 9) return 0.05;
+        return 0.01;
     }
 
     /**
@@ -283,33 +319,37 @@ public class BotAI extends BukkitRunnable {
             return;
         }
 
-        // Jump pad flight check: only active when actually launched by a pad or launched high upwards (never when simply stepping down stairs!)
-        boolean inPadFlight = bot.isPadLaunched() || (bot.getVelY() > 0.45 && !bot.isOnGround());
-        if (inPadFlight) {
-            padCooldown = 600; // 30s cooldown prevents repeated launch loops
-            Location center = bot.getPlugin() != null ? bot.getPlugin().getGameManager().getCurrentZoneCenter() : null;
-            if (center == null || center.getWorld() == null || !center.getWorld().equals(player.getWorld())) {
-                center = player.getWorld().getSpawnLocation();
+        // Airborne / flight check: handles falling or special block launch
+        boolean isAirborneFlight = bot.isPadLaunched() || (!bot.isOnGround() && (bot.getVelY() < -0.35 || bot.getVelY() > 0.40 || player.getFallDistance() > 0.6));
+        if (isAirborneFlight) {
+            if (bot.isPadLaunched()) {
+                padCooldown = 600; // Cooldown prevents repeated launch loops
             }
 
-            // Direction vector towards arena center
-            double cdx = center.getX() - player.getLocation().getX();
-            double cdz = center.getZ() - player.getLocation().getZ();
-            double clen = Math.sqrt(cdx * cdx + cdz * cdz);
+            // Air control: steer toward nearest safe solid platform below (without magic center pull)
+            boolean landingError = ThreadLocalRandom.current().nextDouble() < getLandingErrorChance();
+            double steerX = 0.0;
+            double steerZ = 0.0;
 
-            double pushX;
-            double pushZ;
-            if (clen > 2.0) {
-                // Propel towards map center
-                pushX = (cdx / clen) * 0.38;
-                pushZ = (cdz / clen) * 0.38;
+            if (landingError) {
+                // Landing error: slight imprecise drift or missing platform
+                steerX = (ThreadLocalRandom.current().nextDouble() - 0.5) * 0.14;
+                steerZ = (ThreadLocalRandom.current().nextDouble() - 0.5) * 0.14;
+                bot.moveRel(steerX, 0.0, steerZ);
             } else {
-                // Bot is already near center: push forward along look direction
-                double rad = Math.toRadians(-player.getLocation().getYaw());
-                pushX = Math.sin(rad) * 0.35;
-                pushZ = Math.cos(rad) * 0.35;
+                Location safePlatform = findLandingPlatform(player);
+                if (safePlatform != null) {
+                    double pdx = safePlatform.getX() - player.getLocation().getX();
+                    double pdz = safePlatform.getZ() - player.getLocation().getZ();
+                    double pdist = Math.sqrt(pdx * pdx + pdz * pdz);
+                    if (pdist > 0.15) {
+                        double steerSpeed = Math.min(0.26, pdist * 0.35);
+                        steerX = (pdx / pdist) * steerSpeed;
+                        steerZ = (pdz / pdist) * steerSpeed;
+                        bot.moveRel(steerX, 0.0, steerZ);
+                    }
+                }
             }
-            bot.moveRel(pushX, 0.0, pushZ);
 
             if (currentTarget != null && canSee(player, currentTarget)) {
                 double factor = bot.getSkillFactor();
@@ -320,9 +360,9 @@ public class BotAI extends BukkitRunnable {
                     bot.shoot();
                     shootCooldown = 6;
                 }
-            } else {
-                float flightYaw = (float) Math.toDegrees(Math.atan2(-pushX, pushZ));
-                bot.getNmsPlayer().setRot(flightYaw, 0f);
+            } else if (Math.abs(steerX) > 0.01 || Math.abs(steerZ) > 0.01) {
+                float flightYaw = (float) Math.toDegrees(Math.atan2(-steerX, steerZ));
+                bot.getNmsPlayer().setRot(flightYaw, 10f);
                 bot.getNmsPlayer().setYHeadRot(flightYaw);
                 bot.getNmsPlayer().setYBodyRot(flightYaw);
             }
@@ -796,7 +836,7 @@ public class BotAI extends BukkitRunnable {
             patrolHeading = myLoc.getYaw();
         }
 
-        // 2. Track stuck status
+        // 2. Track stuck status and room confinement
         if (lastPatrolPos != null && myLoc.getWorld() != null && myLoc.getWorld().equals(lastPatrolPos.getWorld())) {
             double movedDistSq = Math.pow(myLoc.getX() - lastPatrolPos.getX(), 2) + Math.pow(myLoc.getZ() - lastPatrolPos.getZ(), 2);
             if (movedDistSq < 0.005) {
@@ -806,6 +846,31 @@ public class BotAI extends BukkitRunnable {
             }
         }
         lastPatrolPos = myLoc.clone();
+
+        // Track confinement inside an enclosed room/alcove (e.g. 3 walls with narrow 2x2 doorway)
+        if (roomAnchorLoc == null || roomAnchorLoc.getWorld() == null || !roomAnchorLoc.getWorld().equals(myLoc.getWorld())) {
+            roomAnchorLoc = myLoc.clone();
+            roomConfinementTicks = 0;
+        } else {
+            double distFromAnchorSq = Math.pow(myLoc.getX() - roomAnchorLoc.getX(), 2) + Math.pow(myLoc.getZ() - roomAnchorLoc.getZ(), 2);
+            if (distFromAnchorSq < 3.0 * 3.0) {
+                roomConfinementTicks++;
+            } else {
+                roomAnchorLoc = myLoc.clone();
+                roomConfinementTicks = 0;
+            }
+        }
+
+        // If confined in a room for > 25 ticks (1.25s), sweep 360 to find narrow exit/doorway
+        if (roomConfinementTicks > 25) {
+            float exitHeading = findRoomExit(myLoc);
+            if (!Float.isNaN(exitHeading)) {
+                patrolHeading = exitHeading;
+                lockedHeadingTicks = 35; // Lock heading for 1.75s to walk through doorway
+                roomConfinementTicks = 0;
+                roomAnchorLoc = null;
+            }
+        }
 
         // 3. Obstacle avoidance in front of heading (checks feet + body)
         if (lockedHeadingTicks > 0) {
@@ -850,12 +915,12 @@ public class BotAI extends BukkitRunnable {
         double dz = Math.cos(rad) * dist;
 
         // Normal perpendicular vector for bot width check (hitbox radius ~0.3b)
-        double perpX = Math.cos(rad) * 0.32;
-        double perpZ = -Math.sin(rad) * 0.32;
+        double perpX = Math.cos(rad) * 0.28;
+        double perpZ = -Math.sin(rad) * 0.28;
 
         Location feet = loc.clone().add(dx, 0.2, dz);
-        Location body = loc.clone().add(dx, 1.2, dz);
-        Location head = loc.clone().add(dx, 2.2, dz);
+        Location body = loc.clone().add(dx, 1.0, dz);
+        Location head = loc.clone().add(dx, 1.7, dz); // Checked at 1.7m to allow passing through 2-block high doorways
         Location overhead = loc.clone().add(0, 2.1, 0);
 
         boolean feetSolid = feet.getBlock().getType().isSolid();
@@ -869,12 +934,12 @@ public class BotAI extends BukkitRunnable {
         }
 
         // 2. Left and right shoulders width check (prevents jamming into narrow diagonal gaps)
-        Location bodyLeft = loc.clone().add(dx - perpX, 1.2, dz - perpZ);
+        Location bodyLeft = loc.clone().add(dx - perpX, 1.1, dz - perpZ);
         if (bodyLeft.getBlock().getType().isSolid()) {
             return false;
         }
 
-        Location bodyRight = loc.clone().add(dx + perpX, 1.2, dz + perpZ);
+        Location bodyRight = loc.clone().add(dx + perpX, 1.1, dz + perpZ);
         if (bodyRight.getBlock().getType().isSolid()) {
             return false;
         }
@@ -883,8 +948,8 @@ public class BotAI extends BukkitRunnable {
         if (dist >= 0.8) {
             double midDx = dx * 0.5;
             double midDz = dz * 0.5;
-            Location midBodyLeft = loc.clone().add(midDx - perpX, 1.2, midDz - perpZ);
-            Location midBodyRight = loc.clone().add(midDx + perpX, 1.2, midDz + perpZ);
+            Location midBodyLeft = loc.clone().add(midDx - perpX, 1.1, midDz - perpZ);
+            Location midBodyRight = loc.clone().add(midDx + perpX, 1.1, midDz + perpZ);
             if (midBodyLeft.getBlock().getType().isSolid() || midBodyRight.getBlock().getType().isSolid()) {
                 return false;
             }
@@ -905,15 +970,30 @@ public class BotAI extends BukkitRunnable {
             }
         }
 
-        // 5. Avoid walking directly into jump blocks and up blocks in front unless actively seeking one in combat
+        // 5. Avoid walking directly into jump blocks and up blocks in front unless actively seeking one in combat or jumping over a gap
         com.rounds.blocks.BlockListener bl = bot.getPlugin() != null ? bot.getPlugin().getBlockListener() : null;
         if (bl != null && seekingPadLoc == null) {
             Location checkLoc = loc.clone().add(dx, 0.1, dz);
             Location checkBelow = checkLoc.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getLocation();
             Location checkAt = checkLoc.getBlock().getLocation();
-            if (bl.isLocationTouchingJumpBlock(checkLoc) || bl.isJumpBlock(checkBelow) || bl.isJumpBlock(checkAt)
-                    || bl.isLocationTouchingUpBlock(checkLoc) || bl.isUpBlock(checkBelow) || bl.isUpBlock(checkAt)) {
-                return false;
+            boolean touchingPad = bl.isLocationTouchingJumpBlock(checkLoc) || bl.isJumpBlock(checkBelow) || bl.isJumpBlock(checkAt)
+                    || bl.isLocationTouchingUpBlock(checkLoc) || bl.isUpBlock(checkBelow) || bl.isUpBlock(checkAt);
+            if (touchingPad) {
+                // If there is a jumpable gap across with a solid safe landing floor (1.4m - 3.4m ahead), allow moving toward it
+                boolean hasGapLanding = false;
+                for (double gd = 1.4; gd <= 3.4; gd += 0.6) {
+                    Location landFloor = loc.clone().add(Math.sin(rad) * gd, -0.4, Math.cos(rad) * gd);
+                    Location landBody = landFloor.clone().add(0, 1.0, 0);
+                    if (landFloor.getBlock().getType().isSolid() && !landBody.getBlock().getType().isSolid()) {
+                        if (!bl.isJumpBlock(landFloor.getBlock().getLocation()) && !bl.isUpBlock(landFloor.getBlock().getLocation())) {
+                            hasGapLanding = true;
+                            break;
+                        }
+                    }
+                }
+                if (!hasGapLanding) {
+                    return false;
+                }
             }
         }
 
@@ -942,6 +1022,11 @@ public class BotAI extends BukkitRunnable {
         if (frontBlocked && leftBlocked && rightBlocked) {
             consecutiveBounces = 0;
             lastTurnSign = 0f;
+            float roomExit = findRoomExit(loc);
+            if (!Float.isNaN(roomExit)) {
+                lockedHeadingTicks = 35;
+                return roomExit;
+            }
             lockedHeadingTicks = 35; // Lock heading for ~1.75s to run out of dead end
             return currentHeading + 180f;
         }
@@ -976,19 +1061,109 @@ public class BotAI extends BukkitRunnable {
                 lastTurnSign = sign;
 
                 if (consecutiveBounces >= 3) {
-                    // Ping-pong between walls detected: escape with 180 turn
+                    // Ping-pong between walls detected: search for room exit or escape with 180
                     consecutiveBounces = 0;
                     lastTurnSign = 0f;
+                    float roomExit = findRoomExit(loc);
+                    if (!Float.isNaN(roomExit)) {
+                        lockedHeadingTicks = 35;
+                        return roomExit;
+                    }
                     lockedHeadingTicks = 35;
                     return currentHeading + 180f;
                 }
                 return test;
             }
         }
+
+        // If standard angle deviations fail, sweep 360 to find narrow doorway
+        float roomExit = findRoomExit(loc);
+        if (!Float.isNaN(roomExit)) {
+            consecutiveBounces = 0;
+            lastTurnSign = 0f;
+            lockedHeadingTicks = 35;
+            return roomExit;
+        }
+
         consecutiveBounces = 0;
         lastTurnSign = 0f;
         lockedHeadingTicks = 35;
         return currentHeading + 180f;
+    }
+
+    /**
+     * Sweep 360 degrees in 15-degree steps to detect narrow openings / doorways (e.g. 2x2 doors in a 3-walled room).
+     */
+    private float findRoomExit(Location loc) {
+        if (loc == null || loc.getWorld() == null) return Float.NaN;
+        float bestHeading = Float.NaN;
+        double maxClearDist = 0.0;
+
+        for (float deg = 0f; deg < 360f; deg += 15f) {
+            double clearDist = 0.0;
+            for (double d = 1.0; d <= 4.5; d += 0.8) {
+                if (isDirectionClear(loc, deg, d)) {
+                    clearDist = d;
+                } else {
+                    break;
+                }
+            }
+            if (clearDist > maxClearDist && clearDist >= 2.0) {
+                maxClearDist = clearDist;
+                bestHeading = deg;
+            }
+        }
+        return bestHeading;
+    }
+
+    /**
+     * Scans downward and horizontally for the highest safe solid platform to land on during midair flight.
+     */
+    private Location findLandingPlatform(Player player) {
+        Location pLoc = player.getLocation();
+        World world = pLoc.getWorld();
+        if (world == null) return null;
+
+        BlockListener bl = bot.getPlugin() != null ? bot.getPlugin().getBlockListener() : null;
+        int px = pLoc.getBlockX();
+        int py = pLoc.getBlockY();
+        int pz = pLoc.getBlockZ();
+
+        Location bestPlatform = null;
+        double bestScore = -9999.0;
+
+        // Scan downward up to 14 blocks, and horizontally within 4-block radius
+        for (int r = 0; r <= 4; r++) {
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dz = -r; dz <= r; dz++) {
+                    if (Math.abs(dx) != r && Math.abs(dz) != r) continue;
+                    int bx = px + dx;
+                    int bz = pz + dz;
+
+                    for (int dy = 0; dy >= -14; dy--) {
+                        int by = py + dy;
+                        Block floorBlock = world.getBlockAt(bx, by, bz);
+                        if (!floorBlock.getType().isSolid()) continue;
+
+                        Block above1 = world.getBlockAt(bx, by + 1, bz);
+                        Block above2 = world.getBlockAt(bx, by + 2, bz);
+                        if (above1.getType().isSolid() || above2.getType().isSolid()) continue;
+
+                        Location floorLoc = floorBlock.getLocation();
+                        if (bl != null && (bl.isJumpBlock(floorLoc) || bl.isUpBlock(floorLoc))) continue;
+
+                        double distSq = (bx + 0.5 - pLoc.getX()) * (bx + 0.5 - pLoc.getX()) + (bz + 0.5 - pLoc.getZ()) * (bz + 0.5 - pLoc.getZ());
+                        double score = (by * 2.5) - distSq;
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestPlatform = new Location(world, bx + 0.5, by + 1.0, bz + 0.5);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        return bestPlatform;
     }
 
     private void tickCooldowns() {

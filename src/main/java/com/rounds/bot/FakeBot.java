@@ -206,24 +206,10 @@ public class FakeBot {
         this.padLaunchTicks = 45;
         Player p = getBukkitPlayer();
         if (p != null) {
-            Location center = manager.getPlugin() != null ? manager.getPlugin().getGameManager().getCurrentZoneCenter() : null;
-            if (center != null && center.getWorld() != null && center.getWorld().equals(p.getWorld())) {
-                double dx = center.getX() - p.getLocation().getX();
-                double dz = center.getZ() - p.getLocation().getZ();
-                double dist = Math.sqrt(dx * dx + dz * dz);
-                if (dist > 1.5) {
-                    this.impulseX = (dx / dist) * 0.45;
-                    this.impulseZ = (dz / dist) * 0.45;
-                } else {
-                    double rad = Math.toRadians(-p.getLocation().getYaw());
-                    this.impulseX = Math.sin(rad) * 0.45;
-                    this.impulseZ = Math.cos(rad) * 0.45;
-                }
-            } else {
-                double rad = Math.toRadians(-p.getLocation().getYaw());
-                this.impulseX = Math.sin(rad) * 0.40;
-                this.impulseZ = Math.cos(rad) * 0.40;
-            }
+            // Natural forward launch impulse along looking direction without magic center pull
+            double rad = Math.toRadians(-p.getLocation().getYaw());
+            this.impulseX = Math.sin(rad) * 0.30;
+            this.impulseZ = Math.cos(rad) * 0.30;
         }
         if (ai != null) {
             ai.setPadCooldown(600);
@@ -315,20 +301,55 @@ public class FakeBot {
             }
         }
 
-        // 3. Auto-jump over 1-block obstacles/steps when moving on ground (not in mid-air!)
+        // 3. Ground movement: obstacle auto-jump & 1-3 block gap jumping across platforms
         if (onGround && velY <= 0.0 && (Math.abs(dx) > 0.01 || Math.abs(dz) > 0.01)) {
             Location loc = p.getLocation();
             double moveLen = Math.sqrt(dx * dx + dz * dz);
+            double dirX = dx / moveLen;
+            double dirZ = dz / moveLen;
             double stepDist = Math.max(moveLen * 1.5, 0.55);
-            Location ahead = loc.clone().add((dx / moveLen) * stepDist, 0.2, (dz / moveLen) * stepDist);
+            Location ahead = loc.clone().add(dirX * stepDist, 0.2, dirZ * stepDist);
             Location aheadUp = ahead.clone().add(0, 1.0, 0);
             Location headSpace = loc.clone().add(0, 2.0, 0);
 
             boolean obstacleAhead = ahead.getBlock().getType().isSolid() || sp.horizontalCollision;
             if (obstacleAhead && !aheadUp.getBlock().getType().isSolid() && !headSpace.getBlock().getType().isSolid()) {
                 velY = 0.42; // Minecraft jump velocity
-                impulseX += (dx / moveLen) * 0.18;
-                impulseZ += (dz / moveLen) * 0.18;
+                impulseX += dirX * 0.18;
+                impulseZ += dirZ * 0.18;
+            } else if (!obstacleAhead && !headSpace.getBlock().getType().isSolid()) {
+                // Check if approaching a 1-3 block gap with drop directly ahead
+                Location edgeCheck = loc.clone().add(dirX * 0.6, -0.4, dirZ * 0.6);
+                Location edgeDrop = loc.clone().add(dirX * 0.6, -1.4, dirZ * 0.6);
+                if (!edgeCheck.getBlock().getType().isSolid() && !edgeDrop.getBlock().getType().isSolid()) {
+                    boolean foundLanding = false;
+                    for (double gapDist = 1.4; gapDist <= 3.4; gapDist += 0.6) {
+                        Location landingFloor = loc.clone().add(dirX * gapDist, -0.4, dirZ * gapDist);
+                        Location landingBody = landingFloor.clone().add(0, 1.0, 0);
+                        Location landingHead = landingFloor.clone().add(0, 2.0, 0);
+                        if (landingFloor.getBlock().getType().isSolid() && !landingBody.getBlock().getType().isSolid() && !landingHead.getBlock().getType().isSolid()) {
+                            BlockListener bl = manager.getPlugin() != null ? manager.getPlugin().getBlockListener() : null;
+                            if (bl == null || (!bl.isJumpBlock(landingFloor.getBlock().getLocation()) && !bl.isUpBlock(landingFloor.getBlock().getLocation()))) {
+                                foundLanding = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (foundLanding) {
+                        double errorChance = (ai != null) ? ai.getJumpErrorChance() : 0.0;
+                        boolean jumpError = ThreadLocalRandom.current().nextDouble() < errorChance;
+                        if (!jumpError) {
+                            velY = 0.42; // Clean leap clearing the gap
+                            impulseX += dirX * 0.32;
+                            impulseZ += dirZ * 0.32;
+                        } else {
+                            velY = 0.22; // Under-jump error: weak jump resulting in fall
+                            impulseX += dirX * 0.08;
+                            impulseZ += dirZ * 0.08;
+                        }
+                    }
+                }
             }
         }
 

@@ -700,8 +700,10 @@ public class GameManager implements Listener {
 
     private void autoStopInsufficientPlayers() {
         for (Player p : plugin.getServer().getOnlinePlayers()) {
-            p.sendTitle(Messages.get("title.game-won"), "", 10, 100, 20);
-            p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+            if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) != null) {
+                p.sendTitle(Messages.get("title.game-won"), "", 10, 100, 20);
+                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+            }
             p.sendMessage(ChatColor.GREEN + Messages.get("game.auto-stop-single"));
         }
         stopGame();
@@ -1014,6 +1016,13 @@ public class GameManager implements Listener {
             } else if (losingTeams.contains(pTeam)) {
                 p.sendTitle(Messages.get("title.lost"), "", 10, 60, 20);
                 p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0f, 1.0f);
+            } else {
+                String specTitle = Messages.get("title.spectator-won", winner.getColor() + "§l", teamName.toLowerCase());
+                if (specTitle.equals("title.spectator-won")) {
+                    specTitle = winner.getColor() + "§lПобедили " + teamName.toLowerCase();
+                }
+                p.sendTitle(specTitle, "", 10, 60, 20);
+                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
             }
         }
 
@@ -1114,9 +1123,16 @@ public class GameManager implements Listener {
             if (pTeam == winner) {
                 p.sendTitle(Messages.get("title.game-won"), "", 10, 100, 20);
                 p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
-            } else {
+            } else if (pTeam != null) {
                 p.sendTitle(Messages.get("title.game-lost"), "", 10, 100, 20);
                 p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0f, 1.0f);
+            } else {
+                String specTitle = Messages.get("title.spectator-won", winner.getColor() + "§l", teamName.toLowerCase());
+                if (specTitle.equals("title.spectator-won")) {
+                    specTitle = winner.getColor() + "§lПобедили " + teamName.toLowerCase();
+                }
+                p.sendTitle(specTitle, "", 10, 100, 20);
+                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
             }
         }
 

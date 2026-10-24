@@ -226,18 +226,47 @@ public class FakeBot {
         GunItem.getInstance().doBlock(p);
     }
 
+    public void setRotation(float yaw, float pitch) {
+        ServerPlayer sp = getNmsPlayer();
+        if (sp != null) {
+            sp.setRot(yaw, pitch);
+            sp.setYHeadRot(yaw);
+            sp.setYBodyRot(yaw);
+        }
+    }
+
     public void applyJumpPad(double launchHeight) {
         this.velY = launchHeight * 0.2;
         this.padLaunchTicks = 45;
         Player p = getBukkitPlayer();
         if (p != null) {
-            // Natural forward launch impulse along looking direction without magic center pull
-            double rad = Math.toRadians(-p.getLocation().getYaw());
-            this.impulseX = Math.sin(rad) * 0.30;
-            this.impulseZ = Math.cos(rad) * 0.30;
+            Location safeTarget = (ai != null) ? ai.findSafeLandingTarget(p) : null;
+            if (safeTarget != null) {
+                double dx = safeTarget.getX() - p.getLocation().getX();
+                double dz = safeTarget.getZ() - p.getLocation().getZ();
+                double dist = Math.sqrt(dx * dx + dz * dz);
+                if (dist > 0.3) {
+                    // Natural forward sprint impulse (~0.28 blocks/tick) directed towards safe map
+                    double normX = dx / dist;
+                    double normZ = dz / dist;
+                    this.impulseX = normX * 0.28;
+                    this.impulseZ = normZ * 0.28;
+
+                    float launchYaw = (float) Math.toDegrees(Math.atan2(-normX, normZ));
+                    setRotation(launchYaw, -10f);
+                } else {
+                    double rad = Math.toRadians(-p.getLocation().getYaw());
+                    this.impulseX = Math.sin(rad) * 0.28;
+                    this.impulseZ = Math.cos(rad) * 0.28;
+                }
+            } else {
+                double rad = Math.toRadians(-p.getLocation().getYaw());
+                this.impulseX = Math.sin(rad) * 0.28;
+                this.impulseZ = Math.cos(rad) * 0.28;
+            }
         }
         if (ai != null) {
-            ai.setPadCooldown(600);
+            ai.onJumpPadLaunched();
         }
     }
 

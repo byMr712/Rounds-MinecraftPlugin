@@ -401,7 +401,7 @@ public class BotAI extends BukkitRunnable {
                 steerZ = (ThreadLocalRandom.current().nextDouble() - 0.5) * 0.14;
             } else {
                 if (cachedLandingPlatform == null || landingPlatformCacheTicks <= 0 || !isPlatformValid(cachedLandingPlatform)) {
-                    cachedLandingPlatform = findLandingPlatform(player);
+                    cachedLandingPlatform = findSafeLandingTarget(player);
                     landingPlatformCacheTicks = 6;
                 }
                 if (cachedLandingPlatform != null) {
@@ -409,7 +409,7 @@ public class BotAI extends BukkitRunnable {
                     double pdz = cachedLandingPlatform.getZ() - player.getLocation().getZ();
                     double pdist = Math.sqrt(pdx * pdx + pdz * pdz);
                     if (pdist > 0.15) {
-                        double steerSpeed = Math.min(0.26, pdist * 0.35);
+                        double steerSpeed = Math.min(0.24, Math.max(0.12, pdist * 0.25));
                         steerX = (pdx / pdist) * steerSpeed;
                         steerZ = (pdz / pdist) * steerSpeed;
                     }
@@ -1224,69 +1224,136 @@ public class BotAI extends BukkitRunnable {
         return bestHeading;
     }
 
-    /**
-     * Scans downward for the highest safe solid platform to land on during midair flight.
-     * Highly optimized: checks column beneath player and adjacent columns along movement direction.
-     */
-    private Location findLandingPlatform(Player player) {
-        Location pLoc = player.getLocation();
-        World world = pLoc.getWorld();
-        if (world == null) return null;
+    public void onJumpPadLaunched() {
+        this.cachedLandingPlatform = null;
+        this.landingPlatformCacheTicks = 0;
+        this.padCooldown = 600;
+    }
 
+    /**
+     * Finds the nearest safe walkable location on the arena to land on during flight or jump pad launch.
+     * Evaluates ArenaNavMesh nodes and map geometry, strictly avoiding jump/up pads and voids.
+     */
+    public Location findSafeLandingTarget(Player player) {
+        if (player == null || player.getWorld() == null) return null;
+        Location pLoc = player.getLocation();
+        World world = player.getWorld();
         BlockListener bl = bot.getPlugin() != null ? bot.getPlugin().getBlockListener() : null;
+
+        double px = pLoc.getX();
+        double py = pLoc.getY();
+        double pz = pLoc.getZ();
+
+        // 1. Prefer precomputed ArenaNavMesh nodes (100% verified safe floor, zero raycasts)
+        ArenaNavMesh mesh = bot.getManager() != null ? bot.getManager().getNavMesh() : null;
+        if (mesh != null && !mesh.isEmpty()) {
+            ArenaNavMesh.NavNode bestNode = null;
+            double bestDistSq = Double.MAX_VALUE;
+
+            for (ArenaNavMesh.NavNode node : mesh.getAllNodes()) {
+                if (node.loc.getY() > py + 22.0 || node.loc.getY() < py - 18.0) continue;
+                if (bl != null && (bl.isJumpBlock(node.loc) || bl.isUpBlock(node.loc))) continue;
+
+                double dx = node.loc.getX() - px;
+                double dz = node.loc.getZ() - pz;
+                double distSq = dx * dx + dz * dz; // Prioritize horizontal proximity to safe arena
+                if (distSq < bestDistSq) {
+                    bestDistSq = distSq;
+                    bestNode = node;
+                }
+            }
+            if (bestNode != null) {
+                return bestNode.loc.clone();
+            }
+        }
+
+        // 2. Fallback: Arena zone center from GameManager
+        Location center = bot.getPlugin() != null && bot.getPlugin().getGameManager() != null
+                ? bot.getPlugin().getGameManager().getCurrentZoneCenter()
+                : null;
+
+        if (center != null && center.getWorld() != null && center.getWorld().equals(world)) {
+            // Raymarch from bot towards center to find the closest solid walkable ledge of the arena
+            double dirX = center.getX() - px;
+            double dirZ = center.getZ() - pz;
+            double distToCenter = Math.sqrt(dirX * dirX + dirZ * dirZ);
+            if (distToCenter > 0.5) {
+                double nx = dirX / distToCenter;
+                double nz = dirZ / distToCenter;
+                int startY = (int) Math.max(center.getY() + 3.0, py);
+
+                for (double d = 1.5; d <= distToCenter; d += 1.5) {
+                    int bx = (int) Math.floor(px + nx * d);
+                    int bz = (int) Math.floor(pz + nz * d);
+
+                    for (int dy = 0; dy >= -16; dy--) {
+                        int by = startY + dy;
+                        Block floor = world.getBlockAt(bx, by, bz);
+                        if (!floor.getType().isSolid()) continue;
+                        Block above1 = world.getBlockAt(bx, by + 1, bz);
+                        Block above2 = world.getBlockAt(bx, by + 2, bz);
+                        if (above1.getType().isSolid() || above2.getType().isSolid()) continue;
+
+                        Location floorLoc = floor.getLocation();
+                        if (bl != null && (bl.isJumpBlock(floorLoc) || bl.isUpBlock(floorLoc))) continue;
+
+                        return new Location(world, bx + 0.5, by + 1.0, bz + 0.5);
+                    }
+                }
+            }
+            return center.clone();
+        }
+
+        // 3. Last resort fallback: check downward/nearby 8x8 blocks
+        return findNearbySolidPlatform(pLoc, world, bl);
+    }
+
+    private Location findNearbySolidPlatform(Location pLoc, World world, BlockListener bl) {
         int px = pLoc.getBlockX();
         int py = pLoc.getBlockY();
         int pz = pLoc.getBlockZ();
 
-        Location bestPlatform = null;
-        double bestScore = -9999.0;
+        Location best = null;
+        double minD = Double.MAX_VALUE;
 
-        // Determine horizontal velocity direction (check columns player is moving towards)
-        double velX = bot.getImpulseX();
-        double velZ = bot.getImpulseZ();
-        int stepX = (velX > 0.05) ? 1 : (velX < -0.05 ? -1 : 0);
-        int stepZ = (velZ > 0.05) ? 1 : (velZ < -0.05 ? -1 : 0);
+        for (int r = 1; r <= 8; r++) {
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dz = -r; dz <= r; dz++) {
+                    if (Math.abs(dx) != r && Math.abs(dz) != r) continue;
+                    int bx = px + dx;
+                    int bz = pz + dz;
 
-        int[][] columnsToCheck = {
-                {0, 0},
-                {stepX, stepZ},
-                {stepX, 0},
-                {0, stepZ},
-                {stepX * 2, stepZ * 2}
-        };
+                    for (int dy = 4; dy >= -12; dy--) {
+                        int by = py + dy;
+                        Block floor = world.getBlockAt(bx, by, bz);
+                        if (!floor.getType().isSolid()) continue;
+                        Block above1 = world.getBlockAt(bx, by + 1, bz);
+                        Block above2 = world.getBlockAt(bx, by + 2, bz);
+                        if (above1.getType().isSolid() || above2.getType().isSolid()) continue;
 
-        for (int[] offset : columnsToCheck) {
-            int bx = px + offset[0];
-            int bz = pz + offset[1];
+                        Location floorLoc = floor.getLocation();
+                        if (bl != null && (bl.isJumpBlock(floorLoc) || bl.isUpBlock(floorLoc))) continue;
 
-            // Scan downward up to 10 blocks
-            for (int dy = 0; dy >= -10; dy--) {
-                int by = py + dy;
-                Block floorBlock = world.getBlockAt(bx, by, bz);
-                if (!floorBlock.getType().isSolid()) continue;
-
-                Block above1 = world.getBlockAt(bx, by + 1, bz);
-                Block above2 = world.getBlockAt(bx, by + 2, bz);
-                if (above1.getType().isSolid() || above2.getType().isSolid()) continue;
-
-                Location floorLoc = floorBlock.getLocation();
-                if (bl != null && (bl.isJumpBlock(floorLoc) || bl.isUpBlock(floorLoc))) continue;
-
-                double distSq = (bx + 0.5 - pLoc.getX()) * (bx + 0.5 - pLoc.getX()) + (bz + 0.5 - pLoc.getZ()) * (bz + 0.5 - pLoc.getZ());
-                double score = (by * 2.5) - distSq;
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestPlatform = new Location(world, bx + 0.5, by + 1.0, bz + 0.5);
+                        double d = dx * dx + dz * dz;
+                        if (d < minD) {
+                            minD = d;
+                            best = new Location(world, bx + 0.5, by + 1.0, bz + 0.5);
+                        }
+                        break;
+                    }
                 }
-                break;
             }
+            if (best != null) return best;
         }
-        return bestPlatform;
+        return best;
     }
 
     private boolean isPlatformValid(Location loc) {
         if (loc == null || loc.getWorld() == null) return false;
+        BlockListener bl = bot.getPlugin() != null ? bot.getPlugin().getBlockListener() : null;
+        if (bl != null && (bl.isJumpBlock(loc) || bl.isUpBlock(loc))) return false;
         Block b = loc.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN);
+        if (bl != null && (bl.isJumpBlock(b.getLocation()) || bl.isUpBlock(b.getLocation()))) return false;
         return b.getType().isSolid();
     }
 

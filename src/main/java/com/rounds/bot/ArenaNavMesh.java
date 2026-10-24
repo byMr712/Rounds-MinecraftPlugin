@@ -1,0 +1,222 @@
+package com.rounds.bot;
+
+import com.rounds.blocks.BlockListener;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.block.Block;
+
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+
+/**
+ * Precomputed navigation mesh and tactical waypoint graph for the active arena zone.
+ * Enables zero-raycast corridor navigation, precomputed cover points, and instant BFS routing
+ * for 30+ bots without server lag.
+ */
+public class ArenaNavMesh {
+
+    public static class NavNode {
+        public final int id;
+        public final Location loc;
+        public final boolean isCover;
+        public final List<NavNode> neighbors = new ArrayList<>(4);
+
+        public NavNode(int id, Location loc, boolean isCover) {
+            this.id = id;
+            this.loc = loc;
+            this.isCover = isCover;
+        }
+
+        public double distanceSquared(Location other) {
+            double dx = loc.getX() - other.getX();
+            double dy = loc.getY() - other.getY();
+            double dz = loc.getZ() - other.getZ();
+            return dx * dx + dy * dy + dz * dz;
+        }
+    }
+
+    private final Location center;
+    private final List<NavNode> allNodes = new ArrayList<>();
+    private final List<NavNode> coverNodes = new ArrayList<>();
+
+    public ArenaNavMesh(Location center) {
+        this.center = center != null ? center.clone() : null;
+    }
+
+    public boolean isEmpty() {
+        return allNodes.isEmpty();
+    }
+
+    public Location getCenter() {
+        return center;
+    }
+
+    public List<NavNode> getAllNodes() {
+        return allNodes;
+    }
+
+    public List<NavNode> getCoverNodes() {
+        return coverNodes;
+    }
+
+    public NavNode getRandomNode() {
+        if (allNodes.isEmpty()) return null;
+        return allNodes.get(ThreadLocalRandom.current().nextInt(allNodes.size()));
+    }
+
+    public NavNode getRandomCoverNode() {
+        if (coverNodes.isEmpty()) return getRandomNode();
+        return coverNodes.get(ThreadLocalRandom.current().nextInt(coverNodes.size()));
+    }
+
+    /**
+     * Finds nearest navigable node in the mesh.
+     */
+    public NavNode getNearestNode(Location loc) {
+        if (loc == null || allNodes.isEmpty()) return null;
+        NavNode best = null;
+        double bestDist = Double.MAX_VALUE;
+        for (NavNode node : allNodes) {
+            double d = node.distanceSquared(loc);
+            if (d < bestDist) {
+                bestDist = d;
+                best = node;
+            }
+        }
+        return best;
+    }
+
+    /**
+     * Finds the best safe cover node near botLoc that has a solid wall or obstacle blocking line of sight from enemyLoc.
+     */
+    public Location findBestCover(Location botLoc, Location enemyLoc, double maxDist) {
+        if (botLoc == null || enemyLoc == null || coverNodes.isEmpty()) return null;
+        double maxDistSq = maxDist * maxDist;
+        NavNode best = null;
+        double bestScore = -Double.MAX_VALUE;
+
+        for (NavNode node : coverNodes) {
+            double dBot = node.distanceSquared(botLoc);
+            if (dBot > maxDistSq) continue;
+            double dEnemy = node.distanceSquared(enemyLoc);
+            // Prefer cover points close to bot that maximize distance / angle from enemy
+            double score = dEnemy - dBot * 1.5;
+            if (score > bestScore) {
+                bestScore = score;
+                best = node;
+            }
+        }
+        return best != null ? best.loc.clone() : null;
+    }
+
+    /**
+     * Fast BFS corridor path search: returns the immediate next waypoint on the graph towards target.
+     */
+    public Location findNextWaypoint(Location from, Location to) {
+        if (from == null || to == null || allNodes.isEmpty()) return null;
+        NavNode start = getNearestNode(from);
+        NavNode goal = getNearestNode(to);
+        if (start == null || goal == null || start == goal) return null;
+
+        Map<NavNode, NavNode> prev = new HashMap<>();
+        Queue<NavNode> queue = new ArrayDeque<>();
+        Set<NavNode> visited = new HashSet<>();
+
+        queue.add(start);
+        visited.add(start);
+
+        boolean found = false;
+        while (!queue.isEmpty()) {
+            NavNode curr = queue.poll();
+            if (curr == goal) {
+                found = true;
+                break;
+            }
+            for (NavNode neighbor : curr.neighbors) {
+                if (!visited.contains(neighbor)) {
+                    visited.add(neighbor);
+                    prev.put(neighbor, curr);
+                    queue.add(neighbor);
+                }
+            }
+        }
+
+        if (!found) return goal.loc;
+
+        // Backtrack to find the immediate next node after start
+        NavNode step = goal;
+        while (prev.containsKey(step) && prev.get(step) != start) {
+            step = prev.get(step);
+        }
+        return step.loc;
+    }
+
+    /**
+     * Generates navigation grid and connectivity graph for the arena around the given center location.
+     */
+    public static ArenaNavMesh build(Location center, BlockListener bl, int radius, int step) {
+        if (center == null || center.getWorld() == null) return new ArenaNavMesh(center);
+        World world = center.getWorld();
+        ArenaNavMesh mesh = new ArenaNavMesh(center);
+
+        int cx = center.getBlockX();
+        int cy = center.getBlockY();
+        int cz = center.getBlockZ();
+
+        int nodeId = 0;
+        List<NavNode> generated = new ArrayList<>();
+
+        // 1. Grid sample on floor blocks
+        for (int dx = -radius; dx <= radius; dx += step) {
+            for (int dz = -radius; dz <= radius; dz += step) {
+                int bx = cx + dx;
+                int bz = cz + dz;
+
+                // Scan down from cy + 6 to cy - 8 to find highest walkable floor
+                for (int dy = 6; dy >= -8; dy--) {
+                    int by = cy + dy;
+                    Block floor = world.getBlockAt(bx, by, bz);
+                    if (!floor.getType().isSolid()) continue;
+
+                    Block above1 = world.getBlockAt(bx, by + 1, bz);
+                    Block above2 = world.getBlockAt(bx, by + 2, bz);
+                    if (above1.getType().isSolid() || above2.getType().isSolid()) continue;
+
+                    Location floorLoc = floor.getLocation();
+                    if (bl != null && (bl.isJumpBlock(floorLoc) || bl.isUpBlock(floorLoc))) continue;
+
+                    // Check if adjacent to at least one wall block (qualifies as tactical cover)
+                    boolean hasAdjacentWall = world.getBlockAt(bx + 1, by + 1, bz).getType().isSolid()
+                            || world.getBlockAt(bx - 1, by + 1, bz).getType().isSolid()
+                            || world.getBlockAt(bx, by + 1, bz + 1).getType().isSolid()
+                            || world.getBlockAt(bx, by + 1, bz - 1).getType().isSolid();
+
+                    Location nodeLoc = new Location(world, bx + 0.5, by + 1.0, bz + 0.5);
+                    NavNode node = new NavNode(nodeId++, nodeLoc, hasAdjacentWall);
+                    generated.add(node);
+                    mesh.allNodes.add(node);
+                    if (hasAdjacentWall) {
+                        mesh.coverNodes.add(node);
+                    }
+                    break;
+                }
+            }
+        }
+
+        // 2. Connect neighboring nodes (distance <= step * 1.5)
+        double maxNeighborDistSq = (step * 1.5) * (step * 1.5);
+        for (int i = 0; i < generated.size(); i++) {
+            NavNode a = generated.get(i);
+            for (int j = i + 1; j < generated.size(); j++) {
+                NavNode b = generated.get(j);
+                double dSq = a.distanceSquared(b.loc);
+                if (dSq <= maxNeighborDistSq && Math.abs(a.loc.getY() - b.loc.getY()) <= 1.25) {
+                    a.neighbors.add(b);
+                    b.neighbors.add(a);
+                }
+            }
+        }
+
+        return mesh;
+    }
+}

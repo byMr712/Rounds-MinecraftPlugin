@@ -34,9 +34,14 @@ public class BotManager implements Listener {
 
     private final RoundsPlugin plugin;
     private final Map<String, FakeBot> bots = new ConcurrentHashMap<>();
+    private ArenaNavMesh navMesh = null;
 
     public BotManager(RoundsPlugin plugin) {
         this.plugin = plugin;
+    }
+
+    public ArenaNavMesh getNavMesh() {
+        return navMesh;
     }
 
     public RoundsPlugin getPlugin() {
@@ -171,6 +176,12 @@ public class BotManager implements Listener {
 
     public void onRoundStart() {
         if (bots.isEmpty()) return;
+        if (plugin.getGameManager() != null) {
+            org.bukkit.Location center = plugin.getGameManager().getCurrentZoneCenter();
+            if (center != null) {
+                this.navMesh = ArenaNavMesh.build(center, plugin.getBlockListener(), 24, 4);
+            }
+        }
         for (FakeBot bot : bots.values()) {
             if (bot.getAi() != null) {
                 bot.getAi().onRoundStart();

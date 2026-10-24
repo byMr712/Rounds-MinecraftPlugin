@@ -96,6 +96,12 @@ public class BotAI extends BukkitRunnable {
     private int landingPlatformCacheTicks = 0;
     private int roomExitCooldown = 0;
 
+    // AI LOD (Level of Detail) tick throttling for distant bots (> 35m)
+    private int lodLevel = 1; // 1 = 20 TPS, 2 = 10 TPS, 3 = 7 TPS
+    private int lodCheckTicks = 0;
+    private double lastMoveX = 0.0;
+    private double lastMoveZ = 0.0;
+
     // Individual patrol waypoint offset to diversify bot movement patterns
     private double personalOffsetX = ThreadLocalRandom.current().nextDouble(-15.0, 15.0);
     private double personalOffsetZ = ThreadLocalRandom.current().nextDouble(-15.0, 15.0);
@@ -120,26 +126,41 @@ public class BotAI extends BukkitRunnable {
         this.cachedLandingPlatform = null;
         this.landingPlatformCacheTicks = 0;
         this.roomExitCooldown = 0;
+        this.lodLevel = 1;
+        this.lodCheckTicks = 0;
+        this.lastMoveX = 0.0;
+        this.lastMoveZ = 0.0;
 
-        // Differentiated patrol offsets based on playstyle
-        switch (playstyle) {
-            case AGGRESSIVE_FLANKER -> {
-                double ang = ThreadLocalRandom.current().nextDouble(0, 2 * Math.PI);
-                double rad = ThreadLocalRandom.current().nextDouble(15.0, 22.0);
-                this.personalOffsetX = Math.cos(ang) * rad;
-                this.personalOffsetZ = Math.sin(ang) * rad;
+        // Waypoint positioning: prefer precomputed ArenaNavMesh nodes if available
+        ArenaNavMesh mesh = bot.getManager() != null ? bot.getManager().getNavMesh() : null;
+        Location center = bot.getPlugin() != null ? bot.getPlugin().getGameManager().getCurrentZoneCenter() : null;
+        if (mesh != null && !mesh.isEmpty() && center != null) {
+            ArenaNavMesh.NavNode node = (playstyle == BotPlaystyle.DEFENSIVE_TURTLE) ? mesh.getRandomCoverNode() : mesh.getRandomNode();
+            if (node != null) {
+                this.personalOffsetX = node.loc.getX() - center.getX();
+                this.personalOffsetZ = node.loc.getZ() - center.getZ();
             }
-            case TACTICAL_SNIPER -> {
-                this.personalOffsetX = (ThreadLocalRandom.current().nextBoolean() ? 1 : -1) * ThreadLocalRandom.current().nextDouble(14.0, 20.0);
-                this.personalOffsetZ = (ThreadLocalRandom.current().nextBoolean() ? 1 : -1) * ThreadLocalRandom.current().nextDouble(14.0, 20.0);
-            }
-            case ERRATIC_BRAWLER -> {
-                this.personalOffsetX = ThreadLocalRandom.current().nextDouble(-10.0, 10.0);
-                this.personalOffsetZ = ThreadLocalRandom.current().nextDouble(-10.0, 10.0);
-            }
-            case DEFENSIVE_TURTLE -> {
-                this.personalOffsetX = ThreadLocalRandom.current().nextDouble(-12.0, 12.0);
-                this.personalOffsetZ = ThreadLocalRandom.current().nextDouble(-12.0, 12.0);
+        } else {
+            // Differentiated patrol offsets fallback based on playstyle
+            switch (playstyle) {
+                case AGGRESSIVE_FLANKER -> {
+                    double ang = ThreadLocalRandom.current().nextDouble(0, 2 * Math.PI);
+                    double rad = ThreadLocalRandom.current().nextDouble(15.0, 22.0);
+                    this.personalOffsetX = Math.cos(ang) * rad;
+                    this.personalOffsetZ = Math.sin(ang) * rad;
+                }
+                case TACTICAL_SNIPER -> {
+                    this.personalOffsetX = (ThreadLocalRandom.current().nextBoolean() ? 1 : -1) * ThreadLocalRandom.current().nextDouble(14.0, 20.0);
+                    this.personalOffsetZ = (ThreadLocalRandom.current().nextBoolean() ? 1 : -1) * ThreadLocalRandom.current().nextDouble(14.0, 20.0);
+                }
+                case ERRATIC_BRAWLER -> {
+                    this.personalOffsetX = ThreadLocalRandom.current().nextDouble(-10.0, 10.0);
+                    this.personalOffsetZ = ThreadLocalRandom.current().nextDouble(-10.0, 10.0);
+                }
+                case DEFENSIVE_TURTLE -> {
+                    this.personalOffsetX = ThreadLocalRandom.current().nextDouble(-12.0, 12.0);
+                    this.personalOffsetZ = ThreadLocalRandom.current().nextDouble(-12.0, 12.0);
+                }
             }
         }
 
@@ -199,6 +220,46 @@ public class BotAI extends BukkitRunnable {
 
     public double getLandingErrorChance() {
         return getProfile().landingErrorChance;
+    }
+
+    /**
+     * AI Level of Detail (LOD) tick rate scaling:
+     * When > 35m from active players/enemies and not in combat, drops decision tickrate to 10 TPS (LOD 2)
+     * or 7 TPS (LOD 3) to allow running 30+ bots smoothly.
+     */
+    private void updateLod(Player player) {
+        if (lodCheckTicks > 0) {
+            lodCheckTicks--;
+            return;
+        }
+        lodCheckTicks = 10;
+
+        // Active combat, flight, or recent damage strictly enforces full 20 TPS fidelity (LOD 1)
+        if (currentTarget != null || isPursuing || isSeekingCover || isAmbushing || bot.isAirborne()
+                || (System.currentTimeMillis() - lastAttackedTime < 2500)) {
+            lodLevel = 1;
+            return;
+        }
+
+        double closestDistSq = Double.MAX_VALUE;
+        Location myLoc = player.getLocation();
+
+        for (Player other : player.getWorld().getPlayers()) {
+            if (other.equals(player) || other.isDead() || other.getGameMode() == GameMode.SPECTATOR) continue;
+            double d = myLoc.distanceSquared(other.getLocation());
+            if (d < closestDistSq) {
+                closestDistSq = d;
+            }
+        }
+
+        // Over 35 blocks away from any player/enemy: throttle AI to every 2nd or 3rd tick
+        if (closestDistSq > 50.0 * 50.0) {
+            lodLevel = 3;
+        } else if (closestDistSq > 35.0 * 35.0) {
+            lodLevel = 2;
+        } else {
+            lodLevel = 1;
+        }
     }
 
     /**
@@ -305,6 +366,19 @@ public class BotAI extends BukkitRunnable {
             bot.getNmsPlayer().setRot(wobbleYaw, 0f);
             bot.getNmsPlayer().setYHeadRot(wobbleYaw);
             bot.getNmsPlayer().setYBodyRot(wobbleYaw);
+            tickCooldowns();
+            return;
+        }
+
+        // AI LOD (Level of Detail): throttle decision ticks for distant bots (> 35m from active players/enemies)
+        updateLod(player);
+        if (lodLevel > 1 && (tickCount % lodLevel != 0)) {
+            // LOD throttled tick: maintain smooth movement and continuous gravity without heavy raycasts
+            if (Math.abs(lastMoveX) > 0.001 || Math.abs(lastMoveZ) > 0.001) {
+                bot.moveRel(lastMoveX, 0.0, lastMoveZ);
+            } else {
+                bot.moveRel(0.0, 0.0, 0.0);
+            }
             tickCooldowns();
             return;
         }
@@ -696,7 +770,9 @@ public class BotAI extends BukkitRunnable {
         if (lockedHeadingTicks > 0 && seekingPadLoc == null) {
             lockedHeadingTicks--;
             double rad = Math.toRadians(-patrolHeading);
-            bot.moveRel(Math.sin(rad) * dist, 0.0, Math.cos(rad) * dist);
+            lastMoveX = Math.sin(rad) * dist;
+            lastMoveZ = Math.cos(rad) * dist;
+            bot.moveRel(lastMoveX, 0.0, lastMoveZ);
             return;
         }
 
@@ -706,16 +782,29 @@ public class BotAI extends BukkitRunnable {
             patrolHeading = altHeading;
             lockedHeadingTicks = 6; // Maintain detour heading for 6 ticks (~0.3s) to slide smoothly around obstacle
             double rad = Math.toRadians(-altHeading);
-            bot.moveRel(Math.sin(rad) * dist, 0.0, Math.cos(rad) * dist);
+            lastMoveX = Math.sin(rad) * dist;
+            lastMoveZ = Math.cos(rad) * dist;
+            bot.moveRel(lastMoveX, 0.0, lastMoveZ);
             return;
         }
+        lastMoveX = mX;
+        lastMoveZ = mZ;
         bot.moveRel(mX, 0.0, mZ);
     }
 
     private Location findCoverLocation(Player player, Location enemyLoc) {
         Location pLoc = player.getLocation();
+        if (pLoc == null || enemyLoc == null) return null;
+
+        // 1. Instant precomputed cover lookup from ArenaNavMesh (O(1), zero block raycasts!)
+        ArenaNavMesh mesh = bot.getManager() != null ? bot.getManager().getNavMesh() : null;
+        if (mesh != null && !mesh.isEmpty()) {
+            Location navCover = mesh.findBestCover(pLoc, enemyLoc, 12.0);
+            if (navCover != null) return navCover;
+        }
+
         World world = pLoc.getWorld();
-        if (world == null || enemyLoc == null) return null;
+        if (world == null) return null;
 
         double[] distances = {4.0, 6.5};
         double bestDist = -1.0;
@@ -765,9 +854,17 @@ public class BotAI extends BukkitRunnable {
                 lockedHeadingTicks--;
             } else {
                 moveYaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
-                // Obstacle avoidance during pursuit: route around blocking walls and jump pads
+                // Obstacle avoidance during pursuit: route around blocking walls via NavMesh or clear direction
                 if (!isDirectionClear(myLoc, moveYaw, 1.2)) {
-                    moveYaw = findClearDirection(myLoc, moveYaw);
+                    ArenaNavMesh mesh = bot.getManager() != null ? bot.getManager().getNavMesh() : null;
+                    Location nextWp = (mesh != null) ? mesh.findNextWaypoint(myLoc, targetLoc) : null;
+                    if (nextWp != null) {
+                        double wdx = nextWp.getX() - myLoc.getX();
+                        double wdz = nextWp.getZ() - myLoc.getZ();
+                        moveYaw = (float) Math.toDegrees(Math.atan2(-wdx, wdz));
+                    } else {
+                        moveYaw = findClearDirection(myLoc, moveYaw);
+                    }
                     patrolHeading = moveYaw;
                     lockedHeadingTicks = 8; // Maintain detour heading for 8 ticks (~0.4s) to smoothly round corner
                 }
@@ -781,7 +878,9 @@ public class BotAI extends BukkitRunnable {
             bot.getNmsPlayer().setYHeadRot(moveYaw);
             bot.getNmsPlayer().setYBodyRot(moveYaw);
 
-            bot.moveRel(mx * profile.pursuitSpeed, 0.0, mz * profile.pursuitSpeed);
+            lastMoveX = mx * profile.pursuitSpeed;
+            lastMoveZ = mz * profile.pursuitSpeed;
+            bot.moveRel(lastMoveX, 0.0, lastMoveZ);
         } else {
             // Reached last known location: scan left and right briefly
             searchScanYaw += 15f;
@@ -810,9 +909,18 @@ public class BotAI extends BukkitRunnable {
             double cdz = targetPt.getZ() - myLoc.getZ();
             double distToTarget = Math.sqrt(cdx * cdx + cdz * cdz);
             if (distToTarget < 3.5) {
-                // Reached personal waypoint, pick another diverse waypoint
-                personalOffsetX = ThreadLocalRandom.current().nextDouble(-18.0, 18.0);
-                personalOffsetZ = ThreadLocalRandom.current().nextDouble(-18.0, 18.0);
+                // Reached personal waypoint, pick another diverse waypoint from ArenaNavMesh
+                ArenaNavMesh mesh = bot.getManager() != null ? bot.getManager().getNavMesh() : null;
+                if (mesh != null && !mesh.isEmpty()) {
+                    ArenaNavMesh.NavNode node = mesh.getRandomNode();
+                    if (node != null) {
+                        personalOffsetX = node.loc.getX() - center.getX();
+                        personalOffsetZ = node.loc.getZ() - center.getZ();
+                    }
+                } else {
+                    personalOffsetX = ThreadLocalRandom.current().nextDouble(-18.0, 18.0);
+                    personalOffsetZ = ThreadLocalRandom.current().nextDouble(-18.0, 18.0);
+                }
                 targetPt = center.clone().add(personalOffsetX, 0, personalOffsetZ);
                 cdx = targetPt.getX() - myLoc.getX();
                 cdz = targetPt.getZ() - myLoc.getZ();
@@ -896,7 +1004,9 @@ public class BotAI extends BukkitRunnable {
         CombatProfile profile = getProfile();
         double walkSpeed = profile.walkSpeed;
         double radMove = Math.toRadians(-newYaw);
-        bot.moveRel(Math.sin(radMove) * walkSpeed, 0.0, Math.cos(radMove) * walkSpeed);
+        lastMoveX = Math.sin(radMove) * walkSpeed;
+        lastMoveZ = Math.cos(radMove) * walkSpeed;
+        bot.moveRel(lastMoveX, 0.0, lastMoveZ);
     }
 
     private boolean isDirectionClear(Location loc, float heading, double dist) {

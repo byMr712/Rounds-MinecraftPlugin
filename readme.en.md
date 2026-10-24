@@ -23,7 +23,7 @@ A competitive **ROUNDS** mini-game plugin for Paper / Purpur Minecraft servers. 
 - **Built-in AI Combat Bots (Fast NMS Fake Players with 10 Difficulty Levels):** Native fake players for singleplayer practice and testing (`/rdebug bot spawn [name] [team] [1..10]`, `/rbot`).
   - **Dynamic Difficulty (Levels 1..10):** Each bot receives a randomized difficulty level (1..10) upon spawn, re-rolled automatically at the start of every round (`factor = level / 10.0`).
   - **Combat Playstyles (Archetypes):** Each round, bots select one of 4 distinct playstyles: `AGGRESSIVE_FLANKER` (outer ring flanks, close combat, bunnyhop evasion), `TACTICAL_SNIPER` (16-24m distance control, retreats from rushers), `DEFENSIVE_TURTLE` (active shield deflections, retreats when reloading or low on HP), `ERRATIC_BRAWLER` (rapid juking every 6-12 ticks, mid-fire bunnyhops).
-  - **Realistic Vision & Pursuit:** Vision is constrained by a 130° FOV cone, 40-block maximum range, 2.5m footstep proximity, and raycast line-of-sight checks. Target pursuit chance is increased by +20%: Levels 1–2 (**60%**), 3–4 (**72%**), 5–7 (**84%**), 8–9 (**96%**), 10 (**100%**). Target pursuit timeout upon broken vision is **120 ticks** (6 seconds).
+  - **Realistic Vision & Pursuit:** Vision is constrained by a 140° FOV cone, 60-block maximum range, 2.5m footstep proximity, and raycast line-of-sight checks. Target pursuit chance is increased by +20%: Levels 1–2 (**60%**), 3–4 (**72%**), 5–7 (**84%**), 8–9 (**96%**), 10 (**100%**). Target pursuit timeout upon broken vision is **120 ticks** (6 seconds).
   - **Incoming Fire Reaction:** When taking damage, bots calculate the incoming fire angle and snap towards the attacker. Angle accuracy scales with difficulty: from ±45° error at lvl 1 to pinpoint ±4.5° tracking at lvl 10.
   - **Tactical Cover & Ambush Traps:** When low on HP or out of ammo, bots raytrace nearby cover blocks, break line of sight, heal behind walls, or wait around the corner with pre-aim and pre-charged Empower shield bursts for an ambush.
   - **3D Terrain Navigation:** Effortlessly jumps 1-block steps and obstacles using predictive jumping with forward momentum, descends stairs and slopes smoothly without looping, and executes 180° turns when stuck in tight corridor corners.
@@ -76,6 +76,7 @@ Stepping on these wool blocks joins the corresponding team before match start.
 | **Red Team Entrance** | Red Wool (`RED_WOOL`) | Join the Red team |
 | **Yellow Team Entrance** | Yellow Wool (`YELLOW_WOOL`) | Join the Yellow team |
 | **Green Team Entrance** | Lime Wool (`LIME_WOOL`) | Join the Green team |
+| **Leave Team (Spectator)** | White Wool (`WHITE_WOOL`) | Leave all teams and become a spectator |
 
 #### Map, Lobby & Spawn Blocks
 
@@ -408,7 +409,10 @@ When freeplay is enabled (`/rdebug freeplay on`), regular players without admin 
 | `/rdebug effect <type> <amp> <dur>` | `<type> <amp> <dur>` | Applies a potion effect |
 | `/rdebug heal [amount]` | `[HP]` | Heals player to maximum health |
 | `/rdebug resetstats [player]` | `[player]` | Clears stats, cards, and inventory for self or target player |
-| `/rdebug mcp <player/bot> <action>` | `<bot> <action> ...` | MCP command bridge for bot testing (see below) |
+| `/rdebug draft [player]` | `[player]` | Open test 5-card draft GUI for player or bot |
+| `/rdebug pick [player] <0..4\|11..15>` | `[player] <slot>` | Pick a card from the active draft menu by slot number |
+| `/rdebug shoot [player]` | `[player]` | Force player or bot to fire weapon |
+| `/rdebug block [player]` | `[player]` | Force player or bot to activate shield block |
 | `/rdebug reload` | | Fully reloads `config.yml`, cards, and language packs |
 | `/rdebug placeholders` | | Displays list of PlaceholderAPI placeholders |
 | `/rdebug bot <name> [team]` | `[team]` | Spawns a combat NMS bot into the smallest team |
@@ -434,25 +438,10 @@ The plugin includes a native NMS `ServerPlayer` fake player system managed direc
 | `/rbot despawn all` | Remove all active fake bots |
 | `/rbot list` | List all active bots with their HP and current difficulty level (Lvl: 1..10) |
 | `/rbot <name> level [1..10]` | Check or configure bot difficulty level (1 = -90%, 10 = 100%) |
+| `/rbot <name> strategy <aggressive\|defensive\|balanced>` | Set a bot's tactical strategy manually |
 | `/rbot <name> pick <0..4>` | Force a bot to select a specific card from the draft |
 | `/rbot <name> shoot` | Force a bot to fire its weapon |
 | `/rbot <name> block` | Force a bot to raise its shield |
-
-### MCP Command Suite & Bot Control (`/rdebug mcp`)
-
-Special command suite for integration with the MinecraftMCP bridge, automated combat bots (`bot1`, `bot2`), and card system testing:
-
-| Command | Description |
-|---------|-------------|
-| `/rdebug mcp <player/bot> draft` | Initialize and open a 5-card draft selection GUI specifically for the target bot/player |
-| `/rdebug mcp <player/bot> pick <0..4\|11..15>` | Select a card from the pending draft by card index (0..4) or container slot (11..15) |
-| `/rdebug mcp <player/bot> give <card>` | Instantly give a card to player/bot (supports YAML file slugs, card IDs, and localized names) |
-| `/rdebug mcp <player/bot> reset` | Full reset of cards, stats, and inventory for the target player/bot |
-| `/rdebug mcp <player/bot> cards` | Display list of cards in player's/bot's deck |
-| `/rdebug mcp <player/bot> stats` | Print a concise summary of combat stats (HP, DMG, AtkSpd, Ammo, Cards) |
-| `/rdebug mcp <player/bot> block` | Trigger shield block action (RMB) and activate shield card effects |
-| `/rdebug mcp <player/bot> shoot` | Trigger weapon firing action (LMB) |
-| `/rdebug mcp <player/bot> heal` | Restore player/bot to maximum health |
 
 ### Permissions
 

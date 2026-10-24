@@ -78,6 +78,50 @@ public class BlockListener implements Listener {
         return upBlocks.contains(new Location(loc.getWorld(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
     }
 
+    public boolean isLocationTouchingJumpBlock(Location loc) {
+        if (loc == null || loc.getWorld() == null) return false;
+        World w = loc.getWorld();
+        double minX = loc.getX() - 0.35;
+        double maxX = loc.getX() + 0.35;
+        double minZ = loc.getZ() - 0.35;
+        double maxZ = loc.getZ() + 0.35;
+        int y1 = (int) Math.floor(loc.getY() - 0.5);
+        int y2 = (int) Math.floor(loc.getY() + 0.2);
+
+        for (int x = (int) Math.floor(minX); x <= (int) Math.floor(maxX); x++) {
+            for (int z = (int) Math.floor(minZ); z <= (int) Math.floor(maxZ); z++) {
+                for (int y = y1; y <= y2; y++) {
+                    if (jumpBlocks.contains(new Location(w, x, y, z))) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    public boolean isLocationTouchingUpBlock(Location loc) {
+        if (loc == null || loc.getWorld() == null) return false;
+        World w = loc.getWorld();
+        double minX = loc.getX() - 0.35;
+        double maxX = loc.getX() + 0.35;
+        double minZ = loc.getZ() - 0.35;
+        double maxZ = loc.getZ() + 0.35;
+        int y1 = (int) Math.floor(loc.getY() - 0.5);
+        int y2 = (int) Math.floor(loc.getY() + 0.2);
+
+        for (int x = (int) Math.floor(minX); x <= (int) Math.floor(maxX); x++) {
+            for (int z = (int) Math.floor(minZ); z <= (int) Math.floor(maxZ); z++) {
+                for (int y = y1; y <= y2; y++) {
+                    if (upBlocks.contains(new Location(w, x, y, z))) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     public void broadcastMapBlocks() {
         if (jumpBlocks.isEmpty() && upBlocks.isEmpty()) return;
         StringBuilder sb = new StringBuilder("[ROUNDS_MAP] JUMP:");
@@ -280,12 +324,12 @@ public class BlockListener implements Listener {
         Location locAt = to.getBlock().getLocation();
 
         // 1. Jump pad check (triggered whenever stepping/falling on it)
-        if (jumpBlocks.contains(locBelow) || jumpBlocks.contains(locAt)) {
+        if (isLocationTouchingJumpBlock(to) || jumpBlocks.contains(locBelow) || jumpBlocks.contains(locAt)) {
             handleJumpBlock(player);
         }
 
         // 2. Up block check
-        if (upBlocks.contains(locBelow) || upBlocks.contains(locAt)) {
+        if (isLocationTouchingUpBlock(to) || upBlocks.contains(locBelow) || upBlocks.contains(locAt)) {
             handleUpBlock(player);
         }
 
@@ -350,8 +394,12 @@ public class BlockListener implements Listener {
 
         double maxHp = player.getMaxHealth();
         double damage = maxHp * plugin.getRoundsConfig().getJumpBlockDamagePercent() / 100.0;
+        double hpBefore = player.getHealth();
         player.setNoDamageTicks(0);
         player.damage(damage);
+        if (player.getHealth() >= hpBefore && damage > 0.0) {
+            player.setHealth(Math.max(0.0, hpBefore - damage));
+        }
 
         double launchHeight = plugin.getRoundsConfig().getJumpBlockLaunchHeight();
         float velocityY = (float) (launchHeight * 0.2);

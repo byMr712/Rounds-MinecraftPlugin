@@ -50,6 +50,11 @@ public class BotAI extends BukkitRunnable {
     private boolean isAmbushing = false;
     private int ambushTicks = 0;
 
+    // Patrol exploration navigation
+    private float patrolHeading = Float.NaN;
+    private int patrolStuckTicks = 0;
+    private Location lastPatrolPos = null;
+
     public BotAI(FakeBot bot) {
         this.bot = bot;
     }
@@ -169,7 +174,7 @@ public class BotAI extends BukkitRunnable {
     @Override
     public void run() {
         Player player = bot.getBukkitPlayer();
-        if (player.isDead() || !player.isOnline()) {
+        if (player.isDead() || !player.isOnline() || player.getGameMode() == GameMode.SPECTATOR) {
             return;
         }
 
@@ -550,24 +555,54 @@ public class BotAI extends BukkitRunnable {
 
     private void executeSearchPatrol(Player player) {
         double factor = bot.getSkillFactor();
+        Location myLoc = player.getLocation();
 
-        // Periodically scan surroundings with head sweeps
-        searchScanYaw += (float) (4.0 + 8.0 * factor);
-        float sweep = (float) Math.sin(Math.toRadians(searchScanYaw)) * (float) (30.0 + 30.0 * factor);
-        float targetYaw = player.getLocation().getYaw() + sweep;
-        bot.getNmsPlayer().setRot(targetYaw, 0f);
-
-        // Forward patrol movement
-        Location forward = player.getLocation().add(player.getLocation().getDirection().multiply(1.2));
-        if (!forward.getBlock().getType().isSolid()) {
-            double walkSpeed = 0.12 + 0.15 * factor;
-            Vector dir = player.getLocation().getDirection().setY(0).normalize();
-            bot.moveRel(dir.getX() * walkSpeed, 0.0, dir.getZ() * walkSpeed);
-        } else {
-            // Obstacle in front: turn to seek alternate path
-            float newYaw = player.getLocation().getYaw() + 90f + ThreadLocalRandom.current().nextFloat() * 60f;
-            bot.getNmsPlayer().setRot(newYaw, 0f);
+        // 1. Initialize or maintain patrol heading
+        if (Float.isNaN(patrolHeading)) {
+            patrolHeading = myLoc.getYaw();
         }
+
+        // 2. Track stuck status
+        if (lastPatrolPos != null && myLoc.getWorld() != null && myLoc.getWorld().equals(lastPatrolPos.getWorld())) {
+            double movedDistSq = Math.pow(myLoc.getX() - lastPatrolPos.getX(), 2) + Math.pow(myLoc.getZ() - lastPatrolPos.getZ(), 2);
+            if (movedDistSq < 0.005) {
+                patrolStuckTicks++;
+            } else {
+                patrolStuckTicks = 0;
+            }
+        }
+        lastPatrolPos = myLoc.clone();
+
+        // 3. Obstacle avoidance in front of heading
+        double radHead = Math.toRadians(-patrolHeading);
+        double fdx = Math.sin(radHead);
+        double fdz = Math.cos(radHead);
+        Location ahead = myLoc.clone().add(fdx * 1.2, 0.1, fdz * 1.2);
+        boolean obstacleAhead = ahead.getBlock().getType().isSolid();
+
+        if (obstacleAhead || patrolStuckTicks > 10) {
+            patrolStuckTicks = 0;
+            // Prefer steering towards arena center if available
+            Location center = bot.getPlugin() != null ? bot.getPlugin().getGameManager().getCurrentZoneCenter() : null;
+            if (center != null && ThreadLocalRandom.current().nextDouble() < 0.6) {
+                double cdx = center.getX() - myLoc.getX();
+                double cdz = center.getZ() - myLoc.getZ();
+                patrolHeading = (float) Math.toDegrees(Math.atan2(-cdx, cdz)) + (ThreadLocalRandom.current().nextFloat() * 40f - 20f);
+            } else {
+                patrolHeading += 90f + ThreadLocalRandom.current().nextFloat() * 60f;
+            }
+        }
+
+        // 4. Smooth sinusoidal head sweeps looking around forward movement path
+        searchScanYaw += (float) (4.0 + 6.0 * factor);
+        float sweep = (float) Math.sin(Math.toRadians(searchScanYaw)) * (float) (35.0 + 20.0 * factor);
+        float lookYaw = patrolHeading + sweep;
+        bot.getNmsPlayer().setRot(lookYaw, 0f);
+
+        // 5. Continuous forward exploration movement along patrol heading
+        double walkSpeed = 0.20 + 0.12 * factor;
+        double radMove = Math.toRadians(-patrolHeading);
+        bot.moveRel(Math.sin(radMove) * walkSpeed, 0.0, Math.cos(radMove) * walkSpeed);
     }
 
     private void tickCooldowns() {

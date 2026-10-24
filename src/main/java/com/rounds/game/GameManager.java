@@ -267,8 +267,14 @@ public class GameManager implements Listener {
         removeDarkness();
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
-            p.setGameMode(GameMode.SPECTATOR);
-            p.setInvulnerable(true);
+            GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+            if (team == null) {
+                p.setGameMode(GameMode.SPECTATOR);
+                p.setAllowFlight(true);
+                p.setFlying(true);
+                p.setInvulnerable(true);
+                if (currentZoneCenter != null) p.teleport(currentZoneCenter);
+            }
         }
 
         for (Player p : readyPlayers) {
@@ -278,7 +284,11 @@ public class GameManager implements Listener {
                 if (spawn == null) {
                     spawn = getGroundLocation(p.getLocation());
                 }
+                if (spawn.getWorld() != null) {
+                    spawn.getChunk().load();
+                }
                 p.teleport(spawn);
+                p.setGameMode(GameMode.ADVENTURE);
                 p.setAllowFlight(false);
                 p.setFlying(false);
                 p.setFoodLevel(20);
@@ -693,6 +703,7 @@ public class GameManager implements Listener {
         for (Player p : Bukkit.getOnlinePlayers()) {
             UUID uuid = p.getUniqueId();
             if (plugin.getTeamManager().getPlayerTeam(uuid) == null) continue;
+            if (p.getGameMode() == GameMode.SPECTATOR) continue;
             if (deadPlayers.contains(uuid) || pendingCardJoiners.contains(uuid)) continue;
             if (!p.isValid() || p.isDead() || p.getHealth() <= 0) continue;
             alive.add(p);
@@ -838,7 +849,12 @@ public class GameManager implements Listener {
             int alive = 0;
             for (UUID uuid : plugin.getTeamManager().getTeamPlayers(team)) {
                 Player p = Bukkit.getPlayer(uuid);
-                if (p != null && p.isOnline() && p.isValid() && p.getHealth() > 0 && !deadPlayers.contains(uuid) && !pendingCardJoiners.contains(uuid)) {
+                if (p != null && p.isOnline() && p.isValid()
+                        && p.getGameMode() != GameMode.SPECTATOR
+                        && p.getHealth() > 0
+                        && !p.isDead()
+                        && !deadPlayers.contains(uuid)
+                        && !pendingCardJoiners.contains(uuid)) {
                     alive++;
                 }
             }
@@ -1053,8 +1069,18 @@ public class GameManager implements Listener {
     private void openCardGUIs(boolean allTeams) {
         removeDarkness();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
-            p.setGameMode(GameMode.SPECTATOR);
-            p.setInvulnerable(true);
+            GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+            if (team == null) {
+                p.setGameMode(GameMode.SPECTATOR);
+                p.setAllowFlight(true);
+                p.setFlying(true);
+                p.setInvulnerable(true);
+            } else {
+                p.setGameMode(GameMode.ADVENTURE);
+                p.setAllowFlight(false);
+                p.setFlying(false);
+                p.setInvulnerable(true);
+            }
         }
         Set<UUID> pickers = new HashSet<>();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
@@ -1079,8 +1105,18 @@ public class GameManager implements Listener {
 
     private void openCardGUIsDraw() {
         for (Player p : plugin.getServer().getOnlinePlayers()) {
-            p.setGameMode(GameMode.SPECTATOR);
-            p.setInvulnerable(true);
+            GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+            if (team == null) {
+                p.setGameMode(GameMode.SPECTATOR);
+                p.setAllowFlight(true);
+                p.setFlying(true);
+                p.setInvulnerable(true);
+            } else {
+                p.setGameMode(GameMode.ADVENTURE);
+                p.setAllowFlight(false);
+                p.setFlying(false);
+                p.setInvulnerable(true);
+            }
         }
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
@@ -1434,7 +1470,10 @@ public class GameManager implements Listener {
         List<Player> alive = new ArrayList<>();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-            if (team != null && p.isOnline() && p.isValid() && p.getHealth() > 0
+            if (team != null && p.isOnline() && p.isValid()
+                    && p.getGameMode() != GameMode.SPECTATOR
+                    && p.getHealth() > 0
+                    && !p.isDead()
                     && !deadPlayers.contains(p.getUniqueId())) {
                 alive.add(p);
             }

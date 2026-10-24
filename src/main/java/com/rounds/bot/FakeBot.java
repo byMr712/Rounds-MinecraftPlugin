@@ -8,6 +8,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.phys.Vec3;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
@@ -235,7 +236,7 @@ public class FakeBot {
     public void moveRel(double dx, double dy, double dz) {
         Player p = getBukkitPlayer();
         ServerPlayer sp = getNmsPlayer();
-        if (p.isDead() || !p.isOnline()) return;
+        if (p.isDead() || !p.isOnline() || p.getGameMode() == GameMode.SPECTATOR) return;
 
         // 1. Pick up external vertical impulses (jump pads, up blocks, explosions)
         Vec3 delta = sp.getDeltaMovement();
@@ -287,10 +288,10 @@ public class FakeBot {
         Location locAt = to.getBlock().getLocation();
         BlockListener bl = manager.getPlugin().getBlockListener();
         if (bl != null) {
-            if (bl.isJumpBlock(locBelow) || bl.isJumpBlock(locAt)) {
+            if (bl.isLocationTouchingJumpBlock(to) || bl.isJumpBlock(locBelow) || bl.isJumpBlock(locAt)) {
                 bl.handleJumpBlock(p);
             }
-            if (bl.isUpBlock(locBelow) || bl.isUpBlock(locAt)) {
+            if (bl.isLocationTouchingUpBlock(to) || bl.isUpBlock(locBelow) || bl.isUpBlock(locAt)) {
                 bl.handleUpBlock(p);
             }
         }

@@ -94,6 +94,7 @@ public class PlayerDataManager implements Listener {
     }
 
     public void clearActivePlayers() {
+        flushScheduled = false;
         activePlayers.clear();
         savedData.clear();
         playerStore = new YamlConfiguration();
@@ -373,6 +374,9 @@ public class PlayerDataManager implements Listener {
     // Кэш конфига в памяти: чтение файла один раз, запись — синхронная (crash-safe).
     private YamlConfiguration playerStore;
 
+    private final Object fileLock = new Object();
+    private volatile boolean flushScheduled = false;
+
     private YamlConfiguration store() {
         if (playerStore == null) {
             playerStore = activeFile.exists()
@@ -383,17 +387,36 @@ public class PlayerDataManager implements Listener {
     }
 
     private void flushStore() {
-        final String content = store().saveToString();
         if (!plugin.isEnabled()) {
-            writeActiveFile(content);
+            synchronized (fileLock) {
+                writeActiveFile(store().saveToString());
+            }
             return;
         }
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> writeActiveFile(content));
+
+        // Debounce: when multiple bots or players register in the same tick,
+        // coalesce them into a single flush on the next tick instead of 30+ competing tasks.
+        if (flushScheduled) return;
+        flushScheduled = true;
+
+        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+            flushScheduled = false;
+            final String content = store().saveToString();
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                synchronized (fileLock) {
+                    writeActiveFile(content);
+                }
+            });
+        }, 1L);
     }
 
     private void writeActiveFile(String content) {
+        File parent = activeFile.getParentFile();
+        if (parent != null && !parent.exists()) {
+            parent.mkdirs();
+        }
+        File tmp = new File(parent, activeFile.getName() + "." + System.nanoTime() + ".tmp");
         try {
-            File tmp = new File(activeFile.getParentFile(), activeFile.getName() + ".tmp");
             java.nio.file.Files.writeString(tmp.toPath(), content, java.nio.charset.StandardCharsets.UTF_8);
             try {
                 java.nio.file.Files.move(tmp.toPath(), activeFile.toPath(),
@@ -405,6 +428,10 @@ public class PlayerDataManager implements Listener {
             }
         } catch (IOException e) {
             plugin.getLogger().warning("Failed to save active players YAML: " + e.getMessage());
+        } finally {
+            try {
+                if (tmp.exists()) tmp.delete();
+            } catch (Exception ignored) {}
         }
     }
 

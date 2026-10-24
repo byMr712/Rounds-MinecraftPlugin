@@ -40,6 +40,7 @@ public class BotAI extends BukkitRunnable {
     public static final double PROXIMITY_HEARING_DISTANCE_SQ = 6.25; // 2.5 * 2.5
     public static final double FOV_HALF_ANGLE_DEG = 70.0; // 140 degree FOV cone
     public static final double LOW_HEALTH_COVER_THRESHOLD = 0.20; // 20% HP (user requested: 15-20%)
+    public static final int PURSUIT_TIMEOUT_TICKS = 120; // 6 seconds pursuit timeout
 
     private final FakeBot bot;
     private BotPlaystyle playstyle = BotPlaystyle.AGGRESSIVE_FLANKER;
@@ -442,7 +443,7 @@ public class BotAI extends BukkitRunnable {
                 }
             }
 
-            if (isPursuing && lastKnownTargetLoc != null && searchTicks < 80) {
+            if (isPursuing && lastKnownTargetLoc != null && searchTicks < PURSUIT_TIMEOUT_TICKS) {
                 searchTicks++;
                 executePursuit(player, lastKnownTargetLoc);
                 tickCooldowns();

@@ -177,7 +177,13 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "freeplay" -> handleFreeplay(sender, args);
             case "tab" -> handleTab(sender, args);
             case "placeholders" -> handlePlaceholders(sender);
-            case "mcp" -> handleMcp(sender, args);
+            case "bot" -> handleBot(sender, args);
+            case "draft" -> handleDraft(sender, args);
+            case "pick" -> handlePick(sender, args);
+            case "shoot" -> handleShoot(sender, args);
+            case "block" -> handleBlock(sender, args);
+            case "spawn" -> handleBot(sender, args);
+            case "despawn" -> handleBot(sender, args);
             default -> sender.sendMessage(ChatColor.RED + Messages.get("debug.unknown-command", args[0]));
         }
         return true;
@@ -215,6 +221,11 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxKv(sender, "/rdebug givegun [player|@a]", Messages.get("debug.help-givegun"));
 
         boxSection(sender, R, Messages.get("debug.help-section-debug"));
+        boxKv(sender, "/rdebug bot <name> [team]", "Заспавнить бота в игру");
+        boxKv(sender, "/rdebug draft [player]", "Открыть драфт карт игроку");
+        boxKv(sender, "/rdebug pick [player] <slot>", "Выбрать карту (0..4)");
+        boxKv(sender, "/rdebug shoot [player]", "Выстрелить из оружия");
+        boxKv(sender, "/rdebug block [player]", "Активировать щит");
         boxKv(sender, "/rdebug stats [player]", Messages.get("debug.help-stats"));
         boxKv(sender, "/rdebug stats <player> <stat> <value>", Messages.get("debug.help-stats-set"));
         boxKv(sender, "/rdebug setstat <stat> <value> [player]", Messages.get("debug.help-setstat"));
@@ -956,144 +967,225 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         "stats", "setstat", "setteam", "setlanguage", "effect", "heal",
         "resetstats", "reload", "setlobby",
         "jumppos1", "jumppos2", "jumpset", "uppos1", "uppos2", "upset",
-        "wheel", "tab", "mcp"
+        "wheel", "tab", "bot", "draft", "pick", "shoot", "block", "spawn", "despawn"
     );
     private static final List<String> FREEPLAY_COMMANDS = Arrays.asList(
-        "start", "stop", "rounds", "givegun", "wheel"
+        "start", "stop", "rounds", "givegun", "wheel", "bot", "spawn"
     );
     private static final List<String> PUBLIC_COMMANDS = Arrays.asList(
         "info", "stats", "cards", "card"
     );
     private static final List<String> TEAM_COLORS = Arrays.asList("BLUE", "RED", "YELLOW", "GREEN");
 
-    private void handleMcp(CommandSender sender, String[] args) {
-        boolean isAdmin = sender.hasPermission("rounds.admin");
-        if (args.length >= 2 && args[1].equalsIgnoreCase("blocks")) {
-            plugin.getBlockListener().broadcastMapBlocks();
-            return;
-        }
-        if (args.length < 3) {
-            if (!isAdmin) {
-                sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
-                return;
-            }
-            sender.sendMessage(ChatColor.YELLOW + "Usage: /rdebug mcp <bot_name> <draft|pick|give|reset|cards|stats|block|shoot|heal> [args...]");
+    private void handleBot(CommandSender sender, String[] args) {
+        boolean admin = sender.hasPermission("rounds.admin");
+        boolean freeplay = plugin.getRoundsConfig().isFreeplay();
+        if (!admin && !freeplay) {
+            sender.sendMessage(ChatColor.RED + "You don't have permission to spawn bots. (Requires rounds.admin or /rdebug freeplay on)");
             return;
         }
 
-        String targetName = args[1];
-        Player target = Bukkit.getPlayer(targetName);
-        if (target == null) {
-            sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", targetName));
+        com.rounds.bot.BotManager bm = plugin.getBotManager();
+        if (bm == null) {
+            sender.sendMessage(ChatColor.RED + "BotManager is not available.");
             return;
         }
 
-        String action = args[2].toLowerCase();
-        if (!isAdmin) {
-            boolean isSelfPick = (sender instanceof Player p && p.equals(target)
-                    && (action.equals("pick") || action.equals("pickcard") || action.equals("select")));
-            if (!isSelfPick) {
-                sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
+        String sub = args[0].toLowerCase();
+
+        // 1. /rdebug despawn [bot] <bot_name>
+        if (sub.equals("despawn")) {
+            if (args.length < 2) {
+                sender.sendMessage(ChatColor.RED + "Usage: /rdebug despawn <bot_name>");
                 return;
             }
-        }
-        switch (action) {
-            case "draft", "opendraft", "open" -> {
-                GameTeam team = plugin.getTeamManager().getPlayerTeam(target.getUniqueId());
-                if (team == null) team = GameTeam.BLUE;
-                plugin.getCardManager().openCardSelection(target, team);
-                sender.sendMessage(ChatColor.GREEN + "[MCP] Opened card draft GUI for " + target.getName());
+            int nameIndex = (args.length >= 3 && args[1].equalsIgnoreCase("bot")) ? 2 : 1;
+            String name = args[nameIndex];
+            boolean ok = bm.despawnBot(name);
+            if (ok) {
+                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned bot " + name);
+            } else {
+                sender.sendMessage(ChatColor.RED + "[RoundsBot] Bot not found: " + name);
             }
-            case "pick", "pickcard", "select" -> {
-                if (args.length < 4) {
-                    sender.sendMessage(ChatColor.RED + "Usage: /rdebug mcp " + targetName + " pick <0..4|11..15>");
-                    return;
-                }
+            return;
+        }
+
+        // 2. /rdebug bot / /rdebug spawn
+        if (args.length < 2) {
+            sender.sendMessage(ChatColor.RED + "Usage: /rdebug bot <bot_name> [bot_team]");
+            sender.sendMessage(ChatColor.GRAY + "Or: /rdebug bot despawn <bot_name>");
+            return;
+        }
+
+        // Despawn checks:
+        // /rdebug bot despawn <name>
+        if (args[1].equalsIgnoreCase("despawn") || args[1].equalsIgnoreCase("remove") || args[1].equalsIgnoreCase("kill")) {
+            if (args.length < 3) {
+                sender.sendMessage(ChatColor.RED + "Usage: /rdebug bot despawn <bot_name>");
+                return;
+            }
+            String name = args[2];
+            boolean ok = bm.despawnBot(name);
+            if (ok) {
+                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned bot " + name);
+            } else {
+                sender.sendMessage(ChatColor.RED + "[RoundsBot] Bot not found: " + name);
+            }
+            return;
+        }
+
+        // /rdebug bot <name> despawn
+        if (args.length >= 3 && (args[2].equalsIgnoreCase("despawn") || args[2].equalsIgnoreCase("remove") || args[2].equalsIgnoreCase("kill"))) {
+            String name = args[1];
+            boolean ok = bm.despawnBot(name);
+            if (ok) {
+                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned bot " + name);
+            } else {
+                sender.sendMessage(ChatColor.RED + "[RoundsBot] Bot not found: " + name);
+            }
+            return;
+        }
+
+        // Difficulty level check/set: /rdebug bot level <name> [1..10]
+        if (args.length >= 3 && (args[1].equalsIgnoreCase("level") || args[1].equalsIgnoreCase("lvl"))) {
+            com.rounds.bot.FakeBot bot = bm.getBot(args[2]);
+            if (bot == null) {
+                sender.sendMessage(ChatColor.RED + "[RoundsBot] Bot not found: " + args[2]);
+                return;
+            }
+            if (args.length >= 4) {
                 try {
-                    int slot = Integer.parseInt(args[3]);
-                    int index = (slot >= 11 && slot <= 15) ? (slot - 11) : slot;
-                    if (index < 0 || index > 4) {
-                        sender.sendMessage(ChatColor.RED + "[MCP] Invalid card index: " + slot + " (expected 0..4 or 11..15)");
-                        return;
-                    }
-                    plugin.getCardManager().selectCard(target, index);
-                    target.closeInventory();
-                    sender.sendMessage(ChatColor.GREEN + "[MCP] Selected card index " + index + " for " + target.getName());
+                    int lvl = Integer.parseInt(args[3]);
+                    bot.setLevel(lvl);
+                    sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Set " + bot.getName() + " difficulty to Level " +
+                            bot.getLevel() + " (" + (bot.getLevel() * 10) + "%)");
                 } catch (NumberFormatException e) {
-                    sender.sendMessage(ChatColor.RED + "[MCP] Slot must be a number: " + args[3]);
+                    sender.sendMessage(ChatColor.RED + "Invalid level number: " + args[3]);
                 }
+            } else {
+                sender.sendMessage(ChatColor.GOLD + "[RoundsBot] " + bot.getName() + " difficulty: Level " +
+                        bot.getLevel() + " (" + (bot.getLevel() * 10) + "%)");
             }
-            case "give", "add" -> {
-                if (args.length < 4) {
-                    sender.sendMessage(ChatColor.RED + "Usage: /rdebug mcp " + targetName + " give <card_id_or_slug>");
-                    return;
-                }
-                String cardInput = String.join(" ", Arrays.copyOfRange(args, 3, args.length));
-                com.rounds.cards.Card card = plugin.getCardManager().getRegistry().findCardByName(cardInput);
-                if (card == null) {
-                    sender.sendMessage(ChatColor.RED + "[MCP] Card not found: " + cardInput);
-                    return;
-                }
-                plugin.getCardManager().applyCardToPlayer(target, card);
-                String lang = Messages.getLanguageCode();
-                sender.sendMessage(ChatColor.GREEN + "[MCP] Applied card " + card.getColoredName(lang) + " to " + target.getName());
-            }
-            case "reset" -> {
-                PlayerData data = plugin.getPlayerDataManager().getData(target);
-                data.resetStats();
-                data.resetAllCards();
-                var attr = target.getAttribute(Attribute.GENERIC_MAX_HEALTH);
-                if (attr != null) attr.setBaseValue(20);
-                target.setHealth(20);
-                target.setFoodLevel(20);
-                target.getInventory().clear();
-                plugin.getGameManager().clearCardEffects(target);
-                sender.sendMessage(ChatColor.GREEN + "[MCP] Reset cards and stats for " + target.getName());
-            }
-            case "cards", "deck" -> {
-                PlayerData data = plugin.getPlayerDataManager().getData(target);
-                List<Integer> owned = data.getOwnedCards();
-                if (owned.isEmpty()) {
-                    sender.sendMessage(ChatColor.YELLOW + "[MCP] " + target.getName() + " has 0 cards.");
-                } else {
-                    StringBuilder sb = new StringBuilder(ChatColor.GREEN + "[MCP] " + target.getName() + " cards (" + owned.size() + "): ");
-                    String lang = Messages.getLanguageCode();
-                    for (int i = 0; i < owned.size(); i++) {
-                        com.rounds.cards.Card c = plugin.getCardManager().getRegistry().getCard(owned.get(i));
-                        if (c != null) {
-                            if (i > 0) sb.append(ChatColor.GRAY).append(", ");
-                            sb.append(c.getColoredName(lang));
-                        }
-                    }
-                    sender.sendMessage(sb.toString());
-                }
-            }
-            case "stats" -> {
-                PlayerData data = plugin.getPlayerDataManager().getData(target);
-                var attr = target.getAttribute(Attribute.GENERIC_MAX_HEALTH);
-                double maxHp = attr != null ? attr.getValue() : 20.0;
-                sender.sendMessage(ChatColor.AQUA + "[MCP] " + target.getName() +
-                    " HP=" + String.format("%.1f/%.1f", target.getHealth(), maxHp) +
-                    " DMG=" + data.dmg + " AtkSpd=" + data.atkSpeed +
-                    " Ammo=" + data.ammo + "/" + data.maxAmmo +
-                    " Cards=" + data.getOwnedCards().size());
-            }
-            case "block", "shield" -> {
-                GunItem.getInstance().doBlock(target);
-                sender.sendMessage(ChatColor.GREEN + "[MCP] Triggered shield block for " + target.getName());
-            }
-            case "shoot" -> {
-                GunItem.getInstance().doShoot(target);
-                sender.sendMessage(ChatColor.GREEN + "[MCP] Triggered weapon shoot for " + target.getName());
-            }
-            case "heal" -> {
-                var attr = target.getAttribute(Attribute.GENERIC_MAX_HEALTH);
-                target.setHealth(attr != null ? attr.getValue() : 20.0);
-                target.setFoodLevel(20);
-                sender.sendMessage(ChatColor.GREEN + "[MCP] Healed " + target.getName() + " to full HP.");
-            }
-            default -> sender.sendMessage(ChatColor.RED + "[MCP] Unknown action: " + action);
+            return;
         }
+
+        // Spawn: /rdebug bot <name> [team] [1..10] or /rdebug spawn bot <name> [team] [1..10]
+        int nameIndex = 1;
+        int teamIndex = 2;
+        if (args[1].equalsIgnoreCase("bot") && args.length >= 3) {
+            nameIndex = 2;
+            teamIndex = 3;
+        }
+
+        String name = args[nameIndex];
+        String team = (args.length > teamIndex && !args[teamIndex].isBlank())
+                ? args[teamIndex].toUpperCase()
+                : bm.pickBestTeam();
+
+        Integer initialLevel = null;
+        if (args.length > teamIndex + 1) {
+            try {
+                initialLevel = Integer.parseInt(args[teamIndex + 1]);
+            } catch (NumberFormatException ignored) {}
+        }
+
+        Location loc = (sender instanceof Player p) ? p.getLocation() : null;
+        com.rounds.bot.FakeBot bot = bm.spawnBot(name, team, loc, initialLevel);
+        sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Spawned bot " + ChatColor.AQUA + bot.getName() +
+                ChatColor.GREEN + " on team " + ChatColor.GOLD + team +
+                ChatColor.GRAY + " [Level: " + bot.getLevel() + " (" + (bot.getLevel() * 10) + "%)]");
+    }
+
+    private void handleDraft(CommandSender sender, String[] args) {
+        Player target;
+        if (args.length >= 2) {
+            target = Bukkit.getPlayer(args[1]);
+            if (target == null) {
+                sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[1]));
+                return;
+            }
+        } else if (sender instanceof Player p) {
+            target = p;
+        } else {
+            sender.sendMessage(ChatColor.RED + "Usage: /rdebug draft <player>");
+            return;
+        }
+
+        GameTeam team = plugin.getTeamManager().getPlayerTeam(target.getUniqueId());
+        if (team == null) team = GameTeam.BLUE;
+        plugin.getCardManager().openCardSelection(target, team);
+        sender.sendMessage(ChatColor.GREEN + "Opened card draft GUI for " + target.getName());
+    }
+
+    private void handlePick(CommandSender sender, String[] args) {
+        Player target;
+        int slotArgIndex;
+        if (args.length >= 3) {
+            target = Bukkit.getPlayer(args[1]);
+            if (target == null) {
+                sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[1]));
+                return;
+            }
+            slotArgIndex = 2;
+        } else if (args.length == 2 && sender instanceof Player p) {
+            target = p;
+            slotArgIndex = 1;
+        } else {
+            sender.sendMessage(ChatColor.RED + "Usage: /rdebug pick [player] <0..4|11..15>");
+            return;
+        }
+
+        try {
+            int slot = Integer.parseInt(args[slotArgIndex]);
+            int index = (slot >= 11 && slot <= 15) ? (slot - 11) : slot;
+            if (index < 0 || index > 4) {
+                sender.sendMessage(ChatColor.RED + "Invalid card index: " + slot + " (expected 0..4 or 11..15)");
+                return;
+            }
+            plugin.getCardManager().selectCard(target, index);
+            target.closeInventory();
+            sender.sendMessage(ChatColor.GREEN + "Selected card index " + index + " for " + target.getName());
+        } catch (NumberFormatException e) {
+            sender.sendMessage(ChatColor.RED + "Slot must be a number: " + args[slotArgIndex]);
+        }
+    }
+
+    private void handleShoot(CommandSender sender, String[] args) {
+        Player target;
+        if (args.length >= 2) {
+            target = Bukkit.getPlayer(args[1]);
+            if (target == null) {
+                sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[1]));
+                return;
+            }
+        } else if (sender instanceof Player p) {
+            target = p;
+        } else {
+            sender.sendMessage(ChatColor.RED + "Usage: /rdebug shoot [player]");
+            return;
+        }
+
+        GunItem.getInstance().doShoot(target);
+        sender.sendMessage(ChatColor.GREEN + "Triggered weapon shoot for " + target.getName());
+    }
+
+    private void handleBlock(CommandSender sender, String[] args) {
+        Player target;
+        if (args.length >= 2) {
+            target = Bukkit.getPlayer(args[1]);
+            if (target == null) {
+                sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[1]));
+                return;
+            }
+        } else if (sender instanceof Player p) {
+            target = p;
+        } else {
+            sender.sendMessage(ChatColor.RED + "Usage: /rdebug block [player]");
+            return;
+        }
+
+        GunItem.getInstance().doBlock(target);
+        sender.sendMessage(ChatColor.GREEN + "Triggered shield block for " + target.getName());
     }
 
     @Override
@@ -1118,17 +1210,62 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
 
         return switch (args[0].toLowerCase()) {
-            case "mcp" -> {
+            case "bot" -> {
+                if (args.length == 2) {
+                    List<String> list = new ArrayList<>();
+                    list.add("despawn");
+                    list.addAll(Arrays.asList("bot1", "bot2", "bot3"));
+                    Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
+                    yield filterStartsWith(list, input);
+                }
+                if (args.length == 3) {
+                    if (args[1].equalsIgnoreCase("despawn")) {
+                        List<String> list = new ArrayList<>();
+                        Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
+                        yield filterStartsWith(list, input);
+                    }
+                    List<String> teams = new ArrayList<>(TEAM_COLORS);
+                    teams.add("despawn");
+                    yield filterStartsWith(teams, input);
+                }
+                yield Collections.emptyList();
+            }
+            case "draft", "shoot", "block" -> {
                 if (args.length == 2) {
                     List<String> list = new ArrayList<>();
                     Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
                     yield filterStartsWith(list, input);
                 }
-                if (args.length == 3) {
-                    yield filterStartsWith(Arrays.asList("draft", "pick", "give", "reset", "cards", "stats", "block", "shoot", "heal"), input);
+                yield Collections.emptyList();
+            }
+            case "pick" -> {
+                if (args.length == 2) {
+                    List<String> list = new ArrayList<>(Arrays.asList("0", "1", "2", "3", "4"));
+                    Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
+                    yield filterStartsWith(list, input);
                 }
-                if (args.length == 4 && (args[2].equalsIgnoreCase("give") || args[2].equalsIgnoreCase("add"))) {
-                    yield filterStartsWith(plugin.getCardManager().getRegistry().getCardNameSuggestions(), input);
+                if (args.length == 3) {
+                    yield filterStartsWith(Arrays.asList("0", "1", "2", "3", "4"), input);
+                }
+                yield Collections.emptyList();
+            }
+            case "spawn" -> {
+                if (args.length == 2) yield filterStartsWith(Collections.singletonList("bot"), input);
+                if (args.length == 3) yield filterStartsWith(Arrays.asList("bot1", "bot2", "bot3"), input);
+                if (args.length == 4) yield filterStartsWith(TEAM_COLORS, input);
+                yield Collections.emptyList();
+            }
+            case "despawn" -> {
+                if (args.length == 2) {
+                    List<String> list = new ArrayList<>();
+                    list.add("bot");
+                    Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
+                    yield filterStartsWith(list, input);
+                }
+                if (args.length == 3 && args[1].equalsIgnoreCase("bot")) {
+                    List<String> list = new ArrayList<>();
+                    Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
+                    yield filterStartsWith(list, input);
                 }
                 yield Collections.emptyList();
             }

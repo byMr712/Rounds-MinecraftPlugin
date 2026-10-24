@@ -20,6 +20,12 @@ A competitive **ROUNDS** mini-game plugin for Paper / Purpur Minecraft servers. 
   - Interactive player card deck viewer (`/rdebug cards show`) with administrative card duplication and deletion.
   - Card selection rotation wheel (Wheel mode).
 - **Physical Setup Blocks:** Interactive blocks for team selection, lobby center, map zones, spawn points, jump pads, and vertical lift columns.
+- **Built-in AI Combat Bots (Fast NMS Fake Players with 10 Difficulty Levels):** Native fake players for singleplayer practice and testing (`/rdebug bot <name> [team] [1..10]`, `/rbot`).
+  - **Dynamic Difficulty (Levels 1..10):** Each bot receives a randomized difficulty level (1..10) upon spawn, re-rolled automatically at the start of every round.
+  - **Stat Scaling (10% per Level):** Level 1 plays at 10% potential (-90% accuracy, -90% long-range shooting, -90% evasion, -90% shield block and jump pad usage), while Level 10 unleashes 100% of bot combat capability.
+  - **Realistic Vision (Anti-Wallhack):** Bots cannot see through solid walls. Vision is constrained by a 130° FOV cone, 40-block maximum range, 2.5m footstep proximity, and raycast line-of-sight checks. When target line of sight is broken, bots transition to pursuit and search patrol.
+  - **Pursuit Tenacity:** Chance to aggressively chase a lost target to their last known position scales with level: 1–2 (-50%), 3–4 (-40%), 5–7 (-30%), 8–9 (-20%), 10 (-10%).
+  - Supports shield blocking, automated smart card drafting (picks best cards by rarity at higher levels), weapon damage, card abilities, explosions, poison, and jump pad damage like regular players.
 - **Integrations:** Full [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.13006/) and [TAB](https://www.spigotmc.org/resources/tab.57806/) support, plus an optional built-in scoreboard.
 - **Localization:** Complete UI and card localization powered by language packs (`lang/*.txt`).
 
@@ -398,6 +404,26 @@ When freeplay is enabled (`/rdebug freeplay on`), regular players without admin 
 | `/rdebug mcp <player/bot> <action>` | `<bot> <action> ...` | MCP command bridge for bot testing (see below) |
 | `/rdebug reload` | | Fully reloads `config.yml`, cards, and language packs |
 | `/rdebug placeholders` | | Displays list of PlaceholderAPI placeholders |
+| `/rdebug bot <name> [team]` | `[team]` | Spawns a combat NMS bot into the smallest team |
+| `/rdebug bot despawn <name>` | `<name>` | Despawns a bot from the server (also `/rdebug despawn <name>`) |
+| `/rbot <spawn\|despawn\|list>` | | Built-in bot manager commands (tactics, forced shoot, block, card pick) |
+
+### Built-in Bots Control (`/rbot` and `/rdebug bot`)
+
+The plugin includes a native NMS `ServerPlayer` fake player system managed directly by the server:
+
+| Command | Description |
+|---------|-------------|
+| `/rdebug bot <name> [team] [1..10]` | Spawn a combat bot on a team with optional difficulty level (1..10) |
+| `/rdebug bot level <name> [1..10]` | Check or set a bot's difficulty level (1..10) |
+| `/rdebug bot despawn <name>` | Remove a fake bot from the game (or `/rdebug despawn <name>`) |
+| `/rbot spawn <name> [team] [1..10]` | Alternative spawn command with optional level (1..10) |
+| `/rbot despawn <name>` | Alternative despawn command |
+| `/rbot list` | List all active bots with their HP and current difficulty level (Lvl: 1..10) |
+| `/rbot <name> level [1..10]` | Check or configure bot difficulty level (1 = -90%, 10 = 100%) |
+| `/rbot <name> pick <0..4>` | Force a bot to select a specific card from the draft |
+| `/rbot <name> shoot` | Force a bot to fire its weapon |
+| `/rbot <name> block` | Force a bot to raise its shield |
 
 ### MCP Command Suite & Bot Control (`/rdebug mcp`)
 

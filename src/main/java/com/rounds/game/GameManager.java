@@ -295,7 +295,7 @@ public class GameManager implements Listener {
         }
     }
 
-    private void giveGun(Player player) {
+    public void giveGun(Player player) {
         ItemStack gun = GunItem.createGunItem();
         player.getInventory().setItemInMainHand(gun);
     }
@@ -753,7 +753,10 @@ public class GameManager implements Listener {
         autoDeathNextIsKill = false;
 
         plugin.getServer().broadcastMessage(ChatColor.YELLOW + Messages.get("game.round-start", currentRound));
-        plugin.getBlockListener().broadcastMapBlocks();
+
+        if (plugin.getBotManager() != null) {
+            plugin.getBotManager().randomizeBotLevels();
+        }
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());

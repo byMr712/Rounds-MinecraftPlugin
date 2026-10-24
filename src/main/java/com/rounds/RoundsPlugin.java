@@ -1,8 +1,10 @@
 package com.rounds;
 
 import com.rounds.blocks.BlockListener;
+import com.rounds.bot.BotManager;
 import com.rounds.cards.CardManager;
 import com.rounds.command.DebugCommands;
+import com.rounds.command.RBotCommand;
 import com.rounds.entity.RoundsEntities;
 import com.rounds.game.GameManager;
 import com.rounds.gui.CardGUIListener;
@@ -24,6 +26,7 @@ public class RoundsPlugin extends JavaPlugin {
     private CardManager cardManager;
     private CardGUIListener cardGUIListener;
     private BlockListener blockListener;
+    private BotManager botManager;
 
     @Override
     public void onEnable() {
@@ -38,15 +41,24 @@ public class RoundsPlugin extends JavaPlugin {
         gameManager = new GameManager(this);
         blockListener = new BlockListener(this);
         cardGUIListener = new CardGUIListener(this);
+        botManager = new BotManager(this);
 
         DebugCommands.register(this);
         GunItem.register(this);
         RoundsEntities.register(this);
 
+        var rbot = getCommand("rbot");
+        if (rbot != null) {
+            RBotCommand rbotCmd = new RBotCommand(botManager);
+            rbot.setExecutor(rbotCmd);
+            rbot.setTabCompleter(rbotCmd);
+        }
+
         getServer().getPluginManager().registerEvents(blockListener, this);
         getServer().getPluginManager().registerEvents(cardGUIListener, this);
         getServer().getPluginManager().registerEvents(gameManager, this);
         getServer().getPluginManager().registerEvents(playerDataManager, this);
+        getServer().getPluginManager().registerEvents(botManager, this);
         GunItem gunItem = new GunItem();
         GunItem.setInstance(gunItem);
         getServer().getPluginManager().registerEvents(gunItem, this);
@@ -68,6 +80,9 @@ public class RoundsPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (botManager != null) {
+            botManager.despawnAll();
+        }
         if (gameManager != null) {
             if (gameManager.isGameStarted()) {
                 playerDataManager.saveAllFullData(null);
@@ -91,4 +106,5 @@ public class RoundsPlugin extends JavaPlugin {
     public CardManager getCardManager() { return cardManager; }
     public CardGUIListener getCardGUI() { return cardGUIListener; }
     public BlockListener getBlockListener() { return blockListener; }
+    public BotManager getBotManager() { return botManager; }
 }

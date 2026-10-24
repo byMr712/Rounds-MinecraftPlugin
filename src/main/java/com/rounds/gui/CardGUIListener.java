@@ -49,6 +49,38 @@ public class CardGUIListener implements Listener {
 
         openGUIs.put(player.getUniqueId(), cards);
         player.openInventory(inv);
+
+        if (plugin.getBotManager() != null && plugin.getBotManager().isBot(player)) {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (player.isOnline() && !player.isDead()) {
+                    com.rounds.bot.FakeBot bot = plugin.getBotManager().getBot(player.getName());
+                    int slot;
+                    if (bot != null && java.util.concurrent.ThreadLocalRandom.current().nextDouble() < bot.getSkillFactor()) {
+                        slot = findBestCardSlot(cards);
+                    } else {
+                        slot = java.util.concurrent.ThreadLocalRandom.current().nextInt(Math.min(5, cards.size()));
+                    }
+                    plugin.getCardManager().selectCard(player, slot);
+                    player.closeInventory();
+                }
+            }, 10L);
+        }
+    }
+
+    private int findBestCardSlot(List<Card> cards) {
+        if (cards == null || cards.isEmpty()) return 0;
+        int bestSlot = 0;
+        int bestRarity = -1;
+        int limit = Math.min(5, cards.size());
+        for (int i = 0; i < limit; i++) {
+            Card c = cards.get(i);
+            int r = (c != null && c.getRarity() != null) ? c.getRarity().ordinal() : 0;
+            if (r > bestRarity) {
+                bestRarity = r;
+                bestSlot = i;
+            }
+        }
+        return bestSlot;
     }
 
     public void openShow(Player viewer, Player target) {

@@ -117,6 +117,9 @@ public class GunItem implements Listener {
     }
 
     public void doShoot(Player player) {
+        if (!isGun(player.getInventory().getItemInMainHand())) {
+            return;
+        }
         UUID uuid = player.getUniqueId();
 
         if (silencedPlayers.contains(uuid)) {
@@ -200,6 +203,9 @@ public class GunItem implements Listener {
     }
 
     public void doBlock(Player player) {
+        if (!isGun(player.getInventory().getItemInMainHand())) {
+            return;
+        }
         UUID uuid = player.getUniqueId();
 
         if (silencedPlayers.contains(uuid)) {
@@ -586,12 +592,12 @@ public class GunItem implements Listener {
         activeShields.remove(uuid);
     }
     public static void resetRoundState() {
-        for (ReloadTask task : reloadTasks.values()) {
+        for (ReloadTask task : new ArrayList<>(reloadTasks.values())) {
             task.cancel();
         }
         reloadTasks.clear();
         reloadingPlayers.clear();
-        for (int sawTaskId : activeSawTasks.values()) {
+        for (int sawTaskId : new ArrayList<>(activeSawTasks.values())) {
             Bukkit.getScheduler().cancelTask(sawTaskId);
         }
         activeSawTasks.clear();

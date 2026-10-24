@@ -1,0 +1,274 @@
+package com.rounds.command;
+
+import com.rounds.bot.BotManager;
+import com.rounds.bot.BotStrategy;
+import com.rounds.bot.FakeBot;
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.Player;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+public class RBotCommand implements CommandExecutor, TabCompleter {
+
+    private final BotManager botManager;
+
+    private static final List<String> ROOT_ACTIONS = Arrays.asList("spawn", "despawn", "list", "level");
+    private static final List<String> BOT_ACTIONS = Arrays.asList("level", "strategy", "pick", "shoot", "block");
+    private static final List<String> TEAMS = Arrays.asList("BLUE", "RED", "YELLOW", "GREEN");
+    private static final List<String> STRATEGIES = Arrays.asList("aggressive", "defensive", "balanced");
+    private static final List<String> LEVELS = Arrays.asList("1", "2", "3", "4", "5", "6", "7", "8", "9", "10");
+
+    public RBotCommand(BotManager botManager) {
+        this.botManager = botManager;
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!sender.hasPermission("rounds.admin") && !botManager.getPlugin().getRoundsConfig().isFreeplay()) {
+            sender.sendMessage(ChatColor.RED + "You don't have permission to manage bots.");
+            return true;
+        }
+
+        if (args.length == 0) {
+            sendHelp(sender);
+            return true;
+        }
+
+        String first = args[0].toLowerCase();
+
+        switch (first) {
+            case "spawn" -> {
+                if (args.length < 2) {
+                    sender.sendMessage(ChatColor.RED + "Usage: /rbot spawn <name> [team]");
+                    return true;
+                }
+                String name = args[1];
+                String team = (args.length >= 3) ? args[2].toUpperCase() : botManager.pickBestTeam();
+
+                Location loc = (sender instanceof Player p) ? p.getLocation() : null;
+                FakeBot bot = botManager.spawnBot(name, team, loc);
+                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Spawned bot " + ChatColor.AQUA + bot.getName() +
+                        ChatColor.GREEN + " on team " + ChatColor.GOLD + team);
+                return true;
+            }
+            case "despawn", "remove", "kill" -> {
+                if (args.length < 2) {
+                    sender.sendMessage(ChatColor.RED + "Usage: /rbot despawn <name>");
+                    return true;
+                }
+                String name = args[1];
+                boolean ok = botManager.despawnBot(name);
+                if (ok) {
+                    sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned bot " + name);
+                } else {
+                    sender.sendMessage(ChatColor.RED + "[RoundsBot] Bot not found: " + name);
+                }
+                return true;
+            }
+            case "list" -> {
+                Collection<FakeBot> bots = botManager.getBots();
+                if (bots.isEmpty()) {
+                    sender.sendMessage(ChatColor.YELLOW + "[RoundsBot] No active bots.");
+                    return true;
+                }
+                sender.sendMessage(ChatColor.GOLD + "=== Active Bots (" + bots.size() + ") ===");
+                for (FakeBot b : bots) {
+                    Player p = b.getBukkitPlayer();
+                    sender.sendMessage(ChatColor.AQUA + " - " + b.getName() +
+                            ChatColor.GRAY + " [HP: " + String.format("%.1f", p.getHealth()) +
+                            ", Lvl: " + b.getLevel() + " (" + (b.getLevel() * 10) + "%)]");
+                }
+                return true;
+            }
+            case "level", "lvl", "difficulty" -> {
+                if (args.length < 2) {
+                    sender.sendMessage(ChatColor.RED + "Usage: /rbot level <botName> [1..10]");
+                    return true;
+                }
+                FakeBot bot = botManager.getBot(args[1]);
+                if (bot == null) {
+                    sender.sendMessage(ChatColor.RED + "[RoundsBot] Bot not found: " + args[1]);
+                    return true;
+                }
+                if (args.length < 3) {
+                    sender.sendMessage(ChatColor.GOLD + "[RoundsBot] " + bot.getName() + " difficulty: Level " +
+                            bot.getLevel() + " (" + (bot.getLevel() * 10) + "%)");
+                    return true;
+                }
+                try {
+                    int lvl = Integer.parseInt(args[2]);
+                    if (lvl < 1 || lvl > 10) {
+                        sender.sendMessage(ChatColor.RED + "Difficulty level must be between 1 and 10.");
+                        return true;
+                    }
+                    bot.setLevel(lvl);
+                    sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Set " + bot.getName() + " difficulty to Level " +
+                            lvl + " (" + (lvl * 10) + "%)");
+                } catch (NumberFormatException e) {
+                    sender.sendMessage(ChatColor.RED + "Invalid number: " + args[2]);
+                }
+                return true;
+            }
+            default -> {
+                // Check if first arg is an active bot name
+                FakeBot bot = botManager.getBot(first);
+                if (bot != null) {
+                    return handleBotAction(sender, bot, args);
+                }
+                sendHelp(sender);
+                return true;
+            }
+        }
+    }
+
+    private boolean handleBotAction(CommandSender sender, FakeBot bot, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage(ChatColor.RED + "Usage: /rbot " + bot.getName() + " <strategy|pick|shoot|block> [args]");
+            return true;
+        }
+
+        String action = args[1].toLowerCase();
+        switch (action) {
+            case "level", "lvl", "difficulty" -> {
+                if (args.length < 3) {
+                    sender.sendMessage(ChatColor.GOLD + "[RoundsBot] " + bot.getName() + " is Difficulty Level " +
+                            bot.getLevel() + " (" + (bot.getLevel() * 10) + "%)");
+                    return true;
+                }
+                try {
+                    int lvl = Integer.parseInt(args[2]);
+                    if (lvl < 1 || lvl > 10) {
+                        sender.sendMessage(ChatColor.RED + "Difficulty level must be between 1 and 10.");
+                        return true;
+                    }
+                    bot.setLevel(lvl);
+                    sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Set " + bot.getName() + " difficulty to Level " +
+                            lvl + " (" + (lvl * 10) + "%)");
+                } catch (NumberFormatException e) {
+                    sender.sendMessage(ChatColor.RED + "Invalid level number: " + args[2]);
+                }
+            }
+            case "strategy", "strat" -> {
+                if (args.length < 3) {
+                    sender.sendMessage(ChatColor.RED + "Usage: /rbot " + bot.getName() + " strategy <aggressive|defensive|balanced>");
+                    return true;
+                }
+                BotStrategy strategy = BotStrategy.fromString(args[2]);
+                bot.setStrategy(strategy);
+                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Set " + bot.getName() + " strategy to " + strategy.name());
+            }
+            case "pick", "pickcard" -> {
+                if (args.length < 3) {
+                    sender.sendMessage(ChatColor.RED + "Usage: /rbot " + bot.getName() + " pick <0..4>");
+                    return true;
+                }
+                try {
+                    int slot = Integer.parseInt(args[2]);
+                    if (slot < 0 || slot > 4) {
+                        sender.sendMessage(ChatColor.RED + "Slot index must be 0..4");
+                        return true;
+                    }
+                    bot.pickCard(slot);
+                    sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Bot " + bot.getName() + " picking card slot " + slot);
+                } catch (NumberFormatException e) {
+                    sender.sendMessage(ChatColor.RED + "Invalid number: " + args[2]);
+                }
+            }
+            case "shoot" -> {
+                bot.shoot();
+                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Bot " + bot.getName() + " shot weapon.");
+            }
+            case "block", "shield" -> {
+                bot.block();
+                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Bot " + bot.getName() + " raised shield.");
+            }
+            default -> sender.sendMessage(ChatColor.RED + "Unknown bot action: " + action);
+        }
+        return true;
+    }
+
+    private void sendHelp(CommandSender sender) {
+        sender.sendMessage(ChatColor.GOLD + "=== RoundsBot Commands ===");
+        sender.sendMessage(ChatColor.YELLOW + "/rbot spawn <name> [team] [1..10] " + ChatColor.GRAY + "- Spawn a fake player");
+        sender.sendMessage(ChatColor.YELLOW + "/rbot despawn <name> " + ChatColor.GRAY + "- Remove a fake player");
+        sender.sendMessage(ChatColor.YELLOW + "/rbot list " + ChatColor.GRAY + "- List active bots & difficulty levels");
+        sender.sendMessage(ChatColor.YELLOW + "/rbot <name> level [1..10] " + ChatColor.GRAY + "- Set/view bot difficulty level (1..10)");
+        sender.sendMessage(ChatColor.YELLOW + "/rbot <name> pick <0..4> " + ChatColor.GRAY + "- Pick draft card slot");
+        sender.sendMessage(ChatColor.YELLOW + "/rbot <name> shoot " + ChatColor.GRAY + "- Force shoot");
+        sender.sendMessage(ChatColor.YELLOW + "/rbot <name> block " + ChatColor.GRAY + "- Force shield block");
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (!sender.hasPermission("rounds.admin") && !botManager.getPlugin().getRoundsConfig().isFreeplay()) {
+            return Collections.emptyList();
+        }
+
+        String current = args[args.length - 1].toLowerCase();
+
+        if (args.length == 1) {
+            List<String> list = new ArrayList<>(ROOT_ACTIONS);
+            botManager.getBots().forEach(b -> list.add(b.getName()));
+            return filterStartsWith(list, current);
+        }
+
+        if (args.length == 2) {
+            if (args[0].equalsIgnoreCase("spawn")) {
+                return Collections.singletonList("bot1");
+            }
+            if (args[0].equalsIgnoreCase("despawn") || args[0].equalsIgnoreCase("level")) {
+                List<String> botNames = botManager.getBots().stream().map(FakeBot::getName).collect(Collectors.toList());
+                return filterStartsWith(botNames, current);
+            }
+            FakeBot bot = botManager.getBot(args[0]);
+            if (bot != null) {
+                return filterStartsWith(BOT_ACTIONS, current);
+            }
+        }
+
+        if (args.length == 3) {
+            if (args[0].equalsIgnoreCase("spawn")) {
+                return filterStartsWith(TEAMS, current);
+            }
+            if (args[0].equalsIgnoreCase("level")) {
+                return filterStartsWith(LEVELS, current);
+            }
+            FakeBot bot = botManager.getBot(args[0]);
+            if (bot != null) {
+                if (args[1].equalsIgnoreCase("level")) {
+                    return filterStartsWith(LEVELS, current);
+                }
+                if (args[1].equalsIgnoreCase("strategy")) {
+                    return filterStartsWith(STRATEGIES, current);
+                }
+                if (args[1].equalsIgnoreCase("pick")) {
+                    return filterStartsWith(Arrays.asList("0", "1", "2", "3", "4"), current);
+                }
+            }
+        }
+
+        if (args.length == 4) {
+            if (args[0].equalsIgnoreCase("spawn")) {
+                return filterStartsWith(LEVELS, current);
+            }
+        }
+
+        return Collections.emptyList();
+    }
+
+    private List<String> filterStartsWith(Collection<String> items, String prefix) {
+        List<String> result = new ArrayList<>();
+        for (String item : items) {
+            if (item.toLowerCase().startsWith(prefix)) {
+                result.add(item);
+            }
+        }
+        return result;
+    }
+}

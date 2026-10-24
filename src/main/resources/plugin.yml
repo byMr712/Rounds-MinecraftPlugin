@@ -9,6 +9,9 @@ commands:
   rdebug:
     description: Debug tools for testing
     usage: /rdebug <subcommand>
+  rbot:
+    description: Manage bots
+    usage: /rbot <subcommand>
 permissions:
   rounds.admin:
     description: Admin permission for rounds commands

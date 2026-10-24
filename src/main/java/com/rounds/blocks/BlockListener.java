@@ -2,6 +2,7 @@ package com.rounds.blocks;
 
 import com.rounds.RoundsKeys;
 import com.rounds.RoundsPlugin;
+import com.rounds.bot.FakeBot;
 import com.rounds.player.PlayerData;
 import com.rounds.teams.TeamManager;
 import com.rounds.teams.TeamManager.GameTeam;
@@ -67,16 +68,43 @@ public class BlockListener implements Listener {
     public Set<Location> getJumpBlocks() { return Collections.unmodifiableSet(jumpBlocks); }
     public Set<Location> getUpBlocks() { return Collections.unmodifiableSet(upBlocks); }
 
+    public boolean isJumpBlock(Location loc) {
+        if (loc == null || loc.getWorld() == null) return false;
+        return jumpBlocks.contains(new Location(loc.getWorld(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
+    }
+
+    public boolean isUpBlock(Location loc) {
+        if (loc == null || loc.getWorld() == null) return false;
+        return upBlocks.contains(new Location(loc.getWorld(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
+    }
+
     public void broadcastMapBlocks() {
+        if (jumpBlocks.isEmpty() && upBlocks.isEmpty()) return;
         StringBuilder sb = new StringBuilder("[ROUNDS_MAP] JUMP:");
         for (Location loc : jumpBlocks) {
-            sb.append(loc.getBlockX()).append(",").append(loc.getBlockY()).append(",").append(loc.getBlockZ()).append(";");
+            String entry = loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ() + ";";
+            if (sb.length() + entry.length() > 1000) {
+                plugin.getServer().broadcastMessage(sb.toString());
+                sb = new StringBuilder("[ROUNDS_MAP] JUMP:");
+            }
+            sb.append(entry);
         }
-        sb.append(" | UP:");
+        if (sb.length() > "[ROUNDS_MAP] JUMP:".length()) {
+            plugin.getServer().broadcastMessage(sb.toString());
+        }
+
+        sb = new StringBuilder("[ROUNDS_MAP] UP:");
         for (Location loc : upBlocks) {
-            sb.append(loc.getBlockX()).append(",").append(loc.getBlockY()).append(",").append(loc.getBlockZ()).append(";");
+            String entry = loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ() + ";";
+            if (sb.length() + entry.length() > 1000) {
+                plugin.getServer().broadcastMessage(sb.toString());
+                sb = new StringBuilder("[ROUNDS_MAP] UP:");
+            }
+            sb.append(entry);
         }
-        plugin.getServer().broadcastMessage(sb.toString());
+        if (sb.length() > "[ROUNDS_MAP] UP:".length()) {
+            plugin.getServer().broadcastMessage(sb.toString());
+        }
     }
 
     public Location getJumpPos1() { return jumpPos1; }
@@ -244,20 +272,32 @@ public class BlockListener implements Listener {
 
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
-        if (event.getTo() == null || (event.getFrom().getBlockX() == event.getTo().getBlockX() && event.getFrom().getBlockY() == event.getTo().getBlockY() && event.getFrom().getBlockZ() == event.getTo().getBlockZ())) return;
+        if (event.getTo() == null) return;
 
         Player player = event.getPlayer();
-        Location loc = event.getTo().getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getLocation();
+        Location to = event.getTo();
+        Location locBelow = to.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getLocation();
+        Location locAt = to.getBlock().getLocation();
 
-        if (jumpBlocks.contains(loc)) {
+        // 1. Jump pad check (triggered whenever stepping/falling on it)
+        if (jumpBlocks.contains(locBelow) || jumpBlocks.contains(locAt)) {
             handleJumpBlock(player);
         }
 
-        if (event.getFrom().getBlockX() == event.getTo().getBlockX()
-                && event.getFrom().getBlockY() == event.getTo().getBlockY()
-                && event.getFrom().getBlockZ() == event.getTo().getBlockZ()) return;
+        // 2. Up block check
+        if (upBlocks.contains(locBelow) || upBlocks.contains(locAt)) {
+            handleUpBlock(player);
+        }
 
+        // 3. For team join, start/end blocks, only check when changing block coordinates
+        Location from = event.getFrom();
+        if (from.getBlockX() == to.getBlockX()
+                && from.getBlockY() == to.getBlockY()
+                && from.getBlockZ() == to.getBlockZ()) return;
+
+        Location loc = locBelow;
         GameTeam team = joinBlocks.get(loc);
+        if (team == null) team = joinBlocks.get(locAt);
         if (team != null) {
             if (stepCooldown.contains(player.getUniqueId())) return;
             stepCooldown.add(player.getUniqueId());
@@ -290,53 +330,37 @@ public class BlockListener implements Listener {
             return;
         }
 
-        if (cdshootBlocks.contains(loc)) {
+        if (cdshootBlocks.contains(locBelow) || cdshootBlocks.contains(locAt)) {
             handleStartEndBlockStep(player, true);
         }
 
-        if (endBlocks.contains(loc)) {
+        if (endBlocks.contains(locBelow) || endBlocks.contains(locAt)) {
             handleStartEndBlockStep(player, false);
-        }
-
-        if (jumpBlocks.contains(loc)) {
-            handleJumpBlock(player);
-        }
-
-        if (upBlocks.contains(loc)) {
-            if (liftingPlayers.contains(player.getUniqueId())) return;
-            liftingPlayers.add(player.getUniqueId());
-            double speed = plugin.getRoundsConfig().getUpBlockLiftSpeed();
-            int duration = plugin.getRoundsConfig().getUpBlockDurationTicks();
-            new org.bukkit.scheduler.BukkitRunnable() {
-                int ticks = 0;
-                @Override
-                public void run() {
-                    if (ticks >= duration || !player.isOnline() || player.isDead()) {
-                        liftingPlayers.remove(player.getUniqueId());
-                        cancel();
-                        return;
-                    }
-                    player.setVelocity(new org.bukkit.util.Vector(0, speed, 0));
-                    ticks++;
-                }
-            }.runTaskTimer(plugin, 0L, 1L);
         }
     }
 
     private static final long JUMP_BLOCK_COOLDOWN_MS = 500;
 
-    private void handleJumpBlock(Player player) {
+    public void handleJumpBlock(Player player) {
         UUID uuid = player.getUniqueId();
         long now = System.currentTimeMillis();
         Long last = jumpCooldown.get(uuid);
         if (last != null && now - last < JUMP_BLOCK_COOLDOWN_MS) return;
         jumpCooldown.put(uuid, now);
 
-        double maxHp = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue();
+        double maxHp = player.getMaxHealth();
         double damage = maxHp * plugin.getRoundsConfig().getJumpBlockDamagePercent() / 100.0;
+        player.setNoDamageTicks(0);
         player.damage(damage);
+
         double launchHeight = plugin.getRoundsConfig().getJumpBlockLaunchHeight();
         float velocityY = (float) (launchHeight * 0.2);
+
+        FakeBot bot = plugin.getBotManager() != null ? plugin.getBotManager().getBot(player.getName()) : null;
+        if (bot != null) {
+            bot.applyJumpPad(launchHeight);
+        }
+
         new org.bukkit.scheduler.BukkitRunnable() {
             int ticks = 0;
             @Override
@@ -352,6 +376,32 @@ public class BlockListener implements Listener {
             }
         }.runTaskTimer(plugin, 1L, 1L);
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.5f);
+    }
+
+    public void handleUpBlock(Player player) {
+        if (liftingPlayers.contains(player.getUniqueId())) return;
+        liftingPlayers.add(player.getUniqueId());
+        double speed = plugin.getRoundsConfig().getUpBlockLiftSpeed();
+        int duration = plugin.getRoundsConfig().getUpBlockDurationTicks();
+        FakeBot bot = plugin.getBotManager() != null ? plugin.getBotManager().getBot(player.getName()) : null;
+
+        new org.bukkit.scheduler.BukkitRunnable() {
+            int ticks = 0;
+            @Override
+            public void run() {
+                if (ticks >= duration || !player.isOnline() || player.isDead()) {
+                    liftingPlayers.remove(player.getUniqueId());
+                    cancel();
+                    return;
+                }
+                if (bot != null) {
+                    bot.applyUpBlock(speed);
+                } else {
+                    player.setVelocity(new org.bukkit.util.Vector(0, speed, 0));
+                }
+                ticks++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
     }
 
     private void handleStartEndBlockStep(Player player, boolean start) {

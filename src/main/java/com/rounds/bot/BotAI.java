@@ -29,12 +29,18 @@ public class BotAI extends BukkitRunnable {
         BALANCED
     }
 
+    public static final double MAX_VISION_DISTANCE_SQ = 1600.0; // 40 * 40
+    public static final double PROXIMITY_HEARING_DISTANCE_SQ = 6.25; // 2.5 * 2.5
+    public static final double FOV_HALF_ANGLE_DEG = 65.0;
+    public static final double LOW_HEALTH_COVER_THRESHOLD = 0.35;
+
     private final FakeBot bot;
     private int tickCount = 0;
     private int strafeDir = 1;
     private int dirTicks = 0;
     private int shootCooldown = 0;
     private int padCooldown = 0;
+    private int coverSearchCooldown = 0;
 
     // Realistic Vision and Pursuit Tracking (No wallhacks)
     private Player currentTarget = null;
@@ -102,10 +108,10 @@ public class BotAI extends BukkitRunnable {
         if (botEye.getWorld() == null || !botEye.getWorld().equals(targetEye.getWorld())) return false;
 
         double distSq = botEye.distanceSquared(targetEye);
-        if (distSq > 40.0 * 40.0) return false; // Beyond vision range (40 blocks)
+        if (distSq > MAX_VISION_DISTANCE_SQ) return false; // Beyond vision range (40 blocks)
 
         // Close proximity (under 2.5m): audible footsteps or proximity allows detection if raycast is clear
-        if (distSq < 2.5 * 2.5) {
+        if (distSq < PROXIMITY_HEARING_DISTANCE_SQ) {
             return botPlayer.hasLineOfSight(target);
         }
 
@@ -113,7 +119,7 @@ public class BotAI extends BukkitRunnable {
         Vector dirToTarget = targetEye.toVector().subtract(botEye.toVector()).normalize();
         Vector lookDir = botEye.getDirection().normalize();
         double angle = Math.toDegrees(dirToTarget.angle(lookDir));
-        if (angle > 65.0) {
+        if (angle > FOV_HALF_ANGLE_DEG) {
             return false;
         }
 
@@ -248,10 +254,11 @@ public class BotAI extends BukkitRunnable {
             double cdist = Math.sqrt(cdx * cdx + cdz * cdz);
 
             if (cdist > 0.8) {
+                float moveYaw = (float) Math.toDegrees(Math.atan2(-cdx, cdz));
+                bot.getNmsPlayer().setRot(moveYaw, 0f);
+                bot.getNmsPlayer().setYHeadRot(moveYaw);
+                bot.getNmsPlayer().setYBodyRot(moveYaw);
                 bot.moveRel((cdx / cdist) * 0.36, 0.0, (cdz / cdist) * 0.36);
-                if (lastKnownTargetLoc != null) {
-                    bot.aimAt(lastKnownTargetLoc, 20.0f, 2.0f);
-                }
                 tickCooldowns();
                 return;
             } else {
@@ -327,14 +334,16 @@ public class BotAI extends BukkitRunnable {
         double p1_z = u1_x;
 
         // Tactical decision: check if bot should seek cover to heal or reload
-        boolean needsCover = (healthRatio < 0.35 || (data != null && data.ammo <= 0 && data.reloadSpeed > 0) || (data != null && data.heal > 0 && healthRatio < 0.65));
-        if (needsCover && !isSeekingCover && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
+        boolean needsCover = (healthRatio < LOW_HEALTH_COVER_THRESHOLD || (data != null && data.ammo <= 0 && data.reloadSpeed > 0) || (data != null && data.heal > 0 && healthRatio < 0.65));
+        if (needsCover && !isSeekingCover && coverSearchCooldown <= 0 && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
             Location cover = findCoverLocation(player, p2Loc);
             if (cover != null) {
                 coverLoc = cover;
                 isSeekingCover = true;
                 tickCooldowns();
                 return;
+            } else {
+                coverSearchCooldown = 15; // Don't raycast 16 lines every tick if no cover exists
             }
         }
 
@@ -538,11 +547,13 @@ public class BotAI extends BukkitRunnable {
         double distXZ = Math.sqrt(dx * dx + dz * dz);
 
         double factor = bot.getSkillFactor();
-        float turnSpeed = (float) (15.0f + 30.0f * factor);
-
-        bot.aimAt(targetLoc.clone().add(0, 1.4, 0), turnSpeed, 1.0f);
 
         if (distXZ > 1.2) {
+            float moveYaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+            bot.getNmsPlayer().setRot(moveYaw, 0f);
+            bot.getNmsPlayer().setYHeadRot(moveYaw);
+            bot.getNmsPlayer().setYBodyRot(moveYaw);
+
             double speed = 0.25 + 0.12 * factor;
             bot.moveRel((dx / distXZ) * speed, 0.0, (dz / distXZ) * speed);
         } else {
@@ -550,6 +561,8 @@ public class BotAI extends BukkitRunnable {
             searchScanYaw += 15f;
             float yaw = player.getLocation().getYaw() + (float) Math.sin(Math.toRadians(searchScanYaw)) * 40f;
             bot.getNmsPlayer().setRot(yaw, 0f);
+            bot.getNmsPlayer().setYHeadRot(yaw);
+            bot.getNmsPlayer().setYBodyRot(yaw);
         }
     }
 
@@ -593,11 +606,10 @@ public class BotAI extends BukkitRunnable {
             }
         }
 
-        // 4. Smooth sinusoidal head sweeps looking around forward movement path
-        searchScanYaw += (float) (4.0 + 6.0 * factor);
-        float sweep = (float) Math.sin(Math.toRadians(searchScanYaw)) * (float) (35.0 + 20.0 * factor);
-        float lookYaw = patrolHeading + sweep;
-        bot.getNmsPlayer().setRot(lookYaw, 0f);
+        // 4. Bind look direction strictly to movement heading
+        bot.getNmsPlayer().setRot(patrolHeading, 0f);
+        bot.getNmsPlayer().setYHeadRot(patrolHeading);
+        bot.getNmsPlayer().setYBodyRot(patrolHeading);
 
         // 5. Continuous forward exploration movement along patrol heading
         double walkSpeed = 0.20 + 0.12 * factor;
@@ -611,6 +623,9 @@ public class BotAI extends BukkitRunnable {
         }
         if (padCooldown > 0) {
             padCooldown--;
+        }
+        if (coverSearchCooldown > 0) {
+            coverSearchCooldown--;
         }
         tickCount++;
     }

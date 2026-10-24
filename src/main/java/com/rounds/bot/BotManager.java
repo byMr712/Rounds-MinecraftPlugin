@@ -61,6 +61,11 @@ public class BotManager implements Listener {
     }
 
     public FakeBot spawnBot(String name, String teamName, Location location, Integer level) {
+        if (name == null || !name.matches("^[a-zA-Z0-9_]{1,16}$")) {
+            plugin.getLogger().warning("Invalid bot name: " + name + " (must be 1-16 chars [a-zA-Z0-9_])");
+            return null;
+        }
+
         if (bots.containsKey(name.toLowerCase())) {
             despawnBot(name);
         }
@@ -179,6 +184,7 @@ public class BotManager implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerDeath(PlayerDeathEvent event) {
+        if (bots.isEmpty()) return;
         Player player = event.getEntity();
         FakeBot bot = getBot(player.getName());
         if (bot == null) return;
@@ -196,6 +202,7 @@ public class BotManager implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
+        if (bots.isEmpty()) return;
         FakeBot bot = getBot(event.getPlayer().getName());
         if (bot != null) {
             bot.updatePlayer(event.getPlayer());
@@ -204,6 +211,7 @@ public class BotManager implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityDamage(EntityDamageEvent event) {
+        if (bots.isEmpty()) return;
         if (!(event.getEntity() instanceof Player victim)) return;
         FakeBot bot = getBot(victim.getName());
         if (bot == null) return;

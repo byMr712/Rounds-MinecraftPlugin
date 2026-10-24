@@ -79,7 +79,7 @@ public class BlockListener implements Listener {
     }
 
     public boolean isLocationTouchingJumpBlock(Location loc) {
-        if (loc == null || loc.getWorld() == null) return false;
+        if (loc == null || loc.getWorld() == null || jumpBlocks.isEmpty()) return false;
         World w = loc.getWorld();
         double minX = loc.getX() - 0.35;
         double maxX = loc.getX() + 0.35;
@@ -101,7 +101,7 @@ public class BlockListener implements Listener {
     }
 
     public boolean isLocationTouchingUpBlock(Location loc) {
-        if (loc == null || loc.getWorld() == null) return false;
+        if (loc == null || loc.getWorld() == null || upBlocks.isEmpty()) return false;
         World w = loc.getWorld();
         double minX = loc.getX() - 0.35;
         double maxX = loc.getX() + 0.35;

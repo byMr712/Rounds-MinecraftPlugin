@@ -306,7 +306,7 @@ public class FakeBot {
         double minD = maxDist * maxDist;
         Location myLoc = getBukkitPlayer().getLocation();
 
-        // 1. Direct check of registered jump blocks from RoundsPlugin BlockListener
+        // Direct check of registered jump blocks from RoundsPlugin BlockListener (O(K), fast)
         BlockListener bl = manager.getPlugin().getBlockListener();
         if (bl != null) {
             for (Location loc : bl.getJumpBlocks()) {
@@ -315,29 +315,6 @@ public class FakeBot {
                     if (d < minD) {
                         minD = d;
                         best = loc;
-                    }
-                }
-            }
-        }
-
-        if (best != null) return best;
-
-        // 2. Fallback: Scan nearby blocks for COAL_BLOCK (Jump Pad material)
-        int r = (int) Math.ceil(maxDist);
-        int px = myLoc.getBlockX();
-        int py = myLoc.getBlockY();
-        int pz = myLoc.getBlockZ();
-
-        for (int x = px - r; x <= px + r; x++) {
-            for (int z = pz - r; z <= pz + r; z++) {
-                for (int y = py - 2; y <= py + 2; y++) {
-                    Location loc = new Location(myLoc.getWorld(), x, y, z);
-                    if (loc.getBlock().getType() == Material.COAL_BLOCK) {
-                        double d = myLoc.distanceSquared(loc);
-                        if (d < minD) {
-                            minD = d;
-                            best = loc;
-                        }
                     }
                 }
             }

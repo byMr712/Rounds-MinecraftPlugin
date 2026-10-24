@@ -53,6 +53,10 @@ public class RBotCommand implements CommandExecutor, TabCompleter {
 
                 Location loc = (sender instanceof Player p) ? p.getLocation() : null;
                 FakeBot bot = botManager.spawnBot(name, team, loc);
+                if (bot == null) {
+                    sender.sendMessage(ChatColor.RED + "[RoundsBot] Invalid bot name: " + name + " (1-16 chars [a-zA-Z0-9_])");
+                    return true;
+                }
                 sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Spawned bot " + ChatColor.AQUA + bot.getName() +
                         ChatColor.GREEN + " on team " + ChatColor.GOLD + team);
                 return true;

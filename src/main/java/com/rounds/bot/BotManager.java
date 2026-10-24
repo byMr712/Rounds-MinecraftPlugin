@@ -133,6 +133,15 @@ public class BotManager implements Listener {
         }
     }
 
+    public void onRoundStart() {
+        if (bots.isEmpty()) return;
+        for (FakeBot bot : bots.values()) {
+            if (bot.getAi() != null) {
+                bot.getAi().onRoundStart();
+            }
+        }
+    }
+
     public boolean despawnBot(String name) {
         FakeBot bot = bots.remove(name.toLowerCase());
         if (bot == null) return false;
@@ -203,9 +212,12 @@ public class BotManager implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         if (bots.isEmpty()) return;
-        FakeBot bot = getBot(event.getPlayer().getName());
+        Player p = event.getPlayer();
+        p.setInvulnerable(false);
+        p.setNoDamageTicks(0);
+        FakeBot bot = getBot(p.getName());
         if (bot != null) {
-            bot.updatePlayer(event.getPlayer());
+            bot.updatePlayer(p);
         }
     }
 

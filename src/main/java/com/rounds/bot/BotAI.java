@@ -62,9 +62,32 @@ public class BotAI extends BukkitRunnable {
     private int patrolStuckTicks = 0;
     private Location lastPatrolPos = null;
 
+    // Round start warmup reaction delay
+    private int roundWarmupTicks = 0;
+
+    // Corridor cul-de-sac & ping-pong wall escape
+    private int consecutiveBounces = 0;
+    private float lastTurnSign = 0f;
+    private int lockedHeadingTicks = 0;
+
     public BotAI(FakeBot bot) {
         this.bot = bot;
         this.padCooldown = 300;
+    }
+
+    public void onRoundStart() {
+        this.padCooldown = 300; // Strictly 15s pad cooldown at round start
+        this.roundWarmupTicks = ThreadLocalRandom.current().nextInt(25, 45); // 1.25 - 2.25s warmup reaction
+        this.patrolHeading = Float.NaN;
+        this.lockedHeadingTicks = 0;
+        this.consecutiveBounces = 0;
+        this.lastTurnSign = 0f;
+        this.currentTarget = null;
+        this.lastKnownTargetLoc = null;
+        this.isPursuing = false;
+        this.isSeekingCover = false;
+        this.isAmbushing = false;
+        this.coverLoc = null;
     }
 
     private boolean isCombatAllowed() {
@@ -192,6 +215,32 @@ public class BotAI extends BukkitRunnable {
                 bot.getNmsPlayer().setRot(rndYaw, 0f);
             }
             tickCount++;
+            return;
+        }
+
+        // Round start warmup delay: natural player-like hesitation / look around
+        if (roundWarmupTicks > 0) {
+            roundWarmupTicks--;
+            float wobbleYaw = player.getLocation().getYaw() + (float) Math.sin(tickCount * 0.2) * 5.0f;
+            bot.getNmsPlayer().setRot(wobbleYaw, 0f);
+            bot.getNmsPlayer().setYHeadRot(wobbleYaw);
+            bot.getNmsPlayer().setYBodyRot(wobbleYaw);
+            tickCooldowns();
+            return;
+        }
+
+        // Global airborne check: whenever bot is launched into air (e.g. jump pad), push away and apply 30s cooldown
+        boolean airborne = !bot.isOnGround() || Math.abs(bot.getVelY()) > 0.1;
+        if (airborne) {
+            padCooldown = 600; // 30s cooldown prevents repeated launch loops
+            double rad = Math.toRadians(-player.getLocation().getYaw());
+            bot.moveRel(Math.sin(rad) * 0.32, 0.0, Math.cos(rad) * 0.32);
+            if (currentTarget != null && canSee(player, currentTarget) && bot.hasGun() && shootCooldown <= 0) {
+                bot.aimAt(currentTarget.getLocation(), 45.0f, 2.0f);
+                bot.shoot();
+                shootCooldown = 6;
+            }
+            tickCooldowns();
             return;
         }
 
@@ -426,19 +475,7 @@ public class BotAI extends BukkitRunnable {
         double minPadDist = (nearestPad != null) ? Math.sqrt(Math.pow(nearestPad.getX() - p1Loc.getX(), 2) + Math.pow(nearestPad.getZ() - p1Loc.getZ(), 2)) : 999.0;
 
         // Movement and combat execution
-        boolean airborne = !bot.isOnGround() || Math.abs(bot.getVelY()) > 0.1;
-
-        if (airborne) {
-            padCooldown = 600; // Reset pad cooldown on airborne to prevent re-triggering
-            // Push forward in look direction to clear the pad and land safely away
-            double rad = Math.toRadians(-player.getLocation().getYaw());
-            bot.moveRel(Math.sin(rad) * 0.32, 0.0, Math.cos(rad) * 0.32);
-            bot.aimAt(p2Loc, turnSpeed * 1.2f, aimInaccuracy * 1.2f);
-            if (shootCooldown <= 0 && canShootAtTarget) {
-                bot.shoot();
-                shootCooldown = minShootCooldown;
-            }
-        } else if (nearestPad != null && minPadDist < 4.0 && (tickCount % 20 < 4)) {
+        if (nearestPad != null && minPadDist < 4.0 && (tickCount % 20 < 4)) {
             double pdx = nearestPad.getX() - p1Loc.getX();
             double pdz = nearestPad.getZ() - p1Loc.getZ();
             double plen = Math.sqrt(pdx * pdx + pdz * pdz);
@@ -624,21 +661,32 @@ public class BotAI extends BukkitRunnable {
         lastPatrolPos = myLoc.clone();
 
         // 3. Obstacle avoidance in front of heading (checks feet + body)
-        boolean blocked = !isDirectionClear(myLoc, patrolHeading, 1.2);
-
-        if (blocked || patrolStuckTicks > 8) {
-            patrolStuckTicks = 0;
-            patrolHeading = findClearDirection(myLoc, patrolHeading);
+        if (lockedHeadingTicks > 0) {
+            lockedHeadingTicks--;
+            if (!isDirectionClear(myLoc, patrolHeading, 1.1)) {
+                lockedHeadingTicks = 0;
+                patrolHeading = findClearDirection(myLoc, patrolHeading);
+            }
+        } else {
+            boolean blocked = !isDirectionClear(myLoc, patrolHeading, 1.2);
+            if (blocked || patrolStuckTicks > 8) {
+                patrolStuckTicks = 0;
+                patrolHeading = findClearDirection(myLoc, patrolHeading);
+            }
         }
 
-        // 4. Bind look direction strictly to movement heading
-        bot.getNmsPlayer().setRot(patrolHeading, 0f);
-        bot.getNmsPlayer().setYHeadRot(patrolHeading);
-        bot.getNmsPlayer().setYBodyRot(patrolHeading);
+        // 4. Smooth natural head/body turn towards patrol heading
+        float currentYaw = player.getLocation().getYaw();
+        float deltaYaw = ((patrolHeading - currentYaw + 540f) % 360f) - 180f;
+        float maxTurn = 18f; // ~18 deg/tick smooth rotation for realistic navigation
+        float newYaw = (Math.abs(deltaYaw) <= maxTurn) ? patrolHeading : currentYaw + Math.signum(deltaYaw) * maxTurn;
+        bot.getNmsPlayer().setRot(newYaw, 0f);
+        bot.getNmsPlayer().setYHeadRot(newYaw);
+        bot.getNmsPlayer().setYBodyRot(newYaw);
 
-        // 5. Continuous forward exploration movement along patrol heading
+        // 5. Continuous forward exploration movement along current yaw
         double walkSpeed = 0.20 + 0.12 * factor;
-        double radMove = Math.toRadians(-patrolHeading);
+        double radMove = Math.toRadians(-newYaw);
         bot.moveRel(Math.sin(radMove) * walkSpeed, 0.0, Math.cos(radMove) * walkSpeed);
     }
 
@@ -649,10 +697,30 @@ public class BotAI extends BukkitRunnable {
         double dz = Math.cos(rad) * dist;
         Location feet = loc.clone().add(dx, 0.2, dz);
         Location body = loc.clone().add(dx, 1.2, dz);
+
+        // Avoid jump blocks if padCooldown > 0 (e.g. first 15s of round or after launch)
+        if (padCooldown > 0) {
+            com.rounds.blocks.BlockListener bl = bot.getPlugin() != null ? bot.getPlugin().getBlockListener() : null;
+            if (bl != null && bl.isLocationTouchingJumpBlock(feet)) {
+                return false;
+            }
+        }
+
         return !feet.getBlock().getType().isSolid() && !body.getBlock().getType().isSolid();
     }
 
     private float findClearDirection(Location loc, float currentHeading) {
+        // 1. Check for 3-sided dead end (cul-de-sac): front, left and right blocked
+        boolean frontBlocked = !isDirectionClear(loc, currentHeading, 1.2);
+        boolean leftBlocked = !isDirectionClear(loc, currentHeading - 90f, 1.1);
+        boolean rightBlocked = !isDirectionClear(loc, currentHeading + 90f, 1.1);
+        if (frontBlocked && leftBlocked && rightBlocked) {
+            consecutiveBounces = 0;
+            lastTurnSign = 0f;
+            lockedHeadingTicks = 35; // Lock heading for ~1.75s to run out of dead end
+            return currentHeading + 180f;
+        }
+
         Location center = bot.getPlugin() != null ? bot.getPlugin().getGameManager().getCurrentZoneCenter() : null;
         float idealHeading = currentHeading;
         if (center != null) {
@@ -663,6 +731,8 @@ public class BotAI extends BukkitRunnable {
 
         // Check ideal heading towards center first
         if (isDirectionClear(loc, idealHeading, 1.2)) {
+            consecutiveBounces = 0;
+            lastTurnSign = 0f;
             return idealHeading;
         }
 
@@ -671,9 +741,27 @@ public class BotAI extends BukkitRunnable {
         for (float off : offsets) {
             float test = currentHeading + off;
             if (isDirectionClear(loc, test, 1.2)) {
+                float sign = Math.signum(off);
+                if (sign != 0 && lastTurnSign != 0 && sign != lastTurnSign) {
+                    consecutiveBounces++;
+                } else if (sign != 0) {
+                    consecutiveBounces = 0;
+                }
+                lastTurnSign = sign;
+
+                if (consecutiveBounces >= 3) {
+                    // Ping-pong between walls detected: escape with 180 turn
+                    consecutiveBounces = 0;
+                    lastTurnSign = 0f;
+                    lockedHeadingTicks = 35;
+                    return currentHeading + 180f;
+                }
                 return test;
             }
         }
+        consecutiveBounces = 0;
+        lastTurnSign = 0f;
+        lockedHeadingTicks = 35;
         return currentHeading + 180f;
     }
 

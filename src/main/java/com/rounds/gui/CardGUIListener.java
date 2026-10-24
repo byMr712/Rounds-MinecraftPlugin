@@ -51,6 +51,14 @@ public class CardGUIListener implements Listener {
         player.openInventory(inv);
 
         if (plugin.getBotManager() != null && plugin.getBotManager().isBot(player)) {
+            // Human-like card thinking delay: 1 to 10 seconds, average around 3-5s
+            double delaySec = 1.0 + java.util.concurrent.ThreadLocalRandom.current().nextDouble() * 3.0
+                    + java.util.concurrent.ThreadLocalRandom.current().nextDouble() * 4.0;
+            if (java.util.concurrent.ThreadLocalRandom.current().nextDouble() < 0.20) {
+                delaySec += java.util.concurrent.ThreadLocalRandom.current().nextDouble() * 2.0;
+            }
+            long delayTicks = Math.min(200L, Math.max(20L, (long) (delaySec * 20.0)));
+
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 if (player.isOnline() && !player.isDead()) {
                     com.rounds.bot.FakeBot bot = plugin.getBotManager().getBot(player.getName());
@@ -63,7 +71,7 @@ public class CardGUIListener implements Listener {
                     plugin.getCardManager().selectCard(player, slot);
                     player.closeInventory();
                 }
-            }, 10L);
+            }, delayTicks);
         }
     }
 

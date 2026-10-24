@@ -818,6 +818,9 @@ public class GameManager implements Listener {
         musicTick = 0;
         showNameTagsInGame();
         updateScoreboard();
+        if (plugin.getBotManager() != null) {
+            plugin.getBotManager().onRoundStart();
+        }
     }
 
     private void pickRandomZoneAndAssignSpawns() {
@@ -1477,9 +1480,13 @@ public class GameManager implements Listener {
     }
 
     public boolean isTargetable(Player player) {
-        return player != null && player.isOnline() && player.isValid()
-            && player.getGameMode() != GameMode.SPECTATOR
-            && isParticipant(player.getUniqueId());
+        if (player == null || !player.isOnline() || !player.isValid() || player.isDead() || player.getGameMode() == GameMode.SPECTATOR) {
+            return false;
+        }
+        if (plugin.getTeamManager().getPlayerTeam(player.getUniqueId()) != null) {
+            return true;
+        }
+        return isParticipant(player.getUniqueId()) || (plugin.getBotManager() != null && plugin.getBotManager().isBot(player));
     }
 
     public Player findRandomAlivePlayer() {

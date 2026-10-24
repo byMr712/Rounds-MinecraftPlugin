@@ -242,11 +242,21 @@ public class RoundsEntities implements Listener {
                         b.alive = false;
                         return;
                     }
+                    nearest.setInvulnerable(false);
                     nearest.setNoDamageTicks(0);
                     if (shouldExecute(shooterData, nearest)) {
                         executeTarget(nearest);
                     } else {
-                        nearest.damage(finalDamage);
+                        Player shooter = Bukkit.getPlayer(b.ownerId);
+                        double hpBefore = nearest.getHealth();
+                        if (shooter != null && shooter.isOnline()) {
+                            nearest.damage(finalDamage, shooter);
+                        } else {
+                            nearest.damage(finalDamage);
+                        }
+                        if (nearest.getHealth() >= hpBefore && finalDamage > 0.0 && !nearest.isDead()) {
+                            nearest.setHealth(Math.max(0.0, hpBefore - finalDamage));
+                        }
                     }
                     if (nearest instanceof Player victim && plugin.getBotManager() != null) {
                         var victimBot = plugin.getBotManager().getBot(victim.getName());
@@ -383,11 +393,21 @@ public class RoundsEntities implements Listener {
                 b.alive = false;
                 return;
             }
+            hitEnt.setInvulnerable(false);
             hitEnt.setNoDamageTicks(0);
             if (shouldExecute(shooterData, hitEnt)) {
                 executeTarget(hitEnt);
             } else {
-                hitEnt.damage(finalDmg);
+                Player shooter = Bukkit.getPlayer(b.ownerId);
+                double hpBefore = hitEnt.getHealth();
+                if (shooter != null && shooter.isOnline()) {
+                    hitEnt.damage(finalDmg, shooter);
+                } else {
+                    hitEnt.damage(finalDmg);
+                }
+                if (hitEnt.getHealth() >= hpBefore && finalDmg > 0.0 && !hitEnt.isDead()) {
+                    hitEnt.setHealth(Math.max(0.0, hpBefore - finalDmg));
+                }
             }
             if (hitEnt instanceof Player victim && plugin.getBotManager() != null) {
                 var victimBot = plugin.getBotManager().getBot(victim.getName());

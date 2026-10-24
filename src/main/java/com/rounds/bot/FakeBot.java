@@ -71,6 +71,8 @@ public class FakeBot {
     public void updatePlayer(Player player) {
         if (player != null) {
             this.bukkitPlayer = player;
+            player.setInvulnerable(false);
+            player.setNoDamageTicks(0);
             getNmsPlayer();
         }
     }
@@ -105,6 +107,10 @@ public class FakeBot {
 
     public double getSkillFactor() {
         return this.level / 10.0;
+    }
+
+    public BotAI getAi() {
+        return ai;
     }
 
     public void onAttacked(Location origin, UUID attackerId) {

@@ -20,7 +20,7 @@ public class RBotCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> ROOT_ACTIONS = Arrays.asList("spawn", "despawn", "list", "level");
     private static final List<String> BOT_ACTIONS = Arrays.asList("level", "strategy", "pick", "shoot", "block");
-    private static final List<String> TEAMS = Arrays.asList("BLUE", "RED", "YELLOW", "GREEN");
+    private static final List<String> TEAMS = Arrays.asList("BLUE", "RED", "YELLOW", "GREEN", "NONE");
     private static final List<String> STRATEGIES = Arrays.asList("aggressive", "defensive", "balanced");
     private static final List<String> LEVELS = Arrays.asList("1", "2", "3", "4", "5", "6", "7", "8", "9", "10");
 

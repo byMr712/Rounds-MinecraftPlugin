@@ -38,6 +38,7 @@ public class BlockListener implements Listener {
     );
 
     private final Map<Location, GameTeam> joinBlocks = new HashMap<>();
+    private final Set<Location> joinNoneBlocks = new HashSet<>();
     private final Set<Location> cdshootBlocks = new HashSet<>();
     private final Set<Location> endBlocks = new HashSet<>();
     private final Set<Location> jumpBlocks = new HashSet<>();
@@ -223,6 +224,16 @@ public class BlockListener implements Listener {
         return item;
     }
 
+    public static ItemStack createJoinBlockNone() {
+        ItemStack item = new ItemStack(Material.WHITE_WOOL);
+        ItemMeta meta = item.getItemMeta();
+        String teamName = Messages.get("team.none");
+        meta.setDisplayName(ChatColor.WHITE + Messages.get("team.join-block", teamName, teamName));
+        meta.getPersistentDataContainer().set(RoundsKeys.JOIN_BLOCK, PersistentDataType.STRING, "NONE");
+        item.setItemMeta(meta);
+        return item;
+    }
+
     public static ItemStack createStartBlock() {
         ItemStack item = new ItemStack(Material.IRON_BLOCK);
         ItemMeta meta = item.getItemMeta();
@@ -299,6 +310,7 @@ public class BlockListener implements Listener {
         for (GameTeam team : GameTeam.values()) {
             addItem64(player, createJoinBlock(team));
         }
+        addItem64(player, createJoinBlockNone());
         addItem64(player, createStartBlock());
         addItem64(player, createEndBlock());
         addItem64(player, createLobbyBlock());
@@ -319,6 +331,8 @@ public class BlockListener implements Listener {
         if (event.getTo() == null) return;
 
         Player player = event.getPlayer();
+        if (player.getGameMode() == GameMode.SPECTATOR) return;
+
         Location to = event.getTo();
         Location locBelow = to.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getLocation();
         Location locAt = to.getBlock().getLocation();
@@ -340,6 +354,38 @@ public class BlockListener implements Listener {
                 && from.getBlockZ() == to.getBlockZ()) return;
 
         Location loc = locBelow;
+        boolean isNoneJoin = joinNoneBlocks.contains(locBelow) || joinNoneBlocks.contains(locAt);
+        if (isNoneJoin) {
+            if (stepCooldown.contains(player.getUniqueId())) return;
+            stepCooldown.add(player.getUniqueId());
+            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> stepCooldown.remove(player.getUniqueId()), 20L);
+
+            if (!player.hasPermission("rounds.join")) return;
+            if (plugin.getGameManager().isGameStarted()
+                    || plugin.getGameManager().isGameActive()) {
+                player.sendMessage(ChatColor.RED + Messages.get("team.game-in-progress"));
+                return;
+            }
+            if (plugin.getTeamManager().getPlayerTeam(player.getUniqueId()) == null) {
+                return;
+            }
+            plugin.getTeamManager().leaveTeam(player.getUniqueId());
+            PlayerData pdata = plugin.getPlayerDataManager().getData(player);
+            if (pdata != null) {
+                pdata.resetStats();
+                pdata.resetAllCards();
+            }
+            plugin.getPlayerDataManager().clearPDC(player);
+            plugin.getPlayerDataManager().removePlayerData(player.getUniqueId());
+            plugin.getGameManager().applyTeamColor(player);
+            plugin.getGameManager().buildScoreboard(player);
+            String teamName = Messages.get("team.none");
+            String msg = ChatColor.WHITE + "\u00A7l" + Messages.get("team.joined", teamName);
+            player.sendActionBar(msg);
+            player.getWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1.5f);
+            return;
+        }
+
         GameTeam team = joinBlocks.get(loc);
         if (team == null) team = joinBlocks.get(locAt);
         if (team != null) {
@@ -386,6 +432,7 @@ public class BlockListener implements Listener {
     private static final long JUMP_BLOCK_COOLDOWN_MS = 500;
 
     public void handleJumpBlock(Player player) {
+        if (player.getGameMode() == GameMode.SPECTATOR) return;
         UUID uuid = player.getUniqueId();
         long now = System.currentTimeMillis();
         Long last = jumpCooldown.get(uuid);
@@ -427,6 +474,7 @@ public class BlockListener implements Listener {
     }
 
     public void handleUpBlock(Player player) {
+        if (player.getGameMode() == GameMode.SPECTATOR) return;
         if (liftingPlayers.contains(player.getUniqueId())) return;
         liftingPlayers.add(player.getUniqueId());
         double speed = plugin.getRoundsConfig().getUpBlockLiftSpeed();
@@ -513,6 +561,12 @@ public class BlockListener implements Listener {
 
         String joinTeam = pdc.get(RoundsKeys.JOIN_BLOCK, PersistentDataType.STRING);
         if (joinTeam != null) {
+            if (joinTeam.equalsIgnoreCase("NONE")) {
+                joinNoneBlocks.add(loc);
+                placer.sendMessage(ChatColor.GREEN + Messages.get("team.join-block", Messages.get("team.none"), Messages.get("team.none")));
+                saveBlocks();
+                return;
+            }
             try {
                 joinBlocks.put(loc, GameTeam.valueOf(joinTeam));
             } catch (IllegalArgumentException e) { return; }
@@ -564,6 +618,7 @@ public class BlockListener implements Listener {
     public void onBlockBreak(BlockBreakEvent event) {
         Location loc = event.getBlock().getLocation();
         boolean removed = joinBlocks.remove(loc) != null;
+        removed |= joinNoneBlocks.remove(loc);
         removed |= cdshootBlocks.remove(loc);
         removed |= endBlocks.remove(loc);
         removed |= jumpBlocks.remove(loc);
@@ -630,6 +685,16 @@ public class BlockListener implements Listener {
             config.set(path + ".z", loc.getBlockZ());
             i++;
         }
+        i = 0;
+        for (Location loc : joinNoneBlocks) {
+            String path = "join_none." + i;
+            if (loc.getWorld() == null) { i++; continue; }
+            config.set(path + ".world", loc.getWorld().getName());
+            config.set(path + ".x", loc.getBlockX());
+            config.set(path + ".y", loc.getBlockY());
+            config.set(path + ".z", loc.getBlockZ());
+            i++;
+        }
         try {
             config.save(blocksFile);
         } catch (IOException e) {
@@ -663,6 +728,7 @@ public class BlockListener implements Listener {
         loadLocationSet(config, "end", endBlocks);
         loadLocationSet(config, "jump", jumpBlocks);
         loadLocationSet(config, "up", upBlocks);
+        loadLocationSet(config, "join_none", joinNoneBlocks);
     }
 
     private void loadLocationSet(YamlConfiguration config, String sectionName, Set<Location> set) {

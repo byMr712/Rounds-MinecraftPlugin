@@ -74,6 +74,10 @@ public class BotAI extends BukkitRunnable {
     private Location seekingPadLoc = null;
     private int seekingPadTicks = 0;
 
+    // Individual patrol waypoint offset to diversify bot movement patterns
+    private double personalOffsetX = ThreadLocalRandom.current().nextDouble(-15.0, 15.0);
+    private double personalOffsetZ = ThreadLocalRandom.current().nextDouble(-15.0, 15.0);
+
     public BotAI(FakeBot bot) {
         this.bot = bot;
         this.padCooldown = 300;
@@ -82,6 +86,8 @@ public class BotAI extends BukkitRunnable {
     public void onRoundStart() {
         this.padCooldown = 300; // Strictly 15s pad cooldown at round start
         this.roundWarmupTicks = ThreadLocalRandom.current().nextInt(25, 45); // 1.25 - 2.25s warmup reaction
+        this.personalOffsetX = ThreadLocalRandom.current().nextDouble(-15.0, 15.0);
+        this.personalOffsetZ = ThreadLocalRandom.current().nextDouble(-15.0, 15.0);
         this.patrolHeading = Float.NaN;
         this.lockedHeadingTicks = 0;
         this.consecutiveBounces = 0;
@@ -235,7 +241,7 @@ public class BotAI extends BukkitRunnable {
             return;
         }
 
-        // Global airborne check: whenever bot is launched into air (e.g. jump pad), push towards map center and apply 30s cooldown
+        // Global airborne check: whenever bot is launched into air (e.g. jump pad), push away from pad/center and apply 30s cooldown
         boolean airborne = !bot.isOnGround() || Math.abs(bot.getVelY()) > 0.1;
         if (airborne) {
             padCooldown = 600; // 30s cooldown prevents repeated launch loops
@@ -244,30 +250,39 @@ public class BotAI extends BukkitRunnable {
                 center = player.getWorld().getSpawnLocation();
             }
 
-            double cdx = center.getX() - player.getLocation().getX();
-            double cdz = center.getZ() - player.getLocation().getZ();
+            double cdx = player.getLocation().getX() - center.getX();
+            double cdz = player.getLocation().getZ() - center.getZ();
             double clen = Math.sqrt(cdx * cdx + cdz * cdz);
 
             double pushX;
             double pushZ;
-            if (clen > 0.5) {
-                pushX = (cdx / clen) * 0.35;
-                pushZ = (cdz / clen) * 0.35;
-                float centerYaw = (float) Math.toDegrees(Math.atan2(-cdx, cdz));
-                bot.getNmsPlayer().setRot(centerYaw, 0f);
-                bot.getNmsPlayer().setYHeadRot(centerYaw);
-                bot.getNmsPlayer().setYBodyRot(centerYaw);
+            if (clen <= 5.0) {
+                // If near center/pad: push OUTWARDS away from the pad so bot lands on solid floor outside pad!
+                double angle = (clen > 0.1) ? Math.atan2(cdz, cdx) : Math.toRadians(player.getLocation().getYaw());
+                pushX = Math.cos(angle) * 0.42;
+                pushZ = Math.sin(angle) * 0.42;
             } else {
+                // Further out: push forward along look direction
                 double rad = Math.toRadians(-player.getLocation().getYaw());
-                pushX = Math.sin(rad) * 0.32;
-                pushZ = Math.cos(rad) * 0.32;
+                pushX = Math.sin(rad) * 0.35;
+                pushZ = Math.cos(rad) * 0.35;
             }
             bot.moveRel(pushX, 0.0, pushZ);
 
-            if (currentTarget != null && canSee(player, currentTarget) && bot.hasGun() && shootCooldown <= 0) {
-                bot.aimAt(currentTarget.getLocation(), 45.0f, 2.0f);
-                bot.shoot();
-                shootCooldown = 6;
+            if (currentTarget != null && canSee(player, currentTarget)) {
+                double factor = bot.getSkillFactor();
+                float turnSpeed = (float) (10.0f + 35.0f * factor);
+                float aimInaccuracy = (float) (1.2f / factor);
+                bot.aimAt(currentTarget.getLocation(), turnSpeed, aimInaccuracy);
+                if (bot.hasGun() && shootCooldown <= 0) {
+                    bot.shoot();
+                    shootCooldown = 6;
+                }
+            } else {
+                float flightYaw = (float) Math.toDegrees(Math.atan2(-pushX, pushZ));
+                bot.getNmsPlayer().setRot(flightYaw, 0f);
+                bot.getNmsPlayer().setYHeadRot(flightYaw);
+                bot.getNmsPlayer().setYBodyRot(flightYaw);
             }
             tickCooldowns();
             return;
@@ -670,16 +685,27 @@ public class BotAI extends BukkitRunnable {
         double factor = bot.getSkillFactor();
         Location myLoc = player.getLocation();
 
-        // 1. Initialize or maintain patrol heading towards center
-        if (Float.isNaN(patrolHeading)) {
-            Location center = bot.getPlugin() != null ? bot.getPlugin().getGameManager().getCurrentZoneCenter() : null;
-            if (center != null) {
-                double cdx = center.getX() - myLoc.getX();
-                double cdz = center.getZ() - myLoc.getZ();
-                patrolHeading = (float) Math.toDegrees(Math.atan2(-cdx, cdz));
-            } else {
-                patrolHeading = myLoc.getYaw();
+        // 1. Initialize or maintain patrol heading towards personal waypoint in arena zone
+        Location center = bot.getPlugin() != null ? bot.getPlugin().getGameManager().getCurrentZoneCenter() : null;
+        if (center != null) {
+            Location targetPt = center.clone().add(personalOffsetX, 0, personalOffsetZ);
+            double cdx = targetPt.getX() - myLoc.getX();
+            double cdz = targetPt.getZ() - myLoc.getZ();
+            double distToTarget = Math.sqrt(cdx * cdx + cdz * cdz);
+            if (distToTarget < 3.5) {
+                // Reached personal waypoint, pick another diverse waypoint
+                personalOffsetX = ThreadLocalRandom.current().nextDouble(-18.0, 18.0);
+                personalOffsetZ = ThreadLocalRandom.current().nextDouble(-18.0, 18.0);
+                targetPt = center.clone().add(personalOffsetX, 0, personalOffsetZ);
+                cdx = targetPt.getX() - myLoc.getX();
+                cdz = targetPt.getZ() - myLoc.getZ();
+                patrolHeading = Float.NaN;
             }
+            if (Float.isNaN(patrolHeading)) {
+                patrolHeading = (float) Math.toDegrees(Math.atan2(-cdx, cdz));
+            }
+        } else if (Float.isNaN(patrolHeading)) {
+            patrolHeading = myLoc.getYaw();
         }
 
         // 2. Track stuck status
@@ -731,14 +757,29 @@ public class BotAI extends BukkitRunnable {
         Location feet = loc.clone().add(dx, 0.2, dz);
         Location body = loc.clone().add(dx, 1.2, dz);
 
-        // Avoid jump blocks unless actively seeking one in combat
+        // Avoid jump blocks and up blocks unless actively seeking one in combat
         com.rounds.blocks.BlockListener bl = bot.getPlugin() != null ? bot.getPlugin().getBlockListener() : null;
         if (bl != null && seekingPadLoc == null) {
             Location checkLoc = loc.clone().add(dx, 0.1, dz);
             Location checkBelow = checkLoc.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getLocation();
             Location checkAt = checkLoc.getBlock().getLocation();
-            if (bl.isLocationTouchingJumpBlock(checkLoc) || bl.isJumpBlock(checkBelow) || bl.isJumpBlock(checkAt)) {
+            if (bl.isLocationTouchingJumpBlock(checkLoc) || bl.isJumpBlock(checkBelow) || bl.isJumpBlock(checkAt)
+                    || bl.isLocationTouchingUpBlock(checkLoc) || bl.isUpBlock(checkBelow) || bl.isUpBlock(checkAt)) {
                 return false;
+            }
+        }
+
+        // Avoid walking directly into another bot or player in front (avoids snake/conga line)
+        if (loc.getWorld() != null) {
+            for (Player other : loc.getWorld().getPlayers()) {
+                if (other.getUniqueId().equals(bot.getBukkitPlayer().getUniqueId()) || other.getGameMode() == GameMode.SPECTATOR || other.isDead()) continue;
+                Location otherLoc = other.getLocation();
+                if (Math.abs(otherLoc.getY() - loc.getY()) > 1.5) continue;
+                double odx = otherLoc.getX() - feet.getX();
+                double odz = otherLoc.getZ() - feet.getZ();
+                if (odx * odx + odz * odz < 1.0) {
+                    return false;
+                }
             }
         }
 
@@ -760,8 +801,9 @@ public class BotAI extends BukkitRunnable {
         Location center = bot.getPlugin() != null ? bot.getPlugin().getGameManager().getCurrentZoneCenter() : null;
         float idealHeading = currentHeading;
         if (center != null) {
-            double cdx = center.getX() - loc.getX();
-            double cdz = center.getZ() - loc.getZ();
+            Location targetPt = center.clone().add(personalOffsetX, 0, personalOffsetZ);
+            double cdx = targetPt.getX() - loc.getX();
+            double cdz = targetPt.getZ() - loc.getZ();
             idealHeading = (float) Math.toDegrees(Math.atan2(-cdx, cdz));
         }
 

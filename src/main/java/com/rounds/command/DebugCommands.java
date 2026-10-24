@@ -761,6 +761,22 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         if (args.length < 2) { sender.sendMessage(ChatColor.RED + Messages.get("debug.usage-setteam")); return; }
 
         String colorName = args[1].toUpperCase();
+        if (colorName.equalsIgnoreCase("NONE")) {
+            Player target;
+            if (args.length >= 3) {
+                target = Bukkit.getPlayer(args[2]);
+                if (target == null) { sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[2])); return; }
+            } else if (sender instanceof Player p) {
+                target = p;
+            } else {
+                sender.sendMessage(ChatColor.RED + Messages.get("debug.specify-player")); return;
+            }
+            plugin.getTeamManager().leaveTeam(target.getUniqueId());
+            plugin.getGameManager().applyTeamColor(target);
+            sender.sendMessage(ChatColor.GREEN + Messages.get("debug.team-set", target.getName(), Messages.get("team.none")));
+            return;
+        }
+
         GameTeam team;
         try {
             team = GameTeam.valueOf(colorName);
@@ -975,7 +991,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     private static final List<String> PUBLIC_COMMANDS = Arrays.asList(
         "info", "stats", "cards", "card"
     );
-    private static final List<String> TEAM_COLORS = Arrays.asList("BLUE", "RED", "YELLOW", "GREEN");
+    private static final List<String> TEAM_COLORS = Arrays.asList("BLUE", "RED", "YELLOW", "GREEN", "NONE");
 
     private void handleBot(CommandSender sender, String[] args) {
         boolean admin = sender.hasPermission("rounds.admin");

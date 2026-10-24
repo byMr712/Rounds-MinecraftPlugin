@@ -461,25 +461,32 @@ public class PlayerDataManager implements Listener {
                         player.setGameMode(GameMode.SPECTATOR);
                         player.setInvulnerable(true);
                         GameTeam team = plugin.getTeamManager().getPlayerTeam(uuid);
-                        Location spawn = team != null ? gm.getTeamSpawns().get(team) : null;
-                        if (spawn == null) spawn = gm.getCurrentZoneCenter();
-                        if (spawn != null) player.teleport(spawn);
+                        if (team != null) {
+                            Location spawn = gm.getTeamSpawns().get(team);
+                            if (spawn != null) player.teleport(spawn);
+                        }
                     } else if (gameState == GameManager.GameState.ROUND_END) {
                         player.setGameMode(GameMode.SPECTATOR);
                         player.setInvulnerable(true);
                         GameTeam team = plugin.getTeamManager().getPlayerTeam(uuid);
-                        Location spawn = team != null ? gm.getTeamSpawns().get(team) : null;
-                        if (spawn == null) spawn = gm.getCurrentZoneCenter();
-                        if (spawn != null) player.teleport(spawn);
+                        if (team != null) {
+                            Location spawn = gm.getTeamSpawns().get(team);
+                            if (spawn != null) player.teleport(spawn);
+                        }
                     } else if (gameState == GameManager.GameState.CARDS) {
-                        player.setGameMode(GameMode.ADVENTURE);
-                        player.setInvulnerable(true);
-                        Location spawn = gm.getCurrentZoneCenter();
-                        if (spawn != null) player.teleport(spawn);
-                        if (plugin.getCardManager().isPendingPick(uuid)) {
-                            GameTeam team = plugin.getTeamManager().getPlayerTeam(uuid);
-                            if (team == null) team = GameTeam.BLUE;
-                            plugin.getCardManager().openCardSelection(player, team);
+                        GameTeam team = plugin.getTeamManager().getPlayerTeam(uuid);
+                        if (team != null) {
+                            player.setGameMode(GameMode.ADVENTURE);
+                            player.setInvulnerable(true);
+                            Location spawn = gm.getTeamSpawns().get(team);
+                            if (spawn == null) spawn = gm.getCurrentZoneCenter();
+                            if (spawn != null) player.teleport(spawn);
+                            if (plugin.getCardManager().isPendingPick(uuid)) {
+                                plugin.getCardManager().openCardSelection(player, team);
+                            }
+                        } else {
+                            player.setGameMode(GameMode.SPECTATOR);
+                            player.setInvulnerable(true);
                         }
                     }
                 }, 5L);
@@ -504,8 +511,8 @@ public class PlayerDataManager implements Listener {
                         if (target != null) {
                             player.teleport(target.getLocation());
                         } else {
-                            Location spawn = plugin.getGameManager().getCurrentZoneCenter();
-                            if (spawn == null) spawn = plugin.getBlockListener().getBlockStorage().getLobbyBlock();
+                            Location spawn = plugin.getBlockListener().getBlockStorage().getLobbyBlock();
+                            if (spawn == null) spawn = plugin.getGameManager().getCurrentZoneCenter();
                             if (spawn != null) player.teleport(spawn);
                         }
                     }, 5L);

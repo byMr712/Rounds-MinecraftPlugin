@@ -760,10 +760,9 @@ public class GameManager implements Listener {
                 if (!p.getAllowFlight()) p.setAllowFlight(true);
                 if (!p.isFlying()) p.setFlying(true);
 
-                Location safe = null;
                 GameTeam t = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-                if (t != null) safe = teamSpawns.get(t);
-                if (safe == null) safe = currentZoneCenter;
+                if (t == null) continue;
+                Location safe = teamSpawns.get(t);
                 if (safe != null && safe.getWorld() != null && safe.getWorld().equals(p.getWorld())) {
                     if (p.getLocation().getY() < safe.getY() - 1.5) {
                         p.teleport(safe.clone().add(0, 1.2, 0));

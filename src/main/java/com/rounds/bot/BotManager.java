@@ -246,6 +246,10 @@ public class BotManager implements Listener {
 
     public void assignTeam(Player player, String teamName) {
         if (teamName == null || teamName.isBlank()) return;
+        if (teamName.equalsIgnoreCase("NONE")) {
+            plugin.getTeamManager().leaveTeam(player.getUniqueId());
+            return;
+        }
         try {
             GameTeam gt = GameTeam.valueOf(teamName.toUpperCase());
             plugin.getTeamManager().joinTeam(player.getUniqueId(), gt);

@@ -114,9 +114,9 @@ public class FakeBot {
     }
 
     public String getTeamName() {
-        if (manager == null || manager.getPlugin() == null) return "BLUE";
+        if (manager == null || manager.getPlugin() == null) return "NONE";
         com.rounds.teams.TeamManager.GameTeam gt = manager.getPlugin().getTeamManager().getPlayerTeam(getBukkitPlayer().getUniqueId());
-        return (gt != null) ? gt.name() : "BLUE";
+        return (gt != null) ? gt.name() : "NONE";
     }
 
     public void onAttacked(Location origin, UUID attackerId) {

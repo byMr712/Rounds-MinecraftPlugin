@@ -171,7 +171,7 @@ public class BotAI extends BukkitRunnable {
     }
 
     public double getPursuitChance() {
-        return getSmartBehaviorChance();
+        return Math.min(1.0, getSmartBehaviorChance() * 1.20);
     }
 
     /**

@@ -102,6 +102,10 @@ public class BotAI extends BukkitRunnable {
         this.coverLoc = null;
     }
 
+    public void setPadCooldown(int ticks) {
+        this.padCooldown = Math.max(this.padCooldown, ticks);
+    }
+
     private boolean isCombatAllowed() {
         RoundsPlugin plugin = bot.getPlugin();
         if (plugin == null) return true;
@@ -241,7 +245,7 @@ public class BotAI extends BukkitRunnable {
             return;
         }
 
-        // Global airborne check: whenever bot is launched into air (e.g. jump pad), push away from pad/center and apply 30s cooldown
+        // Global airborne check: whenever bot is launched into air (e.g. jump pad), push towards arena center and apply 30s cooldown
         boolean airborne = !bot.isOnGround() || Math.abs(bot.getVelY()) > 0.1;
         if (airborne) {
             padCooldown = 600; // 30s cooldown prevents repeated launch loops
@@ -250,19 +254,19 @@ public class BotAI extends BukkitRunnable {
                 center = player.getWorld().getSpawnLocation();
             }
 
-            double cdx = player.getLocation().getX() - center.getX();
-            double cdz = player.getLocation().getZ() - center.getZ();
+            // Direction vector towards arena center
+            double cdx = center.getX() - player.getLocation().getX();
+            double cdz = center.getZ() - player.getLocation().getZ();
             double clen = Math.sqrt(cdx * cdx + cdz * cdz);
 
             double pushX;
             double pushZ;
-            if (clen <= 5.0) {
-                // If near center/pad: push OUTWARDS away from the pad so bot lands on solid floor outside pad!
-                double angle = (clen > 0.1) ? Math.atan2(cdz, cdx) : Math.toRadians(player.getLocation().getYaw());
-                pushX = Math.cos(angle) * 0.42;
-                pushZ = Math.sin(angle) * 0.42;
+            if (clen > 2.0) {
+                // Propel towards map center
+                pushX = (cdx / clen) * 0.38;
+                pushZ = (cdz / clen) * 0.38;
             } else {
-                // Further out: push forward along look direction
+                // Bot is already near center: push forward along look direction
                 double rad = Math.toRadians(-player.getLocation().getYaw());
                 pushX = Math.sin(rad) * 0.35;
                 pushZ = Math.cos(rad) * 0.35;
@@ -356,7 +360,7 @@ public class BotAI extends BukkitRunnable {
                 bot.getNmsPlayer().setRot(moveYaw, 0f);
                 bot.getNmsPlayer().setYHeadRot(moveYaw);
                 bot.getNmsPlayer().setYBodyRot(moveYaw);
-                bot.moveRel((cdx / cdist) * 0.36, 0.0, (cdz / cdist) * 0.36);
+                moveCombatRel((cdx / cdist) * 0.36, (cdz / cdist) * 0.36);
                 tickCooldowns();
                 return;
             } else {
@@ -542,7 +546,7 @@ public class BotAI extends BukkitRunnable {
             // Ground tactical combat
             switch (tactic) {
                 case RUSH -> {
-                    bot.moveRel(u1_x * 0.40 + p1_x * (strafeDir * strafeSpeed * 0.3), 0.0, u1_z * 0.40 + p1_z * (strafeDir * strafeSpeed * 0.3));
+                    moveCombatRel(u1_x * 0.40 + p1_x * (strafeDir * strafeSpeed * 0.3), u1_z * 0.40 + p1_z * (strafeDir * strafeSpeed * 0.3));
                     bot.aimAt(p2Loc, turnSpeed, aimInaccuracy);
                     if (shootCooldown <= 0 && canShootAtTarget) {
                         bot.shoot();
@@ -550,7 +554,7 @@ public class BotAI extends BukkitRunnable {
                     }
                 }
                 case RETREAT -> {
-                    bot.moveRel(-u1_x * 0.38 + p1_x * (strafeDir * strafeSpeed), 0.0, -u1_z * 0.38 + p1_z * (strafeDir * strafeSpeed));
+                    moveCombatRel(-u1_x * 0.38 + p1_x * (strafeDir * strafeSpeed), -u1_z * 0.38 + p1_z * (strafeDir * strafeSpeed));
                     if (tickCount % 30 == 0 && hasLos && ThreadLocalRandom.current().nextDouble() < factor) {
                         bot.block();
                     }
@@ -564,12 +568,12 @@ public class BotAI extends BukkitRunnable {
                     if (tickCount % 20 == 0 && hasLos && ThreadLocalRandom.current().nextDouble() < factor) {
                         bot.block();
                     }
-                    bot.moveRel(p1_x * (strafeDir * strafeSpeed * 0.6), 0.0, p1_z * (strafeDir * strafeSpeed * 0.6));
+                    moveCombatRel(p1_x * (strafeDir * strafeSpeed * 0.6), p1_z * (strafeDir * strafeSpeed * 0.6));
                     bot.aimAt(p2Loc, turnSpeed * 0.7f, aimInaccuracy);
                 }
                 case SNIPE -> {
                     if (dist3D < 8.0) {
-                        bot.moveRel(-u1_x * 0.3, 0.0, -u1_z * 0.3);
+                        moveCombatRel(-u1_x * 0.3, -u1_z * 0.3);
                     }
                     bot.aimAt(p2Loc, turnSpeed * 0.7f, aimInaccuracy * 0.7f);
                     if (shootCooldown <= 0 && canShootAtTarget) {
@@ -578,7 +582,7 @@ public class BotAI extends BukkitRunnable {
                     }
                 }
                 case STRAFE, BALANCED -> {
-                    bot.moveRel(p1_x * (strafeDir * strafeSpeed) + u1_x * 0.05, 0.0, p1_z * (strafeDir * strafeSpeed) + u1_z * 0.05);
+                    moveCombatRel(p1_x * (strafeDir * strafeSpeed) + u1_x * 0.05, p1_z * (strafeDir * strafeSpeed) + u1_z * 0.05);
                     bot.aimAt(p2Loc, turnSpeed, aimInaccuracy);
                     if (shootCooldown <= 0 && canShootAtTarget) {
                         bot.shoot();
@@ -599,6 +603,19 @@ public class BotAI extends BukkitRunnable {
         }
 
         tickCooldowns();
+    }
+
+    private void moveCombatRel(double mX, double mZ) {
+        Location myLoc = bot.getBukkitPlayer().getLocation();
+        float moveHeading = (float) Math.toDegrees(Math.atan2(-mX, mZ));
+        double dist = Math.sqrt(mX * mX + mZ * mZ);
+        if (dist > 0.01 && seekingPadLoc == null && !isDirectionClear(myLoc, moveHeading, Math.max(dist, 1.0))) {
+            float altHeading = findClearDirection(myLoc, moveHeading);
+            double rad = Math.toRadians(-altHeading);
+            bot.moveRel(Math.sin(rad) * dist, 0.0, Math.cos(rad) * dist);
+            return;
+        }
+        bot.moveRel(mX, 0.0, mZ);
     }
 
     private Location findCoverLocation(Player player, Location enemyLoc) {
@@ -650,8 +667,8 @@ public class BotAI extends BukkitRunnable {
         if (distXZ > 1.2) {
             float moveYaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
 
-            // Obstacle avoidance during pursuit: route around blocking walls
-            if (!isDirectionClear(myLoc, moveYaw, 1.0)) {
+            // Obstacle avoidance during pursuit: route around blocking walls and jump pads
+            if (!isDirectionClear(myLoc, moveYaw, 1.2)) {
                 moveYaw = findClearDirection(myLoc, moveYaw);
                 double rad = Math.toRadians(-moveYaw);
                 dx = Math.sin(rad);
@@ -817,12 +834,15 @@ public class BotAI extends BukkitRunnable {
         // Avoid jump blocks and up blocks unless actively seeking one in combat
         com.rounds.blocks.BlockListener bl = bot.getPlugin() != null ? bot.getPlugin().getBlockListener() : null;
         if (bl != null && seekingPadLoc == null) {
-            Location checkLoc = loc.clone().add(dx, 0.1, dz);
-            Location checkBelow = checkLoc.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getLocation();
-            Location checkAt = checkLoc.getBlock().getLocation();
-            if (bl.isLocationTouchingJumpBlock(checkLoc) || bl.isJumpBlock(checkBelow) || bl.isJumpBlock(checkAt)
-                    || bl.isLocationTouchingUpBlock(checkLoc) || bl.isUpBlock(checkBelow) || bl.isUpBlock(checkAt)) {
-                return false;
+            double[] stepFracs = (dist > 0.7) ? new double[]{0.4, 0.8, 1.0} : new double[]{1.0};
+            for (double frac : stepFracs) {
+                Location checkLoc = loc.clone().add(dx * frac, 0.1, dz * frac);
+                Location checkBelow = checkLoc.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getLocation();
+                Location checkAt = checkLoc.getBlock().getLocation();
+                if (bl.isLocationTouchingJumpBlock(checkLoc) || bl.isJumpBlock(checkBelow) || bl.isJumpBlock(checkAt)
+                        || bl.isLocationTouchingUpBlock(checkLoc) || bl.isUpBlock(checkBelow) || bl.isUpBlock(checkAt)) {
+                    return false;
+                }
             }
         }
 

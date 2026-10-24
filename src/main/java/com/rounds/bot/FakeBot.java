@@ -200,9 +200,27 @@ public class FakeBot {
         this.velY = launchHeight * 0.2;
         Player p = getBukkitPlayer();
         if (p != null) {
-            double rad = Math.toRadians(-p.getLocation().getYaw());
-            this.impulseX = Math.sin(rad) * 0.40;
-            this.impulseZ = Math.cos(rad) * 0.40;
+            Location center = manager.getPlugin() != null ? manager.getPlugin().getGameManager().getCurrentZoneCenter() : null;
+            if (center != null && center.getWorld() != null && center.getWorld().equals(p.getWorld())) {
+                double dx = center.getX() - p.getLocation().getX();
+                double dz = center.getZ() - p.getLocation().getZ();
+                double dist = Math.sqrt(dx * dx + dz * dz);
+                if (dist > 1.5) {
+                    this.impulseX = (dx / dist) * 0.45;
+                    this.impulseZ = (dz / dist) * 0.45;
+                } else {
+                    double rad = Math.toRadians(-p.getLocation().getYaw());
+                    this.impulseX = Math.sin(rad) * 0.45;
+                    this.impulseZ = Math.cos(rad) * 0.45;
+                }
+            } else {
+                double rad = Math.toRadians(-p.getLocation().getYaw());
+                this.impulseX = Math.sin(rad) * 0.40;
+                this.impulseZ = Math.cos(rad) * 0.40;
+            }
+        }
+        if (ai != null) {
+            ai.setPadCooldown(600);
         }
     }
 
@@ -270,10 +288,10 @@ public class FakeBot {
 
         // 2. Ground check
         boolean onGround = isOnGround();
-        if (!onGround) {
+        if (!onGround || velY > 0.0) {
             velY = Math.max(velY - 0.08, -3.92) * 0.98;
         } else {
-            if (velY < 0.0) velY = 0.0;
+            velY = 0.0;
             impulseX = 0.0;
             impulseZ = 0.0;
         }
@@ -323,6 +341,7 @@ public class FakeBot {
         if (bl != null) {
             if (bl.isLocationTouchingJumpBlock(to) || bl.isJumpBlock(locBelow) || bl.isJumpBlock(locAt)) {
                 bl.handleJumpBlock(p);
+                if (ai != null) ai.setPadCooldown(600);
             }
             if (bl.isLocationTouchingUpBlock(to) || bl.isUpBlock(locBelow) || bl.isUpBlock(locAt)) {
                 bl.handleUpBlock(p);

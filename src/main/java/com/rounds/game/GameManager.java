@@ -241,6 +241,11 @@ public class GameManager implements Listener {
             if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) == null) {
                 p.setGameMode(GameMode.SPECTATOR);
                 p.setInvulnerable(true);
+                p.setAllowFlight(true);
+                p.setFlying(true);
+                if (currentZoneCenter != null && currentZoneCenter.getWorld() != null) {
+                    p.teleport(currentZoneCenter.clone().add(0, 3.0, 0));
+                }
             }
         }
 
@@ -296,6 +301,9 @@ public class GameManager implements Listener {
                 p.setAllowFlight(true);
                 p.setFlying(true);
                 p.setInvulnerable(true);
+                if (currentZoneCenter != null && currentZoneCenter.getWorld() != null) {
+                    p.teleport(currentZoneCenter.clone().add(0, 3.0, 0));
+                }
             }
         }
 
@@ -855,6 +863,12 @@ public class GameManager implements Listener {
                 p.setAllowFlight(true);
                 p.setFlying(true);
                 p.setInvulnerable(true);
+                if (currentZoneCenter != null && currentZoneCenter.getWorld() != null) {
+                    if (p.getWorld() == null || !p.getWorld().equals(currentZoneCenter.getWorld())
+                            || p.getLocation().distanceSquared(currentZoneCenter) > 80.0 * 80.0) {
+                        p.teleport(currentZoneCenter.clone().add(0, 3.0, 0));
+                    }
+                }
             }
         }
         musicTick = 0;
@@ -1028,6 +1042,12 @@ public class GameManager implements Listener {
                     p.setExhaustion(0f);
                 } else {
                     p.setGameMode(GameMode.SPECTATOR);
+                    p.setAllowFlight(true);
+                    p.setFlying(true);
+                    p.setInvulnerable(true);
+                    if (currentZoneCenter != null && currentZoneCenter.getWorld() != null) {
+                        p.teleport(currentZoneCenter.clone().add(0, 3.0, 0));
+                    }
                 }
             }
             openCardGUIs();
@@ -1065,6 +1085,12 @@ public class GameManager implements Listener {
                     p.setExhaustion(0f);
                 } else {
                     p.setGameMode(GameMode.SPECTATOR);
+                    p.setAllowFlight(true);
+                    p.setFlying(true);
+                    p.setInvulnerable(true);
+                    if (currentZoneCenter != null && currentZoneCenter.getWorld() != null) {
+                        p.teleport(currentZoneCenter.clone().add(0, 3.0, 0));
+                    }
                 }
             }
             openCardGUIs(true);

@@ -394,9 +394,26 @@ When freeplay is enabled (`/rdebug freeplay on`), regular players without admin 
 | `/rdebug setlanguage <lang>` | `<RU_ru\|EN_en...>` | Changes plugin language dynamically |
 | `/rdebug effect <type> <amp> <dur>` | `<type> <amp> <dur>` | Applies a potion effect |
 | `/rdebug heal [amount]` | `[HP]` | Heals player to maximum health |
-| `/rdebug resetstats` | | Clears stats, cards, and inventory |
+| `/rdebug resetstats [player]` | `[player]` | Clears stats, cards, and inventory for self or target player |
+| `/rdebug mcp <player/bot> <action>` | `<bot> <action> ...` | MCP command bridge for bot testing (see below) |
 | `/rdebug reload` | | Fully reloads `config.yml`, cards, and language packs |
 | `/rdebug placeholders` | | Displays list of PlaceholderAPI placeholders |
+
+### MCP Command Suite & Bot Control (`/rdebug mcp`)
+
+Special command suite for integration with the MinecraftMCP bridge, automated combat bots (`bot1`, `bot2`), and card system testing:
+
+| Command | Description |
+|---------|-------------|
+| `/rdebug mcp <player/bot> draft` | Initialize and open a 5-card draft selection GUI specifically for the target bot/player |
+| `/rdebug mcp <player/bot> pick <0..4\|11..15>` | Select a card from the pending draft by card index (0..4) or container slot (11..15) |
+| `/rdebug mcp <player/bot> give <card>` | Instantly give a card to player/bot (supports YAML file slugs, card IDs, and localized names) |
+| `/rdebug mcp <player/bot> reset` | Full reset of cards, stats, and inventory for the target player/bot |
+| `/rdebug mcp <player/bot> cards` | Display list of cards in player's/bot's deck |
+| `/rdebug mcp <player/bot> stats` | Print a concise summary of combat stats (HP, DMG, AtkSpd, Ammo, Cards) |
+| `/rdebug mcp <player/bot> block` | Trigger shield block action (RMB) and activate shield card effects |
+| `/rdebug mcp <player/bot> shoot` | Trigger weapon firing action (LMB) |
+| `/rdebug mcp <player/bot> heal` | Restore player/bot to maximum health |
 
 ### Permissions
 

@@ -438,7 +438,7 @@ The plugin includes a native NMS `ServerPlayer` fake player system managed direc
 | `/rbot despawn all` | Remove all active fake bots |
 | `/rbot list` | List all active bots with their HP and current difficulty level (Lvl: 1..10) |
 | `/rbot <name> level [1..10]` | Check or configure bot difficulty level (1 = -90%, 10 = 100%) |
-| `/rbot <name> strategy <aggressive\|defensive\|balanced>` | Set a bot's tactical strategy manually |
+| `/rbot <name> strategy <flanker\|sniper\|turtle\|brawler>` | Set combat playstyle (`AGGRESSIVE_FLANKER`, `TACTICAL_SNIPER`, `DEFENSIVE_TURTLE`, `ERRATIC_BRAWLER`) |
 | `/rbot <name> pick <0..4>` | Force a bot to select a specific card from the draft |
 | `/rbot <name> shoot` | Force a bot to fire its weapon |
 | `/rbot <name> block` | Force a bot to raise its shield |

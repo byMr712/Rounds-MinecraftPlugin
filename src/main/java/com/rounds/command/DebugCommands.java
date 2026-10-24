@@ -1369,7 +1369,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             }
             case "spawn" -> {
                 if (args.length == 2) yield filterStartsWith(Collections.singletonList("bot"), input);
-                if (args.length == 3) yield filterStartsWith(Arrays.asList("count", "auto", "bot1", "bot2", "bot3"), input);
+                if (args.length == 3) yield filterStartsWith(Arrays.asList("count", "auto"), input);
                 if (args.length == 4) {
                     if (args[2].equalsIgnoreCase("count")) {
                         yield filterStartsWith(Arrays.asList("1", "2", "3", "4", "5", "8"), input);

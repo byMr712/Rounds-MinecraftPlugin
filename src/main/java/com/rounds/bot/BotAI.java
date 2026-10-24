@@ -46,6 +46,7 @@ public class BotAI extends BukkitRunnable {
 
     private final FakeBot bot;
     private BotPlaystyle playstyle = BotPlaystyle.AGGRESSIVE_FLANKER;
+    private boolean manualPlaystyle = false;
     private int tickCount = 0;
     private int strafeDir = 1;
     private int dirTicks = 0;
@@ -102,7 +103,9 @@ public class BotAI extends BukkitRunnable {
     public void onRoundStart() {
         // Random start-of-round pad ban between 3s (60t) and 15s (300t), avg ~5s (100t)
         this.padCooldown = 60 + (int) (240.0 * Math.pow(ThreadLocalRandom.current().nextDouble(), 5.0));
-        this.playstyle = BotPlaystyle.values()[ThreadLocalRandom.current().nextInt(BotPlaystyle.values().length)];
+        if (!manualPlaystyle) {
+            this.playstyle = BotPlaystyle.values()[ThreadLocalRandom.current().nextInt(BotPlaystyle.values().length)];
+        }
         this.roundWarmupTicks = ThreadLocalRandom.current().nextInt(25, 45); // 1.25 - 2.25s warmup reaction
         this.tacticalJumpCooldown = 0;
 
@@ -148,6 +151,17 @@ public class BotAI extends BukkitRunnable {
 
     public void setPadCooldown(int ticks) {
         this.padCooldown = Math.max(this.padCooldown, ticks);
+    }
+
+    public BotPlaystyle getPlaystyle() {
+        return playstyle;
+    }
+
+    public void setPlaystyle(BotPlaystyle playstyle) {
+        if (playstyle != null) {
+            this.playstyle = playstyle;
+            this.manualPlaystyle = true;
+        }
     }
 
     private boolean isCombatAllowed() {

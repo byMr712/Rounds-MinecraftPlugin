@@ -21,7 +21,10 @@ public class RBotCommand implements CommandExecutor, TabCompleter {
     private static final List<String> ROOT_ACTIONS = Arrays.asList("spawn", "despawn", "list", "level");
     private static final List<String> BOT_ACTIONS = Arrays.asList("level", "strategy", "pick", "shoot", "block");
     private static final List<String> TEAMS = Arrays.asList("BLUE", "RED", "YELLOW", "GREEN", "NONE");
-    private static final List<String> STRATEGIES = Arrays.asList("aggressive", "defensive", "balanced");
+    private static final List<String> STRATEGIES = Arrays.asList(
+            "flanker", "sniper", "turtle", "brawler",
+            "aggressive_flanker", "tactical_sniper", "defensive_turtle", "erratic_brawler"
+    );
     private static final List<String> LEVELS = Arrays.asList("1", "2", "3", "4", "5", "6", "7", "8", "9", "10");
 
     public RBotCommand(BotManager botManager) {
@@ -229,14 +232,22 @@ public class RBotCommand implements CommandExecutor, TabCompleter {
                     sender.sendMessage(ChatColor.RED + "Invalid level number: " + args[2]);
                 }
             }
-            case "strategy", "strat" -> {
+            case "strategy", "strat", "playstyle", "style" -> {
                 if (args.length < 3) {
-                    sender.sendMessage(ChatColor.RED + "Usage: /rbot " + bot.getName() + " strategy <aggressive|defensive|balanced>");
+                    if (bot.getAi() != null) {
+                        sender.sendMessage(ChatColor.GOLD + "[RoundsBot] " + bot.getName() + " current playstyle: " +
+                                ChatColor.AQUA + bot.getAi().getPlaystyle().name());
+                    }
+                    sender.sendMessage(ChatColor.RED + "Usage: /rbot " + bot.getName() + " strategy <flanker|sniper|turtle|brawler>");
                     return true;
                 }
-                BotStrategy strategy = BotStrategy.fromString(args[2]);
-                bot.setStrategy(strategy);
-                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Set " + bot.getName() + " strategy to " + strategy.name());
+                com.rounds.bot.BotAI.BotPlaystyle ps = BotStrategy.toPlaystyle(args[2]);
+                if (bot.getAi() != null) {
+                    bot.getAi().setPlaystyle(ps);
+                }
+                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Set " + bot.getName() + " playstyle/strategy to " +
+                        ChatColor.AQUA + ps.name());
+                return true;
             }
             case "pick", "pickcard" -> {
                 if (args.length < 3) {
@@ -277,6 +288,7 @@ public class RBotCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.YELLOW + "/rbot despawn all " + ChatColor.GRAY + "- Remove all fake players");
         sender.sendMessage(ChatColor.YELLOW + "/rbot list " + ChatColor.GRAY + "- List active bots & difficulty levels");
         sender.sendMessage(ChatColor.YELLOW + "/rbot <name> level [1..10] " + ChatColor.GRAY + "- Set/view bot difficulty level (1..10)");
+        sender.sendMessage(ChatColor.YELLOW + "/rbot <name> strategy <flanker|sniper|turtle|brawler> " + ChatColor.GRAY + "- Set combat playstyle");
         sender.sendMessage(ChatColor.YELLOW + "/rbot <name> pick <0..4> " + ChatColor.GRAY + "- Pick draft card slot");
         sender.sendMessage(ChatColor.YELLOW + "/rbot <name> shoot " + ChatColor.GRAY + "- Force shoot");
         sender.sendMessage(ChatColor.YELLOW + "/rbot <name> block " + ChatColor.GRAY + "- Force shield block");
@@ -298,7 +310,7 @@ public class RBotCommand implements CommandExecutor, TabCompleter {
 
         if (args.length == 2) {
             if (args[0].equalsIgnoreCase("spawn")) {
-                List<String> list = new ArrayList<>(Arrays.asList("count", "auto", "bot1", "bot2"));
+                List<String> list = new ArrayList<>(Arrays.asList("count", "auto"));
                 return filterStartsWith(list, current);
             }
             if (args[0].equalsIgnoreCase("despawn")) {

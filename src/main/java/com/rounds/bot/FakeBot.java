@@ -95,7 +95,20 @@ public class FakeBot {
     }
 
     public void setStrategy(BotStrategy strategy) {
-        this.strategy = strategy != null ? strategy : BotStrategy.BALANCED;
+        this.strategy = strategy != null ? strategy : BotStrategy.AGGRESSIVE_FLANKER;
+        if (ai != null && strategy != null) {
+            ai.setPlaystyle(BotStrategy.toPlaystyle(strategy.name()));
+        }
+    }
+
+    public BotAI.BotPlaystyle getPlaystyle() {
+        return (ai != null) ? ai.getPlaystyle() : BotAI.BotPlaystyle.AGGRESSIVE_FLANKER;
+    }
+
+    public void setPlaystyle(BotAI.BotPlaystyle playstyle) {
+        if (ai != null && playstyle != null) {
+            ai.setPlaystyle(playstyle);
+        }
     }
 
     public int getLevel() {

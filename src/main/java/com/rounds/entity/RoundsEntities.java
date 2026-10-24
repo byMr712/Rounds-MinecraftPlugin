@@ -248,6 +248,10 @@ public class RoundsEntities implements Listener {
                     } else {
                         nearest.damage(finalDamage);
                     }
+                    if (nearest instanceof Player victim && plugin.getBotManager() != null) {
+                        var victimBot = plugin.getBotManager().getBot(victim.getName());
+                        if (victimBot != null) victimBot.onAttacked(b.loc, b.ownerId);
+                    }
                     nearest.getWorld().playSound(nearest.getLocation(), Sound.ENTITY_PLAYER_HURT, 1f, 1f);
                     applyPostHitEffects(b.ownerId, shooterData, nearest, finalDamage, b.stack);
                     applyDirectHitEffects(b, shooterData, nearest, finalDamage);
@@ -384,6 +388,10 @@ public class RoundsEntities implements Listener {
                 executeTarget(hitEnt);
             } else {
                 hitEnt.damage(finalDmg);
+            }
+            if (hitEnt instanceof Player victim && plugin.getBotManager() != null) {
+                var victimBot = plugin.getBotManager().getBot(victim.getName());
+                if (victimBot != null) victimBot.onAttacked(b.loc, b.ownerId);
             }
             hitEnt.getWorld().playSound(hitEnt.getLocation(), Sound.ENTITY_PLAYER_HURT, 1f, 1f);
             applyPostHitEffects(b.ownerId, shooterData, hitEnt, finalDmg, b.stack);

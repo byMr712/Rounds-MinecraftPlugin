@@ -16,6 +16,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class FakeBot {
@@ -97,6 +98,12 @@ public class FakeBot {
 
     public double getSkillFactor() {
         return this.level / 10.0;
+    }
+
+    public void onAttacked(Location origin, UUID attackerId) {
+        if (ai != null) {
+            ai.onAttacked(origin, attackerId);
+        }
     }
 
     public double getX() {

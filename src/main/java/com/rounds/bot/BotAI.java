@@ -2,14 +2,20 @@ package com.rounds.bot;
 
 import com.rounds.RoundsPlugin;
 import com.rounds.game.GameManager;
+import com.rounds.player.PlayerData;
 import com.rounds.teams.TeamManager.GameTeam;
+import org.bukkit.Bukkit;
+import org.bukkit.FluidCollisionMode;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Team;
+import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class BotAI extends BukkitRunnable {
@@ -30,12 +36,19 @@ public class BotAI extends BukkitRunnable {
     private int shootCooldown = 0;
     private int padCooldown = 0;
 
-    // Realistic Vision and Pursuit Tracking (No wallhacks / cheater awareness)
+    // Realistic Vision and Pursuit Tracking (No wallhacks)
     private Player currentTarget = null;
     private Location lastKnownTargetLoc = null;
     private int searchTicks = 0;
     private float searchScanYaw = 0f;
     private boolean isPursuing = false;
+
+    // Smart Tactical Behaviors (Incoming Fire Reaction, Cover Seeking, Ambush Trap)
+    private long lastAttackedTime = 0;
+    private Location coverLoc = null;
+    private boolean isSeekingCover = false;
+    private boolean isAmbushing = false;
+    private int ambushTicks = 0;
 
     public BotAI(FakeBot bot) {
         this.bot = bot;
@@ -51,7 +64,7 @@ public class BotAI extends BukkitRunnable {
     }
 
     /**
-     * Chance to aggressively pursue a target after losing direct line of sight.
+     * Standard smart behavior efficiency factor across difficulty tiers:
      * Level 1-2: -50% (50% chance)
      * Level 3-4: -40% (60% chance)
      * Level 5-6: -30% (70% chance)
@@ -59,7 +72,7 @@ public class BotAI extends BukkitRunnable {
      * Level 8-9: -20% (80% chance)
      * Level 10:  -10% (90% chance)
      */
-    public double getPursuitChance() {
+    public double getSmartBehaviorChance() {
         int lvl = bot.getLevel();
         if (lvl <= 2) return 0.50;
         if (lvl <= 4) return 0.60;
@@ -68,9 +81,12 @@ public class BotAI extends BukkitRunnable {
         return 0.90;
     }
 
+    public double getPursuitChance() {
+        return getSmartBehaviorChance();
+    }
+
     /**
-     * Realistic vision cone and line-of-sight check.
-     * Bot does NOT know player position through solid walls or behind its back.
+     * Realistic vision cone (130 degrees), 40m distance, 2.5m footstep proximity, and block raycast LOS.
      */
     public boolean canSee(Player botPlayer, Player target) {
         if (target == null || !target.isOnline() || target.isDead()) return false;
@@ -83,7 +99,7 @@ public class BotAI extends BukkitRunnable {
         double distSq = botEye.distanceSquared(targetEye);
         if (distSq > 40.0 * 40.0) return false; // Beyond vision range (40 blocks)
 
-        // Close proximity (under 2.5m): audible footsteps or bump allows detection if raycast is clear
+        // Close proximity (under 2.5m): audible footsteps or proximity allows detection if raycast is clear
         if (distSq < 2.5 * 2.5) {
             return botPlayer.hasLineOfSight(target);
         }
@@ -97,6 +113,57 @@ public class BotAI extends BukkitRunnable {
         }
 
         return botPlayer.hasLineOfSight(target);
+    }
+
+    /**
+     * Reaction to incoming fire / damage source.
+     * Turns towards the attacker with angular precision scaled by difficulty.
+     */
+    public void onAttacked(Location origin, UUID attackerId) {
+        if (origin == null) return;
+        long now = System.currentTimeMillis();
+        if (now - lastAttackedTime < 250) return; // Debounce rapid hits
+        lastAttackedTime = now;
+
+        double smartChance = getSmartBehaviorChance();
+
+        // 1. Chance to react towards the incoming fire direction
+        if (ThreadLocalRandom.current().nextDouble() > smartChance) {
+            return; // Lower level bot panics or ignores shot direction
+        }
+
+        Player player = bot.getBukkitPlayer();
+        Location myLoc = player.getLocation();
+
+        double dx = origin.getX() - myLoc.getX();
+        double dy = origin.getY() - myLoc.getY();
+        double dz = origin.getZ() - myLoc.getZ();
+        double distXZ = Math.sqrt(dx * dx + dz * dz);
+
+        float idealYaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+        float idealPitch = (float) Math.toDegrees(-Math.atan2(dy, Math.max(0.001, distXZ)));
+
+        // Angular error based on difficulty: level 10 has +-4.5 deg error, level 1-2 has up to +-45 deg error
+        float maxError = (float) ((1.0 - smartChance) * 90.0);
+        float yawError = (ThreadLocalRandom.current().nextFloat() * 2f - 1f) * (maxError * 0.5f);
+        float pitchError = (ThreadLocalRandom.current().nextFloat() * 2f - 1f) * (maxError * 0.3f);
+
+        float reactYaw = idealYaw + yawError;
+        float reactPitch = idealPitch + pitchError;
+
+        bot.getNmsPlayer().setRot(reactYaw, reactPitch);
+        bot.getNmsPlayer().setYHeadRot(reactYaw);
+
+        lastKnownTargetLoc = origin.clone();
+        searchTicks = 0;
+        isPursuing = true;
+
+        if (attackerId != null) {
+            Player attacker = Bukkit.getPlayer(attackerId);
+            if (attacker != null && canSee(player, attacker)) {
+                currentTarget = attacker;
+            }
+        }
     }
 
     @Override
@@ -134,10 +201,82 @@ public class BotAI extends BukkitRunnable {
             }
         }
 
-        // 2. If target is NOT directly visible: handle pursuit or patrol search mode
+        double smartChance = getSmartBehaviorChance();
+        double factor = bot.getSkillFactor();
+        PlayerData data = bot.getPlugin().getPlayerDataManager().getData(player.getUniqueId());
+        double healthRatio = player.getHealth() / bot.getMaxHealth();
+
+        // 2. Ambush Trap handling (waiting around corner with pre-aim)
+        if (isAmbushing) {
+            ambushTicks++;
+            if (ambushTicks > 60 || (targetCurrentlyVisible && lastKnownTargetLoc != null && player.getLocation().distance(lastKnownTargetLoc) < 5.0)) {
+                isAmbushing = false;
+            } else {
+                // Hold position behind corner, pre-aim at corner where enemy is expected to emerge
+                if (lastKnownTargetLoc != null) {
+                    bot.aimAt(lastKnownTargetLoc.clone().add(0, 1.4, 0), 45.0f, 0.5f);
+                }
+
+                // If bot has Empower card, pre-charge shield!
+                if (data != null && data.empower > 0 && !data.shieldActive && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
+                    bot.block();
+                }
+
+                if (targetCurrentlyVisible) {
+                    // AMBUSH TRIGGERED: instant point-blank shot!
+                    if (bot.hasGun()) {
+                        bot.shoot();
+                        shootCooldown = 4;
+                    }
+                    isAmbushing = false;
+                } else {
+                    tickCooldowns();
+                    return;
+                }
+            }
+        }
+
+        // 3. Seeking Cover / Hiding (to heal or reload)
+        if (isSeekingCover && coverLoc != null) {
+            double cdx = coverLoc.getX() - player.getLocation().getX();
+            double cdz = coverLoc.getZ() - player.getLocation().getZ();
+            double cdist = Math.sqrt(cdx * cdx + cdz * cdz);
+
+            if (cdist > 0.8) {
+                bot.moveRel((cdx / cdist) * 0.36, 0.0, (cdz / cdist) * 0.36);
+                if (lastKnownTargetLoc != null) {
+                    bot.aimAt(lastKnownTargetLoc, 20.0f, 2.0f);
+                }
+                tickCooldowns();
+                return;
+            } else {
+                // Reached cover!
+                isSeekingCover = false;
+
+                // Heal on block behind cover if card allows
+                if (data != null && data.heal > 0 && healthRatio < 0.85) {
+                    bot.block();
+                }
+
+                // Chameleon: stand still behind cover to turn invisible
+                if (data != null && data.chameleon > 0 && !targetCurrentlyVisible) {
+                    tickCooldowns();
+                    return;
+                }
+
+                // Set up an Ambush Trap around the corner!
+                if (ThreadLocalRandom.current().nextDouble() < smartChance) {
+                    isAmbushing = true;
+                    ambushTicks = 0;
+                    tickCooldowns();
+                    return;
+                }
+            }
+        }
+
+        // 4. If target is NOT directly visible: handle pursuit or patrol search mode
         if (!targetCurrentlyVisible) {
             if (isPursuing && lastKnownTargetLoc != null) {
-                // When line of sight is initially lost, roll pursuit tenacity based on difficulty
                 if (searchTicks == 0) {
                     boolean keepChasing = ThreadLocalRandom.current().nextDouble() < getPursuitChance();
                     if (!keepChasing) {
@@ -163,7 +302,7 @@ public class BotAI extends BukkitRunnable {
             }
         }
 
-        // 3. Target IS visible: Tactical combat execution
+        // 5. Target IS visible: Tactical combat execution
         Player target = currentTarget;
         boolean hasLos = player.hasLineOfSight(target);
 
@@ -182,8 +321,17 @@ public class BotAI extends BukkitRunnable {
         double p1_x = -u1_z;
         double p1_z = u1_x;
 
-        // Difficulty scaling factor: ranges from 0.10 (level 1 = -90%) to 1.00 (level 10 = 100%)
-        double factor = bot.getSkillFactor();
+        // Tactical decision: check if bot should seek cover to heal or reload
+        boolean needsCover = (healthRatio < 0.35 || (data != null && data.ammo <= 0 && data.reloadSpeed > 0) || (data != null && data.heal > 0 && healthRatio < 0.65));
+        if (needsCover && !isSeekingCover && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
+            Location cover = findCoverLocation(player, p2Loc);
+            if (cover != null) {
+                coverLoc = cover;
+                isSeekingCover = true;
+                tickCooldowns();
+                return;
+            }
+        }
 
         // Accuracy: 1.2 deg at lvl 10, 12.0 deg at lvl 1 (-90% precision)
         float aimInaccuracy = (float) (1.2f / factor);
@@ -202,31 +350,51 @@ public class BotAI extends BukkitRunnable {
         boolean distanceShootAllowed = (dist3D <= 8.0) || (ThreadLocalRandom.current().nextDouble() < factor);
         boolean canShootAtTarget = hasLos && bot.hasGun() && (dist3D <= maxShootDist) && distanceShootAllowed;
 
+        // Card ability synergy: Empower next shot right before firing
+        if (data != null && data.empower > 0 && !data.shieldActive && shootCooldown <= 1 && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
+            bot.block();
+        }
+
+        // Card ability synergy: Heal on block when damaged
+        if (data != null && data.heal > 0 && healthRatio < 0.75 && (tickCount % 20 == 0) && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
+            bot.block();
+        }
+
+        // Card ability synergy: Close-range Shockwave or Saw blast
+        if (data != null && (data.shockwave > 0 || data.saw > 0) && dist3D < 4.5 && (tickCount % 15 == 0) && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
+            bot.block();
+        }
+
         // Determine tactic
         CombatTactic tactic;
-        double healthRatio = player.getHealth() / bot.getMaxHealth();
 
-        boolean smartRetreat = (healthRatio < 0.37) && (ThreadLocalRandom.current().nextDouble() < (0.2 + 0.8 * factor));
-
-        if (smartRetreat) {
-            tactic = CombatTactic.RETREAT;
+        // Card ability synergy: Grow card prefers sniping distance
+        if (data != null && data.grow > 0 && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
+            tactic = CombatTactic.SNIPE;
+        } else if (data != null && data.lifestealAura > 0 && dist3D > 4.5 && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
+            // Lifesteal Aura card prefers close proximity (3.5 - 4.5m)
+            tactic = CombatTactic.RUSH;
         } else {
-            // Low level bots rush forward blindly like noobs (up to 90% chance at lvl 1)
-            boolean blindRush = ThreadLocalRandom.current().nextDouble() > factor;
-            if (blindRush) {
-                tactic = CombatTactic.RUSH;
+            boolean smartRetreat = (healthRatio < 0.37) && (ThreadLocalRandom.current().nextDouble() < (0.2 + 0.8 * factor));
+            if (smartRetreat) {
+                tactic = CombatTactic.RETREAT;
             } else {
-                if (dist3D > 14.0) {
+                boolean blindRush = ThreadLocalRandom.current().nextDouble() > factor;
+                if (blindRush) {
                     tactic = CombatTactic.RUSH;
-                } else if (dist3D < 5.0) {
-                    tactic = CombatTactic.RETREAT;
                 } else {
-                    tactic = (tickCount % 16 < 4) ? CombatTactic.SNIPE : CombatTactic.STRAFE;
+                    if (dist3D > 14.0) {
+                        tactic = CombatTactic.RUSH;
+                    } else if (dist3D < 5.0) {
+                        tactic = CombatTactic.RETREAT;
+                    } else {
+                        tactic = (tickCount % 16 < 4) ? CombatTactic.SNIPE : CombatTactic.STRAFE;
+                    }
                 }
             }
         }
 
-        // Map blocks awareness (Jump Pads) - chance scales with level (-90% at lvl 1)
+        // Map blocks awareness (Jump Pads) - deliberate sniping usage scales with factor
         boolean allowJumpPadSeeking = (tactic != CombatTactic.RETREAT && healthRatio > 0.65 && padCooldown <= 0)
                 && (ThreadLocalRandom.current().nextDouble() < factor);
         Location nearestPad = allowJumpPadSeeking ? bot.findNearestJumpPad(6.0) : null;
@@ -243,7 +411,6 @@ public class BotAI extends BukkitRunnable {
             }
             bot.moveRel(u1_x * (0.05 + 0.10 * factor), 0.0, u1_z * (0.05 + 0.10 * factor));
         } else if (nearestPad != null && minPadDist < 5.0 && (tickCount % 20 < 5)) {
-            // Tactical aerial vantage via jump pad
             double pdx = nearestPad.getX() - p1Loc.getX();
             double pdz = nearestPad.getZ() - p1Loc.getZ();
             double plen = Math.sqrt(pdx * pdx + pdz * pdz);
@@ -319,6 +486,44 @@ public class BotAI extends BukkitRunnable {
         }
 
         tickCooldowns();
+    }
+
+    private Location findCoverLocation(Player player, Location enemyLoc) {
+        Location pLoc = player.getLocation();
+        World world = pLoc.getWorld();
+        if (world == null || enemyLoc == null) return null;
+
+        double[] distances = {4.0, 6.5};
+        double bestDist = -1.0;
+        Location bestCover = null;
+
+        for (double dist : distances) {
+            for (int angleDeg = 0; angleDeg < 360; angleDeg += 45) {
+                double rad = Math.toRadians(angleDeg);
+                double cx = pLoc.getX() + Math.cos(rad) * dist;
+                double cz = pLoc.getZ() + Math.sin(rad) * dist;
+                Location cand = new Location(world, cx, pLoc.getY(), cz);
+
+                if (cand.getBlock().getType().isSolid()) continue;
+                if (!cand.clone().subtract(0, 1, 0).getBlock().getType().isSolid()) continue;
+
+                Location candEye = cand.clone().add(0, 1.62, 0);
+                Location enemyEye = enemyLoc.clone().add(0, 1.62, 0);
+                Vector toEnemy = enemyEye.toVector().subtract(candEye.toVector());
+                double len = toEnemy.length();
+                if (len < 1.0) continue;
+
+                RayTraceResult hit = world.rayTraceBlocks(candEye, toEnemy.normalize(), len, FluidCollisionMode.NEVER, true);
+                if (hit != null && hit.getHitBlock() != null) {
+                    double d = cand.distanceSquared(enemyLoc);
+                    if (d > bestDist) {
+                        bestDist = d;
+                        bestCover = cand;
+                    }
+                }
+            }
+        }
+        return bestCover;
     }
 
     private void executePursuit(Player player, Location targetLoc) {

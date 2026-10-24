@@ -21,6 +21,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 
@@ -198,6 +200,21 @@ public class BotManager implements Listener {
         if (bot != null) {
             bot.updatePlayer(event.getPlayer());
         }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEntityDamage(EntityDamageEvent event) {
+        if (!(event.getEntity() instanceof Player victim)) return;
+        FakeBot bot = getBot(victim.getName());
+        if (bot == null) return;
+
+        Location damageOrigin = null;
+        UUID attackerId = null;
+        if (event instanceof EntityDamageByEntityEvent edbe) {
+            damageOrigin = edbe.getDamager().getLocation();
+            attackerId = edbe.getDamager().getUniqueId();
+        }
+        bot.onAttacked(damageOrigin, attackerId);
     }
 
     private Location getDefaultSpawn() {

@@ -488,7 +488,7 @@ public class GunItem implements Listener {
         }
     }
 
-    private void startReload(Player player, PlayerData data) {
+    public void startReload(Player player, PlayerData data) {
         UUID uuid = player.getUniqueId();
         if (partyLocked.contains(uuid)) {
             player.sendActionBar(ChatColor.RED + Messages.get("gun.party-locked"));

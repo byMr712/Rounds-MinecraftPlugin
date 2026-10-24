@@ -73,6 +73,8 @@ public class PlayerData {
     public double shieldsUp = 0;
     public double shieldCharge = 0;
     public double autoReload = 0;
+    public double autoReloadDelay = 0;
+    public int zeroAmmoTicks = 0;
     public double saw = 0;
     public double shockwave = 0;
     public double silence = 0;
@@ -230,6 +232,8 @@ public class PlayerData {
         shieldsUp = 0;
         shieldCharge = 0;
         autoReload = 0;
+        autoReloadDelay = 0;
+        zeroAmmoTicks = 0;
         saw = 0;
         shockwave = 0;
         silence = 0;

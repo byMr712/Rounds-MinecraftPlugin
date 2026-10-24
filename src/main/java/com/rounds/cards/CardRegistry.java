@@ -288,6 +288,7 @@ public class CardRegistry {
                 text = text.replace("{" + i + "}", values.get(i));
             }
             text = text.replace("{v}", values.get(0));
+            text = text.replace("{sec}", values.get(0));
             result.put(e.getKey(), text);
         }
         return result;

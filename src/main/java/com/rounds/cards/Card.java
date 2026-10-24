@@ -101,6 +101,11 @@ public class Card {
             case "shields-up": data.shieldsUp = PlayerData.round2(Math.max(data.shieldsUp + value, 0)); break;
             case "shield-charge": data.shieldCharge = PlayerData.round2(Math.max(data.shieldCharge + value, 0)); break;
             case "auto-reload": data.autoReload = PlayerData.round2(Math.max(data.autoReload + value, 0)); break;
+            case "auto-reload-delay", "auto_reload_delay":
+                if (data.autoReloadDelay <= 0 || value < data.autoReloadDelay) {
+                    data.autoReloadDelay = value;
+                }
+                break;
             case "saw": data.saw = PlayerData.round2(Math.max(data.saw + value, 0)); break;
             case "shockwave": data.shockwave = PlayerData.round2(Math.max(data.shockwave + value, 0)); break;
             case "silence": data.silence = PlayerData.round2(Math.max(data.silence + value, 0)); break;

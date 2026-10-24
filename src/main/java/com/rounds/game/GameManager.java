@@ -380,6 +380,18 @@ public class GameManager implements Listener {
                 }
                 data.ammo = Math.min(data.ammo, data.maxAmmo);
             }
+            if (data.autoReloadDelay > 0 && p.getGameMode() != GameMode.SPECTATOR) {
+                if (data.ammo <= 0 && !GunItem.isReloading(p.getUniqueId())) {
+                    data.zeroAmmoTicks++;
+                    int requiredTicks = (int) Math.round(data.autoReloadDelay * 20.0);
+                    if (data.zeroAmmoTicks >= requiredTicks) {
+                        data.zeroAmmoTicks = 0;
+                        GunItem.getInstance().startReload(p, data);
+                    }
+                } else {
+                    data.zeroAmmoTicks = 0;
+                }
+            }
             if (data.lifestealAura > 0) {
                 for (Entity entity : nearby) {
                     if (!(entity instanceof Player enemy)) continue;
@@ -1041,6 +1053,8 @@ public class GameManager implements Listener {
             removeScoreboard();
             resetAllNameColors();
             restoreNameTags();
+            plugin.getTeamManager().clearAll();
+            plugin.getPlayerDataManager().clearActivePlayers();
             plugin.getCardManager().resetAllCards();
             GunItem.resetRoundState();
             RoundsEntities.clearAllState();
@@ -1410,6 +1424,8 @@ public class GameManager implements Listener {
         removeScoreboard();
         resetAllNameColors();
         restoreNameTags();
+        plugin.getTeamManager().clearAll();
+        plugin.getPlayerDataManager().clearActivePlayers();
         Location lobbyLoc = plugin.getBlockListener().getBlockStorage().getLobbyBlock();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             PlayerData data = plugin.getPlayerDataManager().getData(p.getUniqueId());

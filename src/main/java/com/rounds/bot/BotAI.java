@@ -17,6 +17,9 @@ import org.bukkit.scoreboard.Team;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -87,9 +90,14 @@ public class BotAI extends BukkitRunnable {
     private Location roomAnchorLoc = null;
     private int roomConfinementTicks = 0;
 
-    // Tactical Jump Pad seeking state
-    private Location seekingPadLoc = null;
-    private int seekingPadTicks = 0;
+    // Per-round unique navigation, gap jumping, and exploration memory
+    private final Set<Long> visitedTerritory = new HashSet<>();
+    private final Set<Long> blockedEdges = new HashSet<>();
+    private final Set<Long> confirmedJumpGaps = new HashSet<>();
+    private Location currentHuntTarget = null;
+    private Location currentCorridorWaypoint = null;
+    private int huntStuckTicks = 0;
+    private Location lastHuntPos = null;
 
     // Optimized landing platform cache & room exit cooldown
     private Location cachedLandingPlatform = null;
@@ -168,14 +176,43 @@ public class BotAI extends BukkitRunnable {
         this.lockedHeadingTicks = 0;
         this.consecutiveBounces = 0;
         this.lastTurnSign = 0f;
-        this.seekingPadLoc = null;
-        this.seekingPadTicks = 0;
         this.currentTarget = null;
         this.lastKnownTargetLoc = null;
         this.isPursuing = false;
         this.isSeekingCover = false;
         this.isAmbushing = false;
         this.coverLoc = null;
+
+        // Clear unique per-round exploration, gaps, and routing map
+        this.visitedTerritory.clear();
+        this.blockedEdges.clear();
+        this.confirmedJumpGaps.clear();
+        this.currentHuntTarget = null;
+        this.currentCorridorWaypoint = null;
+        this.huntStuckTicks = 0;
+        this.lastHuntPos = null;
+    }
+
+    public static long packCell(int blockX, int blockZ) {
+        return (((long) (blockX >> 2)) << 32) | ((blockZ >> 2) & 0xFFFFFFFFL);
+    }
+
+    public static long packEdge(int x1, int z1, int x2, int z2) {
+        long c1 = packCell(x1, z1);
+        long c2 = packCell(x2, z2);
+        return (c1 < c2) ? (c1 * 31L + c2) : (c2 * 31L + c1);
+    }
+
+    public void recordJumpGap(Location from, Location to) {
+        if (from == null || to == null) return;
+        long edge = packEdge(from.getBlockX(), from.getBlockZ(), to.getBlockX(), to.getBlockZ());
+        confirmedJumpGaps.add(edge);
+    }
+
+    public boolean isKnownJumpGap(Location from, Location to) {
+        if (from == null || to == null) return false;
+        long edge = packEdge(from.getBlockX(), from.getBlockZ(), to.getBlockX(), to.getBlockZ());
+        return confirmedJumpGaps.contains(edge);
     }
 
     public boolean isPadBanned() {
@@ -673,37 +710,9 @@ public class BotAI extends BukkitRunnable {
             }
         }
 
-        // Map blocks awareness (Jump Pads) - jump pads deal 20% max HP, so it's a hazardous risk!
-        // Evaluated only once every 5 seconds (100 ticks), with halved chance (0.075 * factor)
-        if (padCooldown <= 0 && healthRatio > 0.85 && tactic != CombatTactic.RETREAT && tickCount % 100 == 0) {
-            if (ThreadLocalRandom.current().nextDouble() < 0.075 * factor) {
-                seekingPadLoc = bot.findNearestJumpPad(5.0);
-                seekingPadTicks = 0;
-            }
-        }
-
-        // Movement and combat execution
-        if (seekingPadLoc != null) {
-            seekingPadTicks++;
-            double pdx = seekingPadLoc.getX() - p1Loc.getX();
-            double pdz = seekingPadLoc.getZ() - p1Loc.getZ();
-            double padDist = Math.sqrt(pdx * pdx + pdz * pdz);
-
-            if (padDist < 1.2 || seekingPadTicks > 20) {
-                seekingPadLoc = null;
-                padCooldown = 600; // 30s cooldown once reached
-            } else if (padDist > 0.3) {
-                bot.moveRel((pdx / padDist) * (0.15 + 0.20 * factor), 0.0, (pdz / padDist) * (0.15 + 0.20 * factor));
-                bot.aimAt(p2Loc, turnSpeed, aimInaccuracy);
-                if (shootCooldown <= 0 && canShootAtTarget) {
-                    bot.shoot();
-                    shootCooldown = minShootCooldown;
-                }
-            }
-        } else {
-            // Ground tactical combat
-            switch (tactic) {
-                case RUSH -> {
+        // Ground tactical combat
+        switch (tactic) {
+            case RUSH -> {
                     moveCombatRel(u1_x * 0.40 + p1_x * (strafeDir * strafeSpeed * 0.3), u1_z * 0.40 + p1_z * (strafeDir * strafeSpeed * 0.3));
                     bot.aimAt(p2Loc, turnSpeed, aimInaccuracy);
                     if (shootCooldown <= 0 && canShootAtTarget) {
@@ -751,7 +760,6 @@ public class BotAI extends BukkitRunnable {
                     }
                 }
             }
-        }
 
         // Reverse strafe direction periodically
         dirTicks++;
@@ -768,7 +776,7 @@ public class BotAI extends BukkitRunnable {
         double dist = Math.sqrt(mX * mX + mZ * mZ);
         if (dist < 0.001) return;
 
-        if (lockedHeadingTicks > 0 && seekingPadLoc == null) {
+        if (lockedHeadingTicks > 0) {
             lockedHeadingTicks--;
             double rad = Math.toRadians(-patrolHeading);
             lastMoveX = Math.sin(rad) * dist;
@@ -778,7 +786,7 @@ public class BotAI extends BukkitRunnable {
         }
 
         float moveHeading = (float) Math.toDegrees(Math.atan2(-mX, mZ));
-        if (seekingPadLoc == null && !isDirectionClear(myLoc, moveHeading, Math.max(dist, 1.0))) {
+        if (!isDirectionClear(myLoc, moveHeading, Math.max(dist, 1.0))) {
             float altHeading = findClearDirection(myLoc, moveHeading);
             patrolHeading = altHeading;
             lockedHeadingTicks = 6; // Maintain detour heading for 6 ticks (~0.3s) to slide smoothly around obstacle
@@ -899,100 +907,115 @@ public class BotAI extends BukkitRunnable {
     }
 
     private void executeSearchPatrol(Player player) {
-        double factor = bot.getSkillFactor();
         Location myLoc = player.getLocation();
+        if (myLoc == null || myLoc.getWorld() == null) return;
 
-        // 1. Initialize or maintain patrol heading towards personal waypoint in arena zone
-        Location center = bot.getPlugin() != null ? bot.getPlugin().getGameManager().getCurrentZoneCenter() : null;
-        if (center != null) {
-            Location targetPt = center.clone().add(personalOffsetX, 0, personalOffsetZ);
-            double cdx = targetPt.getX() - myLoc.getX();
-            double cdz = targetPt.getZ() - myLoc.getZ();
-            double distToTarget = Math.sqrt(cdx * cdx + cdz * cdz);
-            if (distToTarget < 3.5) {
-                // Reached personal waypoint, pick another diverse waypoint from ArenaNavMesh
-                ArenaNavMesh mesh = bot.getManager() != null ? bot.getManager().getNavMesh() : null;
+        // 1. Mark current location in this round's visited territory map
+        long myCell = packCell(myLoc.getBlockX(), myLoc.getBlockZ());
+        visitedTerritory.add(myCell);
+
+        // 2. Track stuck status (detect getting blocked by walls/corners)
+        if (lastHuntPos != null && myLoc.getWorld().equals(lastHuntPos.getWorld())) {
+            double movedDistSq = myLoc.distanceSquared(lastHuntPos);
+            if (movedDistSq < 0.005) {
+                huntStuckTicks++;
+            } else {
+                huntStuckTicks = 0;
+            }
+        }
+        lastHuntPos = myLoc.clone();
+
+        // 3. If stuck trying to reach current target, record edge as blocked and pick a new target
+        if (huntStuckTicks > 12) {
+            huntStuckTicks = 0;
+            if (currentHuntTarget != null) {
+                blockedEdges.add(packCell(currentHuntTarget.getBlockX(), currentHuntTarget.getBlockZ()));
+            }
+            currentHuntTarget = null;
+            currentCorridorWaypoint = null;
+            lockedHeadingTicks = 20;
+            patrolHeading = findClearDirection(myLoc, patrolHeading + (ThreadLocalRandom.current().nextBoolean() ? 90f : -90f));
+        }
+
+        // 4. Macro target selection: Hunt enemy team spawn first, then unvisited NavMesh nodes across the whole arena
+        ArenaNavMesh mesh = (bot.getManager() != null) ? bot.getManager().getNavMesh() : null;
+        if (currentHuntTarget == null || myLoc.distanceSquared(currentHuntTarget) < 4.0) {
+            currentHuntTarget = null;
+            currentCorridorWaypoint = null;
+
+            // Priority A: Search enemy team spawn
+            GameManager gm = (bot.getPlugin() != null) ? bot.getPlugin().getGameManager() : null;
+            GameTeam myTeam = (bot.getPlugin() != null) ? bot.getPlugin().getTeamManager().getPlayerTeam(player.getUniqueId()) : null;
+            if (gm != null) {
+                for (Map.Entry<GameTeam, Location> entry : gm.getTeamSpawns().entrySet()) {
+                    if (myTeam == null || entry.getKey() != myTeam) {
+                        Location sp = entry.getValue();
+                        if (sp != null && sp.getWorld() != null && sp.getWorld().equals(myLoc.getWorld())) {
+                            long spCell = packCell(sp.getBlockX(), sp.getBlockZ());
+                            if (!visitedTerritory.contains(spCell) && !blockedEdges.contains(spCell)) {
+                                currentHuntTarget = sp.clone();
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Priority B: Unvisited ArenaNavMesh node
+            if (currentHuntTarget == null && mesh != null && !mesh.isEmpty()) {
+                ArenaNavMesh.NavNode unvisitedNode = mesh.findNearestUnvisitedNode(myLoc, visitedTerritory, blockedEdges);
+                if (unvisitedNode != null) {
+                    currentHuntTarget = unvisitedNode.loc.clone();
+                }
+            }
+
+            // Priority C: If whole map / all nodes were visited this round, clear visited memory and loop
+            if (currentHuntTarget == null) {
+                visitedTerritory.clear();
+                blockedEdges.clear();
                 if (mesh != null && !mesh.isEmpty()) {
                     ArenaNavMesh.NavNode node = mesh.getRandomNode();
                     if (node != null) {
-                        personalOffsetX = node.loc.getX() - center.getX();
-                        personalOffsetZ = node.loc.getZ() - center.getZ();
+                        currentHuntTarget = node.loc.clone();
                     }
-                } else {
-                    personalOffsetX = ThreadLocalRandom.current().nextDouble(-18.0, 18.0);
-                    personalOffsetZ = ThreadLocalRandom.current().nextDouble(-18.0, 18.0);
+                } else if (gm != null && gm.getCurrentZoneCenter() != null) {
+                    Location center = gm.getCurrentZoneCenter();
+                    double ang = ThreadLocalRandom.current().nextDouble(0, 2 * Math.PI);
+                    double rad = ThreadLocalRandom.current().nextDouble(8.0, 20.0);
+                    currentHuntTarget = center.clone().add(Math.cos(ang) * rad, 0, Math.sin(ang) * rad);
                 }
-                targetPt = center.clone().add(personalOffsetX, 0, personalOffsetZ);
-                cdx = targetPt.getX() - myLoc.getX();
-                cdz = targetPt.getZ() - myLoc.getZ();
-                patrolHeading = Float.NaN;
             }
-            if (Float.isNaN(patrolHeading)) {
-                patrolHeading = (float) Math.toDegrees(Math.atan2(-cdx, cdz));
+        }
+
+        // 5. Corridor micro-routing using NavMesh BFS towards macro hunt target
+        if (currentHuntTarget != null && mesh != null && !mesh.isEmpty()) {
+            if (currentCorridorWaypoint == null || myLoc.distanceSquared(currentCorridorWaypoint) < 2.5) {
+                currentCorridorWaypoint = mesh.findNextWaypoint(myLoc, currentHuntTarget);
+            }
+        }
+
+        Location targetPt = (currentCorridorWaypoint != null) ? currentCorridorWaypoint : currentHuntTarget;
+        if (targetPt != null) {
+            double cdx = targetPt.getX() - myLoc.getX();
+            double cdz = targetPt.getZ() - myLoc.getZ();
+            float desiredHeading = (float) Math.toDegrees(Math.atan2(-cdx, cdz));
+
+            if (lockedHeadingTicks > 0) {
+                lockedHeadingTicks--;
+                if (!isDirectionClear(myLoc, patrolHeading, 1.1)) {
+                    lockedHeadingTicks = 0;
+                    patrolHeading = findClearDirection(myLoc, patrolHeading);
+                }
+            } else if (isDirectionClear(myLoc, desiredHeading, 1.2)) {
+                patrolHeading = desiredHeading;
+            } else {
+                patrolHeading = findClearDirection(myLoc, desiredHeading);
             }
         } else if (Float.isNaN(patrolHeading)) {
             patrolHeading = myLoc.getYaw();
         }
 
-        // 2. Track stuck status and room confinement
-        if (lastPatrolPos != null && myLoc.getWorld() != null && myLoc.getWorld().equals(lastPatrolPos.getWorld())) {
-            double movedDistSq = Math.pow(myLoc.getX() - lastPatrolPos.getX(), 2) + Math.pow(myLoc.getZ() - lastPatrolPos.getZ(), 2);
-            if (movedDistSq < 0.005) {
-                patrolStuckTicks++;
-            } else {
-                patrolStuckTicks = 0;
-            }
-        }
-        lastPatrolPos = myLoc.clone();
-
-        // Track confinement inside an enclosed room/alcove (e.g. 3 walls with narrow 2x2 doorway)
-        if (roomAnchorLoc == null || roomAnchorLoc.getWorld() == null || !roomAnchorLoc.getWorld().equals(myLoc.getWorld())) {
-            roomAnchorLoc = myLoc.clone();
-            roomConfinementTicks = 0;
-        } else {
-            double distFromAnchorSq = Math.pow(myLoc.getX() - roomAnchorLoc.getX(), 2) + Math.pow(myLoc.getZ() - roomAnchorLoc.getZ(), 2);
-            if (distFromAnchorSq < 3.0 * 3.0) {
-                roomConfinementTicks++;
-            } else {
-                roomAnchorLoc = myLoc.clone();
-                roomConfinementTicks = 0;
-            }
-        }
-
-        // If confined in a room for > 25 ticks (1.25s), sweep 360 to find narrow exit/doorway
-        if (roomConfinementTicks > 25) {
-            float exitHeading = findRoomExit(myLoc);
-            if (!Float.isNaN(exitHeading)) {
-                patrolHeading = exitHeading;
-                lockedHeadingTicks = 35; // Lock heading for 1.75s to walk through doorway
-                roomConfinementTicks = 0;
-                roomAnchorLoc = null;
-            } else {
-                roomConfinementTicks = 10; // Back off to avoid sweeping 360 every tick
-            }
-        }
-
-        // 3. Obstacle avoidance in front of heading (checks feet + body)
-        if (lockedHeadingTicks > 0) {
-            lockedHeadingTicks--;
-            if (!isDirectionClear(myLoc, patrolHeading, 1.1)) {
-                lockedHeadingTicks = 0;
-                patrolHeading = findClearDirection(myLoc, patrolHeading);
-            }
-        } else {
-            boolean blocked = !isDirectionClear(myLoc, patrolHeading, 1.2);
-            if (patrolStuckTicks > 8) {
-                patrolStuckTicks = 0;
-                personalOffsetX = ThreadLocalRandom.current().nextDouble(-18.0, 18.0);
-                personalOffsetZ = ThreadLocalRandom.current().nextDouble(-18.0, 18.0);
-                lockedHeadingTicks = 25; // Lock heading for 1.25s to walk away from corner/wall
-                patrolHeading = findClearDirection(myLoc, patrolHeading + (ThreadLocalRandom.current().nextBoolean() ? 90f : -90f));
-            } else if (blocked) {
-                patrolHeading = findClearDirection(myLoc, patrolHeading);
-            }
-        }
-
-        // 4. Smooth natural head/body turn towards patrol heading
+        // 6. Smooth natural head/body turn towards patrol heading
         float currentYaw = player.getLocation().getYaw();
         float deltaYaw = ((patrolHeading - currentYaw + 540f) % 360f) - 180f;
         float maxTurn = 18f; // ~18 deg/tick smooth rotation for realistic navigation
@@ -1001,7 +1024,7 @@ public class BotAI extends BukkitRunnable {
         bot.getNmsPlayer().setYHeadRot(newYaw);
         bot.getNmsPlayer().setYBodyRot(newYaw);
 
-        // 5. Continuous forward exploration movement along current yaw
+        // 7. Continuous forward exploration movement along current yaw
         CombatProfile profile = getProfile();
         double walkSpeed = profile.walkSpeed;
         double radMove = Math.toRadians(-newYaw);
@@ -1077,30 +1100,16 @@ public class BotAI extends BukkitRunnable {
             }
         }
 
-        // 5. Avoid walking directly into jump blocks and up blocks in front unless actively seeking one in combat or jumping over a gap
+        // 5. Strictly avoid walking into jump blocks and up blocks in front on foot (prevents 20% max HP damage)
         com.rounds.blocks.BlockListener bl = bot.getPlugin() != null ? bot.getPlugin().getBlockListener() : null;
-        if (bl != null && seekingPadLoc == null) {
+        if (bl != null) {
             Location checkLoc = loc.clone().add(dx, 0.1, dz);
             Location checkBelow = checkLoc.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getLocation();
             Location checkAt = checkLoc.getBlock().getLocation();
             boolean touchingPad = bl.isLocationTouchingJumpBlock(checkLoc) || bl.isJumpBlock(checkBelow) || bl.isJumpBlock(checkAt)
                     || bl.isLocationTouchingUpBlock(checkLoc) || bl.isUpBlock(checkBelow) || bl.isUpBlock(checkAt);
             if (touchingPad) {
-                // If there is a jumpable gap across with a solid safe landing floor (1.4m - 3.4m ahead), allow moving toward it
-                boolean hasGapLanding = false;
-                for (double gd = 1.4; gd <= 3.4; gd += 0.6) {
-                    Location landFloor = loc.clone().add(Math.sin(rad) * gd, -0.4, Math.cos(rad) * gd);
-                    Location landBody = landFloor.clone().add(0, 1.0, 0);
-                    if (landFloor.getBlock().getType().isSolid() && !landBody.getBlock().getType().isSolid()) {
-                        if (!bl.isJumpBlock(landFloor.getBlock().getLocation()) && !bl.isUpBlock(landFloor.getBlock().getLocation())) {
-                            hasGapLanding = true;
-                            break;
-                        }
-                    }
-                }
-                if (!hasGapLanding) {
-                    return false;
-                }
+                return false;
             }
         }
 
@@ -1138,23 +1147,7 @@ public class BotAI extends BukkitRunnable {
             return currentHeading + 180f;
         }
 
-        Location center = bot.getPlugin() != null ? bot.getPlugin().getGameManager().getCurrentZoneCenter() : null;
-        float idealHeading = currentHeading;
-        if (center != null) {
-            Location targetPt = center.clone().add(personalOffsetX, 0, personalOffsetZ);
-            double cdx = targetPt.getX() - loc.getX();
-            double cdz = targetPt.getZ() - loc.getZ();
-            idealHeading = (float) Math.toDegrees(Math.atan2(-cdx, cdz));
-        }
-
-        // Check ideal heading towards center first
-        if (isDirectionClear(loc, idealHeading, 1.2)) {
-            consecutiveBounces = 0;
-            lastTurnSign = 0f;
-            return idealHeading;
-        }
-
-        // Try alternating angle deviations
+        // Try alternating angle deviations from current heading
         float[] offsets = {45f, -45f, 90f, -90f, 135f, -135f, 180f};
         for (float off : offsets) {
             float test = currentHeading + off;

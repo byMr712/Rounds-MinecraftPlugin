@@ -391,7 +391,7 @@ public class FakeBot {
                 Location edgeCheck = loc.clone().add(dirX * 0.6, -0.4, dirZ * 0.6);
                 Location edgeDrop = loc.clone().add(dirX * 0.6, -1.4, dirZ * 0.6);
                 if (!edgeCheck.getBlock().getType().isSolid() && !edgeDrop.getBlock().getType().isSolid()) {
-                    boolean foundLanding = false;
+                    Location bestLandingFloor = null;
                     for (double gapDist = 1.4; gapDist <= 3.4; gapDist += 0.6) {
                         Location landingFloor = loc.clone().add(dirX * gapDist, -0.4, dirZ * gapDist);
                         Location landingBody = landingFloor.clone().add(0, 1.0, 0);
@@ -399,13 +399,16 @@ public class FakeBot {
                         if (landingFloor.getBlock().getType().isSolid() && !landingBody.getBlock().getType().isSolid() && !landingHead.getBlock().getType().isSolid()) {
                             BlockListener bl = manager.getPlugin() != null ? manager.getPlugin().getBlockListener() : null;
                             if (bl == null || (!bl.isJumpBlock(landingFloor.getBlock().getLocation()) && !bl.isUpBlock(landingFloor.getBlock().getLocation()))) {
-                                foundLanding = true;
+                                bestLandingFloor = landingFloor;
                                 break;
                             }
                         }
                     }
 
-                    if (foundLanding) {
+                    if (bestLandingFloor != null) {
+                        if (ai != null) {
+                            ai.recordJumpGap(loc, bestLandingFloor);
+                        }
                         double errorChance = (ai != null) ? ai.getJumpErrorChance() : 0.0;
                         boolean jumpError = ThreadLocalRandom.current().nextDouble() < errorChance;
                         if (!jumpError) {

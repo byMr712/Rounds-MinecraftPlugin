@@ -87,6 +87,26 @@ public class ArenaNavMesh {
     }
 
     /**
+     * Finds nearest unvisited node in the mesh, avoiding visited cells and blocked edges.
+     */
+    public NavNode findNearestUnvisitedNode(Location from, Set<Long> visitedCells, Set<Long> blockedCells) {
+        if (from == null || allNodes.isEmpty()) return null;
+        NavNode best = null;
+        double bestDist = Double.MAX_VALUE;
+        for (NavNode node : allNodes) {
+            long cell = (((long) (node.loc.getBlockX() >> 2)) << 32) | ((node.loc.getBlockZ() >> 2) & 0xFFFFFFFFL);
+            if (visitedCells != null && visitedCells.contains(cell)) continue;
+            if (blockedCells != null && blockedCells.contains(cell)) continue;
+            double d = node.distanceSquared(from);
+            if (d < bestDist) {
+                bestDist = d;
+                best = node;
+            }
+        }
+        return best;
+    }
+
+    /**
      * Finds the best safe cover node near botLoc that has a solid wall or obstacle blocking line of sight from enemyLoc.
      */
     public Location findBestCover(Location botLoc, Location enemyLoc, double maxDist) {
@@ -211,12 +231,48 @@ public class ArenaNavMesh {
                 NavNode b = generated.get(j);
                 double dSq = a.distanceSquared(b.loc);
                 if (dSq <= maxNeighborDistSq && Math.abs(a.loc.getY() - b.loc.getY()) <= 1.25) {
-                    a.neighbors.add(b);
-                    b.neighbors.add(a);
+                    if (isWalkableConnection(world, a.loc, b.loc, bl)) {
+                        a.neighbors.add(b);
+                        b.neighbors.add(a);
+                    }
                 }
             }
         }
 
         return mesh;
+    }
+
+    private static boolean isWalkableConnection(World world, Location a, Location b, BlockListener bl) {
+        double dx = b.getX() - a.getX();
+        double dy = b.getY() - a.getY();
+        double dz = b.getZ() - a.getZ();
+        double dist = Math.sqrt(dx * dx + dz * dz);
+        if (dist < 0.1) return true;
+        int steps = (int) Math.ceil(dist / 0.8);
+        for (int s = 1; s < steps; s++) {
+            double t = (double) s / steps;
+            double x = a.getX() + dx * t;
+            double y = a.getY() + dy * t;
+            double z = a.getZ() + dz * t;
+            int bx = (int) Math.floor(x);
+            int by = (int) Math.floor(y);
+            int bz = (int) Math.floor(z);
+
+            // Feet, body and head must not be solid
+            if (world.getBlockAt(bx, by, bz).getType().isSolid() ||
+                world.getBlockAt(bx, by + 1, bz).getType().isSolid()) {
+                return false;
+            }
+
+            // Hazard check: do not connect across jump blocks or up blocks
+            if (bl != null) {
+                Location pt = new Location(world, bx + 0.5, by, bz + 0.5);
+                Location below = new Location(world, bx + 0.5, by - 1, bz + 0.5);
+                if (bl.isJumpBlock(pt) || bl.isJumpBlock(below) || bl.isUpBlock(pt) || bl.isUpBlock(below)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }

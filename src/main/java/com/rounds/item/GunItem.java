@@ -199,7 +199,7 @@ public class GunItem implements Listener {
         }
     }
 
-    private void doBlock(Player player) {
+    public void doBlock(Player player) {
         UUID uuid = player.getUniqueId();
 
         if (silencedPlayers.contains(uuid)) {

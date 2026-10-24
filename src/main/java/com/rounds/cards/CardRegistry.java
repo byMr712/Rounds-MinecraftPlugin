@@ -14,6 +14,7 @@ import java.util.logging.Level;
 public class CardRegistry {
 
     private final Map<Integer, Card> cards = new LinkedHashMap<>();
+    private final Map<String, Card> cardsBySlug = new LinkedHashMap<>();
     private int loadedFiles = 0;
     private final Random random = new Random();
     private final File dataFolder;
@@ -49,6 +50,7 @@ public class CardRegistry {
 
     public void loadCards() {
         cards.clear();
+        cardsBySlug.clear();
         loadedFiles = 0;
         File cardsRoot = new File(dataFolder, "cards");
         cardsRoot.mkdirs();
@@ -324,6 +326,16 @@ public class CardRegistry {
             cards.put(previous.getId(), previous);
             plugin.getLogger().warning("Duplicate card id " + card.getId()
                     + " in '" + file.getName() + "', keeping earlier definition");
+            return;
+        }
+        if (file != null) {
+            String fname = file.getName();
+            if (fname.endsWith(".yml")) {
+                String slug = fname.substring(0, fname.length() - 4).toLowerCase();
+                cardsBySlug.putIfAbsent(slug, card);
+                cardsBySlug.putIfAbsent(slug.replace('-', '_'), card);
+                cardsBySlug.putIfAbsent(slug.replace('-', ' '), card);
+            }
         }
     }
 
@@ -366,19 +378,33 @@ public class CardRegistry {
         String cleanQuery = stripAllFormatting(query).toLowerCase();
         if (cleanQuery.isEmpty()) return null;
 
-        // 2. Exact match across all localized names
+        // 2. Slug lookup (e.g. "tank", "buckshot", "shield-charge", "toxic-cloud")
+        Card bySlug = cardsBySlug.get(cleanQuery);
+        if (bySlug != null) return bySlug;
+        bySlug = cardsBySlug.get(cleanQuery.replace('_', '-'));
+        if (bySlug != null) return bySlug;
+        bySlug = cardsBySlug.get(cleanQuery.replace(' ', '-'));
+        if (bySlug != null) return bySlug;
+
+        // 3. Exact match across all localized names (with normalized hyphens/spaces)
+        String queryNorm = cleanQuery.replace('-', ' ').replace('_', ' ');
         for (Card c : cards.values()) {
             for (String n : c.getNames().values()) {
                 String cleanName = stripAllFormatting(n).toLowerCase();
-                if (cleanName.equals(cleanQuery)) return c;
+                if (cleanName.equals(cleanQuery) || cleanName.replace('-', ' ').replace('_', ' ').equals(queryNorm)) return c;
             }
         }
 
-        // 3. Substring match across all localized names
+        // 4. Substring match across slug and localized names
+        for (Map.Entry<String, Card> entry : cardsBySlug.entrySet()) {
+            if (entry.getKey().contains(cleanQuery) || cleanQuery.contains(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
         for (Card c : cards.values()) {
             for (String n : c.getNames().values()) {
                 String cleanName = stripAllFormatting(n).toLowerCase();
-                if (cleanName.contains(cleanQuery)) return c;
+                if (cleanName.contains(cleanQuery) || cleanName.replace('-', ' ').contains(queryNorm)) return c;
             }
         }
         return null;

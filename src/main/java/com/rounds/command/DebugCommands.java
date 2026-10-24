@@ -177,6 +177,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "freeplay" -> handleFreeplay(sender, args);
             case "tab" -> handleTab(sender, args);
             case "placeholders" -> handlePlaceholders(sender);
+            case "mcp" -> handleMcp(sender, args);
             default -> sender.sendMessage(ChatColor.RED + Messages.get("debug.unknown-command", args[0]));
         }
         return true;
@@ -955,7 +956,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         "stats", "setstat", "setteam", "setlanguage", "effect", "heal",
         "resetstats", "reload", "setlobby",
         "jumppos1", "jumppos2", "jumpset", "uppos1", "uppos2", "upset",
-        "wheel", "tab"
+        "wheel", "tab", "mcp"
     );
     private static final List<String> FREEPLAY_COMMANDS = Arrays.asList(
         "start", "stop", "rounds", "givegun", "wheel"
@@ -964,6 +965,123 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         "info", "stats", "cards", "card"
     );
     private static final List<String> TEAM_COLORS = Arrays.asList("BLUE", "RED", "YELLOW", "GREEN");
+
+    private void handleMcp(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("rounds.admin")) {
+            sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
+            return;
+        }
+        if (args.length < 3) {
+            sender.sendMessage(ChatColor.YELLOW + "Usage: /rdebug mcp <bot_name> <draft|pick|give|reset|cards|stats|block|shoot|heal> [args...]");
+            return;
+        }
+
+        String targetName = args[1];
+        Player target = Bukkit.getPlayer(targetName);
+        if (target == null) {
+            sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", targetName));
+            return;
+        }
+
+        String action = args[2].toLowerCase();
+        switch (action) {
+            case "draft", "opendraft", "open" -> {
+                GameTeam team = plugin.getTeamManager().getPlayerTeam(target.getUniqueId());
+                if (team == null) team = GameTeam.BLUE;
+                plugin.getCardManager().openCardSelection(target, team);
+                sender.sendMessage(ChatColor.GREEN + "[MCP] Opened card draft GUI for " + target.getName());
+            }
+            case "pick", "pickcard", "select" -> {
+                if (args.length < 4) {
+                    sender.sendMessage(ChatColor.RED + "Usage: /rdebug mcp " + targetName + " pick <0..4|11..15>");
+                    return;
+                }
+                try {
+                    int slot = Integer.parseInt(args[3]);
+                    int index = (slot >= 11 && slot <= 15) ? (slot - 11) : slot;
+                    if (index < 0 || index > 4) {
+                        sender.sendMessage(ChatColor.RED + "[MCP] Invalid card index: " + slot + " (expected 0..4 or 11..15)");
+                        return;
+                    }
+                    plugin.getCardManager().selectCard(target, index);
+                    target.closeInventory();
+                    sender.sendMessage(ChatColor.GREEN + "[MCP] Selected card index " + index + " for " + target.getName());
+                } catch (NumberFormatException e) {
+                    sender.sendMessage(ChatColor.RED + "[MCP] Slot must be a number: " + args[3]);
+                }
+            }
+            case "give", "add" -> {
+                if (args.length < 4) {
+                    sender.sendMessage(ChatColor.RED + "Usage: /rdebug mcp " + targetName + " give <card_id_or_slug>");
+                    return;
+                }
+                String cardInput = String.join(" ", Arrays.copyOfRange(args, 3, args.length));
+                com.rounds.cards.Card card = plugin.getCardManager().getRegistry().findCardByName(cardInput);
+                if (card == null) {
+                    sender.sendMessage(ChatColor.RED + "[MCP] Card not found: " + cardInput);
+                    return;
+                }
+                plugin.getCardManager().applyCardToPlayer(target, card);
+                String lang = Messages.getLanguageCode();
+                sender.sendMessage(ChatColor.GREEN + "[MCP] Applied card " + card.getColoredName(lang) + " to " + target.getName());
+            }
+            case "reset" -> {
+                PlayerData data = plugin.getPlayerDataManager().getData(target);
+                data.resetStats();
+                data.resetAllCards();
+                var attr = target.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+                if (attr != null) attr.setBaseValue(20);
+                target.setHealth(20);
+                target.setFoodLevel(20);
+                target.getInventory().clear();
+                plugin.getGameManager().clearCardEffects(target);
+                sender.sendMessage(ChatColor.GREEN + "[MCP] Reset cards and stats for " + target.getName());
+            }
+            case "cards", "deck" -> {
+                PlayerData data = plugin.getPlayerDataManager().getData(target);
+                List<Integer> owned = data.getOwnedCards();
+                if (owned.isEmpty()) {
+                    sender.sendMessage(ChatColor.YELLOW + "[MCP] " + target.getName() + " has 0 cards.");
+                } else {
+                    StringBuilder sb = new StringBuilder(ChatColor.GREEN + "[MCP] " + target.getName() + " cards (" + owned.size() + "): ");
+                    String lang = Messages.getLanguageCode();
+                    for (int i = 0; i < owned.size(); i++) {
+                        com.rounds.cards.Card c = plugin.getCardManager().getRegistry().getCard(owned.get(i));
+                        if (c != null) {
+                            if (i > 0) sb.append(ChatColor.GRAY).append(", ");
+                            sb.append(c.getColoredName(lang));
+                        }
+                    }
+                    sender.sendMessage(sb.toString());
+                }
+            }
+            case "stats" -> {
+                PlayerData data = plugin.getPlayerDataManager().getData(target);
+                var attr = target.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+                double maxHp = attr != null ? attr.getValue() : 20.0;
+                sender.sendMessage(ChatColor.AQUA + "[MCP] " + target.getName() +
+                    " HP=" + String.format("%.1f/%.1f", target.getHealth(), maxHp) +
+                    " DMG=" + data.dmg + " AtkSpd=" + data.atkSpeed +
+                    " Ammo=" + data.ammo + "/" + data.maxAmmo +
+                    " Cards=" + data.getOwnedCards().size());
+            }
+            case "block", "shield" -> {
+                GunItem.getInstance().doBlock(target);
+                sender.sendMessage(ChatColor.GREEN + "[MCP] Triggered shield block for " + target.getName());
+            }
+            case "shoot" -> {
+                GunItem.getInstance().doShoot(target);
+                sender.sendMessage(ChatColor.GREEN + "[MCP] Triggered weapon shoot for " + target.getName());
+            }
+            case "heal" -> {
+                var attr = target.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+                target.setHealth(attr != null ? attr.getValue() : 20.0);
+                target.setFoodLevel(20);
+                sender.sendMessage(ChatColor.GREEN + "[MCP] Healed " + target.getName() + " to full HP.");
+            }
+            default -> sender.sendMessage(ChatColor.RED + "[MCP] Unknown action: " + action);
+        }
+    }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
@@ -987,6 +1105,20 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
 
         return switch (args[0].toLowerCase()) {
+            case "mcp" -> {
+                if (args.length == 2) {
+                    List<String> list = new ArrayList<>();
+                    Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
+                    yield filterStartsWith(list, input);
+                }
+                if (args.length == 3) {
+                    yield filterStartsWith(Arrays.asList("draft", "pick", "give", "reset", "cards", "stats", "block", "shoot", "heal"), input);
+                }
+                if (args.length == 4 && (args[2].equalsIgnoreCase("give") || args[2].equalsIgnoreCase("add"))) {
+                    yield filterStartsWith(plugin.getCardManager().getRegistry().getCardNameSuggestions(), input);
+                }
+                yield Collections.emptyList();
+            }
             case "givegun", "giveblocks" -> {
                 List<String> list = new ArrayList<>();
                 list.add("@a");

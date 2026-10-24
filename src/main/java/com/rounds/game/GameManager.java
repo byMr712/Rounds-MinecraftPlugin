@@ -828,9 +828,10 @@ public class GameManager implements Listener {
                 p.setInvulnerable(false);
                 p.setNoDamageTicks(0);
             } else {
-                if (currentZoneCenter != null) p.teleport(currentZoneCenter);
                 p.setPlayerListName(p.getName());
                 p.setGameMode(GameMode.SPECTATOR);
+                p.setAllowFlight(true);
+                p.setFlying(true);
                 p.setInvulnerable(true);
             }
         }
@@ -1131,12 +1132,12 @@ public class GameManager implements Listener {
                 p.setFlying(true);
                 p.setInvulnerable(true);
                 p.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
-                Location safe = null;
                 GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-                if (team != null) safe = teamSpawns.get(team);
-                if (safe == null) safe = currentZoneCenter;
-                if (safe != null && safe.getWorld() != null && safe.getWorld().equals(p.getWorld())) {
-                    p.teleport(safe.clone().add(0, 1.2, 0));
+                if (team != null) {
+                    Location safe = teamSpawns.get(team);
+                    if (safe != null && safe.getWorld() != null && safe.getWorld().equals(p.getWorld())) {
+                        p.teleport(safe.clone().add(0, 1.2, 0));
+                    }
                 }
                 sendEnemyPickingCardsTitle(p, 100);
             }

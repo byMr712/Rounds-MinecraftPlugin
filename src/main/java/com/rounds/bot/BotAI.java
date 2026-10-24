@@ -70,6 +70,10 @@ public class BotAI extends BukkitRunnable {
     private float lastTurnSign = 0f;
     private int lockedHeadingTicks = 0;
 
+    // Tactical Jump Pad seeking state
+    private Location seekingPadLoc = null;
+    private int seekingPadTicks = 0;
+
     public BotAI(FakeBot bot) {
         this.bot = bot;
         this.padCooldown = 300;
@@ -82,6 +86,8 @@ public class BotAI extends BukkitRunnable {
         this.lockedHeadingTicks = 0;
         this.consecutiveBounces = 0;
         this.lastTurnSign = 0f;
+        this.seekingPadLoc = null;
+        this.seekingPadTicks = 0;
         this.currentTarget = null;
         this.lastKnownTargetLoc = null;
         this.isPursuing = false;
@@ -491,27 +497,31 @@ public class BotAI extends BukkitRunnable {
         }
 
         // Map blocks awareness (Jump Pads) - jump pads deal 20% max HP, so it's a hazardous risk!
-        // Only high-HP bots (>85% HP) occasionally consider jumping, with long cooldowns (30s)
-        boolean allowJumpPadSeeking = (padCooldown <= 0 && healthRatio > 0.85 && tactic != CombatTactic.RETREAT
-                && (tickCount % 60 == 0) && (ThreadLocalRandom.current().nextDouble() < 0.15 * factor));
-        Location nearestPad = allowJumpPadSeeking ? bot.findNearestJumpPad(5.0) : null;
-        double minPadDist = (nearestPad != null) ? Math.sqrt(Math.pow(nearestPad.getX() - p1Loc.getX(), 2) + Math.pow(nearestPad.getZ() - p1Loc.getZ(), 2)) : 999.0;
+        // Evaluated only once every 5 seconds (100 ticks), with halved chance (0.075 * factor)
+        if (padCooldown <= 0 && healthRatio > 0.85 && tactic != CombatTactic.RETREAT && tickCount % 100 == 0) {
+            if (ThreadLocalRandom.current().nextDouble() < 0.075 * factor) {
+                seekingPadLoc = bot.findNearestJumpPad(5.0);
+                seekingPadTicks = 0;
+            }
+        }
 
         // Movement and combat execution
-        if (nearestPad != null && minPadDist < 4.0 && (tickCount % 20 < 4)) {
-            double pdx = nearestPad.getX() - p1Loc.getX();
-            double pdz = nearestPad.getZ() - p1Loc.getZ();
-            double plen = Math.sqrt(pdx * pdx + pdz * pdz);
-            if (plen > 0.3) {
-                bot.moveRel((pdx / plen) * (0.15 + 0.20 * factor), 0.0, (pdz / plen) * (0.15 + 0.20 * factor));
-            }
-            if (minPadDist < 1.2) {
+        if (seekingPadLoc != null) {
+            seekingPadTicks++;
+            double pdx = seekingPadLoc.getX() - p1Loc.getX();
+            double pdz = seekingPadLoc.getZ() - p1Loc.getZ();
+            double padDist = Math.sqrt(pdx * pdx + pdz * pdz);
+
+            if (padDist < 1.2 || seekingPadTicks > 20) {
+                seekingPadLoc = null;
                 padCooldown = 600; // 30s cooldown once reached
-            }
-            bot.aimAt(p2Loc, turnSpeed, aimInaccuracy);
-            if (shootCooldown <= 0 && canShootAtTarget) {
-                bot.shoot();
-                shootCooldown = minShootCooldown;
+            } else if (padDist > 0.3) {
+                bot.moveRel((pdx / padDist) * (0.15 + 0.20 * factor), 0.0, (pdz / padDist) * (0.15 + 0.20 * factor));
+                bot.aimAt(p2Loc, turnSpeed, aimInaccuracy);
+                if (shootCooldown <= 0 && canShootAtTarget) {
+                    bot.shoot();
+                    shootCooldown = minShootCooldown;
+                }
             }
         } else {
             // Ground tactical combat
@@ -721,10 +731,13 @@ public class BotAI extends BukkitRunnable {
         Location feet = loc.clone().add(dx, 0.2, dz);
         Location body = loc.clone().add(dx, 1.2, dz);
 
-        // Avoid jump blocks if padCooldown > 0 (e.g. first 15s of round or after launch)
-        if (padCooldown > 0) {
-            com.rounds.blocks.BlockListener bl = bot.getPlugin() != null ? bot.getPlugin().getBlockListener() : null;
-            if (bl != null && bl.isLocationTouchingJumpBlock(feet)) {
+        // Avoid jump blocks unless actively seeking one in combat
+        com.rounds.blocks.BlockListener bl = bot.getPlugin() != null ? bot.getPlugin().getBlockListener() : null;
+        if (bl != null && seekingPadLoc == null) {
+            Location checkLoc = loc.clone().add(dx, 0.1, dz);
+            Location checkBelow = checkLoc.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getLocation();
+            Location checkAt = checkLoc.getBlock().getLocation();
+            if (bl.isLocationTouchingJumpBlock(checkLoc) || bl.isJumpBlock(checkBelow) || bl.isJumpBlock(checkAt)) {
                 return false;
             }
         }

@@ -29,6 +29,12 @@ public class FakeBot {
     private BotStrategy strategy = BotStrategy.BALANCED;
     private int level;
     private double velY = 0.0;
+    private double impulseX = 0.0;
+    private double impulseZ = 0.0;
+
+    public double getVelY() {
+        return velY;
+    }
 
     public FakeBot(BotManager manager, Player bukkitPlayer, ServerPlayer nmsPlayer) {
         this.manager = manager;
@@ -180,6 +186,12 @@ public class FakeBot {
 
     public void applyJumpPad(double launchHeight) {
         this.velY = launchHeight * 0.2;
+        Player p = getBukkitPlayer();
+        if (p != null) {
+            double rad = Math.toRadians(-p.getLocation().getYaw());
+            this.impulseX = Math.sin(rad) * 0.40;
+            this.impulseZ = Math.cos(rad) * 0.40;
+        }
     }
 
     public void applyUpBlock(double speed) {
@@ -250,6 +262,8 @@ public class FakeBot {
             velY = Math.max(velY - 0.08, -3.92) * 0.98;
         } else {
             if (velY < 0.0) velY = 0.0;
+            impulseX = 0.0;
+            impulseZ = 0.0;
         }
 
         // 3. Auto-jump over 1-block obstacles when moving on ground (not in mid-air!)
@@ -269,8 +283,15 @@ public class FakeBot {
 
         double finalVelY = (onGround && velY <= 0.0) ? -0.0784 : velY;
 
+        double moveX = dx + impulseX;
+        double moveZ = dz + impulseZ;
+        impulseX *= 0.82;
+        impulseZ *= 0.82;
+        if (Math.abs(impulseX) < 0.01) impulseX = 0.0;
+        if (Math.abs(impulseZ) < 0.01) impulseZ = 0.0;
+
         Location from = p.getLocation().clone();
-        sp.move(MoverType.SELF, new Vec3(dx, finalVelY, dz));
+        sp.move(MoverType.SELF, new Vec3(moveX, finalVelY, moveZ));
         Location to = p.getLocation().clone();
 
         // Check if ceiling was hit

@@ -29,18 +29,19 @@ public class BotAI extends BukkitRunnable {
         BALANCED
     }
 
-    public static final double MAX_VISION_DISTANCE_SQ = 1600.0; // 40 * 40
+    public static final double MAX_VISION_DISTANCE_SQ = 3600.0; // 60 * 60 (covers entire arena)
     public static final double PROXIMITY_HEARING_DISTANCE_SQ = 6.25; // 2.5 * 2.5
-    public static final double FOV_HALF_ANGLE_DEG = 65.0;
-    public static final double LOW_HEALTH_COVER_THRESHOLD = 0.35;
+    public static final double FOV_HALF_ANGLE_DEG = 70.0; // 140 degree FOV cone
+    public static final double LOW_HEALTH_COVER_THRESHOLD = 0.20; // 20% HP (user requested: 15-20%)
 
     private final FakeBot bot;
     private int tickCount = 0;
     private int strafeDir = 1;
     private int dirTicks = 0;
     private int shootCooldown = 0;
-    private int padCooldown = 0;
+    private int padCooldown = 300; // 15s cooldown at spawn so bots never rush to pad at round start
     private int coverSearchCooldown = 0;
+    private int coverSeekTicks = 0;
 
     // Realistic Vision and Pursuit Tracking (No wallhacks)
     private Player currentTarget = null;
@@ -63,6 +64,7 @@ public class BotAI extends BukkitRunnable {
 
     public BotAI(FakeBot bot) {
         this.bot = bot;
+        this.padCooldown = 300;
     }
 
     private boolean isCombatAllowed() {
@@ -220,12 +222,13 @@ public class BotAI extends BukkitRunnable {
         // 2. Ambush Trap handling (waiting around corner with pre-aim)
         if (isAmbushing) {
             ambushTicks++;
-            if (ambushTicks > 60 || (targetCurrentlyVisible && lastKnownTargetLoc != null && player.getLocation().distance(lastKnownTargetLoc) < 5.0)) {
+            if (ambushTicks > 40 || (targetCurrentlyVisible && lastKnownTargetLoc != null && player.getLocation().distance(lastKnownTargetLoc) < 5.0)) {
                 isAmbushing = false;
+                coverSearchCooldown = 120;
             } else {
-                // Hold position behind corner, pre-aim at corner where enemy is expected to emerge
+                // Hold position behind corner, pre-aim at corner where enemy is expected to emerge (no jitter)
                 if (lastKnownTargetLoc != null) {
-                    bot.aimAt(lastKnownTargetLoc.clone().add(0, 1.4, 0), 45.0f, 0.5f);
+                    bot.aimAt(lastKnownTargetLoc.clone().add(0, 1.4, 0), 45.0f, 0.0f);
                 }
 
                 // If bot has Empower card, pre-charge shield!
@@ -240,6 +243,7 @@ public class BotAI extends BukkitRunnable {
                         shootCooldown = 4;
                     }
                     isAmbushing = false;
+                    coverSearchCooldown = 120;
                 } else {
                     tickCooldowns();
                     return;
@@ -249,11 +253,12 @@ public class BotAI extends BukkitRunnable {
 
         // 3. Seeking Cover / Hiding (to heal or reload)
         if (isSeekingCover && coverLoc != null) {
+            coverSeekTicks++;
             double cdx = coverLoc.getX() - player.getLocation().getX();
             double cdz = coverLoc.getZ() - player.getLocation().getZ();
             double cdist = Math.sqrt(cdx * cdx + cdz * cdz);
 
-            if (cdist > 0.8) {
+            if (cdist > 0.8 && coverSeekTicks < 50) {
                 float moveYaw = (float) Math.toDegrees(Math.atan2(-cdx, cdz));
                 bot.getNmsPlayer().setRot(moveYaw, 0f);
                 bot.getNmsPlayer().setYHeadRot(moveYaw);
@@ -262,26 +267,30 @@ public class BotAI extends BukkitRunnable {
                 tickCooldowns();
                 return;
             } else {
-                // Reached cover!
+                // Reached cover or timed out (prevent getting stuck against walls)
                 isSeekingCover = false;
+                coverLoc = null;
+                coverSearchCooldown = 120;
 
-                // Heal on block behind cover if card allows
-                if (data != null && data.heal > 0 && healthRatio < 0.85) {
-                    bot.block();
-                }
+                if (cdist <= 1.2) {
+                    // Heal on block behind cover if card allows
+                    if (data != null && data.heal > 0 && healthRatio < 0.85) {
+                        bot.block();
+                    }
 
-                // Chameleon: stand still behind cover to turn invisible
-                if (data != null && data.chameleon > 0 && !targetCurrentlyVisible) {
-                    tickCooldowns();
-                    return;
-                }
+                    // Chameleon: stand still behind cover to turn invisible
+                    if (data != null && data.chameleon > 0 && !targetCurrentlyVisible) {
+                        tickCooldowns();
+                        return;
+                    }
 
-                // Set up an Ambush Trap around the corner!
-                if (ThreadLocalRandom.current().nextDouble() < smartChance) {
-                    isAmbushing = true;
-                    ambushTicks = 0;
-                    tickCooldowns();
-                    return;
+                    // Set up an Ambush Trap around the corner!
+                    if (ThreadLocalRandom.current().nextDouble() < smartChance) {
+                        isAmbushing = true;
+                        ambushTicks = 0;
+                        tickCooldowns();
+                        return;
+                    }
                 }
             }
         }
@@ -333,17 +342,18 @@ public class BotAI extends BukkitRunnable {
         double p1_x = -u1_z;
         double p1_z = u1_x;
 
-        // Tactical decision: check if bot should seek cover to heal or reload
-        boolean needsCover = (healthRatio < LOW_HEALTH_COVER_THRESHOLD || (data != null && data.ammo <= 0 && data.reloadSpeed > 0) || (data != null && data.heal > 0 && healthRatio < 0.65));
+        // Tactical decision: check if bot should seek cover to heal (only when very low HP: 15-20%)
+        boolean needsCover = (healthRatio <= LOW_HEALTH_COVER_THRESHOLD || (data != null && data.heal > 0 && healthRatio <= 0.25));
         if (needsCover && !isSeekingCover && coverSearchCooldown <= 0 && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
             Location cover = findCoverLocation(player, p2Loc);
             if (cover != null) {
                 coverLoc = cover;
                 isSeekingCover = true;
+                coverSeekTicks = 0;
                 tickCooldowns();
                 return;
             } else {
-                coverSearchCooldown = 15; // Don't raycast 16 lines every tick if no cover exists
+                coverSearchCooldown = 40; // Don't raycast 16 lines every tick if no cover exists
             }
         }
 
@@ -408,23 +418,27 @@ public class BotAI extends BukkitRunnable {
             }
         }
 
-        // Map blocks awareness (Jump Pads) - deliberate sniping usage scales with factor
-        boolean allowJumpPadSeeking = (tactic != CombatTactic.RETREAT && healthRatio > 0.65 && padCooldown <= 0)
-                && (ThreadLocalRandom.current().nextDouble() < factor);
-        Location nearestPad = allowJumpPadSeeking ? bot.findNearestJumpPad(6.0) : null;
+        // Map blocks awareness (Jump Pads) - jump pads deal 20% max HP, so it's a hazardous risk!
+        // Only high-HP bots (>85% HP) occasionally consider jumping, with long cooldowns (30s)
+        boolean allowJumpPadSeeking = (padCooldown <= 0 && healthRatio > 0.85 && tactic != CombatTactic.RETREAT
+                && (tickCount % 60 == 0) && (ThreadLocalRandom.current().nextDouble() < 0.15 * factor));
+        Location nearestPad = allowJumpPadSeeking ? bot.findNearestJumpPad(5.0) : null;
         double minPadDist = (nearestPad != null) ? Math.sqrt(Math.pow(nearestPad.getX() - p1Loc.getX(), 2) + Math.pow(nearestPad.getZ() - p1Loc.getZ(), 2)) : 999.0;
 
         // Movement and combat execution
-        boolean airborne = !bot.isOnGround() && player.getFallDistance() > 1.2;
+        boolean airborne = !bot.isOnGround() || Math.abs(bot.getVelY()) > 0.1;
 
         if (airborne) {
+            padCooldown = 600; // Reset pad cooldown on airborne to prevent re-triggering
+            // Push forward in look direction to clear the pad and land safely away
+            double rad = Math.toRadians(-player.getLocation().getYaw());
+            bot.moveRel(Math.sin(rad) * 0.32, 0.0, Math.cos(rad) * 0.32);
             bot.aimAt(p2Loc, turnSpeed * 1.2f, aimInaccuracy * 1.2f);
             if (shootCooldown <= 0 && canShootAtTarget) {
                 bot.shoot();
                 shootCooldown = minShootCooldown;
             }
-            bot.moveRel(u1_x * (0.05 + 0.10 * factor), 0.0, u1_z * (0.05 + 0.10 * factor));
-        } else if (nearestPad != null && minPadDist < 5.0 && (tickCount % 20 < 5)) {
+        } else if (nearestPad != null && minPadDist < 4.0 && (tickCount % 20 < 4)) {
             double pdx = nearestPad.getX() - p1Loc.getX();
             double pdz = nearestPad.getZ() - p1Loc.getZ();
             double plen = Math.sqrt(pdx * pdx + pdz * pdz);
@@ -432,7 +446,7 @@ public class BotAI extends BukkitRunnable {
                 bot.moveRel((pdx / plen) * (0.15 + 0.20 * factor), 0.0, (pdz / plen) * (0.15 + 0.20 * factor));
             }
             if (minPadDist < 1.2) {
-                padCooldown = 120;
+                padCooldown = 600; // 30s cooldown once reached
             }
             bot.aimAt(p2Loc, turnSpeed, aimInaccuracy);
             if (shootCooldown <= 0 && canShootAtTarget) {
@@ -550,6 +564,16 @@ public class BotAI extends BukkitRunnable {
 
         if (distXZ > 1.2) {
             float moveYaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+
+            // Obstacle avoidance during pursuit: route around blocking walls
+            if (!isDirectionClear(myLoc, moveYaw, 1.0)) {
+                moveYaw = findClearDirection(myLoc, moveYaw);
+                double rad = Math.toRadians(-moveYaw);
+                dx = Math.sin(rad);
+                dz = Math.cos(rad);
+                distXZ = 1.0;
+            }
+
             bot.getNmsPlayer().setRot(moveYaw, 0f);
             bot.getNmsPlayer().setYHeadRot(moveYaw);
             bot.getNmsPlayer().setYBodyRot(moveYaw);
@@ -557,12 +581,18 @@ public class BotAI extends BukkitRunnable {
             double speed = 0.25 + 0.12 * factor;
             bot.moveRel((dx / distXZ) * speed, 0.0, (dz / distXZ) * speed);
         } else {
-            // Reached last known location: scan left and right for hiding enemy
+            // Reached last known location: scan left and right briefly
             searchScanYaw += 15f;
-            float yaw = player.getLocation().getYaw() + (float) Math.sin(Math.toRadians(searchScanYaw)) * 40f;
+            float yaw = player.getLocation().getYaw() + (float) Math.sin(Math.toRadians(searchScanYaw)) * 30f;
             bot.getNmsPlayer().setRot(yaw, 0f);
             bot.getNmsPlayer().setYHeadRot(yaw);
             bot.getNmsPlayer().setYBodyRot(yaw);
+            if (searchTicks > 25) {
+                // Done searching this spot, resume patrol exploration
+                isPursuing = false;
+                currentTarget = null;
+                lastKnownTargetLoc = null;
+            }
         }
     }
 
@@ -570,9 +600,16 @@ public class BotAI extends BukkitRunnable {
         double factor = bot.getSkillFactor();
         Location myLoc = player.getLocation();
 
-        // 1. Initialize or maintain patrol heading
+        // 1. Initialize or maintain patrol heading towards center
         if (Float.isNaN(patrolHeading)) {
-            patrolHeading = myLoc.getYaw();
+            Location center = bot.getPlugin() != null ? bot.getPlugin().getGameManager().getCurrentZoneCenter() : null;
+            if (center != null) {
+                double cdx = center.getX() - myLoc.getX();
+                double cdz = center.getZ() - myLoc.getZ();
+                patrolHeading = (float) Math.toDegrees(Math.atan2(-cdx, cdz));
+            } else {
+                patrolHeading = myLoc.getYaw();
+            }
         }
 
         // 2. Track stuck status
@@ -586,24 +623,12 @@ public class BotAI extends BukkitRunnable {
         }
         lastPatrolPos = myLoc.clone();
 
-        // 3. Obstacle avoidance in front of heading
-        double radHead = Math.toRadians(-patrolHeading);
-        double fdx = Math.sin(radHead);
-        double fdz = Math.cos(radHead);
-        Location ahead = myLoc.clone().add(fdx * 1.2, 0.1, fdz * 1.2);
-        boolean obstacleAhead = ahead.getBlock().getType().isSolid();
+        // 3. Obstacle avoidance in front of heading (checks feet + body)
+        boolean blocked = !isDirectionClear(myLoc, patrolHeading, 1.2);
 
-        if (obstacleAhead || patrolStuckTicks > 10) {
+        if (blocked || patrolStuckTicks > 8) {
             patrolStuckTicks = 0;
-            // Prefer steering towards arena center if available
-            Location center = bot.getPlugin() != null ? bot.getPlugin().getGameManager().getCurrentZoneCenter() : null;
-            if (center != null && ThreadLocalRandom.current().nextDouble() < 0.6) {
-                double cdx = center.getX() - myLoc.getX();
-                double cdz = center.getZ() - myLoc.getZ();
-                patrolHeading = (float) Math.toDegrees(Math.atan2(-cdx, cdz)) + (ThreadLocalRandom.current().nextFloat() * 40f - 20f);
-            } else {
-                patrolHeading += 90f + ThreadLocalRandom.current().nextFloat() * 60f;
-            }
+            patrolHeading = findClearDirection(myLoc, patrolHeading);
         }
 
         // 4. Bind look direction strictly to movement heading
@@ -615,6 +640,41 @@ public class BotAI extends BukkitRunnable {
         double walkSpeed = 0.20 + 0.12 * factor;
         double radMove = Math.toRadians(-patrolHeading);
         bot.moveRel(Math.sin(radMove) * walkSpeed, 0.0, Math.cos(radMove) * walkSpeed);
+    }
+
+    private boolean isDirectionClear(Location loc, float heading, double dist) {
+        if (loc == null || loc.getWorld() == null) return true;
+        double rad = Math.toRadians(-heading);
+        double dx = Math.sin(rad) * dist;
+        double dz = Math.cos(rad) * dist;
+        Location feet = loc.clone().add(dx, 0.2, dz);
+        Location body = loc.clone().add(dx, 1.2, dz);
+        return !feet.getBlock().getType().isSolid() && !body.getBlock().getType().isSolid();
+    }
+
+    private float findClearDirection(Location loc, float currentHeading) {
+        Location center = bot.getPlugin() != null ? bot.getPlugin().getGameManager().getCurrentZoneCenter() : null;
+        float idealHeading = currentHeading;
+        if (center != null) {
+            double cdx = center.getX() - loc.getX();
+            double cdz = center.getZ() - loc.getZ();
+            idealHeading = (float) Math.toDegrees(Math.atan2(-cdx, cdz));
+        }
+
+        // Check ideal heading towards center first
+        if (isDirectionClear(loc, idealHeading, 1.2)) {
+            return idealHeading;
+        }
+
+        // Try alternating angle deviations
+        float[] offsets = {45f, -45f, 90f, -90f, 135f, -135f, 180f};
+        for (float off : offsets) {
+            float test = currentHeading + off;
+            if (isDirectionClear(loc, test, 1.2)) {
+                return test;
+            }
+        }
+        return currentHeading + 180f;
     }
 
     private void tickCooldowns() {
@@ -634,7 +694,7 @@ public class BotAI extends BukkitRunnable {
         Player player = bot.getBukkitPlayer();
         Location myLoc = player.getLocation();
         Player closest = null;
-        double closestDist = 45.0 * 45.0;
+        double closestDist = 65.0 * 65.0;
 
         RoundsPlugin plugin = bot.getPlugin();
         GameTeam myRoundsTeam = (plugin != null) ? plugin.getTeamManager().getPlayerTeam(player.getUniqueId()) : null;

@@ -158,6 +158,7 @@ public class BotManager implements Listener {
         plugin.getGameManager().giveGun(bukkitPlayer);
 
         FakeBot bot = new FakeBot(this, bukkitPlayer, nmsPlayer);
+        bot.resetPhysics();
         if (level != null && level >= 1 && level <= 10) {
             bot.setLevel(level);
         }
@@ -183,6 +184,7 @@ public class BotManager implements Listener {
             }
         }
         for (FakeBot bot : bots.values()) {
+            bot.resetPhysics();
             if (bot.getAi() != null) {
                 bot.getAi().onRoundStart();
             }

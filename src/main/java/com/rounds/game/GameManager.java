@@ -22,6 +22,7 @@ import com.rounds.teams.TeamManager.GameTeam;
 import com.rounds.util.Messages;
 import org.bukkit.GameRule;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import com.rounds.RoundsKeys;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -307,17 +308,25 @@ public class GameManager implements Listener {
             }
         }
 
+        Map<GameTeam, Integer> startTeamMemberCount = new HashMap<>();
         for (Player p : readyPlayers) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             if (team != null) {
-                Location spawn = teamSpawns.get(team);
-                if (spawn == null) {
-                    spawn = getGroundLocation(p.getLocation());
+                Location baseSpawn = teamSpawns.get(team);
+                if (baseSpawn == null) {
+                    baseSpawn = getGroundLocation(p.getLocation());
                 }
-                if (spawn.getWorld() != null) {
-                    spawn.getChunk().load();
+                if (baseSpawn.getWorld() != null) {
+                    baseSpawn.getChunk().load();
                 }
+                int memberIdx = startTeamMemberCount.getOrDefault(team, 0);
+                startTeamMemberCount.put(team, memberIdx + 1);
+                Location spawn = getTeammateSpawnLocation(baseSpawn, memberIdx);
                 p.teleport(spawn);
+                com.rounds.bot.FakeBot bot = (plugin.getBotManager() != null) ? plugin.getBotManager().getBot(p.getName()) : null;
+                if (bot != null) {
+                    bot.resetPhysics();
+                }
                 p.setGameMode(GameMode.ADVENTURE);
                 p.setAllowFlight(false);
                 p.setFlying(false);
@@ -832,14 +841,22 @@ public class GameManager implements Listener {
             plugin.getBotManager().randomizeBotLevels();
         }
 
+        Map<GameTeam, Integer> roundTeamMemberCount = new HashMap<>();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             if (team != null) {
-                Location spawn = teamSpawns.get(team);
-                if (spawn == null) {
-                    spawn = getGroundLocation(p.getLocation());
+                Location baseSpawn = teamSpawns.get(team);
+                if (baseSpawn == null) {
+                    baseSpawn = getGroundLocation(p.getLocation());
                 }
+                int memberIdx = roundTeamMemberCount.getOrDefault(team, 0);
+                roundTeamMemberCount.put(team, memberIdx + 1);
+                Location spawn = getTeammateSpawnLocation(baseSpawn, memberIdx);
                 p.teleport(spawn);
+                com.rounds.bot.FakeBot bot = (plugin.getBotManager() != null) ? plugin.getBotManager().getBot(p.getName()) : null;
+                if (bot != null) {
+                    bot.resetPhysics();
+                }
                 p.setAllowFlight(false);
                 p.setFlying(false);
                 p.getInventory().clear();
@@ -879,6 +896,53 @@ public class GameManager implements Listener {
         if (plugin.getBotManager() != null) {
             plugin.getBotManager().onRoundStart();
         }
+    }
+
+    public Location getTeammateSpawnLocation(Location baseSpawn, int memberIndex) {
+        if (baseSpawn == null || memberIndex <= 0) return baseSpawn != null ? baseSpawn.clone() : null;
+        World world = baseSpawn.getWorld();
+        if (world == null) return baseSpawn.clone();
+
+        // Distribute teammates in rings around the team spawn point:
+        // Ring 1 (indices 1-6): 6 slots at 1.4m radius
+        // Ring 2 (indices 7-18): 12 slots at 2.6m radius
+        double radius;
+        double angle;
+        if (memberIndex <= 6) {
+            radius = 1.4;
+            angle = (memberIndex - 1) * (2.0 * Math.PI / 6.0);
+        } else {
+            radius = 2.6;
+            angle = (memberIndex - 7) * (2.0 * Math.PI / 12.0);
+        }
+
+        double ox = Math.cos(angle) * radius;
+        double oz = Math.sin(angle) * radius;
+
+        Location candidate = baseSpawn.clone().add(ox, 0, oz);
+        Block feet = candidate.getBlock();
+        Block head = candidate.clone().add(0, 1, 0).getBlock();
+        Block floor = candidate.clone().subtract(0, 1, 0).getBlock();
+
+        if (!feet.getType().isSolid() && !head.getType().isSolid() && floor.getType().isSolid()) {
+            return candidate;
+        }
+
+        // Try Y+1 if on a step
+        Block floorUp = feet;
+        Block feetUp = head;
+        Block headUp = candidate.clone().add(0, 2, 0).getBlock();
+        if (floorUp.getType().isSolid() && !feetUp.getType().isSolid() && !headUp.getType().isSolid()) {
+            return candidate.add(0, 1, 0);
+        }
+
+        // Try Y-1 if on a slope
+        Block floorDown = candidate.clone().subtract(0, 2, 0).getBlock();
+        if (floorDown.getType().isSolid() && !floor.getType().isSolid() && !feet.getType().isSolid()) {
+            return candidate.subtract(0, 1, 0);
+        }
+
+        return baseSpawn.clone();
     }
 
     private void pickRandomZoneAndAssignSpawns() {

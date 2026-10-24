@@ -384,7 +384,8 @@ public class BotAI extends BukkitRunnable {
         }
 
         // Airborne / flight check: handles falling or special block launch
-        boolean isAirborneFlight = bot.isPadLaunched() || (!bot.isOnGround() && (bot.getVelY() < -0.35 || bot.getVelY() > 0.40 || player.getFallDistance() > 0.6));
+        boolean isAirborneFlight = bot.isPadLaunched()
+                || (roundWarmupTicks <= 0 && !bot.isOnGround() && (bot.getVelY() < -0.45 || bot.getVelY() > 0.70 || player.getFallDistance() > 1.0));
         if (isAirborneFlight) {
             if (bot.isPadLaunched()) {
                 padCooldown = 600; // Cooldown prevents repeated launch loops

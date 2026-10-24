@@ -235,6 +235,21 @@ public class FakeBot {
         }
     }
 
+    public void resetPhysics() {
+        this.velY = 0.0;
+        this.impulseX = 0.0;
+        this.impulseZ = 0.0;
+        this.padLaunchTicks = 0;
+        ServerPlayer sp = getNmsPlayer();
+        if (sp != null) {
+            sp.setDeltaMovement(Vec3.ZERO);
+        }
+        Player p = getBukkitPlayer();
+        if (p != null) {
+            p.setFallDistance(0f);
+        }
+    }
+
     public void applyJumpPad(double launchHeight) {
         this.velY = launchHeight * 0.2;
         this.padLaunchTicks = 45;
@@ -327,8 +342,9 @@ public class FakeBot {
         if (p.isDead() || !p.isOnline() || p.getGameMode() == GameMode.SPECTATOR) return;
 
         // 1. Pick up external vertical impulses (jump pads, up blocks, explosions)
+        boolean onGround = isOnGround();
         Vec3 delta = sp.getDeltaMovement();
-        if (Math.abs(delta.y) > 0.05) {
+        if (Math.abs(delta.y) > 0.25 || (!onGround && Math.abs(delta.y) > 0.05)) {
             velY = delta.y;
         }
 
@@ -337,7 +353,6 @@ public class FakeBot {
         }
 
         // 2. Ground check
-        boolean onGround = isOnGround();
         if (onGround && velY <= 0.0) {
             padLaunchTicks = 0;
             velY = 0.0;
@@ -366,7 +381,7 @@ public class FakeBot {
             Location aheadUp = ahead.clone().add(0, 1.0, 0);
             Location headSpace = loc.clone().add(0, 2.0, 0);
 
-            boolean obstacleAhead = ahead.getBlock().getType().isSolid() || sp.horizontalCollision;
+            boolean obstacleAhead = ahead.getBlock().getType().isSolid();
             if (obstacleAhead && !aheadUp.getBlock().getType().isSolid() && !headSpace.getBlock().getType().isSolid()) {
                 velY = 0.42; // Minecraft jump velocity
                 impulseX += dirX * 0.18;

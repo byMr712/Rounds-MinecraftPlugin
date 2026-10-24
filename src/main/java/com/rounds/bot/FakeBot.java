@@ -31,9 +31,14 @@ public class FakeBot {
     private double velY = 0.0;
     private double impulseX = 0.0;
     private double impulseZ = 0.0;
+    private int padLaunchTicks = 0;
 
     public double getVelY() {
         return velY;
+    }
+
+    public boolean isPadLaunched() {
+        return padLaunchTicks > 0;
     }
 
     public FakeBot(BotManager manager, Player bukkitPlayer, ServerPlayer nmsPlayer) {
@@ -198,6 +203,7 @@ public class FakeBot {
 
     public void applyJumpPad(double launchHeight) {
         this.velY = launchHeight * 0.2;
+        this.padLaunchTicks = 45;
         Player p = getBukkitPlayer();
         if (p != null) {
             Location center = manager.getPlugin() != null ? manager.getPlugin().getGameManager().getCurrentZoneCenter() : null;
@@ -286,28 +292,43 @@ public class FakeBot {
             velY = delta.y;
         }
 
+        if (padLaunchTicks > 0) {
+            padLaunchTicks--;
+        }
+
         // 2. Ground check
         boolean onGround = isOnGround();
-        if (!onGround || velY > 0.0) {
-            velY = Math.max(velY - 0.08, -3.92) * 0.98;
-        } else {
+        if (onGround && velY <= 0.0) {
+            padLaunchTicks = 0;
             velY = 0.0;
             impulseX = 0.0;
             impulseZ = 0.0;
+        } else {
+            velY = Math.max(velY - 0.08, -3.92) * 0.98;
         }
 
-        // 3. Auto-jump over 1-block obstacles when moving on ground (not in mid-air!)
+        // Smooth step down: if walking down stairs/slope, smoothly descend to the lower block
+        if (!onGround && velY <= 0.0 && padLaunchTicks <= 0) {
+            Location checkStepBelow = p.getLocation().clone().subtract(0, 1.1, 0);
+            if (checkStepBelow.getBlock().getType().isSolid()) {
+                velY = -0.32;
+            }
+        }
+
+        // 3. Auto-jump over 1-block obstacles/steps when moving on ground (not in mid-air!)
         if (onGround && velY <= 0.0 && (Math.abs(dx) > 0.01 || Math.abs(dz) > 0.01)) {
             Location loc = p.getLocation();
-            Location ahead = loc.clone().add(dx * 1.5, 0.1, dz * 1.5);
+            double moveLen = Math.sqrt(dx * dx + dz * dz);
+            double stepDist = Math.max(moveLen * 1.5, 0.55);
+            Location ahead = loc.clone().add((dx / moveLen) * stepDist, 0.2, (dz / moveLen) * stepDist);
             Location aheadUp = ahead.clone().add(0, 1.0, 0);
             Location headSpace = loc.clone().add(0, 2.0, 0);
 
-            // Only jump if step in front is 1 block solid AND space above it is clear (NOT a high wall!)
-            if (ahead.getBlock().getType().isSolid()
-                    && !aheadUp.getBlock().getType().isSolid()
-                    && !headSpace.getBlock().getType().isSolid()) {
+            boolean obstacleAhead = ahead.getBlock().getType().isSolid() || sp.horizontalCollision;
+            if (obstacleAhead && !aheadUp.getBlock().getType().isSolid() && !headSpace.getBlock().getType().isSolid()) {
                 velY = 0.42; // Minecraft jump velocity
+                impulseX += (dx / moveLen) * 0.18;
+                impulseZ += (dz / moveLen) * 0.18;
             }
         }
 
@@ -339,9 +360,25 @@ public class FakeBot {
         Location locAt = to.getBlock().getLocation();
         BlockListener bl = manager.getPlugin().getBlockListener();
         if (bl != null) {
-            if (bl.isLocationTouchingJumpBlock(to) || bl.isJumpBlock(locBelow) || bl.isJumpBlock(locAt)) {
-                bl.handleJumpBlock(p);
-                if (ai != null) ai.setPadCooldown(600);
+            boolean touchingJump = bl.isLocationTouchingJumpBlock(to) || bl.isJumpBlock(locBelow) || bl.isJumpBlock(locAt);
+            if (touchingJump) {
+                if (ai != null && ai.isPadBanned()) {
+                    // Start of round ban active: Jump block does NOT trigger!
+                    // Safely slide the bot away from the jump block towards the arena center
+                    Location center = manager.getPlugin() != null ? manager.getPlugin().getGameManager().getCurrentZoneCenter() : null;
+                    if (center != null && center.getWorld() != null && center.getWorld().equals(p.getWorld())) {
+                        double dxCenter = center.getX() - p.getLocation().getX();
+                        double dzCenter = center.getZ() - p.getLocation().getZ();
+                        double d = Math.sqrt(dxCenter * dxCenter + dzCenter * dzCenter);
+                        if (d > 0.5) {
+                            impulseX = (dxCenter / d) * 0.25;
+                            impulseZ = (dzCenter / d) * 0.25;
+                        }
+                    }
+                } else {
+                    bl.handleJumpBlock(p);
+                    if (ai != null) ai.setPadCooldown(600);
+                }
             }
             if (bl.isLocationTouchingUpBlock(to) || bl.isUpBlock(locBelow) || bl.isUpBlock(locAt)) {
                 bl.handleUpBlock(p);

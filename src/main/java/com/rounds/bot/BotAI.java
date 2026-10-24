@@ -29,17 +29,26 @@ public class BotAI extends BukkitRunnable {
         BALANCED
     }
 
+    public enum BotPlaystyle {
+        AGGRESSIVE_FLANKER,
+        TACTICAL_SNIPER,
+        DEFENSIVE_TURTLE,
+        ERRATIC_BRAWLER
+    }
+
     public static final double MAX_VISION_DISTANCE_SQ = 3600.0; // 60 * 60 (covers entire arena)
     public static final double PROXIMITY_HEARING_DISTANCE_SQ = 6.25; // 2.5 * 2.5
     public static final double FOV_HALF_ANGLE_DEG = 70.0; // 140 degree FOV cone
     public static final double LOW_HEALTH_COVER_THRESHOLD = 0.20; // 20% HP (user requested: 15-20%)
 
     private final FakeBot bot;
+    private BotPlaystyle playstyle = BotPlaystyle.AGGRESSIVE_FLANKER;
     private int tickCount = 0;
     private int strafeDir = 1;
     private int dirTicks = 0;
     private int shootCooldown = 0;
-    private int padCooldown = 300; // 15s cooldown at spawn so bots never rush to pad at round start
+    private int padCooldown = 100;
+    private int tacticalJumpCooldown = 0;
     private int coverSearchCooldown = 0;
     private int coverSeekTicks = 0;
 
@@ -80,14 +89,38 @@ public class BotAI extends BukkitRunnable {
 
     public BotAI(FakeBot bot) {
         this.bot = bot;
-        this.padCooldown = 300;
+        this.padCooldown = 100;
     }
 
     public void onRoundStart() {
-        this.padCooldown = 300; // Strictly 15s pad cooldown at round start
+        // Random start-of-round pad ban between 3s (60t) and 15s (300t), avg ~5s (100t)
+        this.padCooldown = 60 + (int) (240.0 * Math.pow(ThreadLocalRandom.current().nextDouble(), 5.0));
+        this.playstyle = BotPlaystyle.values()[ThreadLocalRandom.current().nextInt(BotPlaystyle.values().length)];
         this.roundWarmupTicks = ThreadLocalRandom.current().nextInt(25, 45); // 1.25 - 2.25s warmup reaction
-        this.personalOffsetX = ThreadLocalRandom.current().nextDouble(-15.0, 15.0);
-        this.personalOffsetZ = ThreadLocalRandom.current().nextDouble(-15.0, 15.0);
+        this.tacticalJumpCooldown = 0;
+
+        // Differentiated patrol offsets based on playstyle
+        switch (playstyle) {
+            case AGGRESSIVE_FLANKER -> {
+                double ang = ThreadLocalRandom.current().nextDouble(0, 2 * Math.PI);
+                double rad = ThreadLocalRandom.current().nextDouble(15.0, 22.0);
+                this.personalOffsetX = Math.cos(ang) * rad;
+                this.personalOffsetZ = Math.sin(ang) * rad;
+            }
+            case TACTICAL_SNIPER -> {
+                this.personalOffsetX = (ThreadLocalRandom.current().nextBoolean() ? 1 : -1) * ThreadLocalRandom.current().nextDouble(14.0, 20.0);
+                this.personalOffsetZ = (ThreadLocalRandom.current().nextBoolean() ? 1 : -1) * ThreadLocalRandom.current().nextDouble(14.0, 20.0);
+            }
+            case ERRATIC_BRAWLER -> {
+                this.personalOffsetX = ThreadLocalRandom.current().nextDouble(-10.0, 10.0);
+                this.personalOffsetZ = ThreadLocalRandom.current().nextDouble(-10.0, 10.0);
+            }
+            case DEFENSIVE_TURTLE -> {
+                this.personalOffsetX = ThreadLocalRandom.current().nextDouble(-12.0, 12.0);
+                this.personalOffsetZ = ThreadLocalRandom.current().nextDouble(-12.0, 12.0);
+            }
+        }
+
         this.patrolHeading = Float.NaN;
         this.lockedHeadingTicks = 0;
         this.consecutiveBounces = 0;
@@ -100,6 +133,10 @@ public class BotAI extends BukkitRunnable {
         this.isSeekingCover = false;
         this.isAmbushing = false;
         this.coverLoc = null;
+    }
+
+    public boolean isPadBanned() {
+        return padCooldown > 0;
     }
 
     public void setPadCooldown(int ticks) {
@@ -245,9 +282,9 @@ public class BotAI extends BukkitRunnable {
             return;
         }
 
-        // Global airborne check: whenever bot is launched into air (e.g. jump pad), push towards arena center and apply 30s cooldown
-        boolean airborne = !bot.isOnGround() || Math.abs(bot.getVelY()) > 0.1;
-        if (airborne) {
+        // Jump pad flight check: only active when actually launched by a pad or launched high upwards (never when simply stepping down stairs!)
+        boolean inPadFlight = bot.isPadLaunched() || (bot.getVelY() > 0.45 && !bot.isOnGround());
+        if (inPadFlight) {
             padCooldown = 600; // 30s cooldown prevents repeated launch loops
             Location center = bot.getPlugin() != null ? bot.getPlugin().getGameManager().getCurrentZoneCenter() : null;
             if (center == null || center.getWorld() == null || !center.getWorld().equals(player.getWorld())) {
@@ -462,8 +499,13 @@ public class BotAI extends BukkitRunnable {
         int minShootCooldown = 4 + (int) ((1.0 - factor) * 14.0);
         // Evasion strafe agility: 0.35 at lvl 10, 0.08 at lvl 1 (-90% evasion)
         double strafeSpeed = 0.05 + 0.30 * factor;
-        // Direction change / juking: every 8-12 ticks at lvl 10, 40+ ticks at lvl 1 (predictable)
-        int jukeThreshold = (int) (8 + (1.0 - factor) * 32.0);
+        // Direction change / juking: tailored by playstyle and factor
+        int jukeThreshold = switch (playstyle) {
+            case ERRATIC_BRAWLER -> (int) (6 + (1.0 - factor) * 12.0);
+            case AGGRESSIVE_FLANKER -> (int) (10 + (1.0 - factor) * 18.0);
+            case DEFENSIVE_TURTLE -> (int) (18 + (1.0 - factor) * 28.0);
+            case TACTICAL_SNIPER -> (int) (24 + (1.0 - factor) * 36.0);
+        };
 
         // Maximum shooting engagement distance: lvl 1 won't shoot beyond 13m, lvl 10 shoots up to 40m
         double maxShootDist = 10.0 + 30.0 * factor;
@@ -499,19 +541,47 @@ public class BotAI extends BukkitRunnable {
             boolean smartRetreat = (healthRatio < 0.37) && (ThreadLocalRandom.current().nextDouble() < (0.2 + 0.8 * factor));
             if (smartRetreat) {
                 tactic = CombatTactic.RETREAT;
+            } else if (data != null && data.ammo <= 0) {
+                // Tactical reload: avoid charging without ammo
+                tactic = (playstyle == BotPlaystyle.DEFENSIVE_TURTLE) ? CombatTactic.SHIELD : CombatTactic.RETREAT;
             } else {
                 boolean blindRush = ThreadLocalRandom.current().nextDouble() > factor;
-                if (blindRush) {
+                if (blindRush && playstyle != BotPlaystyle.TACTICAL_SNIPER) {
                     tactic = CombatTactic.RUSH;
                 } else {
-                    if (dist3D > 14.0) {
+                    double rushThreshold = switch (playstyle) {
+                        case AGGRESSIVE_FLANKER -> 9.0;
+                        case TACTICAL_SNIPER -> 24.0;
+                        case DEFENSIVE_TURTLE -> 15.0;
+                        case ERRATIC_BRAWLER -> 11.0;
+                    };
+                    double retreatThreshold = switch (playstyle) {
+                        case AGGRESSIVE_FLANKER -> 4.0;
+                        case TACTICAL_SNIPER -> 10.0;
+                        case DEFENSIVE_TURTLE -> 7.0;
+                        case ERRATIC_BRAWLER -> 4.5;
+                    };
+                    if (dist3D > rushThreshold) {
                         tactic = CombatTactic.RUSH;
-                    } else if (dist3D < 5.0) {
-                        tactic = CombatTactic.RETREAT;
+                    } else if (dist3D < retreatThreshold) {
+                        tactic = (playstyle == BotPlaystyle.DEFENSIVE_TURTLE) ? CombatTactic.SHIELD : CombatTactic.RETREAT;
                     } else {
-                        tactic = (tickCount % 16 < 4) ? CombatTactic.SNIPE : CombatTactic.STRAFE;
+                        tactic = (playstyle == BotPlaystyle.TACTICAL_SNIPER || tickCount % 16 < 4) ? CombatTactic.SNIPE : CombatTactic.STRAFE;
                     }
                 }
+            }
+        }
+
+        // Tactical combat jumping (dodging bullet fire while strafing/moving)
+        if (bot.isOnGround() && tacticalJumpCooldown <= 0 && tactic != CombatTactic.SNIPE) {
+            double jumpChance = switch (playstyle) {
+                case ERRATIC_BRAWLER -> 0.08 * factor;
+                case AGGRESSIVE_FLANKER -> 0.04 * factor;
+                default -> 0.01 * factor;
+            };
+            if (ThreadLocalRandom.current().nextDouble() < jumpChance) {
+                bot.getBukkitPlayer().setVelocity(bot.getBukkitPlayer().getVelocity().setY(0.38));
+                tacticalJumpCooldown = 20;
             }
         }
 
@@ -784,22 +854,27 @@ public class BotAI extends BukkitRunnable {
 
         Location feet = loc.clone().add(dx, 0.2, dz);
         Location body = loc.clone().add(dx, 1.2, dz);
+        Location head = loc.clone().add(dx, 2.2, dz);
+        Location overhead = loc.clone().add(0, 2.1, 0);
 
-        // 1. Center ray solid check
-        if (feet.getBlock().getType().isSolid() || body.getBlock().getType().isSolid()) {
+        boolean feetSolid = feet.getBlock().getType().isSolid();
+        boolean bodySolid = body.getBlock().getType().isSolid();
+        boolean headSolid = head.getBlock().getType().isSolid();
+        boolean overheadBlocked = overhead.getBlock().getType().isSolid();
+
+        // 1. Center ray solid check: 1-block steps are passable if body & head are clear!
+        if (bodySolid || headSolid || (feetSolid && overheadBlocked)) {
             return false;
         }
 
         // 2. Left and right shoulders width check (prevents jamming into narrow diagonal gaps)
-        Location feetLeft = loc.clone().add(dx - perpX, 0.2, dz - perpZ);
         Location bodyLeft = loc.clone().add(dx - perpX, 1.2, dz - perpZ);
-        if (feetLeft.getBlock().getType().isSolid() || bodyLeft.getBlock().getType().isSolid()) {
+        if (bodyLeft.getBlock().getType().isSolid()) {
             return false;
         }
 
-        Location feetRight = loc.clone().add(dx + perpX, 0.2, dz + perpZ);
         Location bodyRight = loc.clone().add(dx + perpX, 1.2, dz + perpZ);
-        if (feetRight.getBlock().getType().isSolid() || bodyRight.getBlock().getType().isSolid()) {
+        if (bodyRight.getBlock().getType().isSolid()) {
             return false;
         }
 
@@ -807,9 +882,9 @@ public class BotAI extends BukkitRunnable {
         if (dist >= 0.8) {
             double midDx = dx * 0.5;
             double midDz = dz * 0.5;
-            Location midFeetLeft = loc.clone().add(midDx - perpX, 0.2, midDz - perpZ);
-            Location midFeetRight = loc.clone().add(midDx + perpX, 0.2, midDz + perpZ);
-            if (midFeetLeft.getBlock().getType().isSolid() || midFeetRight.getBlock().getType().isSolid()) {
+            Location midBodyLeft = loc.clone().add(midDx - perpX, 1.2, midDz - perpZ);
+            Location midBodyRight = loc.clone().add(midDx + perpX, 1.2, midDz + perpZ);
+            if (midBodyLeft.getBlock().getType().isSolid() || midBodyRight.getBlock().getType().isSolid()) {
                 return false;
             }
         }
@@ -822,19 +897,17 @@ public class BotAI extends BukkitRunnable {
         int targetZ = feet.getBlockZ();
 
         if (curX != targetX && curZ != targetZ) {
-            boolean corner1Solid = w.getBlockAt(targetX, curY, curZ).getType().isSolid()
-                    || w.getBlockAt(targetX, curY + 1, curZ).getType().isSolid();
-            boolean corner2Solid = w.getBlockAt(curX, curY, targetZ).getType().isSolid()
-                    || w.getBlockAt(curX, curY + 1, targetZ).getType().isSolid();
+            boolean corner1Solid = w.getBlockAt(targetX, curY + 1, curZ).getType().isSolid();
+            boolean corner2Solid = w.getBlockAt(curX, curY + 1, targetZ).getType().isSolid();
             if (corner1Solid && corner2Solid) {
                 return false;
             }
         }
 
-        // Avoid jump blocks and up blocks unless actively seeking one in combat
+        // 5. Avoid jump blocks, up blocks, and drop-offs leading onto them
         com.rounds.blocks.BlockListener bl = bot.getPlugin() != null ? bot.getPlugin().getBlockListener() : null;
         if (bl != null && seekingPadLoc == null) {
-            double[] stepFracs = (dist > 0.7) ? new double[]{0.4, 0.8, 1.0} : new double[]{1.0};
+            double[] stepFracs = (dist > 0.7) ? new double[]{0.35, 0.7, 1.0} : new double[]{1.0};
             for (double frac : stepFracs) {
                 Location checkLoc = loc.clone().add(dx * frac, 0.1, dz * frac);
                 Location checkBelow = checkLoc.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getLocation();
@@ -842,6 +915,13 @@ public class BotAI extends BukkitRunnable {
                 if (bl.isLocationTouchingJumpBlock(checkLoc) || bl.isJumpBlock(checkBelow) || bl.isJumpBlock(checkAt)
                         || bl.isLocationTouchingUpBlock(checkLoc) || bl.isUpBlock(checkBelow) || bl.isUpBlock(checkAt)) {
                     return false;
+                }
+                // Check drop-offs 1, 2, 3 blocks below (e.g. edge of spawn dropping onto a jump pad)
+                for (int downY = 1; downY <= 3; downY++) {
+                    Location checkDrop = checkLoc.clone().subtract(0, downY, 0).getBlock().getLocation();
+                    if (bl.isJumpBlock(checkDrop) || bl.isUpBlock(checkDrop)) {
+                        return false;
+                    }
                 }
             }
         }
@@ -929,6 +1009,9 @@ public class BotAI extends BukkitRunnable {
         }
         if (coverSearchCooldown > 0) {
             coverSearchCooldown--;
+        }
+        if (tacticalJumpCooldown > 0) {
+            tacticalJumpCooldown--;
         }
         tickCount++;
     }

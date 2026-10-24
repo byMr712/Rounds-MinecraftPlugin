@@ -732,11 +732,30 @@ public class GameManager implements Listener {
         if (wheelEnabled && musicTick % 120 == 0) {
             plugin.getCardGUI().rotateAllCards();
         }
+
+        // Anti-fall and flight enforcement for Spectators during card selection
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            if (p.getGameMode() == GameMode.SPECTATOR) {
+                if (!p.getAllowFlight()) p.setAllowFlight(true);
+                if (!p.isFlying()) p.setFlying(true);
+
+                Location safe = null;
+                GameTeam t = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+                if (t != null) safe = teamSpawns.get(t);
+                if (safe == null) safe = currentZoneCenter;
+                if (safe != null && safe.getWorld() != null && safe.getWorld().equals(p.getWorld())) {
+                    if (p.getLocation().getY() < safe.getY() - 1.5) {
+                        p.teleport(safe.clone().add(0, 1.2, 0));
+                        p.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
+                    }
+                }
+            }
+        }
+
         if (musicTick % 40 == 0) {
             sendSpectatorActionbar();
             for (Player p : plugin.getServer().getOnlinePlayers()) {
-                if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) == null
-                        && !deadPlayers.contains(p.getUniqueId())) {
+                if (!plugin.getCardManager().isPendingPick(p.getUniqueId())) {
                     sendEnemyPickingCardsTitle(p, 60);
                 }
             }
@@ -753,7 +772,7 @@ public class GameManager implements Listener {
         }
     }
 
-    private void sendEnemyPickingCardsTitle(Player p, int stay) {
+    public void sendEnemyPickingCardsTitle(Player p, int stay) {
         String full = Messages.get("game.enemy-picking-cards");
         String[] parts = full.split("\n", 2);
         p.sendTitle(ChatColor.YELLOW + parts[0], parts.length > 1 ? ChatColor.YELLOW + parts[1] : "", 10, stay, 20);
@@ -1054,10 +1073,9 @@ public class GameManager implements Listener {
             gameActive = false;
             saveState();
             removeScoreboard();
-            resetAllNameColors();
-            restoreNameTags();
             plugin.getTeamManager().clearAll();
             plugin.getPlayerDataManager().clearActivePlayers();
+            resetAllNameColors();
             plugin.getCardManager().resetAllCards();
             GunItem.resetRoundState();
             RoundsEntities.clearAllState();
@@ -1071,12 +1089,14 @@ public class GameManager implements Listener {
                 p.setInvulnerable(false);
                 p.setNoDamageTicks(0);
                 p.setGameMode(GameMode.ADVENTURE);
+                p.setAllowFlight(false);
+                p.setFlying(false);
                 clearCardEffects(p);
                 removeSnowballModifiers(p);
                 Location lobby = plugin.getBlockListener().getBlockStorage().getLobbyBlock();
                 if (lobby != null) p.teleport(lobby.clone().add(0, 1, 0));
             }
-        }, 200L);
+        }, 100L);
     }
 
     private void openCardGUIs() {
@@ -1085,38 +1105,46 @@ public class GameManager implements Listener {
 
     private void openCardGUIs(boolean allTeams) {
         removeDarkness();
-        for (Player p : plugin.getServer().getOnlinePlayers()) {
-            GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-            if (team == null) {
-                p.setGameMode(GameMode.SPECTATOR);
-                p.setAllowFlight(true);
-                p.setFlying(true);
-                p.setInvulnerable(true);
-            } else {
-                p.setGameMode(GameMode.ADVENTURE);
-                p.setAllowFlight(false);
-                p.setFlying(false);
-                p.setInvulnerable(true);
-            }
-        }
         Set<UUID> pickers = new HashSet<>();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             boolean shouldPick = team != null && (allTeams || losingTeams.contains(team) || pendingCardJoiners.contains(p.getUniqueId()));
             if (shouldPick) {
                 pickers.add(p.getUniqueId());
+            }
+        }
+
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            if (pickers.contains(p.getUniqueId())) {
+                p.setGameMode(GameMode.ADVENTURE);
+                p.setAllowFlight(false);
+                p.setFlying(false);
+                p.setInvulnerable(true);
+                GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
                 if (!p.isDead()) {
                     plugin.getCardManager().openCardSelection(p, team);
                 }
+            } else {
+                // Not picking this round: must be in Spectator mode until picks are done
+                p.setGameMode(GameMode.SPECTATOR);
+                p.setAllowFlight(true);
+                p.setFlying(true);
+                p.setInvulnerable(true);
+                p.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
+                Location safe = null;
+                GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+                if (team != null) safe = teamSpawns.get(team);
+                if (safe == null) safe = currentZoneCenter;
+                if (safe != null && safe.getWorld() != null && safe.getWorld().equals(p.getWorld())) {
+                    p.teleport(safe.clone().add(0, 1.2, 0));
+                }
+                sendEnemyPickingCardsTitle(p, 100);
             }
         }
         pendingCardJoiners.clear();
         returningJoiners.clear();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
-            if (!pickers.contains(p.getUniqueId())) {
-                sendEnemyPickingCardsTitle(p, 100);
-            }
         }
     }
 
@@ -1425,10 +1453,9 @@ public class GameManager implements Listener {
         state = GameState.WAITING;
         saveState();
         removeScoreboard();
-        resetAllNameColors();
-        restoreNameTags();
         plugin.getTeamManager().clearAll();
         plugin.getPlayerDataManager().clearActivePlayers();
+        resetAllNameColors();
         Location lobbyLoc = plugin.getBlockListener().getBlockStorage().getLobbyBlock();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             PlayerData data = plugin.getPlayerDataManager().getData(p.getUniqueId());
@@ -1648,14 +1675,28 @@ public class GameManager implements Listener {
     }
 
     public void resetAllNameColors() {
-        if (!plugin.getRoundsConfig().isColorNicknames()) return;
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             p.setPlayerListName(p.getName());
+            if (tabCompat.isActive()) {
+                tabCompat.resetName(p);
+                tabCompat.showNametag(p);
+            }
         }
         Scoreboard mainSb = Bukkit.getScoreboardManager().getMainScoreboard();
-        for (GameTeam gt : GameTeam.values()) {
-            org.bukkit.scoreboard.Team team = mainSb.getTeam("rounds_" + gt.name().toLowerCase());
-            if (team != null) team.unregister();
+        for (org.bukkit.scoreboard.Team t : new ArrayList<>(mainSb.getTeams())) {
+            if (t.getName().startsWith("rounds_")) {
+                t.unregister();
+            }
+        }
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            Scoreboard pSb = p.getScoreboard();
+            if (pSb != null && !pSb.equals(mainSb)) {
+                for (org.bukkit.scoreboard.Team t : new ArrayList<>(pSb.getTeams())) {
+                    if (t.getName().startsWith("rounds_")) {
+                        t.unregister();
+                    }
+                }
+            }
         }
     }
 

@@ -1037,14 +1037,10 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             return;
         }
 
-        // 2. /rdebug bot (with no extra args -> spawn 1 bot with auto name & team)
+        // 2. /rdebug bot (with no extra args -> show usage, do NOT spawn)
         if (args.length == 1) {
-            com.rounds.bot.FakeBot bot = bm.spawnBot(null, null, loc);
-            if (bot != null) {
-                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Spawned bot " + ChatColor.AQUA + bot.getName() +
-                        ChatColor.GREEN + " on team " + ChatColor.GOLD + bot.getTeamName() +
-                        ChatColor.GRAY + " [Level: " + bot.getLevel() + " (" + (bot.getLevel() * 10) + "%)]");
-            }
+            sender.sendMessage(ChatColor.RED + "Usage: /rdebug bot <spawn|despawn|level> [args]");
+            sender.sendMessage(ChatColor.GRAY + "Example: /rdebug bot spawn");
             return;
         }
 

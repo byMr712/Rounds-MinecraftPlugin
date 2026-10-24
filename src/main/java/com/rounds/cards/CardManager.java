@@ -5,6 +5,7 @@ import com.rounds.player.PlayerData;
 import com.rounds.teams.TeamManager.GameTeam;
 import com.rounds.util.Messages;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
@@ -64,6 +65,14 @@ public class CardManager {
 
         if (allPicksDone()) {
             plugin.getGameManager().onAllCardsPicked();
+        } else {
+            // Player has chosen, but other players/bots are still selecting: switch to Spectator mode
+            player.setGameMode(GameMode.SPECTATOR);
+            player.setAllowFlight(true);
+            player.setFlying(true);
+            player.setInvulnerable(true);
+            player.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
+            plugin.getGameManager().sendEnemyPickingCardsTitle(player, 100);
         }
     }
 

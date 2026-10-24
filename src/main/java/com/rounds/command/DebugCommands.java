@@ -967,11 +967,16 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     private static final List<String> TEAM_COLORS = Arrays.asList("BLUE", "RED", "YELLOW", "GREEN");
 
     private void handleMcp(CommandSender sender, String[] args) {
-        if (!sender.hasPermission("rounds.admin")) {
-            sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
+        boolean isAdmin = sender.hasPermission("rounds.admin");
+        if (args.length >= 2 && args[1].equalsIgnoreCase("blocks")) {
+            plugin.getBlockListener().broadcastMapBlocks();
             return;
         }
         if (args.length < 3) {
+            if (!isAdmin) {
+                sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
+                return;
+            }
             sender.sendMessage(ChatColor.YELLOW + "Usage: /rdebug mcp <bot_name> <draft|pick|give|reset|cards|stats|block|shoot|heal> [args...]");
             return;
         }
@@ -984,6 +989,14 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
 
         String action = args[2].toLowerCase();
+        if (!isAdmin) {
+            boolean isSelfPick = (sender instanceof Player p && p.equals(target)
+                    && (action.equals("pick") || action.equals("pickcard") || action.equals("select")));
+            if (!isSelfPick) {
+                sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
+                return;
+            }
+        }
         switch (action) {
             case "draft", "opendraft", "open" -> {
                 GameTeam team = plugin.getTeamManager().getPlayerTeam(target.getUniqueId());

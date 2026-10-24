@@ -64,6 +64,20 @@ public class BlockListener implements Listener {
 
     public BlockStorage getBlockStorage() { return blockStorage; }
     public Set<GameTeam> getJoinBlockTeams() { return new HashSet<>(joinBlocks.values()); }
+    public Set<Location> getJumpBlocks() { return Collections.unmodifiableSet(jumpBlocks); }
+    public Set<Location> getUpBlocks() { return Collections.unmodifiableSet(upBlocks); }
+
+    public void broadcastMapBlocks() {
+        StringBuilder sb = new StringBuilder("[ROUNDS_MAP] JUMP:");
+        for (Location loc : jumpBlocks) {
+            sb.append(loc.getBlockX()).append(",").append(loc.getBlockY()).append(",").append(loc.getBlockZ()).append(";");
+        }
+        sb.append(" | UP:");
+        for (Location loc : upBlocks) {
+            sb.append(loc.getBlockX()).append(",").append(loc.getBlockY()).append(",").append(loc.getBlockZ()).append(";");
+        }
+        plugin.getServer().broadcastMessage(sb.toString());
+    }
 
     public Location getJumpPos1() { return jumpPos1; }
     public Location getJumpPos2() { return jumpPos2; }

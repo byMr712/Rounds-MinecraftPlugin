@@ -753,6 +753,7 @@ public class GameManager implements Listener {
         autoDeathNextIsKill = false;
 
         plugin.getServer().broadcastMessage(ChatColor.YELLOW + Messages.get("game.round-start", currentRound));
+        plugin.getBlockListener().broadcastMapBlocks();
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());

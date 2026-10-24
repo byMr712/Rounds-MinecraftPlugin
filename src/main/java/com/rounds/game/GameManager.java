@@ -2,6 +2,7 @@ package com.rounds.game;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Locale;
@@ -34,6 +35,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -74,6 +76,26 @@ public class GameManager implements Listener {
     private final Map<GameRule<?>, Object> savedGameRules = new HashMap<>();
     private final Map<GameTeam, Location> teamSpawns = new HashMap<>();
     private Location currentZoneCenter = null;
+
+    private static class WrongMapTeleportTask {
+        final UUID playerId;
+        final int startRound;
+        final int startGeneration;
+        final Location startZoneCenter;
+        final long finishTimeMs;
+        int lastAnnouncedSecond;
+
+        WrongMapTeleportTask(UUID playerId, int startRound, int startGeneration, Location startZoneCenter) {
+            this.playerId = playerId;
+            this.startRound = startRound;
+            this.startGeneration = startGeneration;
+            this.startZoneCenter = startZoneCenter != null ? startZoneCenter.clone() : null;
+            this.finishTimeMs = System.currentTimeMillis() + 5000L;
+            this.lastAnnouncedSecond = 5;
+        }
+    }
+
+    private final Map<UUID, WrongMapTeleportTask> wrongMapTasks = new HashMap<>();
     private final Map<UUID, Location> chameleonLastLoc = new HashMap<>();
     private final Map<UUID, Integer> chameleonStillTicks = new HashMap<>();
     private static final UUID SNOWBALL_MOD_ID = UUID.nameUUIDFromBytes("rounds_snowball".getBytes());
@@ -217,7 +239,6 @@ public class GameManager implements Listener {
             if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) == null) {
                 p.setGameMode(GameMode.SPECTATOR);
                 p.setInvulnerable(true);
-                if (currentZoneCenter != null) p.teleport(currentZoneCenter);
             }
         }
 
@@ -273,7 +294,6 @@ public class GameManager implements Listener {
                 p.setAllowFlight(true);
                 p.setFlying(true);
                 p.setInvulnerable(true);
-                if (currentZoneCenter != null) p.teleport(currentZoneCenter);
             }
         }
 
@@ -685,6 +705,7 @@ public class GameManager implements Listener {
         if (musicTick % 10 == 0) {
             checkRoundEnd();
             updateAllPlayerNametags();
+            tickWrongMapCheck();
         }
         if (musicTick % 20 == 0) {
             applyPeriodicEffects();
@@ -922,6 +943,7 @@ public class GameManager implements Listener {
      * Вызывается при конце раунда, конце игры и /rdebug stop.
      */
     public void cleanupRoundCombatState() {
+        cancelAllWrongMapTasks(state == GameState.WAITING || state == GameState.GAME_END ? "game-ended" : "round-ended");
         cancelScheduledTasks();
         removeAllPhantoms();
         RoundsEntities.clearAllState();
@@ -1002,7 +1024,7 @@ public class GameManager implements Listener {
                     p.setSaturation(5.0f);
                     p.setExhaustion(0f);
                 } else {
-                    if (currentZoneCenter != null) p.teleport(currentZoneCenter);
+                    p.setGameMode(GameMode.SPECTATOR);
                 }
             }
             openCardGUIs();
@@ -1039,7 +1061,7 @@ public class GameManager implements Listener {
                     p.setSaturation(5.0f);
                     p.setExhaustion(0f);
                 } else {
-                    if (currentZoneCenter != null) p.teleport(currentZoneCenter);
+                    p.setGameMode(GameMode.SPECTATOR);
                 }
             }
             openCardGUIs(true);
@@ -1383,6 +1405,211 @@ public class GameManager implements Listener {
             player.setSaturation(5.0f);
             player.setExhaustion(0f);
         }, plugin.getRoundsConfig().getRespawnDelayTicks());
+    }
+
+    @EventHandler
+    public void onPlayerTeleport(PlayerTeleportEvent event) {
+        if (state != GameState.PLAYING) return;
+        Player p = event.getPlayer();
+        GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+        if (team == null || p.getGameMode() == GameMode.SPECTATOR || deadPlayers.contains(p.getUniqueId()) || p.isDead()) return;
+
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (state == GameState.PLAYING && isPlayerOnWrongMap(p)) {
+                triggerWrongMapTask(p);
+            }
+        });
+    }
+
+    public boolean isPlayerOnWrongMap(Player p) {
+        if (p == null || currentZoneCenter == null || currentZoneCenter.getWorld() == null) {
+            return false;
+        }
+        Location loc = p.getLocation();
+        if (loc.getWorld() == null) return false;
+
+        BlockStorage bs = plugin.getBlockListener().getBlockStorage();
+        if (bs == null) return false;
+
+        // 1. If player is inside current map zone, they are safe
+        BlockStorage.MapBlock currentZone = null;
+        for (BlockStorage.MapBlock mb : bs.getMapBlocks()) {
+            if (mb.centerEquals(currentZoneCenter)) {
+                currentZone = mb;
+                break;
+            }
+        }
+        if (currentZone != null && currentZone.center.getWorld() != null && currentZone.center.getWorld().equals(loc.getWorld())) {
+            int half = currentZone.size / 2;
+            if (Math.abs(loc.getBlockX() - currentZone.center.getBlockX()) <= half
+                    && Math.abs(loc.getBlockZ() - currentZone.center.getBlockZ()) <= half) {
+                return false;
+            }
+        } else if (currentZone == null && loc.getWorld().equals(currentZoneCenter.getWorld())) {
+            if (loc.distanceSquared(currentZoneCenter) <= 2500) return false;
+        }
+
+        // 2. Check if player is near another map's center or inside another map zone
+        for (BlockStorage.MapBlock mb : bs.getMapBlocks()) {
+            if (mb.centerEquals(currentZoneCenter)) continue;
+            if (mb.center.getWorld() == null || !mb.center.getWorld().equals(loc.getWorld())) continue;
+
+            if (mb.center.distanceSquared(loc) <= 36.0) {
+                return true;
+            }
+            int half = mb.size / 2;
+            if (Math.abs(loc.getBlockX() - mb.center.getBlockX()) <= half
+                    && Math.abs(loc.getBlockZ() - mb.center.getBlockZ()) <= half) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private String checkCancellationReason(WrongMapTeleportTask task, Player p) {
+        if (task.startGeneration != gameGeneration || !gameActive || state == GameState.WAITING || state == GameState.GAME_END) {
+            return "game-ended";
+        }
+        if (state != GameState.PLAYING || currentRound != task.startRound) {
+            return "round-ended";
+        }
+        if (currentZoneCenter == null || task.startZoneCenter == null
+                || !task.startZoneCenter.getWorld().equals(currentZoneCenter.getWorld())
+                || task.startZoneCenter.getBlockX() != currentZoneCenter.getBlockX()
+                || task.startZoneCenter.getBlockY() != currentZoneCenter.getBlockY()
+                || task.startZoneCenter.getBlockZ() != currentZoneCenter.getBlockZ()) {
+            return "map-changed";
+        }
+        if (p == null || !p.isOnline() || !p.isValid()) {
+            return "player-offline";
+        }
+        if (p.isDead() || p.getHealth() <= 0 || deadPlayers.contains(p.getUniqueId())) {
+            return "player-died";
+        }
+        GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+        if (team == null || p.getGameMode() == GameMode.SPECTATOR) {
+            return "player-spectator";
+        }
+        if (!isPlayerOnWrongMap(p)) {
+            return "player-returned";
+        }
+        return null;
+    }
+
+    private Location getWrongMapTeleportTarget(Player p) {
+        if (p == null) return null;
+        GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+        if (team == null) return null;
+
+        Location teamSpawn = teamSpawns.get(team);
+        if (teamSpawn != null && teamSpawn.getWorld() != null) {
+            return teamSpawn.clone();
+        }
+
+        BlockStorage bs = plugin.getBlockListener().getBlockStorage();
+        if (bs != null && currentZoneCenter != null) {
+            BlockStorage.MapBlock currentZone = null;
+            for (BlockStorage.MapBlock mb : bs.getMapBlocks()) {
+                if (mb.centerEquals(currentZoneCenter)) {
+                    currentZone = mb;
+                    break;
+                }
+            }
+            if (currentZone != null) {
+                List<Location> spawns = bs.getSpawnBlocksInZone(currentZone);
+                if (!spawns.isEmpty()) {
+                    Location chosen = spawns.get(RANDOM.nextInt(spawns.size())).clone();
+                    return chosen.add(0.5, 1.0, 0.5);
+                }
+            }
+        }
+
+        if (currentZoneCenter != null && currentZoneCenter.getWorld() != null) {
+            return getGroundLocation(currentZoneCenter.clone().add(0.5, 0, 0.5));
+        }
+
+        return null;
+    }
+
+    private void triggerWrongMapTask(Player p) {
+        if (p == null || wrongMapTasks.containsKey(p.getUniqueId())) return;
+        WrongMapTeleportTask task = new WrongMapTeleportTask(p.getUniqueId(), currentRound, gameGeneration, currentZoneCenter);
+        wrongMapTasks.put(p.getUniqueId(), task);
+        p.sendMessage(Messages.get("game.wrong-map-warning", task.lastAnnouncedSecond));
+        p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
+    }
+
+    private void cancelAllWrongMapTasks(String reasonKey) {
+        if (wrongMapTasks.isEmpty()) return;
+        String reasonText = Messages.get("game.cancel-reason." + reasonKey);
+        String cancelMsg = Messages.get("game.wrong-map-cancelled", reasonText);
+        for (UUID uuid : wrongMapTasks.keySet()) {
+            Player p = Bukkit.getPlayer(uuid);
+            if (p != null && p.isOnline()) {
+                p.sendMessage(cancelMsg);
+            }
+        }
+        wrongMapTasks.clear();
+    }
+
+    private void tickWrongMapCheck() {
+        if (state != GameState.PLAYING) {
+            cancelAllWrongMapTasks("round-ended");
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        Iterator<Map.Entry<UUID, WrongMapTeleportTask>> it = wrongMapTasks.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<UUID, WrongMapTeleportTask> entry = it.next();
+            UUID uuid = entry.getKey();
+            WrongMapTeleportTask task = entry.getValue();
+            Player p = Bukkit.getPlayer(uuid);
+
+            String cancelReason = checkCancellationReason(task, p);
+            if (cancelReason != null) {
+                it.remove();
+                if (p != null && p.isOnline()) {
+                    String reasonText = Messages.get("game.cancel-reason." + cancelReason);
+                    p.sendMessage(Messages.get("game.wrong-map-cancelled", reasonText));
+                }
+                continue;
+            }
+
+            long remainingMs = task.finishTimeMs - now;
+            int remainingSec = (int) Math.max(0, Math.ceil(remainingMs / 1000.0));
+            if (remainingMs <= 0) {
+                it.remove();
+                if (p != null && p.isOnline()) {
+                    Location target = getWrongMapTeleportTarget(p);
+                    if (target == null) {
+                        String reasonText = Messages.get("game.cancel-reason.no-spawns");
+                        p.sendMessage(Messages.get("game.wrong-map-cancelled", reasonText));
+                    } else {
+                        p.teleport(target);
+                        p.sendMessage(Messages.get("game.wrong-map-teleported"));
+                        p.playSound(p.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
+                    }
+                }
+            } else if (remainingSec < task.lastAnnouncedSecond) {
+                task.lastAnnouncedSecond = remainingSec;
+                if (p != null && p.isOnline()) {
+                    p.sendMessage(Messages.get("game.wrong-map-warning", remainingSec));
+                }
+            }
+        }
+
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            if (wrongMapTasks.containsKey(p.getUniqueId())) continue;
+            GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+            if (team == null) continue;
+            if (p.getGameMode() == GameMode.SPECTATOR || deadPlayers.contains(p.getUniqueId()) || p.isDead()) continue;
+
+            if (isPlayerOnWrongMap(p)) {
+                triggerWrongMapTask(p);
+            }
+        }
     }
 
     public void shutdown() {

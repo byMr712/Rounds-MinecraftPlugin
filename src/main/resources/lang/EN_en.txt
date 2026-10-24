@@ -42,6 +42,18 @@ game:
   auto-death-killed: "A random player ({0}) was destroyed. If you keep surviving, another one will be destroyed in 1 minute."
   enemy-picking-cards: "Opponent\nis picking cards"
   auto-stop-single: "Game ended, only one player remained"
+  wrong-map-warning: "You ended up on another map, teleporting you back to your map in {0} seconds"
+  wrong-map-cancelled: "Teleportation cancelled due to: {0}"
+  wrong-map-teleported: "You have been successfully returned to your map!"
+  cancel-reason:
+    game-ended: "Game has ended"
+    round-ended: "Round has ended"
+    map-changed: "Current map zone has changed"
+    player-offline: "Player disconnected"
+    player-died: "Player has died"
+    player-spectator: "Player became a spectator"
+    player-returned: "You have already returned to your map"
+    no-spawns: "No spawn point found on current map"
   phoenix-revived: "Phoenix revived you!"
   refresh-ammo: "Refresh! Ammo refilled!"
 

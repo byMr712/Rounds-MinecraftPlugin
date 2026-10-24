@@ -728,8 +728,13 @@ public class BotAI extends BukkitRunnable {
             }
         } else {
             boolean blocked = !isDirectionClear(myLoc, patrolHeading, 1.2);
-            if (blocked || patrolStuckTicks > 8) {
+            if (patrolStuckTicks > 8) {
                 patrolStuckTicks = 0;
+                personalOffsetX = ThreadLocalRandom.current().nextDouble(-18.0, 18.0);
+                personalOffsetZ = ThreadLocalRandom.current().nextDouble(-18.0, 18.0);
+                lockedHeadingTicks = 25; // Lock heading for 1.25s to walk away from corner/wall
+                patrolHeading = findClearDirection(myLoc, patrolHeading + (ThreadLocalRandom.current().nextBoolean() ? 90f : -90f));
+            } else if (blocked) {
                 patrolHeading = findClearDirection(myLoc, patrolHeading);
             }
         }
@@ -751,11 +756,63 @@ public class BotAI extends BukkitRunnable {
 
     private boolean isDirectionClear(Location loc, float heading, double dist) {
         if (loc == null || loc.getWorld() == null) return true;
+        World w = loc.getWorld();
         double rad = Math.toRadians(-heading);
         double dx = Math.sin(rad) * dist;
         double dz = Math.cos(rad) * dist;
+
+        // Normal perpendicular vector for bot width check (hitbox radius ~0.3b)
+        double perpX = Math.cos(rad) * 0.32;
+        double perpZ = -Math.sin(rad) * 0.32;
+
         Location feet = loc.clone().add(dx, 0.2, dz);
         Location body = loc.clone().add(dx, 1.2, dz);
+
+        // 1. Center ray solid check
+        if (feet.getBlock().getType().isSolid() || body.getBlock().getType().isSolid()) {
+            return false;
+        }
+
+        // 2. Left and right shoulders width check (prevents jamming into narrow diagonal gaps)
+        Location feetLeft = loc.clone().add(dx - perpX, 0.2, dz - perpZ);
+        Location bodyLeft = loc.clone().add(dx - perpX, 1.2, dz - perpZ);
+        if (feetLeft.getBlock().getType().isSolid() || bodyLeft.getBlock().getType().isSolid()) {
+            return false;
+        }
+
+        Location feetRight = loc.clone().add(dx + perpX, 0.2, dz + perpZ);
+        Location bodyRight = loc.clone().add(dx + perpX, 1.2, dz + perpZ);
+        if (feetRight.getBlock().getType().isSolid() || bodyRight.getBlock().getType().isSolid()) {
+            return false;
+        }
+
+        // 3. Midpoint width check for longer rays (catches diagonal pinches along the movement path)
+        if (dist >= 0.8) {
+            double midDx = dx * 0.5;
+            double midDz = dz * 0.5;
+            Location midFeetLeft = loc.clone().add(midDx - perpX, 0.2, midDz - perpZ);
+            Location midFeetRight = loc.clone().add(midDx + perpX, 0.2, midDz + perpZ);
+            if (midFeetLeft.getBlock().getType().isSolid() || midFeetRight.getBlock().getType().isSolid()) {
+                return false;
+            }
+        }
+
+        // 4. Diagonal corner convergence check (two diagonally adjacent solid blocks touching at vertex)
+        int curX = loc.getBlockX();
+        int curY = loc.getBlockY();
+        int curZ = loc.getBlockZ();
+        int targetX = feet.getBlockX();
+        int targetZ = feet.getBlockZ();
+
+        if (curX != targetX && curZ != targetZ) {
+            boolean corner1Solid = w.getBlockAt(targetX, curY, curZ).getType().isSolid()
+                    || w.getBlockAt(targetX, curY + 1, curZ).getType().isSolid();
+            boolean corner2Solid = w.getBlockAt(curX, curY, targetZ).getType().isSolid()
+                    || w.getBlockAt(curX, curY + 1, targetZ).getType().isSolid();
+            if (corner1Solid && corner2Solid) {
+                return false;
+            }
+        }
 
         // Avoid jump blocks and up blocks unless actively seeking one in combat
         com.rounds.blocks.BlockListener bl = bot.getPlugin() != null ? bot.getPlugin().getBlockListener() : null;
@@ -783,7 +840,7 @@ public class BotAI extends BukkitRunnable {
             }
         }
 
-        return !feet.getBlock().getType().isSolid() && !body.getBlock().getType().isSolid();
+        return true;
     }
 
     private float findClearDirection(Location loc, float currentHeading) {

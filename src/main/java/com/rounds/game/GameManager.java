@@ -96,6 +96,23 @@ public class GameManager implements Listener {
     public boolean isAutoDeathEnabled() { return autoDeathEnabled; }
     public void setAutoDeathEnabled(boolean enabled) { this.autoDeathEnabled = enabled; }
 
+    public Location getGroundLocation(Location loc) {
+        if (loc == null || loc.getWorld() == null) return loc;
+        World w = loc.getWorld();
+        Location ground = loc.clone();
+        int startY = Math.min(loc.getBlockY(), w.getMaxHeight() - 1);
+        int minY = w.getMinHeight();
+        for (int y = startY; y >= minY; y--) {
+            Material mat = w.getBlockAt(loc.getBlockX(), y, loc.getBlockZ()).getType();
+            if (mat.isSolid()) {
+                ground.setY(y + 1.0);
+                return ground;
+            }
+        }
+        ground.setY(w.getHighestBlockYAt(loc) + 1.0);
+        return ground;
+    }
+
     private void cancelScheduledTasks() {
         for (int id : scheduledTaskIds) {
             Bukkit.getScheduler().cancelTask(id);
@@ -165,7 +182,7 @@ public class GameManager implements Listener {
         Location lobby = bs.getLobbyBlock();
 
         if (lobby != null) {
-            Location lobbyTp = lobby.clone().add(0, 1, 0);
+            Location lobbyTp = getGroundLocation(lobby);
             for (Player p : readyPlayers) {
                 p.teleport(lobbyTp);
             }
@@ -183,6 +200,13 @@ public class GameManager implements Listener {
         Map<GameTeam, Location> spawnAssignment = new HashMap<>();
         if (!allSpawns.isEmpty()) {
             spawnAssignment = SpawnManager.assignSpawns(teamsWithPlayers, allSpawns);
+        } else {
+            Location base = bs.getLobbyBlock();
+            if (base != null) {
+                Location ground = getGroundLocation(base);
+                spawnAssignment.put(GameTeam.RED, ground.clone().add(-2.0, 0, 0));
+                spawnAssignment.put(GameTeam.BLUE, ground.clone().add(2.0, 0, 0));
+            }
         }
         teamSpawns.clear();
         teamSpawns.putAll(spawnAssignment);
@@ -251,7 +275,12 @@ public class GameManager implements Listener {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             if (team != null) {
                 Location spawn = teamSpawns.get(team);
-                if (spawn != null) p.teleport(spawn);
+                if (spawn == null) {
+                    spawn = getGroundLocation(p.getLocation());
+                }
+                p.teleport(spawn);
+                p.setAllowFlight(false);
+                p.setFlying(false);
                 p.setFoodLevel(20);
                 p.setSaturation(5.0f);
                 p.setExhaustion(0f);
@@ -729,7 +758,12 @@ public class GameManager implements Listener {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             if (team != null) {
                 Location spawn = teamSpawns.get(team);
-                if (spawn != null) p.teleport(spawn);
+                if (spawn == null) {
+                    spawn = getGroundLocation(p.getLocation());
+                }
+                p.teleport(spawn);
+                p.setAllowFlight(false);
+                p.setFlying(false);
                 p.getInventory().clear();
                 giveGun(p);
                 PlayerData roundData = plugin.getPlayerDataManager().getData(p);
@@ -762,20 +796,34 @@ public class GameManager implements Listener {
     private void pickRandomZoneAndAssignSpawns() {
         BlockStorage bs = plugin.getBlockListener().getBlockStorage();
         List<BlockStorage.MapBlock> zones = bs.getMapBlocks();
-        if (zones.isEmpty()) return;
-
-        int chosen = RANDOM.nextInt(zones.size());
-        currentZoneCenter = zones.get(chosen).center.clone();
-
-        List<Location> spawns = bs.getSpawnBlocksInZone(zones.get(chosen));
         Set<GameTeam> teams = new HashSet<>();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam t = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             if (t != null) teams.add(t);
         }
         teamSpawns.clear();
-        if (!spawns.isEmpty()) {
-            teamSpawns.putAll(SpawnManager.assignSpawns(teams, spawns));
+
+        if (!zones.isEmpty()) {
+            int chosen = RANDOM.nextInt(zones.size());
+            currentZoneCenter = zones.get(chosen).center.clone();
+
+            List<Location> spawns = bs.getSpawnBlocksInZone(zones.get(chosen));
+            if (!spawns.isEmpty()) {
+                teamSpawns.putAll(SpawnManager.assignSpawns(teams, spawns));
+                return;
+            }
+        }
+
+        // Fallback when no map zones/spawns are configured
+        Location base = bs.getLobbyBlock();
+        if (base == null && !plugin.getServer().getOnlinePlayers().isEmpty()) {
+            base = plugin.getServer().getOnlinePlayers().iterator().next().getLocation();
+        }
+        if (base != null) {
+            Location ground = getGroundLocation(base);
+            currentZoneCenter = ground.clone();
+            teamSpawns.put(GameTeam.RED, ground.clone().add(-2.0, 0, 0));
+            teamSpawns.put(GameTeam.BLUE, ground.clone().add(2.0, 0, 0));
         }
     }
 
@@ -1337,10 +1385,12 @@ public class GameManager implements Listener {
             p.setInvulnerable(false);
             p.setNoDamageTicks(0);
             p.setGameMode(GameMode.ADVENTURE);
+            p.setAllowFlight(false);
+            p.setFlying(false);
             clearCardEffects(p);
             removeSnowballModifiers(p);
             if (lobbyLoc != null) {
-                p.teleport(lobbyLoc.clone().add(0, 1, 0));
+                p.teleport(getGroundLocation(lobbyLoc));
             }
         }
         plugin.getPlayerDataManager().clearActivePlayers();

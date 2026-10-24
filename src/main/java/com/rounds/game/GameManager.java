@@ -96,6 +96,8 @@ public class GameManager implements Listener {
     }
 
     private final Map<UUID, WrongMapTeleportTask> wrongMapTasks = new HashMap<>();
+    private final Map<UUID, Long> lastWrongMapCheckTime = new HashMap<>();
+    private final Map<UUID, Boolean> lastWrongMapResult = new HashMap<>();
     private final Map<UUID, Location> chameleonLastLoc = new HashMap<>();
     private final Map<UUID, Integer> chameleonStillTicks = new HashMap<>();
     private static final UUID SNOWBALL_MOD_ID = UUID.nameUUIDFromBytes("rounds_snowball".getBytes());
@@ -943,6 +945,8 @@ public class GameManager implements Listener {
      */
     public void cleanupRoundCombatState() {
         cancelAllWrongMapTasks(state == GameState.WAITING || state == GameState.GAME_END ? "game-ended" : "round-ended");
+        lastWrongMapCheckTime.clear();
+        lastWrongMapResult.clear();
         cancelScheduledTasks();
         removeAllPhantoms();
         RoundsEntities.clearAllState();
@@ -1424,6 +1428,20 @@ public class GameManager implements Listener {
         if (p == null || currentZoneCenter == null || currentZoneCenter.getWorld() == null) {
             return false;
         }
+        UUID uuid = p.getUniqueId();
+        long now = System.currentTimeMillis();
+        Long lastTime = lastWrongMapCheckTime.get(uuid);
+        if (lastTime != null && (now - lastTime) < 5000L) {
+            return lastWrongMapResult.getOrDefault(uuid, false);
+        }
+        lastWrongMapCheckTime.put(uuid, now);
+
+        boolean result = computeIsPlayerOnWrongMap(p);
+        lastWrongMapResult.put(uuid, result);
+        return result;
+    }
+
+    private boolean computeIsPlayerOnWrongMap(Player p) {
         Location loc = p.getLocation();
         if (loc.getWorld() == null) return false;
 
@@ -1587,6 +1605,8 @@ public class GameManager implements Listener {
                         p.sendMessage(Messages.get("game.wrong-map-cancelled", reasonText));
                     } else {
                         p.teleport(target);
+                        lastWrongMapCheckTime.remove(p.getUniqueId());
+                        lastWrongMapResult.remove(p.getUniqueId());
                         p.sendMessage(Messages.get("game.wrong-map-teleported"));
                         p.playSound(p.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
                     }
@@ -1599,14 +1619,17 @@ public class GameManager implements Listener {
             }
         }
 
-        for (Player p : plugin.getServer().getOnlinePlayers()) {
-            if (wrongMapTasks.containsKey(p.getUniqueId())) continue;
-            GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-            if (team == null) continue;
-            if (p.getGameMode() == GameMode.SPECTATOR || deadPlayers.contains(p.getUniqueId()) || p.isDead()) continue;
+        // Periodic wrong map scan: evaluated every 5 seconds (100 ticks), not earlier
+        if (musicTick % 100 == 0) {
+            for (Player p : plugin.getServer().getOnlinePlayers()) {
+                if (wrongMapTasks.containsKey(p.getUniqueId())) continue;
+                GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+                if (team == null) continue;
+                if (p.getGameMode() == GameMode.SPECTATOR || deadPlayers.contains(p.getUniqueId()) || p.isDead()) continue;
 
-            if (isPlayerOnWrongMap(p)) {
-                triggerWrongMapTask(p);
+                if (isPlayerOnWrongMap(p)) {
+                    triggerWrongMapTask(p);
+                }
             }
         }
     }

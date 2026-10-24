@@ -163,7 +163,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "effect" -> handleEffect(sender, args);
             case "heal" -> handleHeal(sender, args);
             case "cards", "card" -> handleCards(sender, args);
-            case "resetstats" -> handleResetStats(sender);
+            case "resetstats" -> handleResetStats(sender, args);
             case "reload" -> handleReload(sender);
             case "giveblocks" -> handleBlocks(sender, args);
             case "setlobby" -> handleSetLobby(sender);
@@ -832,8 +832,20 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
     }
 
-    private void handleResetStats(CommandSender sender) {
-        if (!(sender instanceof Player player)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
+    private void handleResetStats(CommandSender sender, String[] args) {
+        Player player = null;
+        if (args.length >= 2) {
+            player = Bukkit.getPlayer(args[1]);
+            if (player == null) {
+                sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[1]));
+                return;
+            }
+        } else if (sender instanceof Player p) {
+            player = p;
+        } else {
+            sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player"));
+            return;
+        }
         PlayerData data = plugin.getPlayerDataManager().getData(player);
         data.resetStats();
         data.resetAllCards();
@@ -843,7 +855,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         player.setFoodLevel(20);
         player.getInventory().clear();
         plugin.getGameManager().clearCardEffects(player);
-        sender.sendMessage(ChatColor.GREEN + Messages.get("debug.stats-reset"));
+        sender.sendMessage(ChatColor.GREEN + Messages.get("debug.stats-reset") + (player != sender ? " -> " + player.getName() : ""));
     }
 
     private void handleReload(CommandSender sender) {

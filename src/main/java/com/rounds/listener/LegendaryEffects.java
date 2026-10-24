@@ -93,6 +93,7 @@ public class LegendaryEffects implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onMove(PlayerMoveEvent event) {
+        if (!event.hasChangedPosition()) return;
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
         PlayerData data = plugin.getPlayerDataManager().getData(uuid);

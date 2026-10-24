@@ -52,8 +52,9 @@ public class BlockListener implements Listener {
 
     public BlockListener(RoundsPlugin plugin) {
         this.plugin = plugin;
-        this.blocksFile = new File(Bukkit.getWorlds().get(0).getWorldFolder(), "rounds-blocks.yml");
-        this.blockStorage = new BlockStorage(Bukkit.getWorlds().get(0).getWorldFolder());
+        File worldDir = Bukkit.getWorlds().isEmpty() ? plugin.getDataFolder() : Bukkit.getWorlds().get(0).getWorldFolder();
+        this.blocksFile = new File(worldDir, "rounds-blocks.yml");
+        this.blockStorage = new BlockStorage(worldDir);
         File oldFile = new File(plugin.getDataFolder(), "placed-blocks.yml");
         if (oldFile.exists() && !blocksFile.exists()) {
             oldFile.renameTo(blocksFile);
@@ -229,10 +230,10 @@ public class BlockListener implements Listener {
 
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
-        if (event.getTo() == null) return;
+        if (event.getTo() == null || (event.getFrom().getBlockX() == event.getTo().getBlockX() && event.getFrom().getBlockY() == event.getTo().getBlockY() && event.getFrom().getBlockZ() == event.getTo().getBlockZ())) return;
 
         Player player = event.getPlayer();
-        Location loc = event.getTo().clone().subtract(0, 1, 0).getBlock().getLocation();
+        Location loc = event.getTo().getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getLocation();
 
         if (jumpBlocks.contains(loc)) {
             handleJumpBlock(player);

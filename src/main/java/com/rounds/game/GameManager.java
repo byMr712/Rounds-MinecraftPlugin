@@ -1251,7 +1251,13 @@ public class GameManager implements Listener {
         }, plugin.getRoundsConfig().getRespawnDelayTicks());
     }
 
-    public void shutdown() { stopGameTick(); }
+    public void shutdown() {
+        stopGameTick();
+        cancelScheduledTasks();
+        removeAllPhantoms();
+        restoreGameRules();
+        cleanupRoundCombatState();
+    }
 
     @SuppressWarnings("unchecked")
     private <T> void saveAndSet(World world, GameRule<T> rule, T value) {

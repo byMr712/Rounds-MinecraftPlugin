@@ -43,12 +43,13 @@ public class Card {
         this.customScript = customScript;
     }
 
-    public void apply(Player player, PlayerData data) {
+    public void apply(Player player, PlayerData data) { apply(player, data, true); }
+    public void apply(Player player, PlayerData data, boolean runCommands) {
         for (Map.Entry<String, Double> entry : effects.entrySet()) {
             applyEffect(data, entry.getKey().replace('_', '-'), entry.getValue());
         }
 
-        if (player != null) {
+        if (runCommands && player != null) {
             for (String cmd : commands) {
                 String resolved = cmd.replace("%player%", player.getName());
                 player.getServer().dispatchCommand(player.getServer().getConsoleSender(), resolved);

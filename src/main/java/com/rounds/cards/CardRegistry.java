@@ -79,7 +79,7 @@ public class CardRegistry {
                 try (java.io.InputStream in = jar.getInputStream(entry)) {
                     jarBytes = in.readAllBytes();
                 }
-                if (!needsUpdate(target, jarBytes)) continue;
+                if (target.exists()) continue;
                 target.getParentFile().mkdirs();
                 try (java.io.OutputStream out = new java.io.FileOutputStream(target)) {
                     out.write(jarBytes);
@@ -91,7 +91,9 @@ public class CardRegistry {
     }
 
     private static boolean needsUpdate(File target, byte[] jarBytes) {
-        if (!target.exists()) return true;
+        return !target.exists();
+    }
+    private static boolean unused_needsUpdate(File target, byte[] jarBytes) {
         try {
             byte[] diskBytes = java.nio.file.Files.readAllBytes(target.toPath());
             return !java.util.Arrays.equals(diskBytes, jarBytes);

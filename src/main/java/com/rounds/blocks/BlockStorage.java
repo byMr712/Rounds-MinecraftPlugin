@@ -131,7 +131,16 @@ public class BlockStorage {
         }
 
         try {
-            config.save(file);
+            File tmp = new File(file.getParentFile(), file.getName() + ".tmp");
+            config.save(tmp);
+            try {
+                java.nio.file.Files.move(tmp.toPath(), file.toPath(),
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                    java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+            } catch (IOException atomicEx) {
+                java.nio.file.Files.move(tmp.toPath(), file.toPath(),
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -104,6 +104,10 @@ public class PlayerDataManager implements Listener {
     // ==================== Full player data save/load (per-UUID) ====================
 
     public void savePlayerFullData(UUID uuid, GameTeam team, List<Integer> pendingCardIds) {
+        savePlayerFullData(uuid, team, pendingCardIds, true);
+    }
+
+    public void savePlayerFullData(UUID uuid, GameTeam team, List<Integer> pendingCardIds, boolean flush) {
         PlayerData data = cache.get(uuid);
         if (data == null) data = new PlayerData();
 
@@ -150,12 +154,21 @@ public class PlayerDataManager implements Listener {
         yml.set(path + ".stats.atks-reload", data.atksReload);
         yml.set(path + ".stats.pristine-perseverance", data.pristinePerseverance);
 
-        yml.set(path + ".cards", new ArrayList<>(data.getOwnedCards()));
+        yml.set(path + ".cards", new ArrayList<>(data.getOwnedCards())); if (!flush) return;
+
 
         flushStore();
     }
 
     public void saveAllFullData(List<Integer> pendingCardIds) {
+        for (UUID uuid : activePlayers) {
+            GameTeam team = plugin.getTeamManager().getPlayerTeam(uuid);
+            savePlayerFullData(uuid, team, pendingCardIds, false);
+        }
+        flushStore();
+    }
+
+    private void unused_saveAll(List<Integer> pendingCardIds) {
         for (UUID uuid : activePlayers) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(uuid);
             savePlayerFullData(uuid, team, pendingCardIds);
@@ -204,7 +217,7 @@ public class PlayerDataManager implements Listener {
                 data.setCard(cardId, true);
                 Card card = plugin.getCardManager().getRegistry().getCard(cardId);
                 if (card != null) {
-                    card.apply(player, data);
+                    card.apply(player, data, false);
                 }
             }
         } else if (saved.stats != null && !saved.stats.isEmpty()) {
@@ -259,6 +272,7 @@ public class PlayerDataManager implements Listener {
     // ==================== Per-player save on quit ====================
 
     public void savePlayerDataOnQuit(UUID uuid) {
+        boolean flush = true;
         PlayerData data = cache.get(uuid);
         if (data == null) return;
         GameTeam team = plugin.getTeamManager().getPlayerTeam(uuid);
@@ -308,7 +322,8 @@ public class PlayerDataManager implements Listener {
         yml.set(path + ".stats.atks-reload", data.atksReload);
         yml.set(path + ".stats.pristine-perseverance", data.pristinePerseverance);
 
-        yml.set(path + ".cards", new ArrayList<>(data.getOwnedCards()));
+        yml.set(path + ".cards", new ArrayList<>(data.getOwnedCards())); if (!flush) return;
+
 
         flushStore();
     }
@@ -369,7 +384,16 @@ public class PlayerDataManager implements Listener {
 
     private void flushStore() {
         try {
-            store().save(activeFile);
+            File tmp = new File(activeFile.getParentFile(), activeFile.getName() + ".tmp");
+            store().save(tmp);
+            try {
+                java.nio.file.Files.move(tmp.toPath(), activeFile.toPath(),
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                    java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+            } catch (IOException atomicEx) {
+                java.nio.file.Files.move(tmp.toPath(), activeFile.toPath(),
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
         } catch (IOException e) {
             plugin.getLogger().warning("Failed to save active players YAML: " + e.getMessage());
         }
@@ -503,7 +527,8 @@ public class PlayerDataManager implements Listener {
                             removePlayerData(uuid);
                             plugin.getGameManager().clearCardEffects(player);
                             com.rounds.item.GunItem.cancelReload(uuid);
-                            com.rounds.item.GunItem.clearPlayer(uuid);
+        com.rounds.item.GunItem.clearPlayer(uuid);
+
                             player.getInventory().clear();
                             var attr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
                             if (attr != null) attr.setBaseValue(20);
@@ -548,6 +573,7 @@ public class PlayerDataManager implements Listener {
             }
         }
         com.rounds.item.GunItem.cancelReload(uuid);
+        com.rounds.item.GunItem.clearPlayer(uuid);
         if (plugin.getGameManager().getState() == GameManager.GameState.CARDS) {
             plugin.getCardManager().removePendingPick(uuid);
             Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {

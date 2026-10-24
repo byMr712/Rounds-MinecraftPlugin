@@ -97,7 +97,7 @@ public class CardManager {
         for (int cardId : data.getOwnedCards()) {
             Card c = registry.getCard(cardId);
             if (c != null) {
-                c.apply(player, data);
+                c.apply(player, data, false);
             }
         }
 

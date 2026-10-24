@@ -346,7 +346,7 @@ public class CardGUIListener implements Listener {
         UUID uuid = player.getUniqueId();
         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
             Player p = Bukkit.getPlayer(uuid);
-            if (p != null && p.isOnline() && cm.isPendingPick(uuid)) {
+            if (p != null && p.isOnline() && gm.getState() == GameManager.GameState.CARDS && cm.isPendingPick(uuid)) {
                 open(p, cm.getPendingCards(uuid));
             }
         }, 1L);
@@ -367,7 +367,7 @@ public class CardGUIListener implements Listener {
         UUID uuid = player.getUniqueId();
         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
             Player p = Bukkit.getPlayer(uuid);
-            if (p != null && p.isOnline() && cm.isPendingPick(uuid)) {
+            if (p != null && p.isOnline() && gm.getState() == GameManager.GameState.CARDS && cm.isPendingPick(uuid)) {
                 open(p, cm.getPendingCards(uuid));
             }
         }, 10L);

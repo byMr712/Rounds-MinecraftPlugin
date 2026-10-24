@@ -136,11 +136,11 @@ public class RoundsEntities implements Listener {
     }
 
     private static void processAllBullets() {
-        if (activeBullets.isEmpty()) return;
+        if (activeBullets.isEmpty()) { cohortBuckets.clear(); return; }
         bulletTickCounter++;
 
         // Группируем пули по залпам-когортам (бакеты переиспользуются между тиками).
-        for (List<Bullet> bucket : cohortBuckets.values()) bucket.clear();
+        cohortBuckets.clear();
         for (Bullet b : activeBullets) {
             cohortBuckets.computeIfAbsent(b.cohortId, k -> new ArrayList<>()).add(b);
         }
@@ -778,6 +778,8 @@ public class RoundsEntities implements Listener {
         hpBoostPending.clear();
 
         activeBullets.clear();
+        cohortBuckets.clear();
+        cohortCandidates.clear();
         activeClouds.clear();
         if (cloudTickId != -1) {
             Bukkit.getScheduler().cancelTask(cloudTickId);

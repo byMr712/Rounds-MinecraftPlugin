@@ -189,6 +189,14 @@ public class TeamManager {
         }
     }
 
+    public void unregisterAll() {
+        clearAll();
+        for (Team t : teams.values()) {
+            try { t.unregister(); } catch (IllegalStateException ignored) {}
+        }
+        teams.clear();
+    }
+
     public Scoreboard getScoreboard() { return scoreboard; }
     public Team getTeam(GameTeam gt) { return teams.get(gt); }
 

@@ -644,6 +644,7 @@ public class GunItem implements Listener {
                 if (currentTick >= totalTicks) {
                     data.ammo = data.maxAmmo;
                     reloadingPlayers.remove(uuid);
+            reloadTasks.remove(uuid);
                     player.sendActionBar(ChatColor.GREEN + Messages.get("gun.reloaded", (int) data.ammo));
                     player.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_LOADING_END, 1f, 1.2f);
                     cancel();
@@ -657,6 +658,7 @@ public class GunItem implements Listener {
         void cancel() {
             running = false;
             reloadingPlayers.remove(uuid);
+            reloadTasks.remove(uuid);
             if (taskId != -1) {
                 Bukkit.getScheduler().cancelTask(taskId);
                 taskId = -1;

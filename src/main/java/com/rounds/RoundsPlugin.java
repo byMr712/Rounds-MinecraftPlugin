@@ -76,6 +76,10 @@ public class RoundsPlugin extends JavaPlugin {
             gameManager.shutdown();
         }
         if (playerDataManager != null) playerDataManager.saveAll();
+        if (teamManager != null) teamManager.unregisterAll();
+        RoundsEntities.stopCentralizedTick();
+        RoundsEntities.clearAllState();
+        com.rounds.listener.LegendaryEffects.resetAll();
         instance = null;
     }
 

@@ -28,4 +28,5 @@ desktop.ini
 out/
 
 # Logs
+logs/
 *.log

@@ -113,6 +113,12 @@ public class FakeBot {
         return ai;
     }
 
+    public String getTeamName() {
+        if (manager == null || manager.getPlugin() == null) return "BLUE";
+        com.rounds.teams.TeamManager.GameTeam gt = manager.getPlugin().getTeamManager().getPlayerTeam(getBukkitPlayer().getUniqueId());
+        return (gt != null) ? gt.name() : "BLUE";
+    }
+
     public void onAttacked(Location origin, UUID attackerId) {
         if (ai != null) {
             ai.onAttacked(origin, attackerId);

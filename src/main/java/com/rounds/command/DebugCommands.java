@@ -991,16 +991,43 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             return;
         }
 
+        Location loc = (sender instanceof Player p) ? p.getLocation() : null;
         String sub = args[0].toLowerCase();
 
-        // 1. /rdebug despawn [bot] <bot_name>
+        // 1. /rdebug despawn [bot] <bot_name|all|count <int>>
         if (sub.equals("despawn")) {
+            if (args.length >= 2 && args[1].equalsIgnoreCase("all")) {
+                int count = bm.despawnAll();
+                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned all active bots (total: " + count + ")");
+                return;
+            }
+            if (args.length >= 3 && args[1].equalsIgnoreCase("count")) {
+                try {
+                    int count = Integer.parseInt(args[2]);
+                    int removed = bm.despawnBots(count);
+                    sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned " + removed + " bots (prioritizing largest teams).");
+                } catch (NumberFormatException e) {
+                    sender.sendMessage(ChatColor.RED + "Invalid number: " + args[2]);
+                }
+                return;
+            }
+            if (args.length >= 2 && args[1].matches("\\d+")) {
+                int count = Integer.parseInt(args[1]);
+                int removed = bm.despawnBots(count);
+                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned " + removed + " bots (prioritizing largest teams).");
+                return;
+            }
             if (args.length < 2) {
-                sender.sendMessage(ChatColor.RED + "Usage: /rdebug despawn <bot_name>");
+                sender.sendMessage(ChatColor.RED + "Usage: /rdebug despawn <bot_name|all|count <int>>");
                 return;
             }
             int nameIndex = (args.length >= 3 && args[1].equalsIgnoreCase("bot")) ? 2 : 1;
             String name = args[nameIndex];
+            if (name.equalsIgnoreCase("all")) {
+                int count = bm.despawnAll();
+                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned all active bots (total: " + count + ")");
+                return;
+            }
             boolean ok = bm.despawnBot(name);
             if (ok) {
                 sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned bot " + name);
@@ -1010,18 +1037,42 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             return;
         }
 
-        // 2. /rdebug bot / /rdebug spawn
-        if (args.length < 2) {
-            sender.sendMessage(ChatColor.RED + "Usage: /rdebug bot <bot_name> [bot_team]");
-            sender.sendMessage(ChatColor.GRAY + "Or: /rdebug bot despawn <bot_name>");
+        // 2. /rdebug bot (with no extra args -> spawn 1 bot with auto name & team)
+        if (args.length == 1) {
+            com.rounds.bot.FakeBot bot = bm.spawnBot(null, null, loc);
+            if (bot != null) {
+                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Spawned bot " + ChatColor.AQUA + bot.getName() +
+                        ChatColor.GREEN + " on team " + ChatColor.GOLD + bot.getTeamName() +
+                        ChatColor.GRAY + " [Level: " + bot.getLevel() + " (" + (bot.getLevel() * 10) + "%)]");
+            }
             return;
         }
 
-        // Despawn checks:
-        // /rdebug bot despawn <name>
+        // 3. /rdebug bot despawn ...
         if (args[1].equalsIgnoreCase("despawn") || args[1].equalsIgnoreCase("remove") || args[1].equalsIgnoreCase("kill")) {
+            if (args.length >= 3 && args[2].equalsIgnoreCase("all")) {
+                int count = bm.despawnAll();
+                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned all active bots (total: " + count + ")");
+                return;
+            }
+            if (args.length >= 4 && args[2].equalsIgnoreCase("count")) {
+                try {
+                    int count = Integer.parseInt(args[3]);
+                    int removed = bm.despawnBots(count);
+                    sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned " + removed + " bots (prioritizing largest teams).");
+                } catch (NumberFormatException e) {
+                    sender.sendMessage(ChatColor.RED + "Invalid number: " + args[3]);
+                }
+                return;
+            }
+            if (args.length >= 3 && args[2].matches("\\d+")) {
+                int count = Integer.parseInt(args[2]);
+                int removed = bm.despawnBots(count);
+                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned " + removed + " bots (prioritizing largest teams).");
+                return;
+            }
             if (args.length < 3) {
-                sender.sendMessage(ChatColor.RED + "Usage: /rdebug bot despawn <bot_name>");
+                sender.sendMessage(ChatColor.RED + "Usage: /rdebug bot despawn <bot_name|all|count <int>>");
                 return;
             }
             String name = args[2];
@@ -1037,6 +1088,11 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         // /rdebug bot <name> despawn
         if (args.length >= 3 && (args[2].equalsIgnoreCase("despawn") || args[2].equalsIgnoreCase("remove") || args[2].equalsIgnoreCase("kill"))) {
             String name = args[1];
+            if (name.equalsIgnoreCase("all")) {
+                int count = bm.despawnAll();
+                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned all active bots (total: " + count + ")");
+                return;
+            }
             boolean ok = bm.despawnBot(name);
             if (ok) {
                 sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned bot " + name);
@@ -1046,7 +1102,37 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             return;
         }
 
-        // Difficulty level check/set: /rdebug bot level <name> [1..10]
+        // 4. /rdebug bot spawn count <int> / /rdebug spawn bot count <int> / /rdebug bot spawn
+        boolean isSpawnKeyword = args[1].equalsIgnoreCase("spawn") || (sub.equals("spawn") && args[1].equalsIgnoreCase("bot"));
+        if (isSpawnKeyword) {
+            int countIdx = -1;
+            if (args.length >= 4 && args[2].equalsIgnoreCase("count")) {
+                countIdx = 3;
+            } else if (args.length >= 3 && args[2].matches("\\d+")) {
+                countIdx = 2;
+            } else if (args.length == 2) {
+                com.rounds.bot.FakeBot bot = bm.spawnBot(null, null, loc);
+                if (bot != null) {
+                    sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Spawned bot " + ChatColor.AQUA + bot.getName() +
+                            ChatColor.GREEN + " on team " + ChatColor.GOLD + bot.getTeamName() +
+                            ChatColor.GRAY + " [Level: " + bot.getLevel() + " (" + (bot.getLevel() * 10) + "%)]");
+                }
+                return;
+            }
+
+            if (countIdx > 0) {
+                try {
+                    int count = Integer.parseInt(args[countIdx]);
+                    List<com.rounds.bot.FakeBot> spawned = bm.spawnBots(count, loc);
+                    sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Spawned " + spawned.size() + " bots with balanced teams.");
+                } catch (NumberFormatException e) {
+                    sender.sendMessage(ChatColor.RED + "Invalid number: " + args[countIdx]);
+                }
+                return;
+            }
+        }
+
+        // 5. Difficulty level check/set: /rdebug bot level <name> [1..10]
         if (args.length >= 3 && (args[1].equalsIgnoreCase("level") || args[1].equalsIgnoreCase("lvl"))) {
             com.rounds.bot.FakeBot bot = bm.getBot(args[2]);
             if (bot == null) {
@@ -1069,10 +1155,13 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             return;
         }
 
-        // Spawn: /rdebug bot <name> [team] [1..10] or /rdebug spawn bot <name> [team] [1..10]
+        // 6. Spawn: /rdebug bot <name> [team] [1..10] or /rdebug spawn bot <name> [team] [1..10]
         int nameIndex = 1;
         int teamIndex = 2;
         if (args[1].equalsIgnoreCase("bot") && args.length >= 3) {
+            nameIndex = 2;
+            teamIndex = 3;
+        } else if (args[1].equalsIgnoreCase("spawn") && args.length >= 3) {
             nameIndex = 2;
             teamIndex = 3;
         }
@@ -1089,11 +1178,12 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             } catch (NumberFormatException ignored) {}
         }
 
-        Location loc = (sender instanceof Player p) ? p.getLocation() : null;
         com.rounds.bot.FakeBot bot = bm.spawnBot(name, team, loc, initialLevel);
-        sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Spawned bot " + ChatColor.AQUA + bot.getName() +
-                ChatColor.GREEN + " on team " + ChatColor.GOLD + team +
-                ChatColor.GRAY + " [Level: " + bot.getLevel() + " (" + (bot.getLevel() * 10) + "%)]");
+        if (bot != null) {
+            sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Spawned bot " + ChatColor.AQUA + bot.getName() +
+                    ChatColor.GREEN + " on team " + ChatColor.GOLD + bot.getTeamName() +
+                    ChatColor.GRAY + " [Level: " + bot.getLevel() + " (" + (bot.getLevel() * 10) + "%)]");
+        }
     }
 
     private void handleDraft(CommandSender sender, String[] args) {
@@ -1212,21 +1302,37 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         return switch (args[0].toLowerCase()) {
             case "bot" -> {
                 if (args.length == 2) {
-                    List<String> list = new ArrayList<>();
-                    list.add("despawn");
-                    list.addAll(Arrays.asList("bot1", "bot2", "bot3"));
+                    List<String> list = new ArrayList<>(Arrays.asList("spawn", "despawn", "level", "list"));
+                    if (plugin.getBotManager() != null) {
+                        plugin.getBotManager().getBots().forEach(b -> list.add(b.getName()));
+                    }
                     Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
                     yield filterStartsWith(list, input);
                 }
                 if (args.length == 3) {
+                    if (args[1].equalsIgnoreCase("spawn")) {
+                        List<String> list = new ArrayList<>(Arrays.asList("count", "auto", "1", "2", "3", "4", "5"));
+                        yield filterStartsWith(list, input);
+                    }
                     if (args[1].equalsIgnoreCase("despawn")) {
-                        List<String> list = new ArrayList<>();
+                        List<String> list = new ArrayList<>(Arrays.asList("all", "count"));
+                        if (plugin.getBotManager() != null) {
+                            plugin.getBotManager().getBots().forEach(b -> list.add(b.getName()));
+                        }
                         Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
                         yield filterStartsWith(list, input);
                     }
                     List<String> teams = new ArrayList<>(TEAM_COLORS);
                     teams.add("despawn");
                     yield filterStartsWith(teams, input);
+                }
+                if (args.length == 4) {
+                    if (args[1].equalsIgnoreCase("spawn") && args[2].equalsIgnoreCase("count")) {
+                        yield filterStartsWith(Arrays.asList("1", "2", "3", "4", "5", "8"), input);
+                    }
+                    if (args[1].equalsIgnoreCase("despawn") && args[2].equalsIgnoreCase("count")) {
+                        yield filterStartsWith(Arrays.asList("1", "2", "3", "4", "5", "8"), input);
+                    }
                 }
                 yield Collections.emptyList();
             }
@@ -1251,21 +1357,36 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             }
             case "spawn" -> {
                 if (args.length == 2) yield filterStartsWith(Collections.singletonList("bot"), input);
-                if (args.length == 3) yield filterStartsWith(Arrays.asList("bot1", "bot2", "bot3"), input);
-                if (args.length == 4) yield filterStartsWith(TEAM_COLORS, input);
+                if (args.length == 3) yield filterStartsWith(Arrays.asList("count", "auto", "bot1", "bot2", "bot3"), input);
+                if (args.length == 4) {
+                    if (args[2].equalsIgnoreCase("count")) {
+                        yield filterStartsWith(Arrays.asList("1", "2", "3", "4", "5", "8"), input);
+                    }
+                    yield filterStartsWith(TEAM_COLORS, input);
+                }
                 yield Collections.emptyList();
             }
             case "despawn" -> {
                 if (args.length == 2) {
-                    List<String> list = new ArrayList<>();
-                    list.add("bot");
+                    List<String> list = new ArrayList<>(Arrays.asList("all", "count", "bot"));
+                    if (plugin.getBotManager() != null) {
+                        plugin.getBotManager().getBots().forEach(b -> list.add(b.getName()));
+                    }
                     Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
                     yield filterStartsWith(list, input);
                 }
-                if (args.length == 3 && args[1].equalsIgnoreCase("bot")) {
-                    List<String> list = new ArrayList<>();
-                    Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
-                    yield filterStartsWith(list, input);
+                if (args.length == 3) {
+                    if (args[1].equalsIgnoreCase("count")) {
+                        yield filterStartsWith(Arrays.asList("1", "2", "3", "4", "5", "8"), input);
+                    }
+                    if (args[1].equalsIgnoreCase("bot")) {
+                        List<String> list = new ArrayList<>(Arrays.asList("all", "count"));
+                        if (plugin.getBotManager() != null) {
+                            plugin.getBotManager().getBots().forEach(b -> list.add(b.getName()));
+                        }
+                        Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
+                        yield filterStartsWith(list, input);
+                    }
                 }
                 yield Collections.emptyList();
             }

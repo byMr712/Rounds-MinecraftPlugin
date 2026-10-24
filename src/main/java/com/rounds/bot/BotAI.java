@@ -229,12 +229,35 @@ public class BotAI extends BukkitRunnable {
             return;
         }
 
-        // Global airborne check: whenever bot is launched into air (e.g. jump pad), push away and apply 30s cooldown
+        // Global airborne check: whenever bot is launched into air (e.g. jump pad), push towards map center and apply 30s cooldown
         boolean airborne = !bot.isOnGround() || Math.abs(bot.getVelY()) > 0.1;
         if (airborne) {
             padCooldown = 600; // 30s cooldown prevents repeated launch loops
-            double rad = Math.toRadians(-player.getLocation().getYaw());
-            bot.moveRel(Math.sin(rad) * 0.32, 0.0, Math.cos(rad) * 0.32);
+            Location center = bot.getPlugin() != null ? bot.getPlugin().getGameManager().getCurrentZoneCenter() : null;
+            if (center == null || center.getWorld() == null || !center.getWorld().equals(player.getWorld())) {
+                center = player.getWorld().getSpawnLocation();
+            }
+
+            double cdx = center.getX() - player.getLocation().getX();
+            double cdz = center.getZ() - player.getLocation().getZ();
+            double clen = Math.sqrt(cdx * cdx + cdz * cdz);
+
+            double pushX;
+            double pushZ;
+            if (clen > 0.5) {
+                pushX = (cdx / clen) * 0.35;
+                pushZ = (cdz / clen) * 0.35;
+                float centerYaw = (float) Math.toDegrees(Math.atan2(-cdx, cdz));
+                bot.getNmsPlayer().setRot(centerYaw, 0f);
+                bot.getNmsPlayer().setYHeadRot(centerYaw);
+                bot.getNmsPlayer().setYBodyRot(centerYaw);
+            } else {
+                double rad = Math.toRadians(-player.getLocation().getYaw());
+                pushX = Math.sin(rad) * 0.32;
+                pushZ = Math.cos(rad) * 0.32;
+            }
+            bot.moveRel(pushX, 0.0, pushZ);
+
             if (currentTarget != null && canSee(player, currentTarget) && bot.hasGun() && shootCooldown <= 0) {
                 bot.aimAt(currentTarget.getLocation(), 45.0f, 2.0f);
                 bot.shoot();

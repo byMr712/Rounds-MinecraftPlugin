@@ -44,26 +44,97 @@ public class RBotCommand implements CommandExecutor, TabCompleter {
 
         switch (first) {
             case "spawn" -> {
-                if (args.length < 2) {
-                    sender.sendMessage(ChatColor.RED + "Usage: /rbot spawn <name> [team]");
+                Location loc = (sender instanceof Player p) ? p.getLocation() : null;
+
+                // 1. /rbot spawn count <int>
+                if (args.length >= 3 && args[1].equalsIgnoreCase("count")) {
+                    try {
+                        int count = Integer.parseInt(args[2]);
+                        if (count <= 0) {
+                            sender.sendMessage(ChatColor.RED + "Count must be greater than 0.");
+                            return true;
+                        }
+                        List<FakeBot> spawned = botManager.spawnBots(count, loc);
+                        sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Spawned " + spawned.size() + " bots with balanced teams.");
+                    } catch (NumberFormatException e) {
+                        sender.sendMessage(ChatColor.RED + "Invalid number: " + args[2]);
+                    }
                     return true;
                 }
-                String name = args[1];
-                String team = (args.length >= 3) ? args[2].toUpperCase() : botManager.pickBestTeam();
 
-                Location loc = (sender instanceof Player p) ? p.getLocation() : null;
-                FakeBot bot = botManager.spawnBot(name, team, loc);
+                // 2. /rbot spawn (no name or team specified -> auto generate)
+                if (args.length == 1) {
+                    FakeBot bot = botManager.spawnBot(null, null, loc);
+                    if (bot != null) {
+                        sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Spawned bot " + ChatColor.AQUA + bot.getName() +
+                                ChatColor.GREEN + " on team " + ChatColor.GOLD + bot.getTeamName() +
+                                ChatColor.GRAY + " [Level: " + bot.getLevel() + " (" + (bot.getLevel() * 10) + "%)]");
+                    }
+                    return true;
+                }
+
+                // 3. /rbot spawn <count_number>
+                if (args.length == 2 && args[1].matches("\\d+")) {
+                    int count = Integer.parseInt(args[1]);
+                    List<FakeBot> spawned = botManager.spawnBots(count, loc);
+                    sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Spawned " + spawned.size() + " bots with balanced teams.");
+                    return true;
+                }
+
+                // 4. /rbot spawn <name> [team] [1..10]
+                String name = args[1];
+                String team = (args.length >= 3 && !args[2].equalsIgnoreCase("auto"))
+                        ? args[2].toUpperCase()
+                        : botManager.pickBestTeam();
+
+                Integer initialLevel = null;
+                if (args.length >= 4) {
+                    try {
+                        initialLevel = Integer.parseInt(args[3]);
+                    } catch (NumberFormatException ignored) {}
+                }
+
+                FakeBot bot = botManager.spawnBot(name, team, loc, initialLevel);
                 if (bot == null) {
                     sender.sendMessage(ChatColor.RED + "[RoundsBot] Invalid bot name: " + name + " (1-16 chars [a-zA-Z0-9_])");
                     return true;
                 }
                 sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Spawned bot " + ChatColor.AQUA + bot.getName() +
-                        ChatColor.GREEN + " on team " + ChatColor.GOLD + team);
+                        ChatColor.GREEN + " on team " + ChatColor.GOLD + bot.getTeamName() +
+                        ChatColor.GRAY + " [Level: " + bot.getLevel() + " (" + (bot.getLevel() * 10) + "%)]");
                 return true;
             }
             case "despawn", "remove", "kill" -> {
+                // 1. /rbot despawn all
+                if (args.length >= 2 && args[1].equalsIgnoreCase("all")) {
+                    int removed = botManager.despawnAll();
+                    sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned all active bots (total: " + removed + ")");
+                    return true;
+                }
+
+                // 2. /rbot despawn count <int>
+                if (args.length >= 3 && args[1].equalsIgnoreCase("count")) {
+                    try {
+                        int count = Integer.parseInt(args[2]);
+                        int removed = botManager.despawnBots(count);
+                        sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned " + removed + " bots (prioritizing largest teams).");
+                    } catch (NumberFormatException e) {
+                        sender.sendMessage(ChatColor.RED + "Invalid number: " + args[2]);
+                    }
+                    return true;
+                }
+
+                // 3. /rbot despawn <count_number>
+                if (args.length >= 2 && args[1].matches("\\d+")) {
+                    int count = Integer.parseInt(args[1]);
+                    int removed = botManager.despawnBots(count);
+                    sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned " + removed + " bots (prioritizing largest teams).");
+                    return true;
+                }
+
+                // 4. /rbot despawn <name>
                 if (args.length < 2) {
-                    sender.sendMessage(ChatColor.RED + "Usage: /rbot despawn <name>");
+                    sender.sendMessage(ChatColor.RED + "Usage: /rbot despawn <name|all|count <int>>");
                     return true;
                 }
                 String name = args[1];
@@ -199,8 +270,11 @@ public class RBotCommand implements CommandExecutor, TabCompleter {
 
     private void sendHelp(CommandSender sender) {
         sender.sendMessage(ChatColor.GOLD + "=== RoundsBot Commands ===");
-        sender.sendMessage(ChatColor.YELLOW + "/rbot spawn <name> [team] [1..10] " + ChatColor.GRAY + "- Spawn a fake player");
+        sender.sendMessage(ChatColor.YELLOW + "/rbot spawn [name] [team] [1..10] " + ChatColor.GRAY + "- Spawn bot (auto name/team if omitted)");
+        sender.sendMessage(ChatColor.YELLOW + "/rbot spawn count <int> " + ChatColor.GRAY + "- Spawn multiple bots with balanced teams");
         sender.sendMessage(ChatColor.YELLOW + "/rbot despawn <name> " + ChatColor.GRAY + "- Remove a fake player");
+        sender.sendMessage(ChatColor.YELLOW + "/rbot despawn count <int> " + ChatColor.GRAY + "- Remove bots (prioritizing largest teams)");
+        sender.sendMessage(ChatColor.YELLOW + "/rbot despawn all " + ChatColor.GRAY + "- Remove all fake players");
         sender.sendMessage(ChatColor.YELLOW + "/rbot list " + ChatColor.GRAY + "- List active bots & difficulty levels");
         sender.sendMessage(ChatColor.YELLOW + "/rbot <name> level [1..10] " + ChatColor.GRAY + "- Set/view bot difficulty level (1..10)");
         sender.sendMessage(ChatColor.YELLOW + "/rbot <name> pick <0..4> " + ChatColor.GRAY + "- Pick draft card slot");
@@ -224,9 +298,15 @@ public class RBotCommand implements CommandExecutor, TabCompleter {
 
         if (args.length == 2) {
             if (args[0].equalsIgnoreCase("spawn")) {
-                return Collections.singletonList("bot1");
+                List<String> list = new ArrayList<>(Arrays.asList("count", "auto", "bot1", "bot2"));
+                return filterStartsWith(list, current);
             }
-            if (args[0].equalsIgnoreCase("despawn") || args[0].equalsIgnoreCase("level")) {
+            if (args[0].equalsIgnoreCase("despawn")) {
+                List<String> list = new ArrayList<>(Arrays.asList("all", "count"));
+                botManager.getBots().forEach(b -> list.add(b.getName()));
+                return filterStartsWith(list, current);
+            }
+            if (args[0].equalsIgnoreCase("level")) {
                 List<String> botNames = botManager.getBots().stream().map(FakeBot::getName).collect(Collectors.toList());
                 return filterStartsWith(botNames, current);
             }
@@ -238,7 +318,13 @@ public class RBotCommand implements CommandExecutor, TabCompleter {
 
         if (args.length == 3) {
             if (args[0].equalsIgnoreCase("spawn")) {
+                if (args[1].equalsIgnoreCase("count")) {
+                    return filterStartsWith(Arrays.asList("1", "2", "3", "4", "5", "8"), current);
+                }
                 return filterStartsWith(TEAMS, current);
+            }
+            if (args[0].equalsIgnoreCase("despawn") && args[1].equalsIgnoreCase("count")) {
+                return filterStartsWith(Arrays.asList("1", "2", "3", "4", "5", "8"), current);
             }
             if (args[0].equalsIgnoreCase("level")) {
                 return filterStartsWith(LEVELS, current);

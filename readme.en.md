@@ -417,11 +417,17 @@ The plugin includes a native NMS `ServerPlayer` fake player system managed direc
 
 | Command | Description |
 |---------|-------------|
-| `/rdebug bot <name> [team] [1..10]` | Spawn a combat bot on a team with optional difficulty level (1..10) |
+| `/rdebug bot [name] [team] [1..10]` | Spawn a bot (auto name `rbot<1..9999>` and auto-balanced team if omitted) |
+| `/rdebug bot spawn count <N>` | Spawn N bots with auto-generated names and balanced teams |
 | `/rdebug bot level <name> [1..10]` | Check or set a bot's difficulty level (1..10) |
 | `/rdebug bot despawn <name>` | Remove a fake bot from the game (or `/rdebug despawn <name>`) |
-| `/rbot spawn <name> [team] [1..10]` | Alternative spawn command with optional level (1..10) |
-| `/rbot despawn <name>` | Alternative despawn command |
+| `/rdebug bot despawn count <N>` | Despawn N bots (prioritizing teams with the most players) |
+| `/rdebug bot despawn all` | Remove all active bots from the server |
+| `/rbot spawn [name] [team] [1..10]` | Spawn bot (auto name `rbot<1..9999>` and auto-balanced team by default) |
+| `/rbot spawn count <N>` | Spawn N bots with unique readable names and balanced teams |
+| `/rbot despawn <name>` | Remove a fake player by name |
+| `/rbot despawn count <N>` | Remove N bots randomly, prioritizing teams with the most players |
+| `/rbot despawn all` | Remove all active fake bots |
 | `/rbot list` | List all active bots with their HP and current difficulty level (Lvl: 1..10) |
 | `/rbot <name> level [1..10]` | Check or configure bot difficulty level (1 = -90%, 10 = 100%) |
 | `/rbot <name> pick <0..4>` | Force a bot to select a specific card from the draft |

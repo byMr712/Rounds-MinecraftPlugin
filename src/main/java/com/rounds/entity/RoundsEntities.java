@@ -110,6 +110,7 @@ public class RoundsEntities implements Listener {
     // Когорты залпов: переиспользуемые бакеты и общий список кандидатов на тик.
     private static long cohortCounter = 0L;
     private static final Map<Long, List<Bullet>> cohortBuckets = new HashMap<>();
+    private static final ArrayDeque<List<Bullet>> bucketPool = new ArrayDeque<>();
     private static final List<LivingEntity> cohortCandidates = new ArrayList<>();
 
     public static long nextCohortId() {
@@ -139,16 +140,23 @@ public class RoundsEntities implements Listener {
         if (activeBullets.isEmpty()) { cohortBuckets.clear(); return; }
         bulletTickCounter++;
 
-        // Группируем пули по залпам-когортам (бакеты переиспользуются между тиками).
+        // Группируем пули по залпам-когортам (бакеты переиспользуются из пула).
         cohortBuckets.clear();
         for (Bullet b : activeBullets) {
-            cohortBuckets.computeIfAbsent(b.cohortId, k -> new ArrayList<>()).add(b);
+            List<Bullet> bucket = cohortBuckets.get(b.cohortId);
+            if (bucket == null) {
+                bucket = bucketPool.isEmpty() ? new ArrayList<>() : bucketPool.pop();
+                cohortBuckets.put(b.cohortId, bucket);
+            }
+            bucket.add(b);
         }
 
         for (List<Bullet> bucket : cohortBuckets.values()) {
             if (!bucket.isEmpty()) processCohort(bucket);
             bucket.clear();
+            bucketPool.push(bucket);
         }
+        cohortBuckets.clear();
 
         activeBullets.removeIf(b -> !b.alive);
     }
@@ -807,6 +815,7 @@ public class RoundsEntities implements Listener {
 
         activeBullets.clear();
         cohortBuckets.clear();
+        bucketPool.clear();
         cohortCandidates.clear();
         activeClouds.clear();
         if (cloudTickId != -1) {

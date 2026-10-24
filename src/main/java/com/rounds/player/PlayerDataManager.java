@@ -383,9 +383,18 @@ public class PlayerDataManager implements Listener {
     }
 
     private void flushStore() {
+        final String content = store().saveToString();
+        if (!plugin.isEnabled()) {
+            writeActiveFile(content);
+            return;
+        }
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> writeActiveFile(content));
+    }
+
+    private void writeActiveFile(String content) {
         try {
             File tmp = new File(activeFile.getParentFile(), activeFile.getName() + ".tmp");
-            store().save(tmp);
+            java.nio.file.Files.writeString(tmp.toPath(), content, java.nio.charset.StandardCharsets.UTF_8);
             try {
                 java.nio.file.Files.move(tmp.toPath(), activeFile.toPath(),
                     java.nio.file.StandardCopyOption.REPLACE_EXISTING,
@@ -534,7 +543,8 @@ public class PlayerDataManager implements Listener {
                             removePlayerData(uuid);
                             plugin.getGameManager().clearCardEffects(player);
                             com.rounds.item.GunItem.cancelReload(uuid);
-        com.rounds.item.GunItem.clearPlayer(uuid);
+                            com.rounds.item.GunItem.clearPlayer(uuid);
+                            com.rounds.listener.LegendaryEffects.clearPlayer(uuid);
 
                             player.getInventory().clear();
                             var attr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
@@ -581,6 +591,7 @@ public class PlayerDataManager implements Listener {
         }
         com.rounds.item.GunItem.cancelReload(uuid);
         com.rounds.item.GunItem.clearPlayer(uuid);
+        com.rounds.listener.LegendaryEffects.clearPlayer(uuid);
         if (plugin.getGameManager().getState() == GameManager.GameState.CARDS) {
             plugin.getCardManager().removePendingPick(uuid);
             Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {

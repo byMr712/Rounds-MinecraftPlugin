@@ -12,6 +12,7 @@ import org.bukkit.block.Block;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -43,6 +44,8 @@ public class BlockListener implements Listener {
     private final Set<Location> endBlocks = new HashSet<>();
     private final Set<Location> jumpBlocks = new HashSet<>();
     private final Set<Location> upBlocks = new HashSet<>();
+    private final Set<Long> jumpBlockKeys = new HashSet<>();
+    private final Set<Long> upBlockKeys = new HashSet<>();
     private final Set<UUID> stepCooldown = new HashSet<>();
     private final Map<UUID, Long> jumpCooldown = new HashMap<>();
     private final Set<UUID> liftingPlayers = new HashSet<>();
@@ -70,18 +73,17 @@ public class BlockListener implements Listener {
     public Set<Location> getUpBlocks() { return Collections.unmodifiableSet(upBlocks); }
 
     public boolean isJumpBlock(Location loc) {
-        if (loc == null || loc.getWorld() == null) return false;
-        return jumpBlocks.contains(new Location(loc.getWorld(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
+        if (loc == null || jumpBlockKeys.isEmpty()) return false;
+        return jumpBlockKeys.contains(org.bukkit.block.Block.getBlockKey(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
     }
 
     public boolean isUpBlock(Location loc) {
-        if (loc == null || loc.getWorld() == null) return false;
-        return upBlocks.contains(new Location(loc.getWorld(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
+        if (loc == null || upBlockKeys.isEmpty()) return false;
+        return upBlockKeys.contains(org.bukkit.block.Block.getBlockKey(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
     }
 
     public boolean isLocationTouchingJumpBlock(Location loc) {
-        if (loc == null || loc.getWorld() == null || jumpBlocks.isEmpty()) return false;
-        World w = loc.getWorld();
+        if (loc == null || jumpBlockKeys.isEmpty()) return false;
         double minX = loc.getX() - 0.35;
         double maxX = loc.getX() + 0.35;
         double minZ = loc.getZ() - 0.35;
@@ -92,7 +94,7 @@ public class BlockListener implements Listener {
         for (int x = (int) Math.floor(minX); x <= (int) Math.floor(maxX); x++) {
             for (int z = (int) Math.floor(minZ); z <= (int) Math.floor(maxZ); z++) {
                 for (int y = y1; y <= y2; y++) {
-                    if (jumpBlocks.contains(new Location(w, x, y, z))) {
+                    if (jumpBlockKeys.contains(org.bukkit.block.Block.getBlockKey(x, y, z))) {
                         return true;
                     }
                 }
@@ -102,8 +104,7 @@ public class BlockListener implements Listener {
     }
 
     public boolean isLocationTouchingUpBlock(Location loc) {
-        if (loc == null || loc.getWorld() == null || upBlocks.isEmpty()) return false;
-        World w = loc.getWorld();
+        if (loc == null || upBlockKeys.isEmpty()) return false;
         double minX = loc.getX() - 0.35;
         double maxX = loc.getX() + 0.35;
         double minZ = loc.getZ() - 0.35;
@@ -114,7 +115,7 @@ public class BlockListener implements Listener {
         for (int x = (int) Math.floor(minX); x <= (int) Math.floor(maxX); x++) {
             for (int z = (int) Math.floor(minZ); z <= (int) Math.floor(maxZ); z++) {
                 for (int y = y1; y <= y2; y++) {
-                    if (upBlocks.contains(new Location(w, x, y, z))) {
+                    if (upBlockKeys.contains(org.bukkit.block.Block.getBlockKey(x, y, z))) {
                         return true;
                     }
                 }
@@ -174,6 +175,7 @@ public class BlockListener implements Listener {
                     Location loc = new Location(world, x, y, z);
                     loc.getBlock().setType(Material.COAL_BLOCK);
                     jumpBlocks.add(loc);
+                    jumpBlockKeys.add(org.bukkit.block.Block.getBlockKey(x, y, z));
                     filled.add(loc);
                 }
             }
@@ -204,6 +206,7 @@ public class BlockListener implements Listener {
                     Location loc = new Location(world, x, y, z);
                     loc.getBlock().setType(Material.PURPLE_GLAZED_TERRACOTTA);
                     upBlocks.add(loc);
+                    upBlockKeys.add(org.bukkit.block.Block.getBlockKey(x, y, z));
                     filled.add(loc);
                 }
             }
@@ -326,33 +329,40 @@ public class BlockListener implements Listener {
         player.getInventory().addItem(item);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onPlayerMove(PlayerMoveEvent event) {
-        if (event.getTo() == null) return;
+        if (!event.hasChangedPosition()) return;
+
+        Location to = event.getTo();
+        if (to == null) return;
 
         Player player = event.getPlayer();
         if (player.getGameMode() == GameMode.SPECTATOR) return;
 
-        Location to = event.getTo();
-        Location locBelow = to.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getLocation();
-        Location locAt = to.getBlock().getLocation();
+        int toX = to.getBlockX();
+        int toY = to.getBlockY();
+        int toZ = to.getBlockZ();
+        long keyBelow = org.bukkit.block.Block.getBlockKey(toX, toY - 1, toZ);
+        long keyAt = org.bukkit.block.Block.getBlockKey(toX, toY, toZ);
 
         // 1. Jump pad check (triggered whenever stepping/falling on it)
-        if (isLocationTouchingJumpBlock(to) || jumpBlocks.contains(locBelow) || jumpBlocks.contains(locAt)) {
+        if (isLocationTouchingJumpBlock(to) || jumpBlockKeys.contains(keyBelow) || jumpBlockKeys.contains(keyAt)) {
             handleJumpBlock(player);
         }
 
         // 2. Up block check
-        if (isLocationTouchingUpBlock(to) || upBlocks.contains(locBelow) || upBlocks.contains(locAt)) {
+        if (isLocationTouchingUpBlock(to) || upBlockKeys.contains(keyBelow) || upBlockKeys.contains(keyAt)) {
             handleUpBlock(player);
         }
 
         // 3. For team join, start/end blocks, only check when changing block coordinates
         Location from = event.getFrom();
-        if (from.getBlockX() == to.getBlockX()
-                && from.getBlockY() == to.getBlockY()
-                && from.getBlockZ() == to.getBlockZ()) return;
+        if (from.getBlockX() == toX
+                && from.getBlockY() == toY
+                && from.getBlockZ() == toZ) return;
 
+        Location locBelow = to.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getLocation();
+        Location locAt = to.getBlock().getLocation();
         Location loc = locBelow;
         boolean isNoneJoin = joinNoneBlocks.contains(locBelow) || joinNoneBlocks.contains(locAt);
         if (isNoneJoin) {
@@ -596,12 +606,14 @@ public class BlockListener implements Listener {
         }
         if (pdc.has(RoundsKeys.JUMP_BLOCK, PersistentDataType.BYTE)) {
             jumpBlocks.add(loc);
+            jumpBlockKeys.add(org.bukkit.block.Block.getBlockKey(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
             placer.sendMessage(ChatColor.GREEN + Messages.get("block.jump-placed"));
             saveBlocks();
             return;
         }
         if (pdc.has(RoundsKeys.UP_BLOCK, PersistentDataType.BYTE)) {
             upBlocks.add(loc);
+            upBlockKeys.add(org.bukkit.block.Block.getBlockKey(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
             placer.sendMessage(ChatColor.GREEN + Messages.get("block.up-placed"));
             saveBlocks();
             return;
@@ -617,12 +629,19 @@ public class BlockListener implements Listener {
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
         Location loc = event.getBlock().getLocation();
+        long bKey = org.bukkit.block.Block.getBlockKey(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
         boolean removed = joinBlocks.remove(loc) != null;
         removed |= joinNoneBlocks.remove(loc);
         removed |= cdshootBlocks.remove(loc);
         removed |= endBlocks.remove(loc);
-        removed |= jumpBlocks.remove(loc);
-        removed |= upBlocks.remove(loc);
+        if (jumpBlocks.remove(loc)) {
+            jumpBlockKeys.remove(bKey);
+            removed = true;
+        }
+        if (upBlocks.remove(loc)) {
+            upBlockKeys.remove(bKey);
+            removed = true;
+        }
         if (blockStorage.getLobbyBlock() != null && blockStorage.getLobbyBlock().equals(loc)) {
             blockStorage.setLobbyBlock(null);
             removed = true;
@@ -729,6 +748,18 @@ public class BlockListener implements Listener {
         loadLocationSet(config, "jump", jumpBlocks);
         loadLocationSet(config, "up", upBlocks);
         loadLocationSet(config, "join_none", joinNoneBlocks);
+        syncBlockKeys();
+    }
+
+    private void syncBlockKeys() {
+        jumpBlockKeys.clear();
+        for (Location loc : jumpBlocks) {
+            jumpBlockKeys.add(org.bukkit.block.Block.getBlockKey(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
+        }
+        upBlockKeys.clear();
+        for (Location loc : upBlocks) {
+            upBlockKeys.add(org.bukkit.block.Block.getBlockKey(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
+        }
     }
 
     private void loadLocationSet(YamlConfiguration config, String sectionName, Set<Location> set) {

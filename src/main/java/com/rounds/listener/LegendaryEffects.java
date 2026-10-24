@@ -52,6 +52,14 @@ public class LegendaryEffects implements Listener {
         skyfallCooldowns.clear();
     }
 
+    public static void clearPlayer(UUID uuid) {
+        if (uuid == null) return;
+        rageUntil.remove(uuid);
+        secondWindUses.remove(uuid);
+        fallPeakY.remove(uuid);
+        skyfallCooldowns.remove(uuid);
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onDamage(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Player player)) return;

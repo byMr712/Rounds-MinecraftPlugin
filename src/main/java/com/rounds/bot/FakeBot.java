@@ -362,23 +362,8 @@ public class FakeBot {
         if (bl != null) {
             boolean touchingJump = bl.isLocationTouchingJumpBlock(to) || bl.isJumpBlock(locBelow) || bl.isJumpBlock(locAt);
             if (touchingJump) {
-                if (ai != null && ai.isPadBanned()) {
-                    // Start of round ban active: Jump block does NOT trigger!
-                    // Safely slide the bot away from the jump block towards the arena center
-                    Location center = manager.getPlugin() != null ? manager.getPlugin().getGameManager().getCurrentZoneCenter() : null;
-                    if (center != null && center.getWorld() != null && center.getWorld().equals(p.getWorld())) {
-                        double dxCenter = center.getX() - p.getLocation().getX();
-                        double dzCenter = center.getZ() - p.getLocation().getZ();
-                        double d = Math.sqrt(dxCenter * dxCenter + dzCenter * dzCenter);
-                        if (d > 0.5) {
-                            impulseX = (dxCenter / d) * 0.25;
-                            impulseZ = (dzCenter / d) * 0.25;
-                        }
-                    }
-                } else {
-                    bl.handleJumpBlock(p);
-                    if (ai != null) ai.setPadCooldown(600);
-                }
+                bl.handleJumpBlock(p);
+                if (ai != null) ai.setPadCooldown(600);
             }
             if (bl.isLocationTouchingUpBlock(to) || bl.isUpBlock(locBelow) || bl.isUpBlock(locAt)) {
                 bl.handleUpBlock(p);

@@ -904,25 +904,15 @@ public class BotAI extends BukkitRunnable {
             }
         }
 
-        // 5. Avoid jump blocks, up blocks, and drop-offs leading onto them
+        // 5. Avoid walking directly into jump blocks and up blocks in front unless actively seeking one in combat
         com.rounds.blocks.BlockListener bl = bot.getPlugin() != null ? bot.getPlugin().getBlockListener() : null;
         if (bl != null && seekingPadLoc == null) {
-            double[] stepFracs = (dist > 0.7) ? new double[]{0.35, 0.7, 1.0} : new double[]{1.0};
-            for (double frac : stepFracs) {
-                Location checkLoc = loc.clone().add(dx * frac, 0.1, dz * frac);
-                Location checkBelow = checkLoc.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getLocation();
-                Location checkAt = checkLoc.getBlock().getLocation();
-                if (bl.isLocationTouchingJumpBlock(checkLoc) || bl.isJumpBlock(checkBelow) || bl.isJumpBlock(checkAt)
-                        || bl.isLocationTouchingUpBlock(checkLoc) || bl.isUpBlock(checkBelow) || bl.isUpBlock(checkAt)) {
-                    return false;
-                }
-                // Check drop-offs 1, 2, 3 blocks below (e.g. edge of spawn dropping onto a jump pad)
-                for (int downY = 1; downY <= 3; downY++) {
-                    Location checkDrop = checkLoc.clone().subtract(0, downY, 0).getBlock().getLocation();
-                    if (bl.isJumpBlock(checkDrop) || bl.isUpBlock(checkDrop)) {
-                        return false;
-                    }
-                }
+            Location checkLoc = loc.clone().add(dx, 0.1, dz);
+            Location checkBelow = checkLoc.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getLocation();
+            Location checkAt = checkLoc.getBlock().getLocation();
+            if (bl.isLocationTouchingJumpBlock(checkLoc) || bl.isJumpBlock(checkBelow) || bl.isJumpBlock(checkAt)
+                    || bl.isLocationTouchingUpBlock(checkLoc) || bl.isUpBlock(checkBelow) || bl.isUpBlock(checkAt)) {
+                return false;
             }
         }
 

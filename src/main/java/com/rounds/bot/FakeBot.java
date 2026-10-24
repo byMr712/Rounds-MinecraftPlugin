@@ -37,6 +37,14 @@ public class FakeBot {
         return velY;
     }
 
+    public double getImpulseX() {
+        return impulseX;
+    }
+
+    public double getImpulseZ() {
+        return impulseZ;
+    }
+
     public boolean isPadLaunched() {
         return padLaunchTicks > 0;
     }
@@ -166,16 +174,20 @@ public class FakeBot {
 
     public boolean isOnGround() {
         ServerPlayer sp = getNmsPlayer();
-        if (sp.onGround()) return true;
+        if (sp.onGround() || sp.verticalCollisionBelow) return true;
+        // If entity is visibly falling through the air, do not treat adjacent wall blocks as ground
+        if (velY < -0.1) {
+            return false;
+        }
         Location loc = getBukkitPlayer().getLocation();
         if (loc.getWorld() == null) return false;
         double y = loc.getY();
         double fractional = y - Math.floor(y);
         // If entity is floating mid-block in the air, it cannot be on ground
-        if (fractional > 0.08 && fractional < 0.92) {
+        if (fractional > 0.05 && fractional < 0.95) {
             return false;
         }
-        Location below = new Location(loc.getWorld(), loc.getBlockX() + 0.5, Math.floor(y) - 0.5, loc.getBlockZ() + 0.5);
+        Location below = new Location(loc.getWorld(), loc.getX(), Math.floor(y) - 0.1, loc.getZ());
         return below.getBlock().getType().isSolid();
     }
 

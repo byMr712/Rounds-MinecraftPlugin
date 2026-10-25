@@ -1,4 +1,4 @@
-# 🎯 RoundsPlugin — The ROUNDS Minigame in Minecraft
+# RoundsPlugin — The ROUNDS Minigame in Minecraft
 
 > **Language:** [Русский](readme.md) · English
 
@@ -10,33 +10,33 @@ The plugin is 100% self-contained, sets up in just 2 minutes using in-game physi
 
 ---
 
-## 💥 Key Features
+## Key Features
 
-- ⚔️ **Team Firefights (Up to 4 Teams):** Blue, Red, Yellow, Green teams + seamless spectator mode.
-- 🔫 **Custom Weapon (Gun & Shield):**
+- **Team Firefights (Up to 4 Teams):** Blue, Red, Yellow, Green teams + seamless spectator mode.
+- **Custom Weapon (Gun & Shield):**
   - **Left Click:** Fires physics-driven bullets with ricochets, bullet speed, and card effects.
   - **Right Click:** Raises shield to deflect bullets and trigger explosive counter-abilities.
   - **Q (Drop Key):** Manually reload your magazine with a live Action Bar progress bar.
-- 🃏 **112 Unique Upgrade Cards:**
+- **112 Unique Upgrade Cards:**
   - Massive ability catalog: homing bullets, poison clouds, frost slow, wall drills, executions, close-range saw shredding, and second-wind revives.
   - 5 rarity tiers: `COMMON`, `UNCOMMON`, `RARE`, `EPIC`, `LEGENDARY`.
   - **Comeback Mechanics:** The losing team drafts a new card between rounds. The more you lose, the stronger you become!
   - In-game deck inventory viewer (`/rdebug cards show`) and administrative card management.
-- 🤖 **Native Smart Bots (NMS Fake Players):**
+- **Native Smart Bots (NMS Fake Players):**
   - Real server-side players with 10 difficulty tiers — not dumb zombies.
   - They strafe, take cover, heal behind walls, hold open hallway angles in ambushes, ride jump pads and elevator lifts, and draft cards.
   - Bulk spawn up to 500 bots with zero server lag (profile matrix, multi-level NavMesh, and adaptive LOD tickrate).
   - Automatically detect placed team blocks on the arena and only join valid teams!
-- 👁️ **Spectator Outlines & Team Glow:**
+- **Spectator Outlines & Team Glow:**
   - Spectators and eliminated players exclusively see glowing outlines around all alive players in their team colors.
   - Survival players do NOT see this glow — keeping stealth, sneaking, and the Chameleon card fair and effective!
   - Spectators receive clean, team-colored victory titles at the end of each round.
-- 🧱 **2-Minute Arena Setup:** No messing around with coordinate math in configs — grab special blocks with `/rdebug giveblocks` and place them directly in the world.
-- 🔌 **Full Server Integration:** Compatible with Paper / Purpur 1.20.4+ (up to 1.21.x / 26.2), full TAB and PlaceholderAPI support, plus instant multi-language switching.
+- **2-Minute Arena Setup:** No messing around with coordinate math in configs — grab special blocks with `/rdebug giveblocks` and place them directly in the world.
+- **Full Server Integration:** Compatible with Paper / Purpur 1.20.4+ (up to 1.21.x / 26.2), full TAB and PlaceholderAPI support, plus instant multi-language switching.
 
 ---
 
-## 🛠️ Quick Start: Setting up an Arena in 2 Minutes
+## Quick Start: Setting up an Arena in 2 Minutes
 
 You never need to copy-paste coordinates into YAML files. Everything is configured with physical blocks in-game:
 
@@ -50,11 +50,11 @@ You will receive stacks of all special blocks, and your gamemode will automatica
 ### Step 2. Build the Lobby
 1. Place a **Lobby Block** (Emerald Block / Beacon) where players should spawn before and after matches.
 2. Place colored wool blocks on the floor for team selection:
-   - 🟦 **Light Blue Wool** — Join Blue Team.
-   - 🟥 **Red Wool** — Join Red Team.
-   - 🟨 **Yellow Wool** — Join Yellow Team.
-   - 🟩 **Lime Wool** — Join Green Team.
-   - ⬜ **White Wool** — Become a Spectator.
+   - **Light Blue Wool** — Join Blue Team.
+   - **Red Wool** — Join Red Team.
+   - **Yellow Wool** — Join Yellow Team.
+   - **Lime Wool** — Join Green Team.
+   - **White Wool** — Become a Spectator.
    > *Tip:* Building a 1v1 duel map? Simply place only Red and Blue wool — the plugin and bots will know only those two teams are active!
 
 ### Step 3. Mark the Combat Arena
@@ -73,7 +73,7 @@ The countdown begins, players draft their opening cards, and the match goes live
 
 ---
 
-## 🧱 Special Blocks Reference
+## Special Blocks Reference
 
 | In-Game Block | Material | Purpose |
 | :--- | :--- | :--- |
@@ -90,7 +90,7 @@ The countdown begins, players draft their opening cards, and the match goes live
 
 ---
 
-## 🤖 Smart AI Combat Bots
+## Smart AI Combat Bots
 
 The built-in Fake Player bot system runs natively on the Minecraft server tick without external bridge plugins:
 
@@ -122,7 +122,7 @@ The built-in Fake Player bot system runs natively on the Minecraft server tick w
 
 ---
 
-## 📋 Commands & Permissions
+## Commands & Permissions
 
 Primary admin command: `/rdebug`. Short bot management command: `/rbot`.
 
@@ -153,7 +153,7 @@ Primary admin command: `/rdebug`. Short bot management command: `/rbot`.
 
 ---
 
-## ⚙️ Configuration (`config.yml`)
+## Configuration (`config.yml`)
 
 ```yaml
 # Language pack from lang/ folder (EN_en, RU_ru, etc.)
@@ -191,7 +191,7 @@ jump-block:
 
 ---
 
-## 📊 PlaceholderAPI Support
+## PlaceholderAPI Support
 
 Full PlaceholderAPI integration under the `%rounds_...%` identifier:
 
@@ -207,9 +207,9 @@ Full PlaceholderAPI integration under the `%rounds_...%` identifier:
 
 ---
 
-## 💻 Requirements & Installation
+## Requirements & Installation
 
 1. **Server:** Paper, Purpur, or compatible forks 1.20.4+ (compatible up to 1.21.x / 26.2).
 2. **Java:** Java 17 or newer.
 3. Drop `RoundsPlugin.jar` into your `plugins/` directory and restart your server.
-4. Enjoy! 🚀
+4. Enjoy!

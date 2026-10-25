@@ -1503,10 +1503,10 @@ public class BotAI extends BukkitRunnable {
     }
 
     private float findClearDirection(Location loc, float currentHeading) {
-        // 1. Check for 3-sided dead end (cul-de-sac / 3x3 room): front, left, and right blocked within 2.2m
-        boolean frontBlocked = !isDirectionClear(loc, currentHeading, 2.2);
-        boolean leftBlocked = !isDirectionClear(loc, currentHeading - 90f, 2.0);
-        boolean rightBlocked = !isDirectionClear(loc, currentHeading + 90f, 2.0);
+        // 1. Check for 3-sided dead end (cul-de-sac / pocket rooms up to 4x4): front, left, and right blocked within 4.0m
+        boolean frontBlocked = !isDirectionClear(loc, currentHeading, 4.0);
+        boolean leftBlocked = !isDirectionClear(loc, currentHeading - 90f, 4.0);
+        boolean rightBlocked = !isDirectionClear(loc, currentHeading + 90f, 4.0);
         if (frontBlocked && leftBlocked && rightBlocked) {
             penalizePath(loc, 4);
             consecutiveBounces = 0;
@@ -1581,7 +1581,7 @@ public class BotAI extends BukkitRunnable {
 
         for (float deg = 0f; deg < 360f; deg += 45f) {
             double clearDist = 0.0;
-            for (double d = 1.5; d <= 6.0; d += 1.5) {
+            for (double d = 1.5; d <= 7.5; d += 1.5) {
                 if (isDirectionClear(loc, deg, d, false)) {
                     clearDist = d;
                 } else {

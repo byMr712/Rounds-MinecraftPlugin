@@ -1,6 +1,7 @@
 # RoundsPlugin
 
-> **Язык:** Русский · [English](readme.en.md)
+> **Язык:** Русский · [English](readme.en.md)  
+> Вдохновлено идеей Minecraft-мода [**Rounds System**](https://www.curseforge.com/minecraft/mc-mods/rounds-in-minecraft-mod) от автора **neon_stream**.
 
 Minecraft плагин соревновательной мини-игры **ROUNDS** для серверов Paper / Purpur. 4 команды, глубокая карточная система с 112 готовыми картами и возможностью создания своих, до 20+ раундов, система физических интерактивных блоков для быстрой настройки карт, механика выбора карт для проигравших, автоубийство при затяжных раундах, режим фриплея и поддержка [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) / [**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi).
 

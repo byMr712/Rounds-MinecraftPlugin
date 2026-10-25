@@ -712,4 +712,4 @@ Requires **Java 17** (or higher) and **Gradle 8.9+**:
 ```
 
 The resulting JAR will be located at:
-`build/libs/RoundsPlugin-1.X.jar`
+`build/libs/RoundsPlugin-v1.5-byMr712.jar`

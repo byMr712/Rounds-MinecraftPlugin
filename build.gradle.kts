@@ -36,6 +36,10 @@ tasks.processResources {
     }
 }
 
+tasks.jar {
+    archiveFileName.set("RoundsPlugin-v${project.version}-byMr712.jar")
+}
+
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
     options.release.set(17)

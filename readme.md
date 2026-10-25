@@ -708,4 +708,4 @@ playerlist-objective:
 ```
 
 Готовый JAR-файл плагина будет сгенерирован по пути:
-`build/libs/RoundsPlugin-1.X.jar`
+`build/libs/RoundsPlugin-v1.5-byMr712.jar`

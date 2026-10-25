@@ -32,6 +32,9 @@ public class FakeBot {
     private double impulseX = 0.0;
     private double impulseZ = 0.0;
     private int padLaunchTicks = 0;
+    private int consecutiveJumpAttempts = 0;
+    private int jumpStuckCooldown = 0;
+    private Location lastJumpAttemptLoc = null;
 
     public double getVelY() {
         return velY;
@@ -240,6 +243,9 @@ public class FakeBot {
         this.impulseX = 0.0;
         this.impulseZ = 0.0;
         this.padLaunchTicks = 0;
+        this.consecutiveJumpAttempts = 0;
+        this.jumpStuckCooldown = 0;
+        this.lastJumpAttemptLoc = null;
         ServerPlayer sp = getNmsPlayer();
         if (sp != null) {
             sp.setDeltaMovement(Vec3.ZERO);
@@ -381,22 +387,46 @@ public class FakeBot {
         }
 
         // 3. Ground movement: obstacle auto-jump & parkour across gaps and platforms
+        if (jumpStuckCooldown > 0) {
+            jumpStuckCooldown--;
+        }
+
         if (onGround && velY <= 0.0 && (Math.abs(dx) > 0.01 || Math.abs(dz) > 0.01)) {
             Location loc = p.getLocation();
             double moveLen = Math.sqrt(dx * dx + dz * dz);
             double dirX = dx / moveLen;
             double dirZ = dz / moveLen;
             double stepDist = Math.max(moveLen * 1.5, 0.55);
-            Location ahead = loc.clone().add(dirX * stepDist, 0.2, dirZ * stepDist);
-            Location aheadUp = ahead.clone().add(0, 1.0, 0);
-            Location headSpace = loc.clone().add(0, 2.0, 0);
+            Location aheadFeet = loc.clone().add(dirX * stepDist, 0.2, dirZ * stepDist);
+            Location aheadBody = loc.clone().add(dirX * stepDist, 1.2, dirZ * stepDist);
+            Location aheadHead = loc.clone().add(dirX * stepDist, 1.8, dirZ * stepDist);
+            Location headSpace = loc.clone().add(0, 2.1, 0);
 
-            boolean obstacleAhead = ahead.getBlock().getType().isSolid() || sp.horizontalCollision;
-            if (obstacleAhead && !aheadUp.getBlock().getType().isSolid() && !headSpace.getBlock().getType().isSolid()) {
-                velY = 0.42; // Minecraft jump velocity to climb step/stair
-                impulseX += dirX * 0.22;
-                impulseZ += dirZ * 0.22;
-            } else if (!obstacleAhead && !headSpace.getBlock().getType().isSolid()) {
+            boolean stepAhead = aheadFeet.getBlock().getType().isSolid() || sp.horizontalCollision;
+            boolean wallTooHigh = aheadBody.getBlock().getType().isSolid() || aheadHead.getBlock().getType().isSolid();
+
+            if (jumpStuckCooldown <= 0 && stepAhead && !wallTooHigh && !headSpace.getBlock().getType().isSolid()) {
+                if (lastJumpAttemptLoc != null && loc.distanceSquared(lastJumpAttemptLoc) < 0.1) {
+                    consecutiveJumpAttempts++;
+                } else {
+                    consecutiveJumpAttempts = 1;
+                }
+                lastJumpAttemptLoc = loc.clone();
+
+                if (consecutiveJumpAttempts >= 2) {
+                    // Bot jumped twice against an obstacle and didn't make progress (corner / 2x2 dead-end)
+                    // Abort jumps, apply cooldown, and trigger AI detour immediately!
+                    jumpStuckCooldown = 35;
+                    consecutiveJumpAttempts = 0;
+                    if (ai != null) {
+                        ai.onCornerStuck(loc);
+                    }
+                } else {
+                    velY = 0.42; // Minecraft jump velocity to climb step/stair
+                    impulseX += dirX * 0.22;
+                    impulseZ += dirZ * 0.22;
+                }
+            } else if (!stepAhead && !headSpace.getBlock().getType().isSolid()) {
                 // Check if approaching a 1-4 block gap or parkour platform ahead
                 Location edgeCheck = loc.clone().add(dirX * 0.6, -0.4, dirZ * 0.6);
                 Location edgeDrop = loc.clone().add(dirX * 0.6, -1.4, dirZ * 0.6);

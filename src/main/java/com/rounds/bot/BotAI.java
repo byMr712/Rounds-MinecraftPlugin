@@ -1050,8 +1050,8 @@ public class BotAI extends BukkitRunnable {
         double perpZ = -Math.sin(rad) * 0.28;
 
         Location feet = loc.clone().add(dx, 0.2, dz);
-        Location body = loc.clone().add(dx, 1.0, dz);
-        Location head = loc.clone().add(dx, 1.7, dz); // Checked at 1.7m to allow passing through 2-block high doorways
+        Location body = loc.clone().add(dx, 1.2, dz);
+        Location head = loc.clone().add(dx, 1.8, dz);
         Location overhead = loc.clone().add(0, 2.1, 0);
 
         boolean feetSolid = feet.getBlock().getType().isSolid();
@@ -1059,29 +1059,20 @@ public class BotAI extends BukkitRunnable {
         boolean headSolid = head.getBlock().getType().isSolid();
         boolean overheadBlocked = overhead.getBlock().getType().isSolid();
 
-        // Check if obstacle is a climbable 1-block step, slab, or staircase
-        boolean stepUpPassable = false;
-        if (bodySolid && !overheadBlocked) {
-            Location stepBody = loc.clone().add(dx, 2.0, dz);
-            Location stepHead = loc.clone().add(dx, 2.8, dz);
-            if (!stepBody.getBlock().getType().isSolid() && !stepHead.getBlock().getType().isSolid()) {
-                stepUpPassable = true;
-            }
-        }
-
-        // 1. Center ray solid check: 1-block steps are passable if headroom is clear!
-        if ((bodySolid && !stepUpPassable) || headSolid || (feetSolid && overheadBlocked)) {
+        // 1. Center ray: If body (1.2m) or head (1.8m) is solid, obstacle is a >=2-block high wall -> IMPASSABLE!
+        // A 1-block step or stair only has feet solid (0.2m), with body and head clear.
+        if (bodySolid || headSolid || (feetSolid && overheadBlocked)) {
             return false;
         }
 
-        // 2. Left and right shoulders width check (prevents jamming into narrow diagonal gaps)
-        Location bodyLeft = loc.clone().add(dx - perpX, 1.1, dz - perpZ);
-        if (bodyLeft.getBlock().getType().isSolid() && (!stepUpPassable || loc.clone().add(dx - perpX, 2.0, dz - perpZ).getBlock().getType().isSolid())) {
+        // 2. Left and right shoulders width check at body height (prevents jamming into narrow 2x2 corners)
+        Location bodyLeft = loc.clone().add(dx - perpX, 1.2, dz - perpZ);
+        if (bodyLeft.getBlock().getType().isSolid()) {
             return false;
         }
 
-        Location bodyRight = loc.clone().add(dx + perpX, 1.1, dz + perpZ);
-        if (bodyRight.getBlock().getType().isSolid() && (!stepUpPassable || loc.clone().add(dx + perpX, 2.0, dz + perpZ).getBlock().getType().isSolid())) {
+        Location bodyRight = loc.clone().add(dx + perpX, 1.2, dz + perpZ);
+        if (bodyRight.getBlock().getType().isSolid()) {
             return false;
         }
 
@@ -1240,6 +1231,17 @@ public class BotAI extends BukkitRunnable {
         this.currentHuntTarget = null;
         this.currentCorridorWaypoint = null;
         this.cachedLandingPlatform = null;
+    }
+
+    public void onCornerStuck(Location loc) {
+        if (loc != null) {
+            blockedEdges.add(packCell(loc.getBlockX(), loc.getBlockZ()));
+        }
+        currentHuntTarget = null;
+        currentCorridorWaypoint = null;
+        patrolStuckTicks = 0;
+        patrolHeading = findClearDirection(loc, patrolHeading + (ThreadLocalRandom.current().nextBoolean() ? 90f : -90f));
+        lockedHeadingTicks = 35; // Lock heading for 1.75s to walk away from corner
     }
 
     /**

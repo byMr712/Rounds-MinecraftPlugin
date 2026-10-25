@@ -4,7 +4,7 @@ main: com.rounds.RoundsPlugin
 api-version: '1.20'
 description: Rounds minigame plugin
 authors: [Ifrit]
-softdepend: [PlaceholderAPI]
+softdepend: [PlaceholderAPI, TAB]
 commands:
   rdebug:
     description: Debug tools for testing

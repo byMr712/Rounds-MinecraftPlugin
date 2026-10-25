@@ -2108,7 +2108,7 @@ public class GameManager implements Listener {
     private void updateColoredName(Player p, GameTeam team) {
         FakeBot bot = (plugin.getBotManager() != null) ? plugin.getBotManager().getBot(p.getName()) : null;
         ChatColor c = (team != null) ? team.getColor() : (bot != null && bot.getAssignedTeam() != null ? bot.getAssignedTeam().getColor() : ChatColor.GRAY);
-        String prefix = (bot != null) ? c + "§l[Lvl " + bot.getLevel() + "] §r" + c : (team != null ? c.toString() : "");
+        String prefix = (bot != null) ? c + "§l[L" + bot.getLevel() + "] §r" + c : (team != null ? c.toString() : "");
         String suffix = heartsSuffix(c, p);
 
         if (tabCompat.isActive()) {
@@ -2211,7 +2211,7 @@ public class GameManager implements Listener {
                 }
                 ChatColor c = (pTeam != null) ? pTeam.getColor() : (bot.getAssignedTeam() != null ? bot.getAssignedTeam().getColor() : ChatColor.GRAY);
                 botTeam.setColor(c);
-                botTeam.setPrefix(c + "§l[Lvl " + bot.getLevel() + "] §r" + c);
+                botTeam.setPrefix(c + "§l[L" + bot.getLevel() + "] §r" + c);
                 botTeam.setOption(org.bukkit.scoreboard.Team.Option.NAME_TAG_VISIBILITY, org.bukkit.scoreboard.Team.OptionStatus.ALWAYS);
                 botTeam.setOption(org.bukkit.scoreboard.Team.Option.COLLISION_RULE, org.bukkit.scoreboard.Team.OptionStatus.NEVER);
                 botTeam.setAllowFriendlyFire(false);

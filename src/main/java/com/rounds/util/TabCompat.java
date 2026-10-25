@@ -23,16 +23,23 @@ public class TabCompat {
     private Method mShowNametagToViewer;
 
     public TabCompat() {
+        ensureInitialized();
+    }
+
+    private synchronized boolean ensureInitialized() {
+        if (active) return true;
         try {
-            if (Bukkit.getPluginManager().getPlugin("TAB") == null) return;
+            if (Bukkit.getPluginManager().getPlugin("TAB") == null) return false;
             Class<?> apiClass = Class.forName("me.neznamy.tab.api.TabAPI");
-            api = apiClass.getMethod("getInstance").invoke(null);
-            if (api == null) return;
+            Method getInstance = apiClass.getMethod("getInstance");
+            api = getInstance.invoke(null);
+            if (api == null) return false;
+
             try { mGetTabListFormatManager = apiClass.getMethod("getTabListFormatManager"); mGetTabListFormatManager.setAccessible(true); } catch (Exception ignored) {}
             try { mGetNameTagManager = apiClass.getMethod("getNameTagManager"); mGetNameTagManager.setAccessible(true); } catch (Exception ignored) {}
             try { mGetPlayer = apiClass.getMethod("getPlayer", UUID.class); mGetPlayer.setAccessible(true); } catch (Exception ignored) {}
 
-            if (mGetPlayer == null) return;
+            if (mGetPlayer == null) return false;
             Class<?> tabPlayerClass = mGetPlayer.getReturnType();
 
             Object tlf = null;
@@ -92,13 +99,19 @@ public class TabCompat {
 
             active = true;
             Bukkit.getLogger().info("[Rounds] TAB integration active (NameTagManager=" + (ntm != null) + ", TabList=" + (tlf != null) + ")");
-        } catch (Exception e) {
+            return true;
+        } catch (Throwable ignored) {
             active = false;
-            Bukkit.getLogger().warning("[Rounds] TAB detected but integration failed: " + e);
+            return false;
         }
     }
 
-    public boolean isActive() { return active; }
+    public boolean isActive() {
+        if (!active) {
+            ensureInitialized();
+        }
+        return active;
+    }
 
     private Object tabPlayer(Player player) {
         try {

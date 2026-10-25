@@ -182,13 +182,7 @@ public class FakeBot {
 
     public boolean considersObstacleClimbable(int obstacleHeight) {
         int maxClimb = getMaxClimbableBlocks();
-        if (obstacleHeight <= maxClimb) return true;
-        if (obstacleHeight == maxClimb + 1) {
-            // Pro bots (level 8+) know exact physical clearance and never attempt beyond limit
-            if (getSkillFactor() >= 0.75) return false;
-            return attemptNearLimitJumps;
-        }
-        return false;
+        return obstacleHeight <= maxClimb;
     }
 
     public boolean hasParkourTargetAhead(double dirX, double dirZ) {
@@ -645,24 +639,27 @@ public class FakeBot {
                     || bl.isLocationTouchingJumpBlock(aheadFeet));
 
             // Only auto-jump over actual solid blocks; never treat other players or hazard pads as jumpable steps!
-            boolean solidBlockAhead = (aheadFeet.getBlock().getType().isSolid()
-                    || aheadFeet.clone().add(0, 1.0, 0).getBlock().getType().isSolid()) && !hazardAhead;
-            boolean stepAhead = solidBlockAhead || (sp.horizontalCollision && !entityAhead && !hazardAhead);
+            Location aheadEye = loc.clone().add(dirX * stepDist, 1.5, dirZ * stepDist);
+            boolean wallAtEye = aheadEye.getBlock().getType().isSolid();
+
             int obstacleHeight = 0;
             while (obstacleHeight < 4 && aheadFeet.clone().add(0, obstacleHeight, 0).getBlock().getType().isSolid() && !hazardAhead) {
                 obstacleHeight++;
             }
-            if (obstacleHeight == 0 && sp.horizontalCollision && !hazardAhead) {
+            if (obstacleHeight == 0 && sp.horizontalCollision && !hazardAhead && !wallAtEye) {
                 obstacleHeight = 1;
             }
 
-            boolean willAttempt = (obstacleHeight > 0) && considersObstacleClimbable(obstacleHeight);
+            boolean solidBlockAhead = (obstacleHeight > 0) && !hazardAhead && !wallAtEye;
+            boolean stepAhead = solidBlockAhead || (sp.horizontalCollision && !entityAhead && !hazardAhead && !wallAtEye);
+
+            boolean willAttempt = (obstacleHeight > 0) && considersObstacleClimbable(obstacleHeight) && !wallAtEye;
             boolean landingClear = (obstacleHeight > 0)
                     && !aheadFeet.clone().add(0, obstacleHeight, 0).getBlock().getType().isSolid()
                     && !aheadFeet.clone().add(0, obstacleHeight + 1.0, 0).getBlock().getType().isSolid();
             Location overheadObstacle = loc.clone().add(0, 2.1 + Math.max(0, obstacleHeight - 1) * 0.8, 0);
 
-            if (jumpStuckCooldown <= 0 && stepAhead && willAttempt && landingClear
+            if (jumpStuckCooldown <= 0 && stepAhead && willAttempt && landingClear && !wallAtEye
                     && !headSpace.getBlock().getType().isSolid() && !overheadObstacle.getBlock().getType().isSolid()) {
                 if (lastJumpAttemptLoc != null && loc.distanceSquared(lastJumpAttemptLoc) < 0.05) {
                     consecutiveJumpAttempts++;

@@ -357,13 +357,7 @@ public class BotAI extends BukkitRunnable {
         double distSq = botEye.distanceSquared(targetEye);
         if (distSq > (maxDist * maxDist)) return false;
 
-        // Close proximity (audible footsteps or proximity allows detection if raycast is clear)
-        double hearDist = (bot.getPlugin() != null) ? bot.getPlugin().getRoundsConfig().getBotProximityHearingDistance() : 2.5;
-        if (distSq < (hearDist * hearDist)) {
-            return botPlayer.hasLineOfSight(target);
-        }
-
-        // Field of View check
+        // Field of View check (footstep hearing removed: vision cone strictly required)
         Vector dirToTarget = targetEye.toVector().subtract(botEye.toVector()).normalize();
         Vector lookDir = botEye.getDirection().normalize();
         double angle = Math.toDegrees(dirToTarget.angle(lookDir));
@@ -373,6 +367,40 @@ public class BotAI extends BukkitRunnable {
         }
 
         return botPlayer.hasLineOfSight(target);
+    }
+
+    /**
+     * Checks if there is a clear physical line of fire from shooter's eyes to target's head or chest,
+     * ensuring bots do not shoot directly into walls/obstacles.
+     */
+    public boolean hasClearLineOfFire(Player shooter, Player target) {
+        if (shooter == null || target == null) return false;
+        Location eye = shooter.getEyeLocation();
+        Location targetCenter = target.getLocation().add(0, 1.0, 0);
+        Location targetEye = target.getEyeLocation();
+
+        World world = eye.getWorld();
+        if (world == null || !world.equals(target.getWorld())) return false;
+
+        double distEye = eye.distance(targetEye);
+        if (distEye > 0.1) {
+            Vector dirEye = targetEye.toVector().subtract(eye.toVector()).normalize();
+            RayTraceResult hitEye = world.rayTraceBlocks(eye, dirEye, distEye, FluidCollisionMode.NEVER, true);
+            if (hitEye == null || hitEye.getHitBlock() == null) {
+                return true;
+            }
+        }
+
+        double distCenter = eye.distance(targetCenter);
+        if (distCenter > 0.1) {
+            Vector dirCenter = targetCenter.toVector().subtract(eye.toVector()).normalize();
+            RayTraceResult hitCenter = world.rayTraceBlocks(eye, dirCenter, distCenter, FluidCollisionMode.NEVER, true);
+            if (hitCenter == null || hitCenter.getHitBlock() == null) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -539,7 +567,7 @@ public class BotAI extends BukkitRunnable {
                 patrolHeading = flightYaw; // Preserve forward flight heading so bot moves away from edge upon landing
             }
 
-            if (currentTarget != null && !isTeammate(player, currentTarget) && canSee(player, currentTarget) && bot.hasGun() && shootCooldown <= 0 && reactionTicks <= 0) {
+            if (currentTarget != null && !isTeammate(player, currentTarget) && canSee(player, currentTarget) && hasClearLineOfFire(player, currentTarget) && bot.hasGun() && shootCooldown <= 0 && reactionTicks <= 0) {
                 bot.shoot();
                 shootCooldown = 6;
             }
@@ -605,7 +633,7 @@ public class BotAI extends BukkitRunnable {
                     }
                 }
 
-                if (targetCurrentlyVisible && currentTarget != null && !isTeammate(player, currentTarget)) {
+                if (targetCurrentlyVisible && currentTarget != null && !isTeammate(player, currentTarget) && hasClearLineOfFire(player, currentTarget)) {
                     // AMBUSH TRIGGERED: aim with natural high-alert reaction rather than 50 deg instant snap
                     CombatProfile profile = getProfile();
                     bot.aimAt(currentTarget.getEyeLocation(), profile.turnSpeed * 1.3f, profile.aimInaccuracy * 0.5f);
@@ -704,7 +732,7 @@ public class BotAI extends BukkitRunnable {
         boolean hasLos = player.hasLineOfSight(target);
 
         Location p1Loc = player.getLocation();
-        Location p2Loc = target.getLocation();
+        Location p2Loc = target.getEyeLocation().clone().subtract(0, 0.3, 0);
 
         double dx = p2Loc.getX() - p1Loc.getX();
         double dy = p2Loc.getY() - p1Loc.getY();
@@ -743,7 +771,7 @@ public class BotAI extends BukkitRunnable {
         int jukeThreshold = profile.jukeThreshold;
         double maxShootDist = profile.maxShootDist;
         boolean distanceShootAllowed = (dist3D <= 8.0) || (ThreadLocalRandom.current().nextDouble() < factor);
-        boolean canShootAtTarget = hasLos && bot.hasGun() && (dist3D <= maxShootDist) && distanceShootAllowed && !isTeammate(player, target);
+        boolean canShootAtTarget = hasLos && hasClearLineOfFire(player, target) && bot.hasGun() && (dist3D <= maxShootDist) && distanceShootAllowed && !isTeammate(player, target);
 
         // Card ability synergies: Intelligent block usage
         handleCardBlockSynergies(data, dist3D, healthRatio, hasLos, shootCooldown);
@@ -1436,6 +1464,9 @@ public class BotAI extends BukkitRunnable {
 
         // 1. Center ray & step/stair/obstacle climb check
         if (feetSolid) {
+            if (feet.clone().add(0, 1.5, 0).getBlock().getType().isSolid()) {
+                return false; // Solid wall at eye level
+            }
             int obstacleHeight = 0;
             while (obstacleHeight < 4 && feet.clone().add(0, obstacleHeight, 0).getBlock().getType().isSolid()) {
                 obstacleHeight++;

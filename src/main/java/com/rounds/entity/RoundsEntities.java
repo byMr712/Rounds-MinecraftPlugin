@@ -183,6 +183,8 @@ public class RoundsEntities implements Listener {
     private static final Map<Long, List<Bullet>> cohortBuckets = new HashMap<>();
     private static final ArrayDeque<List<Bullet>> bucketPool = new ArrayDeque<>();
     private static final List<LivingEntity> cohortCandidates = new ArrayList<>();
+    private static boolean isProcessingBullets = false;
+    private static boolean clearStateRequested = false;
 
     public static long nextCohortId() {
         return ++cohortCounter;
@@ -222,14 +224,29 @@ public class RoundsEntities implements Listener {
             bucket.add(b);
         }
 
-        for (List<Bullet> bucket : cohortBuckets.values()) {
-            if (!bucket.isEmpty()) processCohort(bucket);
-            bucket.clear();
-            bucketPool.push(bucket);
+        isProcessingBullets = true;
+        clearStateRequested = false;
+        try {
+            List<List<Bullet>> buckets = new ArrayList<>(cohortBuckets.values());
+            for (int i = 0; i < buckets.size(); i++) {
+                if (clearStateRequested) break;
+                List<Bullet> bucket = buckets.get(i);
+                if (!bucket.isEmpty()) processCohort(bucket);
+            }
+        } finally {
+            isProcessingBullets = false;
+            for (List<Bullet> bucket : cohortBuckets.values()) {
+                bucket.clear();
+                bucketPool.push(bucket);
+            }
+            cohortBuckets.clear();
+            if (clearStateRequested) {
+                activeBullets.clear();
+                clearStateRequested = false;
+            } else {
+                activeBullets.removeIf(b -> !b.alive);
+            }
         }
-        cohortBuckets.clear();
-
-        activeBullets.removeIf(b -> !b.alive);
     }
 
     private static void processCohort(List<Bullet> bucket) {
@@ -876,16 +893,22 @@ public class RoundsEntities implements Listener {
         }
         hpBoostPending.clear();
 
-        activeBullets.clear();
-        cohortBuckets.clear();
-        bucketPool.clear();
-        cohortCandidates.clear();
         activeClouds.clear();
         if (cloudTickId != -1) {
             Bukkit.getScheduler().cancelTask(cloudTickId);
             cloudTickId = -1;
         }
         removeMarkedEntities();
+
+        if (isProcessingBullets) {
+            clearStateRequested = true;
+            return;
+        }
+
+        activeBullets.clear();
+        cohortBuckets.clear();
+        bucketPool.clear();
+        cohortCandidates.clear();
     }
 
     private static void removeMarkedEntities() {

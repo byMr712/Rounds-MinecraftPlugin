@@ -20,6 +20,13 @@ import com.rounds.teams.TeamManager;
 import com.rounds.game.GameStateManager.SavedState;
 import com.rounds.teams.TeamManager.GameTeam;
 import com.rounds.util.Messages;
+import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import org.bukkit.craftbukkit.CraftServer;
+import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.GameRule;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -723,6 +730,9 @@ public class GameManager implements Listener {
     private void gameTick() {
         musicTick++;
         if (autoDeathEnabled) checkAutoDeath();
+        if (musicTick % 5 == 0) {
+            updateSpectatorGlow();
+        }
         if (musicTick % 10 == 0) {
             checkRoundEnd();
             updateAllPlayerNametags();
@@ -828,6 +838,8 @@ public class GameManager implements Listener {
         currentRound++;
         state = GameState.PLAYING;
         deadPlayers.clear();
+        clearAllSpectatorGlow();
+        refreshTeamScoreboards();
         saveState();
         GunItem.resetRoundState();
         com.rounds.listener.LegendaryEffects.clearRoundState();
@@ -1207,6 +1219,7 @@ public class GameManager implements Listener {
         scheduleDelayed(() -> {
             state = GameState.WAITING;
             gameActive = false;
+            clearAllSpectatorGlow();
             saveState();
             removeScoreboard();
             if (plugin.getBotManager() != null) {
@@ -1817,6 +1830,7 @@ public class GameManager implements Listener {
         chameleonStillTicks.clear();
         com.rounds.listener.LegendaryEffects.resetAll();
         state = GameState.WAITING;
+        clearAllSpectatorGlow();
         saveState();
         removeScoreboard();
         plugin.getTeamManager().clearAll();
@@ -2066,38 +2080,128 @@ public class GameManager implements Listener {
         }
     }
 
-    private void refreshTeamScoreboards() {
-        if (!plugin.getRoundsConfig().isColorNicknames()) return;
-        Scoreboard mainSb = Bukkit.getScoreboardManager().getMainScoreboard();
+    public void setupTeamsOnScoreboard(Scoreboard sb) {
+        if (sb == null) return;
         org.bukkit.scoreboard.Team.OptionStatus visibility = (isGameStarted() || isGameActive())
                 ? org.bukkit.scoreboard.Team.OptionStatus.FOR_OWN_TEAM
                 : org.bukkit.scoreboard.Team.OptionStatus.ALWAYS;
 
         for (GameTeam gt : GameTeam.values()) {
             String teamName = "rounds_" + gt.name().toLowerCase();
-            org.bukkit.scoreboard.Team team = mainSb.getTeam(teamName);
+            org.bukkit.scoreboard.Team team = sb.getTeam(teamName);
             if (team == null) {
-                team = mainSb.registerNewTeam(teamName);
+                team = sb.registerNewTeam(teamName);
             }
             team.setColor(gt.getColor());
-            team.setPrefix(gt.getColor().toString());
+            if (plugin.getRoundsConfig().isColorNicknames()) {
+                team.setPrefix(gt.getColor().toString());
+            }
             team.setOption(org.bukkit.scoreboard.Team.Option.NAME_TAG_VISIBILITY, visibility);
         }
-        org.bukkit.scoreboard.Team noTeam = mainSb.getTeam("rounds_noteam");
+        org.bukkit.scoreboard.Team noTeam = sb.getTeam("rounds_noteam");
         if (noTeam != null) noTeam.unregister();
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam pTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             String teamName = pTeam != null ? "rounds_" + pTeam.name().toLowerCase() : null;
-            for (org.bukkit.scoreboard.Team t : mainSb.getTeams()) {
+            for (org.bukkit.scoreboard.Team t : sb.getTeams()) {
                 if (t.getName().startsWith("rounds_")) {
                     t.removePlayer(p);
                 }
             }
             if (teamName != null) {
-                org.bukkit.scoreboard.Team target = mainSb.getTeam(teamName);
+                org.bukkit.scoreboard.Team target = sb.getTeam(teamName);
                 if (target != null) target.addPlayer(p);
             }
+        }
+    }
+
+    public void refreshTeamScoreboards() {
+        Scoreboard mainSb = Bukkit.getScoreboardManager().getMainScoreboard();
+        setupTeamsOnScoreboard(mainSb);
+        for (Scoreboard sb : playerScoreboards.values()) {
+            if (sb != null && !sb.equals(mainSb)) {
+                setupTeamsOnScoreboard(sb);
+            }
+        }
+    }
+
+    @EventHandler
+    public void onGameModeChange(PlayerGameModeChangeEvent event) {
+        if (event.getNewGameMode() == GameMode.SPECTATOR) {
+            Bukkit.getScheduler().runTask(plugin, this::updateSpectatorGlow);
+        } else if (event.getPlayer().getGameMode() == GameMode.SPECTATOR) {
+            clearSpectatorGlow(event.getPlayer());
+        }
+    }
+
+    public void updateSpectatorGlow() {
+        if (!isGameStarted() && !isGameActive()) return;
+
+        List<Player> spectators = new ArrayList<>();
+        List<Player> livingPlayers = new ArrayList<>();
+
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (p.getGameMode() == GameMode.SPECTATOR) {
+                spectators.add(p);
+            } else if (!p.isDead() && plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) != null) {
+                livingPlayers.add(p);
+            }
+        }
+
+        if (spectators.isEmpty() || livingPlayers.isEmpty()) return;
+
+        MinecraftServer nmsServer = ((CraftServer) Bukkit.getServer()).getServer();
+
+        for (Player target : livingPlayers) {
+            byte flags = 0;
+            if (target.getFireTicks() > 0) flags |= 0x01;
+            if (target.isSneaking()) flags |= 0x02;
+            if (target.isSprinting()) flags |= 0x08;
+            if (target.isSwimming()) flags |= 0x10;
+            if (target.isInvisible()) flags |= 0x20;
+            flags |= 0x40; // Spectator glow
+            if (target.isGliding()) flags |= 0x80;
+
+            SynchedEntityData.DataValue<Byte> dataValue = new SynchedEntityData.DataValue<>(0, EntityDataSerializers.BYTE, flags);
+            ClientboundSetEntityDataPacket packet = new ClientboundSetEntityDataPacket(target.getEntityId(), List.of(dataValue));
+
+            for (Player spectator : spectators) {
+                ServerPlayer sp = nmsServer.getPlayerList().getPlayer(spectator.getUniqueId());
+                if (sp != null && sp.connection != null) {
+                    sp.connection.send(packet);
+                }
+            }
+        }
+    }
+
+    public void clearSpectatorGlow(Player formerSpectator) {
+        if (formerSpectator == null) return;
+        MinecraftServer nmsServer = ((CraftServer) Bukkit.getServer()).getServer();
+        ServerPlayer sp = nmsServer.getPlayerList().getPlayer(formerSpectator.getUniqueId());
+        if (sp == null || sp.connection == null) return;
+
+        for (Player target : Bukkit.getOnlinePlayers()) {
+            if (target.equals(formerSpectator)) continue;
+            boolean hasCardGlow = target.hasPotionEffect(PotionEffectType.GLOWING);
+            byte flags = 0;
+            if (target.getFireTicks() > 0) flags |= 0x01;
+            if (target.isSneaking()) flags |= 0x02;
+            if (target.isSprinting()) flags |= 0x08;
+            if (target.isSwimming()) flags |= 0x10;
+            if (target.isInvisible()) flags |= 0x20;
+            if (hasCardGlow) flags |= 0x40; // Preserve card effect glow!
+            if (target.isGliding()) flags |= 0x80;
+
+            SynchedEntityData.DataValue<Byte> dataValue = new SynchedEntityData.DataValue<>(0, EntityDataSerializers.BYTE, flags);
+            ClientboundSetEntityDataPacket packet = new ClientboundSetEntityDataPacket(target.getEntityId(), List.of(dataValue));
+            sp.connection.send(packet);
+        }
+    }
+
+    public void clearAllSpectatorGlow() {
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            clearSpectatorGlow(p);
         }
     }
 
@@ -2182,6 +2286,7 @@ public class GameManager implements Listener {
                 ChatColor.translateAlternateColorCodes('&',
                         plugin.getRoundsConfig().getBuiltinScoreboardTitle()));
         obj.setDisplaySlot(DisplaySlot.SIDEBAR);
+        setupTeamsOnScoreboard(sb);
 
         List<GameTeam> activeTeams = new ArrayList<>();
         for (GameTeam gt : GameTeam.values()) {

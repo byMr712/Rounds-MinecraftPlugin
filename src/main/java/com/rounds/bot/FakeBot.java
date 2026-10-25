@@ -252,7 +252,7 @@ public class FakeBot {
 
     public void applyJumpPad(double launchHeight) {
         this.velY = launchHeight * 0.2;
-        this.padLaunchTicks = 45;
+        this.padLaunchTicks = 50;
         Player p = getBukkitPlayer();
         if (p != null) {
             Location safeTarget = (ai != null) ? ai.findSafeLandingTarget(p) : null;
@@ -261,23 +261,23 @@ public class FakeBot {
                 double dz = safeTarget.getZ() - p.getLocation().getZ();
                 double dist = Math.sqrt(dx * dx + dz * dz);
                 if (dist > 0.3) {
-                    // Natural forward sprint impulse (~0.28 blocks/tick) directed towards safe map
+                    // Strong forward impulse (~0.35 blocks/tick) directed towards safe map interior
                     double normX = dx / dist;
                     double normZ = dz / dist;
-                    this.impulseX = normX * 0.28;
-                    this.impulseZ = normZ * 0.28;
+                    this.impulseX = normX * 0.35;
+                    this.impulseZ = normZ * 0.35;
 
                     float launchYaw = (float) Math.toDegrees(Math.atan2(-normX, normZ));
                     setRotation(launchYaw, -10f);
                 } else {
                     double rad = Math.toRadians(-p.getLocation().getYaw());
-                    this.impulseX = Math.sin(rad) * 0.28;
-                    this.impulseZ = Math.cos(rad) * 0.28;
+                    this.impulseX = Math.sin(rad) * 0.35;
+                    this.impulseZ = Math.cos(rad) * 0.35;
                 }
             } else {
                 double rad = Math.toRadians(-p.getLocation().getYaw());
-                this.impulseX = Math.sin(rad) * 0.28;
-                this.impulseZ = Math.cos(rad) * 0.28;
+                this.impulseX = Math.sin(rad) * 0.35;
+                this.impulseZ = Math.cos(rad) * 0.35;
             }
         }
         if (ai != null) {
@@ -352,12 +352,22 @@ public class FakeBot {
             padLaunchTicks--;
         }
 
-        // 2. Ground check
-        if (onGround && velY <= 0.0) {
-            padLaunchTicks = 0;
-            velY = 0.0;
-            impulseX = 0.0;
-            impulseZ = 0.0;
+        // 2. Ground check (do not abort pad launch while ascending or over hazard blocks)
+        boolean padActive = padLaunchTicks > 0;
+        if (onGround && velY <= 0.0 && (!padActive || padLaunchTicks < 30)) {
+            BlockListener bl = manager.getPlugin() != null ? manager.getPlugin().getBlockListener() : null;
+            boolean onHazard = (bl != null) && (bl.isJumpBlock(p.getLocation()) || bl.isJumpBlock(p.getLocation().subtract(0, 0.5, 0)));
+            if (!onHazard) {
+                if (padActive && ai != null) {
+                    ai.onSafeLanding();
+                }
+                padLaunchTicks = 0;
+                velY = 0.0;
+                impulseX = 0.0;
+                impulseZ = 0.0;
+            } else {
+                velY = Math.max(velY - 0.08, -3.92) * 0.98;
+            }
         } else {
             velY = Math.max(velY - 0.08, -3.92) * 0.98;
         }

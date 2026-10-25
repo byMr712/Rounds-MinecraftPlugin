@@ -422,10 +422,15 @@ public class BotAI extends BukkitRunnable {
 
         // Airborne / flight check: handles falling or special block launch
         boolean isAirborneFlight = bot.isPadLaunched()
-                || (roundWarmupTicks <= 0 && !bot.isOnGround() && (bot.getVelY() < -0.45 || bot.getVelY() > 0.70 || player.getFallDistance() > 1.0));
+                || (roundWarmupTicks <= 0 && !bot.isOnGround() && (bot.getVelY() < -0.30 || bot.getVelY() > 0.40 || player.getFallDistance() > 0.6));
         if (isAirborneFlight) {
             if (bot.isPadLaunched()) {
                 padCooldown = 600; // Cooldown prevents repeated launch loops
+            }
+
+            if (cachedLandingPlatform == null || landingPlatformCacheTicks <= 0 || !isPlatformValid(cachedLandingPlatform)) {
+                cachedLandingPlatform = findSafeLandingTarget(player);
+                landingPlatformCacheTicks = 10;
             }
 
             CombatProfile profile = getProfile();
@@ -437,38 +442,34 @@ public class BotAI extends BukkitRunnable {
                 // Landing error: slight imprecise drift or missing platform
                 steerX = (ThreadLocalRandom.current().nextDouble() - 0.5) * 0.14;
                 steerZ = (ThreadLocalRandom.current().nextDouble() - 0.5) * 0.14;
-            } else {
-                if (cachedLandingPlatform == null || landingPlatformCacheTicks <= 0 || !isPlatformValid(cachedLandingPlatform)) {
-                    cachedLandingPlatform = findSafeLandingTarget(player);
-                    landingPlatformCacheTicks = 6;
-                }
-                if (cachedLandingPlatform != null) {
-                    double pdx = cachedLandingPlatform.getX() - player.getLocation().getX();
-                    double pdz = cachedLandingPlatform.getZ() - player.getLocation().getZ();
-                    double pdist = Math.sqrt(pdx * pdx + pdz * pdz);
-                    if (pdist > 0.15) {
-                        double steerSpeed = Math.min(0.24, Math.max(0.12, pdist * 0.25));
-                        steerX = (pdx / pdist) * steerSpeed;
-                        steerZ = (pdz / pdist) * steerSpeed;
-                    }
+            } else if (cachedLandingPlatform != null) {
+                double pdx = cachedLandingPlatform.getX() - player.getLocation().getX();
+                double pdz = cachedLandingPlatform.getZ() - player.getLocation().getZ();
+                double pdist = Math.sqrt(pdx * pdx + pdz * pdz);
+                if (pdist > 0.15) {
+                    double steerSpeed = Math.min(0.32, Math.max(0.18, pdist * 0.30));
+                    steerX = (pdx / pdist) * steerSpeed;
+                    steerZ = (pdz / pdist) * steerSpeed;
                 }
             }
 
             // CRITICAL: moveRel must ALWAYS be called so gravity and NMS movement tick every single airborne frame!
             bot.moveRel(steerX, 0.0, steerZ);
 
-            if (currentTarget != null && canSee(player, currentTarget)) {
-                bot.aimAt(currentTarget.getLocation(), profile.turnSpeed, profile.aimInaccuracy);
-                if (bot.hasGun() && shootCooldown <= 0) {
-                    bot.shoot();
-                    shootCooldown = 6;
-                }
-            } else if (Math.abs(steerX) > 0.01 || Math.abs(steerZ) > 0.01) {
+            // While airborne/pad launched: orient body and head strictly towards safe landing direction!
+            if (Math.abs(steerX) > 0.01 || Math.abs(steerZ) > 0.01) {
                 float flightYaw = (float) Math.toDegrees(Math.atan2(-steerX, steerZ));
-                bot.getNmsPlayer().setRot(flightYaw, 10f);
+                bot.getNmsPlayer().setRot(flightYaw, 5f);
                 bot.getNmsPlayer().setYHeadRot(flightYaw);
                 bot.getNmsPlayer().setYBodyRot(flightYaw);
+                patrolHeading = flightYaw; // Preserve forward flight heading so bot moves away from edge upon landing
             }
+
+            if (currentTarget != null && canSee(player, currentTarget) && bot.hasGun() && shootCooldown <= 0) {
+                bot.shoot();
+                shootCooldown = 6;
+            }
+
             tickCooldowns();
             return;
         } else {
@@ -1224,9 +1225,16 @@ public class BotAI extends BukkitRunnable {
         this.padCooldown = 600;
     }
 
+    public void onSafeLanding() {
+        this.lockedHeadingTicks = 45; // Lock heading for 2.25s into arena interior so bot walks away from edge/wall
+        this.currentHuntTarget = null;
+        this.currentCorridorWaypoint = null;
+        this.cachedLandingPlatform = null;
+    }
+
     /**
      * Finds the nearest safe walkable location on the arena to land on during flight or jump pad launch.
-     * Evaluates ArenaNavMesh nodes and map geometry, strictly avoiding jump/up pads and voids.
+     * Evaluates ArenaNavMesh nodes and map geometry, strictly steering towards arena center and away from walls/void.
      */
     public Location findSafeLandingTarget(Player player) {
         if (player == null || player.getWorld() == null) return null;
@@ -1238,21 +1246,44 @@ public class BotAI extends BukkitRunnable {
         double py = pLoc.getY();
         double pz = pLoc.getZ();
 
-        // 1. Prefer precomputed ArenaNavMesh nodes (100% verified safe floor, zero raycasts)
+        Location center = bot.getPlugin() != null && bot.getPlugin().getGameManager() != null
+                ? bot.getPlugin().getGameManager().getCurrentZoneCenter()
+                : null;
+
+        double toCenterX = 0.0;
+        double toCenterZ = 0.0;
+        if (center != null && center.getWorld() != null && center.getWorld().equals(world)) {
+            double cdx = center.getX() - px;
+            double cdz = center.getZ() - pz;
+            double cdist = Math.sqrt(cdx * cdx + cdz * cdz);
+            if (cdist > 0.1) {
+                toCenterX = cdx / cdist;
+                toCenterZ = cdz / cdist;
+            }
+        }
+
+        // 1. Prefer precomputed ArenaNavMesh nodes that lie in the direction of the arena center
         ArenaNavMesh mesh = bot.getManager() != null ? bot.getManager().getNavMesh() : null;
         if (mesh != null && !mesh.isEmpty()) {
             ArenaNavMesh.NavNode bestNode = null;
-            double bestDistSq = Double.MAX_VALUE;
+            double bestScore = -Double.MAX_VALUE;
 
             for (ArenaNavMesh.NavNode node : mesh.getAllNodes()) {
-                if (node.loc.getY() > py + 22.0 || node.loc.getY() < py - 18.0) continue;
+                if (node.loc.getY() > py + 35.0 || node.loc.getY() < py - 20.0) continue;
                 if (bl != null && (bl.isJumpBlock(node.loc) || bl.isUpBlock(node.loc))) continue;
 
                 double dx = node.loc.getX() - px;
                 double dz = node.loc.getZ() - pz;
-                double distSq = dx * dx + dz * dz; // Prioritize horizontal proximity to safe arena
-                if (distSq < bestDistSq) {
-                    bestDistSq = distSq;
+                double distSq = dx * dx + dz * dz;
+                if (distSq < 2.0 * 2.0) continue; // Must be at least 2 blocks away horizontally from pad
+
+                double dot = (toCenterX != 0.0 || toCenterZ != 0.0) ? (dx * toCenterX + dz * toCenterZ) : 1.0;
+                if (dot < -0.2) continue; // Do not choose nodes behind the bot towards the void/wall
+
+                // Score balances proximity and alignment towards arena center
+                double score = dot * 20.0 - Math.sqrt(distSq);
+                if (score > bestScore) {
+                    bestScore = score;
                     bestNode = node;
                 }
             }
@@ -1261,26 +1292,21 @@ public class BotAI extends BukkitRunnable {
             }
         }
 
-        // 2. Fallback: Arena zone center from GameManager
-        Location center = bot.getPlugin() != null && bot.getPlugin().getGameManager() != null
-                ? bot.getPlugin().getGameManager().getCurrentZoneCenter()
-                : null;
-
+        // 2. Fallback: Raymarch from bot towards arena center to find safe walkable floor
         if (center != null && center.getWorld() != null && center.getWorld().equals(world)) {
-            // Raymarch from bot towards center to find the closest solid walkable ledge of the arena
             double dirX = center.getX() - px;
             double dirZ = center.getZ() - pz;
             double distToCenter = Math.sqrt(dirX * dirX + dirZ * dirZ);
-            if (distToCenter > 0.5) {
+            if (distToCenter > 1.0) {
                 double nx = dirX / distToCenter;
                 double nz = dirZ / distToCenter;
                 int startY = (int) Math.max(center.getY() + 3.0, py);
 
-                for (double d = 1.5; d <= distToCenter; d += 1.5) {
+                for (double d = 2.5; d <= distToCenter; d += 1.0) {
                     int bx = (int) Math.floor(px + nx * d);
                     int bz = (int) Math.floor(pz + nz * d);
 
-                    for (int dy = 0; dy >= -16; dy--) {
+                    for (int dy = 0; dy >= -18; dy--) {
                         int by = startY + dy;
                         Block floor = world.getBlockAt(bx, by, bz);
                         if (!floor.getType().isSolid()) continue;

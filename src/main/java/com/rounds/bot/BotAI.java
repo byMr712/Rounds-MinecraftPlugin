@@ -337,7 +337,7 @@ public class BotAI extends BukkitRunnable {
         if (!manualPlaystyle) {
             this.playstyle = BotPlaystyle.values()[ThreadLocalRandom.current().nextInt(BotPlaystyle.values().length)];
         }
-        this.roundWarmupTicks = ThreadLocalRandom.current().nextInt(25, 45); // 1.25 - 2.25s warmup reaction
+        this.roundWarmupTicks = ThreadLocalRandom.current().nextInt(4, 10); // 0.2 - 0.5s seamless reaction time
         this.tacticalJumpCooldown = 0;
         this.cachedLandingPlatform = null;
         this.landingPlatformCacheTicks = 0;
@@ -693,6 +693,7 @@ public class BotAI extends BukkitRunnable {
                 float rndYaw = player.getLocation().getYaw() + (ThreadLocalRandom.current().nextFloat() * 40f - 20f);
                 bot.getNmsPlayer().setRot(rndYaw, 0f);
             }
+            bot.moveRel(0.0, 0.0, 0.0);
             tickCount++;
             return;
         }
@@ -704,6 +705,7 @@ public class BotAI extends BukkitRunnable {
             bot.getNmsPlayer().setRot(wobbleYaw, 0f);
             bot.getNmsPlayer().setYHeadRot(wobbleYaw);
             bot.getNmsPlayer().setYBodyRot(wobbleYaw);
+            bot.moveRel(0.0, 0.0, 0.0);
             tickCooldowns();
             return;
         }
@@ -843,6 +845,7 @@ public class BotAI extends BukkitRunnable {
                         coverSearchCooldown = 120;
                     }
                 } else {
+                    bot.moveRel(0.0, 0.0, 0.0);
                     tickCooldowns();
                     return; // Stand completely still, watching the open ground
                 }
@@ -879,6 +882,7 @@ public class BotAI extends BukkitRunnable {
 
                     // Chameleon: stand still behind cover to turn invisible
                     if (data != null && data.chameleon > 0 && !targetCurrentlyVisible) {
+                        bot.moveRel(0.0, 0.0, 0.0);
                         tickCooldowns();
                         return;
                     }
@@ -890,6 +894,7 @@ public class BotAI extends BukkitRunnable {
                             isAmbushing = true;
                             ambushTicks = 0;
                             ambushAimYaw = aimYaw;
+                            bot.moveRel(0.0, 0.0, 0.0);
                             tickCooldowns();
                             return;
                         }
@@ -1094,6 +1099,8 @@ public class BotAI extends BukkitRunnable {
                 case SNIPE -> {
                     if (dist3D < 8.0) {
                         moveCombatRel(-u1_x * (0.14 * speedMult), -u1_z * (0.14 * speedMult));
+                    } else {
+                        moveCombatRel(0.0, 0.0);
                     }
                     bot.aimAt(p2Loc, turnSpeed * 0.7f, aimInaccuracy * 0.7f);
                     if (shootCooldown <= 0 && canShootAtTarget && reactionTicks <= 0) {
@@ -1210,7 +1217,10 @@ public class BotAI extends BukkitRunnable {
     private void moveCombatRel(double mX, double mZ) {
         Location myLoc = bot.getBukkitPlayer().getLocation();
         double dist = Math.sqrt(mX * mX + mZ * mZ);
-        if (dist < 0.001) return;
+        if (dist < 0.001) {
+            bot.moveRel(0.0, 0.0, 0.0);
+            return;
+        }
 
         // Cap maximum combat movement speed so combined vector never exceeds realistic sprint
         double maxSpeed = 0.25 * bot.getSpeedMultiplier();
@@ -1420,6 +1430,7 @@ public class BotAI extends BukkitRunnable {
                     ambushAimYaw = aimYaw;
                     currentTarget = null;
                     lastKnownTargetLoc = null;
+                    bot.moveRel(0.0, 0.0, 0.0);
                     return;
                 }
             }
@@ -1432,6 +1443,7 @@ public class BotAI extends BukkitRunnable {
             bot.getNmsPlayer().setRot(yaw, 0f);
             bot.getNmsPlayer().setYHeadRot(yaw);
             bot.getNmsPlayer().setYBodyRot(yaw);
+            bot.moveRel(0.0, 0.0, 0.0);
             if (searchTicks > 25) {
                 // Done searching this spot, resume patrol exploration
                 isPursuing = false;

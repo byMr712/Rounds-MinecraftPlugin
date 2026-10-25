@@ -261,17 +261,20 @@ public class FakeBot {
 
     public boolean isOnGround() {
         ServerPlayer sp = getNmsPlayer();
+        if (sp == null) return false;
         if (sp.onGround() || sp.verticalCollisionBelow) return true;
-        // If entity is visibly falling through the air, do not treat adjacent wall blocks as ground
-        if (velY < -0.1) {
+        // Strict fallback only when entity is stationary (not falling or leaping)
+        if (Math.abs(velY) > 0.08) {
             return false;
         }
-        Location loc = getBukkitPlayer().getLocation();
+        Player p = getBukkitPlayer();
+        if (p == null || p.getFallDistance() > 0.05f) return false;
+        Location loc = p.getLocation();
         if (loc.getWorld() == null) return false;
         double y = loc.getY();
         double fractional = y - Math.floor(y);
-        // If entity is floating mid-block in the air, it cannot be on ground
-        if (fractional > 0.05 && fractional < 0.95) {
+        // If entity is floating mid-block in the air (not resting on block boundary), it cannot be on ground
+        if (fractional > 0.08) {
             return false;
         }
         Location below = new Location(loc.getWorld(), loc.getX(), Math.floor(y) - 0.1, loc.getZ());
@@ -279,7 +282,7 @@ public class FakeBot {
     }
 
     public boolean isAirborne() {
-        return !isOnGround() && getBukkitPlayer().getFallDistance() > 0.5;
+        return !isOnGround() && (Math.abs(velY) > 0.15 || getBukkitPlayer().getFallDistance() > 0.2);
     }
 
     public boolean hasGun() {
@@ -546,8 +549,13 @@ public class FakeBot {
         // 1. Pick up external vertical impulses (jump pads, up blocks, explosions)
         boolean onGround = isOnGround();
         Vec3 delta = sp.getDeltaMovement();
-        if (Math.abs(delta.y) > 0.25 || (!onGround && Math.abs(delta.y) > 0.05)) {
+        if (Math.abs(delta.y) > 0.20) {
             velY = delta.y;
+        }
+        double deltaHorizSq = delta.x * delta.x + delta.z * delta.z;
+        if (deltaHorizSq > 0.04) {
+            impulseX += delta.x;
+            impulseZ += delta.z;
         }
 
         if (padLaunchTicks > 0) {
@@ -580,7 +588,6 @@ public class FakeBot {
 
         if (jumpAscentTicks > 0) {
             jumpAscentTicks--;
-            velY = Math.max(velY, 0.08);
             if (Math.abs(dx) > 0.01 || Math.abs(dz) > 0.01) {
                 double moveLen = Math.sqrt(dx * dx + dz * dz);
                 impulseX += (dx / moveLen) * 0.04;
@@ -689,8 +696,8 @@ public class FakeBot {
                 }
                 lastJumpAttemptLoc = loc.clone();
 
-                if (consecutiveJumpAttempts >= 5) {
-                    // Bot jumped 5 times against an obstacle without gaining height
+                if (consecutiveJumpAttempts >= 3) {
+                    // Bot jumped 3 times against an obstacle without gaining height
                     // Abort jumps, apply cooldown, and trigger AI detour
                     jumpStuckCooldown = 25;
                     consecutiveJumpAttempts = 0;

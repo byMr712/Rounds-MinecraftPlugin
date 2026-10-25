@@ -17,7 +17,7 @@ The plugin is 100% self-contained, sets up in just 2 minutes using in-game physi
   - **Left Click:** Fires physics-driven bullets with ricochets, bullet speed, and card effects.
   - **Right Click:** Raises shield to deflect bullets and trigger explosive counter-abilities.
   - **Q (Drop Key):** Manually reload your magazine with a live Action Bar progress bar.
-- 🃏 **111+ Unique Upgrade Cards:**
+- 🃏 **112 Unique Upgrade Cards:**
   - Massive ability catalog: homing bullets, poison clouds, frost slow, wall drills, executions, close-range saw shredding, and second-wind revives.
   - 5 rarity tiers: `COMMON`, `UNCOMMON`, `RARE`, `EPIC`, `LEGENDARY`.
   - **Comeback Mechanics:** The losing team drafts a new card between rounds. The more you lose, the stronger you become!

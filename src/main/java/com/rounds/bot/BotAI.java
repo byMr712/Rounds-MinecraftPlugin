@@ -97,6 +97,7 @@ public class BotAI extends BukkitRunnable {
     private Location currentHuntTarget = null;
     private Location currentCorridorWaypoint = null;
     private int huntStuckTicks = 0;
+    private int pursuitStuckTicks = 0;
     private Location lastHuntPos = null;
 
     // Optimized landing platform cache & room exit cooldown
@@ -190,6 +191,7 @@ public class BotAI extends BukkitRunnable {
         this.currentHuntTarget = null;
         this.currentCorridorWaypoint = null;
         this.huntStuckTicks = 0;
+        this.pursuitStuckTicks = 0;
         this.lastHuntPos = null;
     }
 
@@ -508,7 +510,11 @@ public class BotAI extends BukkitRunnable {
         // 2. Ambush Trap handling (waiting around corner with pre-aim)
         if (isAmbushing) {
             ambushTicks++;
-            if (ambushTicks > 40 || (targetCurrentlyVisible && lastKnownTargetLoc != null && player.getLocation().distance(lastKnownTargetLoc) < 5.0)) {
+            Location eye = player.getEyeLocation();
+            RayTraceResult hit = player.getWorld().rayTraceBlocks(eye, eye.getDirection(), 1.2, FluidCollisionMode.NEVER, true);
+            boolean wallInFace = hit != null && hit.getHitBlock() != null && hit.getHitBlock().getType().isSolid();
+
+            if (ambushTicks > 30 || wallInFace || (targetCurrentlyVisible && lastKnownTargetLoc != null && player.getLocation().distance(lastKnownTargetLoc) < 5.0)) {
                 isAmbushing = false;
                 coverSearchCooldown = 120;
             } else {
@@ -858,6 +864,22 @@ public class BotAI extends BukkitRunnable {
         CombatProfile profile = getProfile();
 
         if (distXZ > 1.2) {
+            // Abort pursuit immediately if stuck running into a wall
+            if (bot.getNmsPlayer().horizontalCollision) {
+                pursuitStuckTicks++;
+                if (pursuitStuckTicks > 6) {
+                    pursuitStuckTicks = 0;
+                    isPursuing = false;
+                    currentTarget = null;
+                    lastKnownTargetLoc = null;
+                    lockedHeadingTicks = 20;
+                    patrolHeading = findClearDirection(myLoc, player.getLocation().getYaw() + (ThreadLocalRandom.current().nextBoolean() ? 90f : -90f));
+                    return;
+                }
+            } else {
+                pursuitStuckTicks = 0;
+            }
+
             float moveYaw;
             if (lockedHeadingTicks > 0) {
                 moveYaw = patrolHeading;
@@ -876,7 +898,7 @@ public class BotAI extends BukkitRunnable {
                         moveYaw = findClearDirection(myLoc, moveYaw);
                     }
                     patrolHeading = moveYaw;
-                    lockedHeadingTicks = 8; // Maintain detour heading for 8 ticks (~0.4s) to smoothly round corner
+                    lockedHeadingTicks = 10; // Maintain detour heading for 10 ticks (~0.5s) to smoothly round corner
                 }
             }
 
@@ -916,25 +938,23 @@ public class BotAI extends BukkitRunnable {
         visitedTerritory.add(myCell);
 
         // 2. Track stuck status (detect getting blocked by walls/corners)
-        if (lastHuntPos != null && myLoc.getWorld().equals(lastHuntPos.getWorld())) {
-            double movedDistSq = myLoc.distanceSquared(lastHuntPos);
-            if (movedDistSq < 0.005) {
-                huntStuckTicks++;
-            } else {
-                huntStuckTicks = 0;
-            }
+        boolean physicallyBlocked = bot.getNmsPlayer().horizontalCollision;
+        if (physicallyBlocked || (lastHuntPos != null && myLoc.getWorld().equals(lastHuntPos.getWorld()) && myLoc.distanceSquared(lastHuntPos) < 0.005)) {
+            huntStuckTicks++;
+        } else {
+            huntStuckTicks = 0;
         }
         lastHuntPos = myLoc.clone();
 
         // 3. If stuck trying to reach current target, record edge as blocked and pick a new target
-        if (huntStuckTicks > 12) {
+        if (huntStuckTicks > 6) {
             huntStuckTicks = 0;
             if (currentHuntTarget != null) {
                 blockedEdges.add(packCell(currentHuntTarget.getBlockX(), currentHuntTarget.getBlockZ()));
             }
             currentHuntTarget = null;
             currentCorridorWaypoint = null;
-            lockedHeadingTicks = 20;
+            lockedHeadingTicks = 25;
             patrolHeading = findClearDirection(myLoc, patrolHeading + (ThreadLocalRandom.current().nextBoolean() ? 90f : -90f));
         }
 
@@ -992,6 +1012,10 @@ public class BotAI extends BukkitRunnable {
         if (currentHuntTarget != null && mesh != null && !mesh.isEmpty()) {
             if (currentCorridorWaypoint == null || myLoc.distanceSquared(currentCorridorWaypoint) < 2.5) {
                 currentCorridorWaypoint = mesh.findNextWaypoint(myLoc, currentHuntTarget);
+                if (currentCorridorWaypoint == null && myLoc.distanceSquared(currentHuntTarget) > 16.0) {
+                    blockedEdges.add(packCell(currentHuntTarget.getBlockX(), currentHuntTarget.getBlockZ()));
+                    currentHuntTarget = null;
+                }
             }
         }
 
@@ -1006,11 +1030,13 @@ public class BotAI extends BukkitRunnable {
                 if (!isDirectionClear(myLoc, patrolHeading, 1.1)) {
                     lockedHeadingTicks = 0;
                     patrolHeading = findClearDirection(myLoc, patrolHeading);
+                    lockedHeadingTicks = 12;
                 }
             } else if (isDirectionClear(myLoc, desiredHeading, 1.2)) {
                 patrolHeading = desiredHeading;
             } else {
                 patrolHeading = findClearDirection(myLoc, desiredHeading);
+                lockedHeadingTicks = 12; // Maintain detour heading so bot doesn't immediately re-face wall
             }
         } else if (Float.isNaN(patrolHeading)) {
             patrolHeading = myLoc.getYaw();

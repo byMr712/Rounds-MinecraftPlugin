@@ -187,7 +187,7 @@ public class ArenaNavMesh {
             }
         }
 
-        if (!found) return goal.loc;
+        if (!found) return null;
 
         // Backtrack to find the immediate next node after start
         NavNode step = goal;

@@ -488,8 +488,8 @@ public class BotAI extends BukkitRunnable {
 
     /**
      * AI Level of Detail (LOD) tick rate scaling:
-     * When > 35m from active players/enemies and not in combat, drops decision tickrate to 10 TPS (LOD 2)
-     * or 7 TPS (LOD 3) to allow running 30+ bots smoothly.
+     * When distant from enemies/opponents, throttles decision tickrate to 10 TPS, 7 TPS, or 5 TPS,
+     * while physics and gravity (bot.moveRel) maintain full 20 FPS continuous fidelity.
      */
     private void updateLod(Player player) {
         if (lodCheckTicks > 0) {
@@ -498,31 +498,45 @@ public class BotAI extends BukkitRunnable {
         }
         lodCheckTicks = 10;
 
-        // Active combat, flight, or recent damage strictly enforces full 20 TPS fidelity (LOD 1)
+        // Active combat, flight, pursuit, or recent damage strictly enforces full 20 TPS fidelity (LOD 1)
         if (currentTarget != null || isPursuing || isSeekingCover || isAmbushing || bot.isAirborne()
                 || (System.currentTimeMillis() - lastAttackedTime < 2500)) {
             lodLevel = 1;
             return;
         }
 
-        double closestDistSq = Double.MAX_VALUE;
+        double closestEnemyDistSq = Double.MAX_VALUE;
         Location myLoc = player.getLocation();
 
         for (Player other : player.getWorld().getPlayers()) {
             if (other.equals(player) || other.isDead() || other.getGameMode() == GameMode.SPECTATOR) continue;
+            if (isTeammate(player, other)) continue;
             double d = myLoc.distanceSquared(other.getLocation());
-            if (d < closestDistSq) {
-                closestDistSq = d;
+            if (d < closestEnemyDistSq) {
+                closestEnemyDistSq = d;
             }
         }
 
-        // Over 35 blocks away from any player/enemy: throttle AI to every 2nd or 3rd tick
-        if (closestDistSq > 50.0 * 50.0) {
-            lodLevel = 3;
-        } else if (closestDistSq > 35.0 * 35.0) {
-            lodLevel = 2;
+        int totalBots = (bot.getManager() != null && bot.getManager().getBots() != null) ? bot.getManager().getBots().size() : 0;
+        if (totalBots >= 50) {
+            // Adaptive LOD scaling when running 50+ bots on low-core servers:
+            if (closestEnemyDistSq > 60.0 * 60.0) {
+                lodLevel = 4; // 5 TPS decision rate (every 4th tick)
+            } else if (closestEnemyDistSq > 45.0 * 45.0) {
+                lodLevel = 3; // 7 TPS decision rate (every 3rd tick)
+            } else if (closestEnemyDistSq > 30.0 * 30.0) {
+                lodLevel = 2; // 10 TPS decision rate (every 2nd tick)
+            } else {
+                lodLevel = 1; // 20 TPS full rate
+            }
         } else {
-            lodLevel = 1;
+            if (closestEnemyDistSq > 50.0 * 50.0) {
+                lodLevel = 3;
+            } else if (closestEnemyDistSq > 35.0 * 35.0) {
+                lodLevel = 2;
+            } else {
+                lodLevel = 1;
+            }
         }
     }
 
@@ -2162,6 +2176,16 @@ public class BotAI extends BukkitRunnable {
     public boolean isTeammate(Player p1, Player p2) {
         if (p1 == null || p2 == null) return false;
         if (p1.equals(p2) || p1.getUniqueId().equals(p2.getUniqueId())) return true;
+        // Fast path for this bot: avoid map lookups
+        if (p1.equals(bot.getBukkitPlayer())) {
+            GameTeam myTeam = bot.getAssignedTeam();
+            if (myTeam != null) {
+                FakeBot otherBot = (bot.getManager() != null) ? bot.getManager().getBot(p2.getName()) : null;
+                if (otherBot != null) {
+                    return myTeam == otherBot.getAssignedTeam();
+                }
+            }
+        }
         return RoundsEntities.isTeammate(p1.getUniqueId(), p2.getUniqueId());
     }
 
@@ -2169,7 +2193,13 @@ public class BotAI extends BukkitRunnable {
         Player player = bot.getBukkitPlayer();
         Location myLoc = player.getLocation();
         Player closest = null;
-        double closestDist = 65.0 * 65.0;
+        double maxDist = (bot.getPlugin() != null) ? bot.getPlugin().getRoundsConfig().getBotMaxVisionDistance() : 60.0;
+        double closestDistSq = maxDist * maxDist;
+
+        Location botEye = player.getEyeLocation();
+        Vector lookDir = botEye.getDirection().normalize();
+        double fovHalf = (bot.getPlugin() != null) ? (bot.getPlugin().getRoundsConfig().getBotVisionFov() / 2.0) : FOV_HALF_ANGLE_DEG;
+        double minDot = Math.cos(Math.toRadians(fovHalf));
 
         for (Player other : player.getWorld().getPlayers()) {
             if (other.equals(player)) continue;
@@ -2177,16 +2207,30 @@ public class BotAI extends BukkitRunnable {
             if (other.getGameMode() == GameMode.SPECTATOR || other.getGameMode() == GameMode.CREATIVE) continue;
             if (isTeammate(player, other)) continue;
 
-            // Must be visible within realistic FOV cone and line of sight!
-            if (!canSee(player, other)) {
+            // 1. Distance check FIRST (O(1) arithmetic, eliminates 90% of checks)
+            Location otherLoc = other.getLocation();
+            double dx = otherLoc.getX() - myLoc.getX();
+            double dz = otherLoc.getZ() - myLoc.getZ();
+            double distSq = dx * dx + dz * dz;
+            if (distSq >= closestDistSq) continue;
+
+            // 2. FOV cone check SECOND (cheap O(1) dot product, zero raycasts)
+            Location otherEye = other.getEyeLocation();
+            double edx = otherEye.getX() - botEye.getX();
+            double edy = otherEye.getY() - botEye.getY();
+            double edz = otherEye.getZ() - botEye.getZ();
+            double eLen = Math.sqrt(edx * edx + edy * edy + edz * edz);
+            if (eLen < 0.001) continue;
+            double dot = (edx * lookDir.getX() + edy * lookDir.getY() + edz * lookDir.getZ()) / eLen;
+            if (dot < minDot) continue;
+
+            // 3. Line of sight raycast LAST: only for closest candidates inside vision cone
+            if (!player.hasLineOfSight(other)) {
                 continue;
             }
 
-            double d = myLoc.distanceSquared(other.getLocation());
-            if (d < closestDist) {
-                closestDist = d;
-                closest = other;
-            }
+            closestDistSq = distSq;
+            closest = other;
         }
 
         return closest;

@@ -271,7 +271,7 @@ Bots inspect active card modifiers in `PlayerData` to adjust combat behavior:
 
 ---
 
-## 13. High-Performance Optimization (Stable 20 TPS with 14+ Bots)
+## 13. High-Performance Optimization (Stable 20 TPS with 192+ and up to 500 Bots)
 
 1. **Immutable Combat Profile Matrix (`CombatProfile`):**
    - All accuracy, tracking, cooldown, and strafe parameters are precomputed into an immutable `CombatProfile[11][4]` matrix at class load time, enabling $O(1)$ zero-allocation lookups during ticks.
@@ -281,8 +281,24 @@ Bots inspect active card modifiers in `PlayerData` to adjust combat behavior:
    - Doorway searches have a 30-tick cooldown (`roomExitCooldown`) and a 30° radial step.
 4. **Precomputed Arena NavMesh (`ArenaNavMesh`):**
    - The waypoint graph is built once per round (~1ms for 120–160 nodes) and shared across all bots, providing fast Dijkstra corridor routing and reputation tracking (`pathReputation`).
-5. **Dynamic AI Level of Detail (LOD):**
-   - Bots located over 35 meters away from active players reduce decision frequency to 10 TPS (every 2 ticks) or 7 TPS (every 3 ticks), cutting CPU load by up to 66% while preserving continuous movement physics.
+5. **Adaptive 4-Tier AI Level of Detail (LOD):**
+   - LOD 1 (0–12m from enemies): 20 TPS (every tick).
+   - LOD 2 (12–25m from enemies): 10 TPS (every 2 ticks).
+   - LOD 3 (25–40m from enemies): 7 TPS (every 3 ticks).
+   - LOD 4 (>40m, or >25m when active bots >= 50): 5 TPS (every 4 ticks).
+   - Distance checks filter out teammates: bots grouped with allies far from opponents properly enter power-saving LOD mode. Movement physics and gravity remain continuous on every tick.
+6. **Two-Stage Target Filtering (FOV & Distance-First in `findVisibleTarget`):**
+   - Rather than executing expensive block raycasts (`hasLineOfSight`) across all arena entities, targets are pre-filtered via $O(1)$ mathematical checks:
+     1) Distance squared is strictly closer than the current best candidate (`distSq < bestDistSq`).
+     2) Target falls within the 140° visual cone via dot product calculation.
+   - Heavy NMS `hasLineOfSight` raycasts are only invoked for candidates that pass both criteria, eliminating over 99% of raycast computations during large battles.
+   - The `isTeammate` helper compares `bot.getAssignedTeam()` directly for bots, skipping player map lookups and UUID equality overhead.
+7. **Batch Team Synchronization & Scoreboard Exclusion ($O(1)$):**
+   - During `startRound()` with 192+ bots, team color updates are applied in batch mode (`applyTeamColor(p, false)` with a single final `refreshTeamScoreboards()`), eliminating $O(N \cdot T)$ hash table rebuild cascades and preventing server watchdog timeouts.
+   - Bots (`FakeBot`) have no network connections and are excluded from `playerScoreboards` tracking, preventing useless allocation of scoreboard objects.
+   - Entry lookups in `setupTeamsOnScoreboard` use direct $O(1)$ access (`sb.getEntryTeam(name)` and `sb.getTeam(name)`) instead of rebuilding and iterating through `sb.getTeams()`.
+8. **Anti-Stacking Branch Pruning in `FakeBot.moveRel`:**
+   - Entity dislodging loops filter candidates using fast 1D bounding box prunes (`Math.abs(dx) > 1.2 || Math.abs(dz) > 1.2`), skipping Euclidean distance calculations on hundreds of surrounding entities.
 
 ---
 

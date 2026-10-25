@@ -633,7 +633,9 @@ public class FakeBot {
                     if (other.getUniqueId().equals(p.getUniqueId()) || other.getGameMode() == GameMode.SPECTATOR || other.isDead()) continue;
                     Location oLoc = other.getLocation();
                     double dxOther = oLoc.getX() - loc.getX();
+                    if (Math.abs(dxOther) > 1.2) continue;
                     double dzOther = oLoc.getZ() - loc.getZ();
+                    if (Math.abs(dzOther) > 1.2) continue;
                     double dyOther = oLoc.getY() - loc.getY();
 
                     // If standing on another player's head (other player directly below us), push off sideways immediately!

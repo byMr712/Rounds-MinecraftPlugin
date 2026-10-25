@@ -3,6 +3,7 @@ package com.rounds.blocks;
 import com.rounds.RoundsKeys;
 import com.rounds.RoundsPlugin;
 import com.rounds.bot.FakeBot;
+import com.rounds.entity.RoundsEntities;
 import com.rounds.item.GunItem;
 import com.rounds.player.PlayerData;
 import com.rounds.teams.TeamManager;
@@ -465,6 +466,7 @@ public class BlockListener implements Listener {
             if (player.getHealth() >= hpBefore && damage > 0.0) {
                 player.setHealth(Math.max(0.0, hpBefore - damage));
             }
+            RoundsEntities.applyHitRedEffects(player, player.getLocation().clone().add(0, -1, 0), player.getLocation());
         } else {
             player.getWorld().playSound(player.getLocation(), Sound.ITEM_SHIELD_BLOCK, 1.0f, 1.2f);
         }

@@ -949,11 +949,13 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         switch (args[1].toLowerCase()) {
             case "on" -> {
                 config.setBuiltinScoreboard(true);
+                plugin.getGameManager().setForceScoreboardPreview(true);
                 plugin.getGameManager().updateScoreboard();
                 sender.sendMessage(ChatColor.GREEN + Messages.get("debug.tab-enabled"));
             }
             case "off" -> {
                 config.setBuiltinScoreboard(false);
+                plugin.getGameManager().setForceScoreboardPreview(false);
                 plugin.getGameManager().removeScoreboard();
                 sender.sendMessage(ChatColor.RED + Messages.get("debug.tab-disabled"));
             }

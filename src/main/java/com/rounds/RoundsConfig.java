@@ -24,6 +24,7 @@ public final class RoundsConfig {
 
     private boolean builtinScoreboard;
     private String builtinScoreboardTitle;
+    private String builtinScoreboardStatsTitle;
 
     private boolean freeplay;
 
@@ -94,8 +95,9 @@ public final class RoundsConfig {
         cardSelectionCount = c.getInt("cards.selection-count", 5);
         weightedRarity = c.getBoolean("cards.weighted-rarity", true);
 
-        builtinScoreboard = c.getBoolean("builtin-scoreboard.enabled", false);
+        builtinScoreboard = c.getBoolean("builtin-scoreboard.enabled", true);
         builtinScoreboardTitle = c.getString("builtin-scoreboard.title", "&6&lROUNDS");
+        builtinScoreboardStatsTitle = c.getString("builtin-scoreboard.stats-title", "&b&lМои статы");
 
         freeplay = c.getBoolean("freeplay.enabled", false);
 
@@ -165,6 +167,7 @@ public final class RoundsConfig {
     public boolean isWeightedRarity() { return weightedRarity; }
     public boolean isBuiltinScoreboard() { return builtinScoreboard; }
     public String getBuiltinScoreboardTitle() { return builtinScoreboardTitle; }
+    public String getBuiltinScoreboardStatsTitle() { return builtinScoreboardStatsTitle; }
     public boolean isColorNicknames() { return colorNicknames; }
     public boolean isGameRulesEnabled() { return gameRulesEnabled; }
     public boolean isGrInstantRespawn() { return grInstantRespawn; }

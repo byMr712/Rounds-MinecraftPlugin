@@ -173,9 +173,9 @@ When line of sight is broken (target retreats behind a wall), bots initiate purs
    - **Smooth WASD Momentum:** horizontal velocity interpolates with acceleration `accel = onGround ? 0.42 : 0.28`. Eliminates abrupt 1-tick velocity snaps.
    - **Eased Aim Tracking:** exponential tracking curve `turnFactor = 0.32 + 0.16 * factor`.
 
-2. **Step Jumping and Stair Traversal:**
-   - In `isDirectionClear`, foot-level solid blocks with clear body and head space are treated as traversable steps rather than walls.
-   - When encountering a step or collision, the bot jumps with forward impulse (`impulseX/Z += dir * 0.22`), preventing knockback or oscillation on staircases.
+2. **Step Jumping and Block Stair Traversal (+30%):**
+   - The `isBlockStaircase(loc, heading, dist)` algorithm classifies 1-block terrain ascents and staircases as walkable steps when headroom >= 1.8m is clear, distinguishing them from solid walls.
+   - Step lookahead distance is increased by +30% (from 0.55 to 0.72 blocks), and forward jump acceleration impulse is boosted by +30% (`velX/velZ * 1.30`), preventing bots from getting stuck on staircase steps.
    - **Smooth Stair Descent:** if a bot steps off a ledge and solid ground exists 1.1m below, downward velocity is stabilized at `velY = -0.32`, preventing mid-air float.
    - **Corner Anti-Stuck:** `consecutiveJumpAttempts` aborts jumping after 3 failed attempts, rerouting the bot along a detour.
 
@@ -190,12 +190,12 @@ When line of sight is broken (target retreats behind a wall), bots initiate purs
 
 ---
 
-## 9. Narrow Passage Navigation, Wall Detours, and Dijkstra Pathfinding
+## 9. Narrow Passage Navigation, Red Zones, and Wall Detours
 
-1. **Room and Cul-de-Sac Escape (`findRoomExit`):**
-   - When 3 directions are blocked or the bot spins in place within 4.0m, a 360° radial scan activates at a height of 1.7m.
-   - The 1.7m ray height reliably detects standard 2-block-tall doorways as open passages.
-   - The deepest open angle is selected as the exit, the dead-end cell is penalized in the NavMesh, and heading is locked for 50 ticks (`lockedHeadingTicks = 50`).
+1. **Red Zones Blacklist for 3x3–5x5 Rooms and 1x1x1 Pockets:**
+   - **Room Red Zones (3x3, 4x4, 5x5):** upon exiting an enclosed room, the bot marks its center as a Red Zone for **40 seconds** (`RedZone`). During patrol and search, entering this zone is strictly forbidden, eliminating endless re-entry loops. Entry is only permitted during active pursuit of a combat target (`currentTarget != null`).
+   - **Single 1x1x1 Pockets (`checkSinglePocketEscape`):** when 3 solid walls surround the bot within 1.25m, the bot immediately turns toward the single open exit, locks its escape heading for 35 ticks (1.75s), and blacklists the pocket as a Red Zone for **30 seconds**.
+   - **Doorway Scanning (`findRoomExit`):** 360° radial scan at 1.7m identifies the deepest open passage, locking heading for 50 ticks.
 
 2. **Flat Wall Detouring Without Oscillation (Persistent Detour & Dynamic Corner Bypass):**
    - When hitting a flat wall, `findClearDirection` selects a detour sign (-1 for left, +1 for right) and stores it in `wallDetourSign`.
@@ -309,3 +309,21 @@ Bots inspect active card modifiers in `PlayerData` to adjust combat behavior:
 - `/rdebug bot clear`: despawns all bots on the server.
 - `/rdebug bot list`: diagnostic listing of bot entities.
 - `/rdebug bot level <1..10>`: sets the global default difficulty for subsequent spawns.
+
+---
+
+## 16. Combat Hit Visuals, Highlights, and Nametag Formatting
+
+1. **Nametag Formatting and Bot Level Tag:**
+   - Display in Tab list and overhead: `<hearts>♥ <Name>` for players and `<hearts>♥ <Name> [L<level>]` for bots.
+   - The bot level tag is located after the bot name, styled in bold team color (`§l[L1]`).
+   - Heart count represents proportional health rounded up.
+2. **Team-Only Nametags:**
+   - During active rounds, enemy nametags are completely invisible to players (`Team.OptionStatus.FOR_OWN_TEAM` / `NEVER`). Players only see their teammates.
+   - Spectators and eliminated players can see nametags for all participants.
+3. **Combat Hit Visual Feedback:**
+   - When hitting an enemy, `victim.playHurtAnimation(yaw)` is triggered, flashing their 3D model bright red and tilting away from damage vector. Red dust particles (`Particle.REDSTONE`) burst at impact point.
+   - Players taking damage experience camera tilt toward incoming fire, directional particles in their view, and a smooth red screen border vignette (`WorldBorder` warning).
+4. **Card Highlight Duration and FakeBot Potion Ticking:**
+   - The "Mark Was Good" card limits enemy highlights to 10 seconds (200 ticks) upon moving away.
+   - `FakeBot` ticks active potion effect durations each tick, ensuring highlights and slowness effects expire naturally.

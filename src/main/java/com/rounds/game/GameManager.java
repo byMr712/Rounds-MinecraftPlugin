@@ -127,6 +127,7 @@ public class GameManager implements Listener {
         this.roundsToWin = plugin.getRoundsConfig().getDefaultRounds();
         this.stateManager = new GameStateManager(plugin);
         this.tabCompat = new com.rounds.util.TabCompat();
+        startScoreboardTask();
     }
 
     public boolean isWheelEnabled() { return wheelEnabled; }
@@ -646,6 +647,7 @@ public class GameManager implements Listener {
                         double dist = phantom.getLocation().distance(target.getLocation());
                         if (dist < 3.0 && ticks % 20 == 0) {
                             target.damage(12.0);
+                            RoundsEntities.applyHitRedEffects(target, phantom.getLocation(), target.getLocation());
                             if (!hasDamaged) {
                                 hasDamaged = true;
                                 deathCountdown = 0;
@@ -1273,6 +1275,7 @@ public class GameManager implements Listener {
             clearAllSpectatorGlow();
             saveState();
             removeScoreboard();
+        RoundsEntities.clearAllDamageVignettes();
             if (plugin.getBotManager() != null) {
                 plugin.getBotManager().despawnAll();
             }
@@ -1857,6 +1860,8 @@ public class GameManager implements Listener {
     }
 
     public void shutdown() {
+        stopScoreboardTask();
+        removeScoreboard();
         stopGameTick();
         cancelScheduledTasks();
         removeAllPhantoms();
@@ -1929,6 +1934,7 @@ public class GameManager implements Listener {
         clearAllSpectatorGlow();
         saveState();
         removeScoreboard();
+        RoundsEntities.clearAllDamageVignettes();
         plugin.getTeamManager().clearAll();
         plugin.getPlayerDataManager().clearActivePlayers();
         resetAllNameColors();
@@ -2465,57 +2471,176 @@ public class GameManager implements Listener {
 
     // ===== Built-in Scoreboard =====
     private final Map<UUID, Scoreboard> playerScoreboards = new HashMap<>();
+    private final Map<UUID, String> lastScoreboardRender = new HashMap<>();
+    private final Map<UUID, String> playerObjTracker = new HashMap<>();
+    private int scoreboardTaskId = -1;
+    private boolean forceScoreboardPreview = false;
 
-    private static final String DIV = "\u00A7b\u00A7m                          ";
+    public void startScoreboardTask() {
+        if (scoreboardTaskId != -1) {
+            Bukkit.getScheduler().cancelTask(scoreboardTaskId);
+        }
+        scoreboardTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, this::scoreboardTick, 20L, 20L);
+    }
+
+    public void stopScoreboardTask() {
+        if (scoreboardTaskId != -1) {
+            Bukkit.getScheduler().cancelTask(scoreboardTaskId);
+            scoreboardTaskId = -1;
+        }
+    }
+
+    public boolean shouldShowBuiltinScoreboard() {
+        if (!plugin.getRoundsConfig().isBuiltinScoreboard()) return false;
+        org.bukkit.plugin.Plugin tab = Bukkit.getPluginManager().getPlugin("TAB");
+        if (tab != null && tab.isEnabled()) return false;
+        return true;
+    }
+
+    public boolean isScoreboardActive() {
+        return shouldShowBuiltinScoreboard() && (isGameStarted() || isGameActive() || forceScoreboardPreview);
+    }
+
+    public void setForceScoreboardPreview(boolean force) {
+        this.forceScoreboardPreview = force;
+    }
+
+    public void scoreboardTick() {
+        if (!isScoreboardActive()) {
+            if (!playerScoreboards.isEmpty()) {
+                removeScoreboard();
+            }
+            return;
+        }
+        updateScoreboard();
+    }
 
     public void updateScoreboard() {
-        if (!plugin.getRoundsConfig().isBuiltinScoreboard()) return;
+        if (!isScoreboardActive()) return;
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             buildScoreboard(p);
         }
     }
 
     public void buildScoreboard(Player player) {
-        if (!plugin.getRoundsConfig().isBuiltinScoreboard()) return;
+        if (!isScoreboardActive()) return;
+
         Scoreboard sb = playerScoreboards.computeIfAbsent(player.getUniqueId(),
                 k -> Objects.requireNonNull(Bukkit.getScoreboardManager()).getNewScoreboard());
 
-        for (Objective obj : sb.getObjectives()) obj.unregister();
+        long sec = System.currentTimeMillis() / 1000L;
+        int page = (int) ((sec / 5) % 2); // 0 = Game, 1 = Stats
 
-        Objective obj = sb.registerNewObjective("rounds", Criteria.DUMMY,
-                ChatColor.translateAlternateColorCodes('&',
-                        plugin.getRoundsConfig().getBuiltinScoreboardTitle()));
-        obj.setDisplaySlot(DisplaySlot.SIDEBAR);
+        String title;
+        List<String> lines = new ArrayList<>();
+
+        if (page == 0) {
+            title = ChatColor.translateAlternateColorCodes('&',
+                    plugin.getRoundsConfig().getBuiltinScoreboardTitle());
+            lines.add("\u00A77\u00A7m════════");
+
+            GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+            String teamPart = (myTeam != null)
+                    ? myTeam.getColor() + Messages.raw("team." + myTeam.name().toLowerCase())
+                    : Messages.raw("team.none");
+            lines.add(" \u00A7fВы: " + teamPart);
+            lines.add(" ");
+            lines.add("     \u00A7fПобеды  ");
+            lines.add(" \u00A7bСиние: \u00A7b" + (int) plugin.getTeamManager().getWins(GameTeam.BLUE));
+            lines.add(" \u00A7cКрасные: \u00A7c" + (int) plugin.getTeamManager().getWins(GameTeam.RED));
+            lines.add(" \u00A7eЖёлтые:  \u00A7e" + (int) plugin.getTeamManager().getWins(GameTeam.YELLOW));
+            lines.add(" \u00A7aЗелёные: \u00A7a" + (int) plugin.getTeamManager().getWins(GameTeam.GREEN));
+            lines.add("\u00A77\u00A7m════════\u00A7r");
+        } else {
+            title = ChatColor.translateAlternateColorCodes('&',
+                    plugin.getRoundsConfig().getBuiltinScoreboardStatsTitle());
+            lines.add("\u00A77\u00A7m════════");
+
+            PlayerData data = plugin.getPlayerDataManager().getData(player.getUniqueId());
+            String statHp = (data != null) ? formatStat(data.hp) : "100";
+            String statDmg = (data != null) ? formatStat(data.dmg) : "1";
+            String statCards = (data != null && data.getOwnedCards() != null)
+                    ? String.valueOf(data.getOwnedCards().size()) : "0";
+            String statBullets = (data != null) ? formatStat(data.bullets) : "1";
+            String statMaxAmmo = (data != null) ? formatStat(data.maxAmmo) : "3";
+
+            lines.add(" \u00A7fХП: \u00A7a" + statHp);
+            lines.add(" \u00A7fУрон: \u00A7c" + statDmg);
+            lines.add(" \u00A7fКарт: \u00A7d" + statCards);
+            lines.add(" \u00A7fПуль: \u00A76" + statBullets);
+            lines.add(" \u00A7fПатрон: \u00A7e" + statMaxAmmo);
+            lines.add("\u00A77\u00A7m════════\u00A7r");
+        }
+
+        // PlaceholderAPI expansion support if installed (graceful native fallback if absent)
+        if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            try {
+                Class<?> papiClass = Class.forName("me.clip.placeholderapi.PlaceholderAPI");
+                java.lang.reflect.Method setPlaceholders = papiClass.getMethod("setPlaceholders", Player.class, String.class);
+                for (int i = 0; i < lines.size(); i++) {
+                    lines.set(i, (String) setPlaceholders.invoke(null, player, lines.get(i)));
+                }
+            } catch (Throwable ignored) {}
+        }
+
+        String contentHash = title + "::" + String.join(";", lines);
+        if (contentHash.equals(lastScoreboardRender.get(player.getUniqueId()))) {
+            if (player.getScoreboard() != sb) {
+                player.setScoreboard(sb);
+            }
+            return;
+        }
+        lastScoreboardRender.put(player.getUniqueId(), contentHash);
+
+        String curObj = playerObjTracker.getOrDefault(player.getUniqueId(), "r_obj_b");
+        String nextObjName = curObj.equals("r_obj_a") ? "r_obj_b" : "r_obj_a";
+
+        Objective nextObj = sb.getObjective(nextObjName);
+        if (nextObj != null) nextObj.unregister();
+
+        nextObj = sb.registerNewObjective(nextObjName, Criteria.DUMMY, title);
+
+        // Reflection for Paper 1.20.5+ blank number format
+        try {
+            Class<?> nfClass = Class.forName("io.papermc.paper.scoreboard.numbers.NumberFormat");
+            java.lang.reflect.Method blankMethod = nfClass.getMethod("blank");
+            Object blank = blankMethod.invoke(null);
+            java.lang.reflect.Method setNf = nextObj.getClass().getMethod("numberFormat", nfClass);
+            setNf.invoke(nextObj, blank);
+        } catch (Throwable ignored) {}
+
+        int score = lines.size();
+        for (String line : lines) {
+            nextObj.getScore(line).setScore(score--);
+        }
+
+        nextObj.setDisplaySlot(DisplaySlot.SIDEBAR);
+
+        Objective oldObj = sb.getObjective(curObj);
+        if (oldObj != null) oldObj.unregister();
+
+        playerObjTracker.put(player.getUniqueId(), nextObjName);
+
         setupTeamsOnScoreboard(sb, player);
-
-        List<GameTeam> activeTeams = new ArrayList<>();
-        for (GameTeam gt : GameTeam.values()) {
-            if (!plugin.getTeamManager().getTeamPlayers(gt).isEmpty()) activeTeams.add(gt);
+        if (player.getScoreboard() != sb) {
+            player.setScoreboard(sb);
         }
+    }
 
-        int score = 10;
-
-        obj.getScore(DIV).setScore(score--);
-        obj.getScore("\u00A7f\u0420\u0430\u0443\u043D\u0434: \u00A7e" + currentRound + "/" + roundsToWin).setScore(score--);
-
-        GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
-        String teamPart = myTeam != null
-                ? myTeam.getColor() + Messages.get("team." + myTeam.name().toLowerCase()) : "";
-        obj.getScore("\u00A7f\u041A\u043E\u043C\u0430\u043D\u0434\u0430: " + teamPart).setScore(score--);
-
-        obj.getScore(DIV).setScore(score--);
-
-        for (GameTeam gt : activeTeams) {
-            String name = Messages.get("team." + gt.name().toLowerCase());
-            int pad = Math.max(1, 7 - name.length());
-            String entry = "\u00A7f" + name + ":" + " ".repeat(pad) + "\u00A77\u2502 "
-                    + "\u00A7b" + (int) plugin.getTeamManager().getWins(gt);
-            obj.getScore(entry).setScore(score--);
+    private static String formatStat(double v) {
+        if (v == Math.floor(v) && !Double.isInfinite(v)) {
+            return String.valueOf((long) v);
         }
+        return String.format(Locale.US, "%.1f", v);
+    }
 
-        obj.getScore(DIV).setScore(score);
-
-        player.setScoreboard(sb);
+    public void onPlayerQuit(UUID uuid) {
+        playerScoreboards.remove(uuid);
+        lastScoreboardRender.remove(uuid);
+        playerObjTracker.remove(uuid);
+        deadPlayers.remove(uuid);
+        syncedHearts.remove(uuid);
+        playersWithSpectatorGlow.remove(uuid);
     }
 
     public void removeScoreboard() {
@@ -2526,5 +2651,7 @@ public class GameManager implements Listener {
             }
         }
         playerScoreboards.clear();
+        lastScoreboardRender.clear();
+        playerObjTracker.clear();
     }
 }

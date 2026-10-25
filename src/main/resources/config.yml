@@ -160,11 +160,13 @@ game-rules:
 color-nicknames: true
 
 # Built-in scoreboard:
-# Note: Recommended option is using TAB + PlaceholderAPI.
-# If using TAB plugin, leave this disabled to prevent scoreboard flicker.
+# Enabled by default when TAB plugin is NOT installed.
+# Automatically disabled if TAB is present to prevent scoreboard conflicts/flicker.
+# If explicitly set to false here, it will never display regardless of other plugins.
 builtin-scoreboard:
-  enabled: false
+  enabled: true
   title: "&6&lROUNDS"
+  stats-title: "&b&lМои статы"
 
 # ==============================================================================
 # FREEPLAY MODE

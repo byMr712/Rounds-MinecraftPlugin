@@ -36,6 +36,7 @@ import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class RoundsEntities implements Listener {
 
@@ -48,6 +49,88 @@ public class RoundsEntities implements Listener {
             new Particle.DustOptions(Color.fromRGB(0, 200, 0), 1.5f);
     private static final Particle.DustOptions TRACER_DUST =
             new Particle.DustOptions(Color.fromRGB(255, 190, 60), 0.95f);
+    private static final Map<UUID, org.bukkit.scheduler.BukkitTask> vignetteTasks = new ConcurrentHashMap<>();
+
+    public static void applyHitRedEffects(LivingEntity victim, Location attackerLoc, Location hitPos) {
+        if (victim == null || !victim.isValid()) return;
+        World world = victim.getWorld();
+        Location vEye = victim.getEyeLocation();
+        Vector toAttacker = (attackerLoc != null)
+                ? attackerLoc.toVector().subtract(vEye.toVector())
+                : victim.getLocation().getDirection().multiply(-1);
+        float damageYaw = (float) (Math.toDegrees(Math.atan2(toAttacker.getZ(), toAttacker.getX())) - 90.0f);
+
+        // 1. Red hurt animation on victim model (flashes model bright red & tilts away)
+        try {
+            victim.playHurtAnimation(damageYaw);
+        } catch (Throwable ignored) {}
+
+        // 2. Red hit splash particles at impact point
+        double px = (hitPos != null) ? hitPos.getX() : vEye.getX();
+        double py = (hitPos != null) ? hitPos.getY() : vEye.getY();
+        double pz = (hitPos != null) ? hitPos.getZ() : vEye.getZ();
+        world.spawnParticle(Particle.REDSTONE, px, py, pz, 14, 0.25, 0.4, 0.25,
+                new Particle.DustOptions(Color.fromRGB(255, 30, 30), 1.5f));
+
+        // 3. Screen red feedback for real player HUD (directional indicators & red screen vignette)
+        if (victim instanceof Player vp) {
+            showDamageVignette(vp);
+            Location origin = attackerLoc != null ? attackerLoc : vEye.clone().add(victim.getLocation().getDirection().multiply(-1));
+            spawnDirectionalHitParticles(vp, origin);
+        }
+    }
+
+    public static void spawnDirectionalHitParticles(Player player, Location attackerLoc) {
+        if (player == null || !player.isOnline()) return;
+        if (plugin.getBotManager() != null && plugin.getBotManager().getBot(player.getName()) != null) return;
+        try {
+            Location eye = player.getEyeLocation();
+            Vector dir = attackerLoc.toVector().subtract(eye.toVector());
+            if (dir.lengthSquared() > 1.0E-4) {
+                dir = dir.normalize().multiply(0.75);
+                Location pLoc = eye.clone().add(dir);
+                player.spawnParticle(Particle.REDSTONE, pLoc, 6, 0.08, 0.08, 0.08,
+                        new Particle.DustOptions(Color.fromRGB(255, 20, 20), 1.2f));
+            }
+        } catch (Throwable ignored) {}
+    }
+
+    public static void showDamageVignette(Player player) {
+        if (player == null || !player.isOnline()) return;
+        if (player.getGameMode() == GameMode.SPECTATOR) return;
+        if (plugin.getBotManager() != null && plugin.getBotManager().getBot(player.getName()) != null) return;
+
+        try {
+            org.bukkit.WorldBorder border = Bukkit.createWorldBorder();
+            border.setCenter(player.getLocation());
+            border.setSize(200.0);
+            border.setWarningDistance(160);
+            player.setWorldBorder(border);
+
+            UUID uid = player.getUniqueId();
+            org.bukkit.scheduler.BukkitTask old = vignetteTasks.remove(uid);
+            if (old != null) old.cancel();
+
+            org.bukkit.scheduler.BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                vignetteTasks.remove(uid);
+                if (player.isOnline()) {
+                    player.setWorldBorder(null);
+                }
+            }, 8L);
+            vignetteTasks.put(uid, task);
+        } catch (Throwable ignored) {}
+    }
+
+    public static void clearAllDamageVignettes() {
+        for (Map.Entry<UUID, org.bukkit.scheduler.BukkitTask> entry : vignetteTasks.entrySet()) {
+            entry.getValue().cancel();
+            Player p = Bukkit.getPlayer(entry.getKey());
+            if (p != null && p.isOnline()) {
+                try { p.setWorldBorder(null); } catch (Throwable ignored) {}
+            }
+        }
+        vignetteTasks.clear();
+    }
     // Цвет крупной пули; размер пыли считается от scale: 0.8 × scale (при scale=2.0 → 1.6f).
     private static final Color TRACER_COLOR_BIG = Color.fromRGB(255, 120, 30);
 
@@ -263,6 +346,8 @@ public class RoundsEntities implements Listener {
                         if (victimBot != null) victimBot.onAttacked(b.loc, b.ownerId);
                     }
                     nearest.getWorld().playSound(nearest.getLocation(), Sound.ENTITY_PLAYER_HURT, 1f, 1f);
+                    Player shooter = Bukkit.getPlayer(b.ownerId);
+                    applyHitRedEffects(nearest, (shooter != null ? shooter.getEyeLocation() : b.loc), nearest.getEyeLocation());
                     applyPostHitEffects(b.ownerId, shooterData, nearest, finalDamage, b.stack);
                     applyDirectHitEffects(b, shooterData, nearest, finalDamage);
                     impactParticles(world, b.loc.getX(), b.loc.getY(), b.loc.getZ(), b.scale);
@@ -412,6 +497,8 @@ public class RoundsEntities implements Listener {
                 if (victimBot != null) victimBot.onAttacked(b.loc, b.ownerId);
             }
             hitEnt.getWorld().playSound(hitEnt.getLocation(), Sound.ENTITY_PLAYER_HURT, 1f, 1f);
+            Player shooter = Bukkit.getPlayer(b.ownerId);
+            applyHitRedEffects(hitEnt, (shooter != null ? shooter.getEyeLocation() : b.spawnLoc), new Location(world, hitPX, hitPY, hitPZ));
             applyPostHitEffects(b.ownerId, shooterData, hitEnt, finalDmg, b.stack);
             applyDirectHitEffects(b, shooterData, hitEnt, finalDmg);
             impactParticles(world, hitPX, hitPY, hitPZ, scale);
@@ -782,6 +869,7 @@ public class RoundsEntities implements Listener {
     }
 
     public static void clearAllState() {
+        clearAllDamageVignettes();
         // Отложенные восстановления HP: отменяем задачи и применяем откат сразу.
         for (int taskId : hpBoostTasks.values()) {
             Bukkit.getScheduler().cancelTask(taskId);

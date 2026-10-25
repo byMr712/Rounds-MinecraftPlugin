@@ -28,15 +28,26 @@
   - **Anti-Wallhack Vision & Pursuit:** 140° visual cone, 60m range, 2.5m footstep hearing, raycast line-of-sight checks. Scaled pursuit tenacity: Levels 1–2 (69%), 3–4 (82.8%), 5–7 (96.6%), 8–10 (100%). Pursuit timeout of 120 ticks (6 seconds).
   - **Humanized Physics & Damage Reaction:** Horizontal movement inertia with acceleration and deceleration curves, natural eased crosshair tracking. Bots smoothly turn toward incoming fire with a human reaction delay (150–350 ms) without 0-tick view snaps. Accuracy scales by level: from ±45° spread at level 1 to ±4.5° at level 10.
   - **Fair Jump Pad Parrying:** Level 5+ bots predict jump pad contact 10–20 ticks ahead and raise shield with a 50% chance. Cleanly parries 20% max HP damage (0 damage taken), plays shield parry sound, and launches the bot upward. No cheat cooldown resets (`canBlock()` is strictly respected).
-  - **Anti-Stacking, Room Escape & Navigation:** Anti-stacking dislodges bots if they land on top of players and prevents jumping on entity hitboxes. In enclosed rooms (up to 4x4) and dead-ends, bots find open doorways, penalize pockets in NavMesh, and lock exit headings. On parkour, steep drops are validated and high-ground vantage points are held.
+  - **Anti-Stacking, Stair Navigation & Red Zones:** Anti-stacking dislodges bots if they land on top of players and prevents jumping on entity hitboxes. Block staircase recognition (`isBlockStaircase`) improves stepped ascents and descents by +30% with increased forward leap momentum. In enclosed rooms (from 1x1x1 to 5x5), bots mark dead-ends as Red Zones for 30–40 seconds (`RedZone`) and never re-enter during patrol (entry is only allowed during active combat pursuit).
   - **Tactical Cover & Ambushes:** When below 20% HP, bots seek cover within 4–6.5 blocks. Around corners, they establish tactical ambushes, aiming down corridors with pre-raised shields.
   - **Jump Pad Ballistics:** Intentional pad usage is banned during the initial 3–15 seconds of a round. Bots scan for safe landing platforms in mid-air and steer toward them.
   - **High Performance & Bulk Limits (Up to 500 Bots):** O(1) combat profiles, ArenaNavMesh, adaptive LOD tick throttling, and interleaved scans maintain 20 TPS. Bulk spawn supports up to 500 bots.
   - **Arena Team Detection:** Bots automatically balance only across teams that have physical wool blocks placed in the lobby/arena.
-  - **Card Synergy & Saw Rush:** With the Saw card, bots sprint in point-blank (<2.8m, speed 0.46) while blocking. Bots dynamically cast Implode, Silence, EMP, Overpower, BombOnBlock, Teleport, Heal, and Tactical Reload.
+  - **Card Synergy & Saw Rush:** With the Saw card, bots sprint in point-blank (<2.8m, speed 0.46) while blocking. Bots dynamically cast Implode, Silence, EMP, Overpower, BombOnBlock, Teleport, Heal, and Tactical Reload. Enemy highlights from "Mark Was Good" are limited to 10 seconds upon moving away, and FakeBot ticks active potion effects normally.
   - **Automatic Cleanup:** All bots despawn cleanly when games stop (`/rdebug stop`, `/rounds stop`) or server restarts.
   - **Spectator Outlines & Team Titles:** Spectators see glowing outlines around alive players in team colors (hidden from survival combatants). Neutral team victory titles are shown to spectators.
-- **Server Integration:** Paper / Purpur 1.20.4+ compatible, full [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) and [**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi) support, built-in scoreboard.
+- **Combat Hit Visual Feedback:**
+  - Hitting an enemy flashes their 3D model bright red with a hurt animation (`playHurtAnimation`) and spawns a burst of red impact particles (`Particle.REDSTONE`).
+  - Taking damage tilts the player camera toward the attack origin, spawns directional red particles in the field of view, and triggers a smooth red screen border vignette (`WorldBorder` warning).
+- **Team-Only Nametags & Heart Count Display:**
+  - Nametag and TAB format: `<hearts>♥ <Name>` for players and `<hearts>♥ <Name> [L<level>]` for bots.
+  - Enemy nametags are completely hidden during active rounds (only teammates can see each other's nametags). Spectators can see everyone's nametags.
+  - Player ping in TAB is colored according to their team color (`%rounds_ping%`).
+- **Integration & Built-in Scoreboard:**
+  - Built-in scoreboard is enabled by default when TAB is not present, and automatically disables itself if TAB plugin is detected to avoid conflicts. Can be permanently disabled via `config.yml`.
+  - Automatically alternates every 5 seconds between Match Score (team wins) and Player Stats (HP, DMG, Cards, Bullets, Max Ammo).
+  - Operates completely autonomously without requiring PlaceholderAPI thanks to native stat calculation, utilizing double objective buffering for zero flicker.
+  - Full optional support for [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) and [**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi).
 - **Localization:** Complete UI and card translation system (`lang/*.txt`).
 
 
@@ -227,10 +238,11 @@ game-rules:
 # Name colors
 color-nicknames: true
 
-# Built-in scoreboard (TAB + PlaceholderAPI recommended)
+# Built-in scoreboard (enabled by default, automatically disabled if TAB is present)
 builtin-scoreboard:
-  enabled: false
+  enabled: true
   title: "&6&lROUNDS"
+  stats-title: "&b&lМои статы"
 
 # Freeplay mode (allows non-admins to start/stop games)
 freeplay:

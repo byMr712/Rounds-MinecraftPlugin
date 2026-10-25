@@ -655,6 +655,7 @@ public class PlayerDataManager implements Listener {
         com.rounds.item.GunItem.cancelReload(uuid);
         com.rounds.item.GunItem.clearPlayer(uuid);
         com.rounds.listener.LegendaryEffects.clearPlayer(uuid);
+        plugin.getGameManager().onPlayerQuit(uuid);
         if (plugin.getGameManager().getState() == GameManager.GameState.CARDS) {
             plugin.getCardManager().removePendingPick(uuid);
             Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {

@@ -193,9 +193,12 @@ When line of sight is broken (target retreats behind a wall), bots initiate purs
 ## 9. Narrow Passage Navigation, Red Zones, and Wall Detours
 
 1. **Red Zones Blacklist for 3x3–5x5 Rooms and 1x1x1 Pockets:**
-   - **Room Red Zones (3x3, 4x4, 5x5):** upon exiting an enclosed room, the bot marks its center as a Red Zone for **40 seconds** (`RedZone`). During patrol and search, entering this zone is strictly forbidden, eliminating endless re-entry loops. Entry is only permitted during active pursuit of a combat target (`currentTarget != null`).
-   - **Single 1x1x1 Pockets (`checkSinglePocketEscape`):** when 3 solid walls surround the bot within 1.25m, the bot immediately turns toward the single open exit, locks its escape heading for 35 ticks (1.75s), and blacklists the pocket as a Red Zone for **30 seconds**.
-   - **Doorway Scanning (`findRoomExit`):** 360° radial scan at 1.7m identifies the deepest open passage, locking heading for 50 ticks.
+   - **Room Red Zones (3x3, 4x4, 5x5):** upon exiting an enclosed room, the bot marks its center as a Red Zone for **60 seconds** (`RedZone`). During patrol and search, entering this zone is strictly forbidden, eliminating endless re-entry loops. When already inside the zone, movement directed outward away from center is always permitted to allow escaping. Entry from outside is only permitted during active pursuit of a combat target (`currentTarget != null`).
+   - **Vertical Room Exit Priority:** before choosing a doorway, `findRoomExit` sweeps 360° to detect block stairs (`isBlockStaircase`) or parkour platforms leading upward, prioritizing them over doorways to explore higher floors.
+   - **Single 1x1x1 Pockets (`checkSinglePocketEscape`):** when 3 solid walls surround the block, the bot immediately snaps its head and body toward the open exit (without slowly staring into the corner), locks its escape heading for 35 ticks (1.75s), and blacklists the pocket as a Red Zone for **60 seconds**.
+   - **Zero Wall & Corner Staring:** when facing an obstacle, the bot rapidly rotates away at up to 45°/tick (instead of slowly panning across the wall at 12°/tick) and pauses forward movement until turned away, avoiding inside corners between connected blocks (`isInsideCorner`).
+   - **Seamless Block Stair & Parkour Traversal:** `isBlockStaircase` evaluates elevation changes with rise <= 1 block and clear headroom. Increased forward jump impulse (0.24) and momentum persistence during ascent (`jumpAscentTicks`) ensure smooth first-attempt clearance of steps without rollbacks.
+   - **Doorway Scanning (`findRoomExit`):** 360° radial scan in 22.5° steps identifies the deepest open passage, locking heading for 45 ticks.
 
 2. **Flat Wall Detouring Without Oscillation (Persistent Detour & Dynamic Corner Bypass):**
    - When hitting a flat wall, `findClearDirection` selects a detour sign (-1 for left, +1 for right) and stores it in `wallDetourSign`.

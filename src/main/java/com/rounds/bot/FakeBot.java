@@ -580,6 +580,12 @@ public class FakeBot {
 
         if (jumpAscentTicks > 0) {
             jumpAscentTicks--;
+            velY = Math.max(velY, 0.08);
+            if (Math.abs(dx) > 0.01 || Math.abs(dz) > 0.01) {
+                double moveLen = Math.sqrt(dx * dx + dz * dz);
+                impulseX += (dx / moveLen) * 0.04;
+                impulseZ += (dz / moveLen) * 0.04;
+            }
         }
 
         // Smooth step down: if walking down stairs/slope, smoothly descend to the lower block
@@ -674,15 +680,17 @@ public class FakeBot {
                     && !headSpace.getBlock().getType().isSolid() && !overheadObstacle.getBlock().getType().isSolid()) {
                 if (lastJumpAttemptLoc != null && loc.distanceSquared(lastJumpAttemptLoc) < 0.05) {
                     consecutiveJumpAttempts++;
+                } else if (lastJumpAttemptLoc != null && loc.getY() >= lastJumpAttemptLoc.getY() + 0.4) {
+                    consecutiveJumpAttempts = 0; // Successfully climbed up step!
                 } else {
                     consecutiveJumpAttempts = 1;
                 }
                 lastJumpAttemptLoc = loc.clone();
 
-                if (consecutiveJumpAttempts >= 3) {
-                    // Bot jumped 3 times against an obstacle and didn't make progress (corner / 2x2 dead-end / failed attempt)
-                    // Abort jumps, apply cooldown, and trigger AI detour immediately!
-                    jumpStuckCooldown = 30;
+                if (consecutiveJumpAttempts >= 5) {
+                    // Bot jumped 5 times against an obstacle without gaining height
+                    // Abort jumps, apply cooldown, and trigger AI detour
+                    jumpStuckCooldown = 25;
                     consecutiveJumpAttempts = 0;
                     this.attemptNearLimitJumps = false;
                     if (ai != null) {
@@ -692,8 +700,8 @@ public class FakeBot {
                     double jumpMult = getJumpMultiplier();
                     velY = 0.42 * jumpMult; // Jump velocity scaled by jump cards
                     jumpAscentTicks = Math.max(8, (int) Math.round(8 * jumpMult));
-                    // 30% enhanced forward step impulse across all levels to smoothly clear block steps
-                    double forwardImpulse = (0.15 + 0.06 * (jumpMult - 1.0)) * 1.30 * Math.sqrt(getSpeedMultiplier());
+                    // Solid forward step impulse across all levels to smoothly clear block steps
+                    double forwardImpulse = (0.24 + 0.08 * (jumpMult - 1.0)) * Math.sqrt(getSpeedMultiplier());
                     impulseX += dirX * forwardImpulse;
                     impulseZ += dirZ * forwardImpulse;
                 }
@@ -798,12 +806,12 @@ public class FakeBot {
         double jumpMult = getJumpMultiplier();
         int maxClimb = getMaxClimbableBlocks();
 
-        double baseParkourDist = (factor >= 0.7) ? 4.2 : (2.4 + factor * 1.2);
+        double baseParkourDist = 3.6 + factor * 1.2;
         double maxParkourDist = baseParkourDist * Math.sqrt(speedMult) * Math.sqrt(jumpMult);
 
-        for (double gapDist = 1.4; gapDist <= maxParkourDist; gapDist += 0.6) {
-            double maxUp = 0.6 + (maxClimb - 1) * 1.0;
-            double[] checkDys = (maxClimb > 1) ? new double[]{maxUp, 0.6, -0.4, -1.4} : new double[]{0.6, -0.4, -1.4};
+        for (double gapDist = 1.0; gapDist <= maxParkourDist; gapDist += 0.5) {
+            double maxUp = 1.0 + (maxClimb - 1) * 1.0;
+            double[] checkDys = (maxClimb > 1) ? new double[]{maxUp, 1.0, 0.0, -1.0, -2.0} : new double[]{1.0, 0.0, -1.0, -2.0};
             for (double cdy : checkDys) {
                 Location landingFloor = loc.clone().add(dirX * gapDist, cdy, dirZ * gapDist);
                 Location landingBody = landingFloor.clone().add(0, 1.0, 0);

@@ -113,7 +113,14 @@ public class BotAI extends BukkitRunnable {
             double dx = loc.getX() - (x + 0.5);
             double dy = Math.abs(loc.getY() - y);
             double dz = loc.getZ() - (z + 0.5);
-            return (dy <= 3.0) && (dx * dx + dz * dz <= radius * radius);
+            return (dy <= 3.5) && (dx * dx + dz * dz <= radius * radius);
+        }
+
+        double distanceSq(Location loc) {
+            if (loc == null) return Double.MAX_VALUE;
+            double dx = loc.getX() - (x + 0.5);
+            double dz = loc.getZ() - (z + 0.5);
+            return dx * dx + dz * dz;
         }
     }
 
@@ -142,7 +149,15 @@ public class BotAI extends BukkitRunnable {
         Location testLoc = from.clone().add(Math.sin(rad) * dist, 0, Math.cos(rad) * dist);
         for (RedZone z : redZones) {
             if (z.contains(testLoc)) {
-                return true;
+                // If bot is already inside this red zone, allow movement if moving AWAY from center towards exit
+                if (z.contains(from)) {
+                    double distFromSq = z.distanceSq(from);
+                    double distTestSq = z.distanceSq(testLoc);
+                    if (distTestSq >= distFromSq) {
+                        continue; // Moving away from center towards exit: allow escape!
+                    }
+                }
+                return true; // Heading into or deeper into red zone: block!
             }
         }
         return false;
@@ -162,18 +177,30 @@ public class BotAI extends BukkitRunnable {
      */
     private float checkSinglePocketEscape(Location loc) {
         if (loc == null || loc.getWorld() == null) return Float.NaN;
-        float[] cardinalHeadings = new float[]{0f, 90f, 180f, 270f};
+        World w = loc.getWorld();
+        int bx = loc.getBlockX();
+        int by = loc.getBlockY();
+        int bz = loc.getBlockZ();
+
+        // 4 cardinal horizontal neighbors around the block:
+        // South (+Z, 0 deg), West (-X, 90 deg), North (-Z, 180 deg), East (+X, 270 deg)
+        int[][] dirs = new int[][]{
+            {0, 1, 0},     // South, 0 deg
+            {-1, 0, 90},   // West, 90 deg
+            {0, -1, 180},  // North, 180 deg
+            {1, 0, 270}    // East, 270 deg
+        };
+
         int blockedCount = 0;
         float openHeading = Float.NaN;
 
-        for (float heading : cardinalHeadings) {
-            double rad = Math.toRadians(-heading);
-            Location checkFeet = loc.clone().add(Math.sin(rad) * 0.75, 0.2, Math.cos(rad) * 0.75);
-            Location checkBody = loc.clone().add(Math.sin(rad) * 0.75, 1.2, Math.cos(rad) * 0.75);
-            if (checkFeet.getBlock().getType().isSolid() || checkBody.getBlock().getType().isSolid()) {
+        for (int[] d : dirs) {
+            boolean feetSolid = w.getBlockAt(bx + d[0], by, bz + d[1]).getType().isSolid();
+            boolean bodySolid = w.getBlockAt(bx + d[0], by + 1, bz + d[1]).getType().isSolid();
+            if (feetSolid || bodySolid) {
                 blockedCount++;
             } else {
-                openHeading = heading;
+                openHeading = (float) d[2];
             }
         }
 
@@ -184,44 +211,66 @@ public class BotAI extends BukkitRunnable {
     }
 
     /**
+     * Detects if a heading points directly into an inside corner seam between two connected solid blocks.
+     */
+    private boolean isInsideCorner(Location loc, float testHeading) {
+        if (loc == null || loc.getWorld() == null) return false;
+        World w = loc.getWorld();
+        double rad = Math.toRadians(-testHeading);
+        double dx = Math.sin(rad) * 0.9;
+        double dz = Math.cos(rad) * 0.9;
+        double perpX = Math.cos(rad) * 0.45;
+        double perpZ = -Math.sin(rad) * 0.45;
+
+        int by = loc.getBlockY() + 1;
+        boolean flank1 = w.getBlockAt((int) Math.floor(loc.getX() + dx - perpX), by, (int) Math.floor(loc.getZ() + dz - perpZ)).getType().isSolid();
+        boolean flank2 = w.getBlockAt((int) Math.floor(loc.getX() + dx + perpX), by, (int) Math.floor(loc.getZ() + dz + perpZ)).getType().isSolid();
+        return flank1 && flank2;
+    }
+
+    /**
      * Checks if a forward direction is an ascending or descending staircase made of blocks.
      * Block stairs rise or fall by at most 1 block per ~0.7-1.1 horizontal blocks with clear headroom.
      */
     private boolean isBlockStaircase(Location start, float heading, double dist) {
-        if (start == null || start.getWorld() == null || dist < 0.6) return false;
+        if (start == null || start.getWorld() == null || dist < 0.5) return false;
+        World w = start.getWorld();
         double rad = Math.toRadians(-heading);
-        double stepLen = 0.80;
+        double stepLen = 0.75;
         int steps = Math.max(1, (int) Math.round(dist / stepLen));
 
-        double lastFloorY = start.getY();
+        int lastBlockY = start.getBlockY() - 1;
+        if (start.getBlock().getType().isSolid()) {
+            lastBlockY = start.getBlockY();
+        }
+
         for (int i = 1; i <= steps; i++) {
             double curD = Math.min(dist, i * stepLen);
             double dx = Math.sin(rad) * curD;
             double dz = Math.cos(rad) * curD;
-            Location col = start.clone().add(dx, 0, dz);
+            int bx = (int) Math.floor(start.getX() + dx);
+            int bz = (int) Math.floor(start.getZ() + dz);
 
-            Double foundFloorY = null;
-            for (double dy = 1.0; dy >= -1.5; dy -= 0.5) {
-                Location test = col.clone().add(0, (lastFloorY - start.getY()) + dy, 0);
-                if (test.getBlock().getType().isSolid()) {
-                    foundFloorY = (double) test.getBlockY() + 1.0;
+            Integer foundStepY = null;
+            for (int dy = 1; dy >= -2; dy--) {
+                Block b = w.getBlockAt(bx, lastBlockY + dy, bz);
+                if (b.getType().isSolid()) {
+                    foundStepY = lastBlockY + dy;
                     break;
                 }
             }
-            if (foundFloorY == null) return false;
+            if (foundStepY == null) return false;
 
-            double rise = foundFloorY - lastFloorY;
-            if (rise > 1.05 || rise < -1.5) return false;
+            int rise = foundStepY - lastBlockY;
+            if (rise > 1 || rise < -2) return false;
 
-            Location headLow = col.clone();
-            headLow.setY(foundFloorY + 0.2);
-            Location headHigh = col.clone();
-            headHigh.setY(foundFloorY + 1.2);
-            if (headLow.getBlock().getType().isSolid() || headHigh.getBlock().getType().isSolid()) {
+            Block above1 = w.getBlockAt(bx, foundStepY + 1, bz);
+            Block above2 = w.getBlockAt(bx, foundStepY + 2, bz);
+            if (above1.getType().isSolid() || above2.getType().isSolid()) {
                 return false;
             }
 
-            lastFloorY = foundFloorY;
+            lastBlockY = foundStepY;
         }
         return true;
     }
@@ -1363,6 +1412,9 @@ public class BotAI extends BukkitRunnable {
 
             searchScanYaw += 15f;
             float yaw = player.getLocation().getYaw() + (float) Math.sin(Math.toRadians(searchScanYaw)) * 30f;
+            if (!isDirectionClear(myLoc, yaw, 1.8)) {
+                yaw = findClearDirection(myLoc, yaw);
+            }
             bot.getNmsPlayer().setRot(yaw, 0f);
             bot.getNmsPlayer().setYHeadRot(yaw);
             bot.getNmsPlayer().setYBodyRot(yaw);
@@ -1386,11 +1438,15 @@ public class BotAI extends BukkitRunnable {
         // Detect single 1x1x1 alcove / pocket with 1 open side: immediately escape and blacklist as red
         float pocketExit = checkSinglePocketEscape(myLoc);
         if (!Float.isNaN(pocketExit)) {
-            markRedZone(myLoc, 1.8, 600); // 30s blacklist on 1x1 pocket
+            markRedZone(myLoc, 2.0, 1200); // 60s blacklist on 1x1 pocket
             patrolHeading = pocketExit;
             lockedHeadingTicks = 35; // Step out of the pocket
             currentHuntTarget = null;
             currentCorridorWaypoint = null;
+            // Instant snap rotation towards open side: never stare into corner/wall!
+            bot.getNmsPlayer().setRot(pocketExit, 0f);
+            bot.getNmsPlayer().setYHeadRot(pocketExit);
+            bot.getNmsPlayer().setYBodyRot(pocketExit);
         }
 
         // High ground vantage hold: survey high ground for 3s instead of immediately jumping back down
@@ -1487,8 +1543,13 @@ public class BotAI extends BukkitRunnable {
             // Priority B: Unvisited ArenaNavMesh node (pro bots / snipers prioritize elevated positions; avoids penalized red paths)
             if (currentHuntTarget == null && mesh != null && !mesh.isEmpty()) {
                 ArenaNavMesh.NavNode unvisitedNode = mesh.findNearestUnvisitedNode(myLoc, visitedTerritory, blockedEdges, bot.getLevel(), playstyle == BotPlaystyle.TACTICAL_SNIPER, pathReputation);
-                if (unvisitedNode != null && !isNodeInRedZone(unvisitedNode.loc)) {
-                    currentHuntTarget = unvisitedNode.loc.clone();
+                if (unvisitedNode != null) {
+                    if (!isNodeInRedZone(unvisitedNode.loc)) {
+                        currentHuntTarget = unvisitedNode.loc.clone();
+                    } else {
+                        // Mark red zone node as visited so we don't pick it again or trigger Priority C wipe
+                        visitedTerritory.add(packCell(unvisitedNode.loc.getBlockX(), unvisitedNode.loc.getBlockY(), unvisitedNode.loc.getBlockZ()));
+                    }
                 }
             }
 
@@ -1497,9 +1558,12 @@ public class BotAI extends BukkitRunnable {
                 visitedTerritory.clear();
                 blockedEdges.clear();
                 if (mesh != null && !mesh.isEmpty()) {
-                    ArenaNavMesh.NavNode node = mesh.getRandomNode();
-                    if (node != null) {
-                        currentHuntTarget = node.loc.clone();
+                    for (int attempt = 0; attempt < 10; attempt++) {
+                        ArenaNavMesh.NavNode node = mesh.getRandomNode();
+                        if (node != null && !isNodeInRedZone(node.loc)) {
+                            currentHuntTarget = node.loc.clone();
+                            break;
+                        }
                     }
                 } else if (gm != null && gm.getCurrentZoneCenter() != null) {
                     Location center = gm.getCurrentZoneCenter();
@@ -1552,14 +1616,17 @@ public class BotAI extends BukkitRunnable {
             patrolHeading = myLoc.getYaw();
         }
 
-        // 6. Smooth natural head/body turn towards patrol heading
+        // 6. Natural head/body turn towards patrol heading: fast snap away from obstacles/walls!
         float currentYaw = player.getLocation().getYaw();
         float deltaYaw = ((patrolHeading - currentYaw + 540f) % 360f) - 180f;
-        float turnStep = deltaYaw * 0.25f;
-        float minStep = Math.min(Math.abs(deltaYaw), 1.6f);
+
+        boolean facingObstacle = !isDirectionClear(myLoc, currentYaw, 1.2);
+        float maxTurn = facingObstacle ? 45.0f : 14.0f;
+        float turnStep = deltaYaw * (facingObstacle ? 0.65f : 0.25f);
+        float minStep = Math.min(Math.abs(deltaYaw), facingObstacle ? 15.0f : 1.6f);
         if (Math.abs(turnStep) < minStep) turnStep = Math.signum(deltaYaw) * minStep;
-        if (turnStep > 12.0f) turnStep = 12.0f;
-        if (turnStep < -12.0f) turnStep = -12.0f;
+        if (turnStep > maxTurn) turnStep = maxTurn;
+        if (turnStep < -maxTurn) turnStep = -maxTurn;
         float newYaw = currentYaw + turnStep;
 
         float curPitch = player.getLocation().getPitch();
@@ -1574,12 +1641,17 @@ public class BotAI extends BukkitRunnable {
             bot.getNmsPlayer().setYBodyRot(bodyYaw + (bodyDiff > 0 ? bodyDiff - 30.0f : bodyDiff + 30.0f));
         }
 
-        // 7. Continuous forward exploration movement along current yaw
+        // 7. Exploration movement: pause forward thrust while facing an obstacle to avoid faceplanting into walls
         CombatProfile profile = getProfile();
         double walkSpeed = profile.walkSpeed * bot.getSpeedMultiplier();
-        double radMove = Math.toRadians(-newYaw);
-        lastMoveX = Math.sin(radMove) * walkSpeed;
-        lastMoveZ = Math.cos(radMove) * walkSpeed;
+        if (facingObstacle && Math.abs(deltaYaw) > 25.0f) {
+            lastMoveX = 0.0;
+            lastMoveZ = 0.0;
+        } else {
+            double radMove = Math.toRadians(-newYaw);
+            lastMoveX = Math.sin(radMove) * walkSpeed;
+            lastMoveZ = Math.cos(radMove) * walkSpeed;
+        }
         bot.moveRel(lastMoveX, 0.0, lastMoveZ);
     }
 
@@ -1639,6 +1711,12 @@ public class BotAI extends BukkitRunnable {
             if (stepLeft.getBlock().getType().isSolid() && stepRight.getBlock().getType().isSolid()) {
                 return false;
             }
+            // Avoid jump blocks below obstacle
+            com.rounds.blocks.BlockListener bl = bot.getPlugin() != null ? bot.getPlugin().getBlockListener() : null;
+            if (bl != null && (bl.isJumpBlock(feet.getBlock().getLocation()) || bl.isLocationTouchingJumpBlock(feet))) {
+                return false;
+            }
+            return true; // Step is climbable and clear!
         } else {
             // Flat ground / open air
             if (bodySolid || headSolid) {
@@ -1729,10 +1807,16 @@ public class BotAI extends BukkitRunnable {
     }
 
     private float findClearDirection(Location loc, float currentHeading) {
-        // 1. Check for 3-sided dead end (cul-de-sac / pocket rooms up to 4x4): front, left, and right blocked within 4.0m
-        boolean frontBlocked = !isDirectionClear(loc, currentHeading, 4.0);
-        boolean leftBlocked = !isDirectionClear(loc, currentHeading - 90f, 4.0);
-        boolean rightBlocked = !isDirectionClear(loc, currentHeading + 90f, 4.0);
+        // 1. Check if ahead is a staircase, parkour, or clear step: front is NOT blocked!
+        boolean frontStairs = isBlockStaircase(loc, currentHeading, 3.0);
+        double radAhead = Math.toRadians(-currentHeading);
+        boolean frontParkour = bot.hasParkourTargetAhead(Math.sin(radAhead), Math.cos(radAhead));
+        boolean frontClearClose = isDirectionClear(loc, currentHeading, 1.2);
+
+        // Check for 3-sided dead end (cul-de-sac / pocket rooms up to 5x5): front, left, and right blocked
+        boolean frontBlocked = !frontStairs && !frontParkour && !frontClearClose && !isDirectionClear(loc, currentHeading, 3.5);
+        boolean leftBlocked = !isDirectionClear(loc, currentHeading - 90f, 3.0);
+        boolean rightBlocked = !isDirectionClear(loc, currentHeading + 90f, 3.0);
         if (frontBlocked && leftBlocked && rightBlocked) {
             penalizePath(loc, 4);
             consecutiveBounces = 0;
@@ -1741,25 +1825,29 @@ public class BotAI extends BukkitRunnable {
             currentCorridorWaypoint = null;
             float roomExit = findRoomExit(loc);
             if (!Float.isNaN(roomExit)) {
-                lockedHeadingTicks = 50; // Lock for 2.5s to completely leave the 3x3 room
+                lockedHeadingTicks = 45;
                 return roomExit;
             }
-            lockedHeadingTicks = 50;
+            lockedHeadingTicks = 45;
             return currentHeading + 180f;
         }
 
-        // Try alternating angle deviations from current heading, prioritizing the persistent detour direction
+        // Try alternating angle deviations: prioritize 90 deg turns (perpendicular corridors) over 45 deg seams
         float[] offsets;
         if (wallDetourSign > 0) {
-            offsets = new float[]{45f, 90f, 135f, -45f, -90f, -135f, 180f};
+            offsets = new float[]{90f, 45f, 135f, -90f, -45f, -135f, 180f};
         } else if (wallDetourSign < 0) {
-            offsets = new float[]{-45f, -90f, -135f, 45f, 90f, 135f, 180f};
+            offsets = new float[]{-90f, -45f, -135f, 90f, 45f, 135f, 180f};
         } else {
-            offsets = new float[]{45f, -45f, 90f, -90f, 135f, -135f, 180f};
+            offsets = new float[]{90f, -90f, 45f, -45f, 135f, -135f, 180f};
         }
+
         for (float off : offsets) {
             float test = currentHeading + off;
-            if (isDirectionClear(loc, test, 1.2)) {
+            // Reject inside corner seams between connected blocks!
+            if (isInsideCorner(loc, test)) continue;
+
+            if (isDirectionClear(loc, test, 1.8) || isBlockStaircase(loc, test, 2.5)) {
                 float sign = Math.signum(off);
                 if (sign != 0) {
                     wallDetourSign = sign;
@@ -1773,7 +1861,6 @@ public class BotAI extends BukkitRunnable {
 
                 if (consecutiveBounces >= 3) {
                     penalizePath(loc, 3);
-                    // Ping-pong between walls detected: search for room exit or escape with 180
                     consecutiveBounces = 0;
                     lastTurnSign = 0f;
                     wallDetourSign = 0f;
@@ -1781,58 +1868,72 @@ public class BotAI extends BukkitRunnable {
                     currentCorridorWaypoint = null;
                     float roomExit = findRoomExit(loc);
                     if (!Float.isNaN(roomExit)) {
-                        lockedHeadingTicks = 50;
+                        lockedHeadingTicks = 45;
                         return roomExit;
                     }
-                    lockedHeadingTicks = 50;
+                    lockedHeadingTicks = 45;
                     return currentHeading + 180f;
                 }
                 return test;
             }
         }
 
-        // If standard angle deviations fail, sweep 360 to find narrow doorway
+        // If standard angle deviations fail, sweep 360 to find exit or stairs
         currentHuntTarget = null;
         currentCorridorWaypoint = null;
         float roomExit = findRoomExit(loc);
         if (!Float.isNaN(roomExit)) {
             consecutiveBounces = 0;
             lastTurnSign = 0f;
-            lockedHeadingTicks = 50;
+            lockedHeadingTicks = 45;
             return roomExit;
         }
 
         consecutiveBounces = 0;
         lastTurnSign = 0f;
-        lockedHeadingTicks = 50;
+        lockedHeadingTicks = 45;
         return currentHeading + 180f;
     }
 
     /**
-     * Sweep 360 degrees in 45-degree steps to detect room exit doorways.
+     * Sweep 360 degrees to detect room exit: prioritizes staircases/parkour leading out/up,
+     * then open doorways. Blacklists the enclosed room as red zone for 60s so bot doesn't re-enter.
      */
     private float findRoomExit(Location loc) {
         if (loc == null || loc.getWorld() == null) return Float.NaN;
+
+        // 1. First priority: check if any direction around the room has stairs leading up or parkour platform
+        for (float deg = 0f; deg < 360f; deg += 22.5f) {
+            if (isBlockStaircase(loc, deg, 3.5)) {
+                return deg; // Found stairs to climb out of the room!
+            }
+            double r = Math.toRadians(-deg);
+            if (bot.hasParkourTargetAhead(Math.sin(r), Math.cos(r))) {
+                return deg; // Found parkour route out of the room!
+            }
+        }
+
+        // 2. Second priority: find open doorway with longest clear distance
         float bestHeading = Float.NaN;
         double maxClearDist = 0.0;
 
-        for (float deg = 0f; deg < 360f; deg += 45f) {
+        for (float deg = 0f; deg < 360f; deg += 22.5f) {
             double clearDist = 0.0;
-            for (double d = 1.5; d <= 7.5; d += 1.5) {
+            for (double d = 1.5; d <= 8.0; d += 1.0) {
                 if (isDirectionClear(loc, deg, d, false)) {
                     clearDist = d;
                 } else {
                     break;
                 }
             }
-            if (clearDist > maxClearDist && clearDist >= 2.5) {
+            if (clearDist > maxClearDist && clearDist >= 2.2) {
                 maxClearDist = clearDist;
                 bestHeading = deg;
             }
         }
         if (!Float.isNaN(bestHeading)) {
-            // Mark this enclosed room as red zone (blacklist for 40s) so bot doesn't re-enter after exiting
-            markRedZone(loc, 4.5, 800);
+            // Mark this enclosed room as red zone (blacklist for 60s) so bot doesn't re-enter after exiting
+            markRedZone(loc, 5.0, 1200);
         }
         return bestHeading;
     }

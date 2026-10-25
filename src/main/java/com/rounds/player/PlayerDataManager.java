@@ -274,9 +274,9 @@ public class PlayerDataManager implements Listener {
         if (player != null && player.isOnline()) {
             var attr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
             if (attr != null) {
-                double targetHp = Math.max(data.hp, 2.0);
+                double targetHp = Math.max(2.0, Math.min(data.hp, PlayerData.MAX_HEALTH));
                 attr.setBaseValue(targetHp);
-                player.setHealth(Math.min(player.getHealth(), targetHp));
+                player.setHealth(Math.min(player.getHealth(), attr.getValue()));
             }
         }
     }

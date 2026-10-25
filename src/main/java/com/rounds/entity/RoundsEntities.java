@@ -326,7 +326,7 @@ public class RoundsEntities implements Listener {
                             nearest.damage(finalDamage);
                         }
                         if (nearest.getHealth() >= hpBefore && finalDamage > 0.0 && !nearest.isDead()) {
-                            nearest.setHealth(Math.max(0.0, hpBefore - finalDamage));
+                            nearest.setHealth(Math.min(Math.max(0.0, hpBefore - finalDamage), nearest.getMaxHealth()));
                         }
                     }
                     if (nearest instanceof Player victim && plugin.getBotManager() != null) {
@@ -477,7 +477,7 @@ public class RoundsEntities implements Listener {
                     hitEnt.damage(finalDmg);
                 }
                 if (hitEnt.getHealth() >= hpBefore && finalDmg > 0.0 && !hitEnt.isDead()) {
-                    hitEnt.setHealth(Math.max(0.0, hpBefore - finalDmg));
+                    hitEnt.setHealth(Math.min(Math.max(0.0, hpBefore - finalDmg), hitEnt.getMaxHealth()));
                 }
             }
             if (hitEnt instanceof Player victim && plugin.getBotManager() != null) {
@@ -760,7 +760,7 @@ public class RoundsEntities implements Listener {
             if (!hpBoostPending.containsKey(shooterUUID)) {
                 var hpAttr = shooterPlayer.getAttribute(Attribute.GENERIC_MAX_HEALTH);
                 if (hpAttr != null) {
-                    double baseMaxHP = hpAttr.getValue();
+                    double baseMaxHP = Math.min(hpAttr.getValue(), PlayerData.MAX_HEALTH);
                     double boost = baseMaxHP * data.hpBoostOnHit * 0.1;
                     double newMax = Math.min(baseMaxHP + boost, PlayerData.MAX_HEALTH);
                     double actualBoost = Math.max(0, newMax - baseMaxHP);
@@ -769,15 +769,16 @@ public class RoundsEntities implements Listener {
                         // текущего значения, чтобы не затирать бонусы карт здоровья.
                         hpBoostPending.put(shooterUUID, actualBoost);
                         hpAttr.setBaseValue(newMax);
-                        shooterPlayer.setHealth(Math.min(shooterPlayer.getHealth() + actualBoost, newMax));
+                        double targetHealth = Math.min(shooterPlayer.getHealth() + actualBoost, hpAttr.getValue());
+                        shooterPlayer.setHealth(Math.min(targetHealth, PlayerData.MAX_HEALTH));
                         int taskId = Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                             hpBoostPending.remove(shooterUUID);
                             hpBoostTasks.remove(shooterUUID);
                             var restoreAttr = shooterPlayer.getAttribute(Attribute.GENERIC_MAX_HEALTH);
                             if (restoreAttr != null) {
-                                double restored = Math.max(1.0, restoreAttr.getBaseValue() - actualBoost);
+                                double restored = Math.max(1.0, Math.min(restoreAttr.getBaseValue() - actualBoost, PlayerData.MAX_HEALTH));
                                 restoreAttr.setBaseValue(restored);
-                                shooterPlayer.setHealth(Math.min(shooterPlayer.getHealth(), restored));
+                                shooterPlayer.setHealth(Math.min(shooterPlayer.getHealth(), restoreAttr.getValue()));
                             }
                         }, 40L);
                         hpBoostTasks.put(shooterUUID, taskId);
@@ -868,9 +869,9 @@ public class RoundsEntities implements Listener {
             if (p == null || !p.isOnline()) continue;
             var attr = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
             if (attr != null) {
-                double restored = Math.max(1.0, attr.getBaseValue() - entry.getValue());
+                double restored = Math.max(1.0, Math.min(attr.getBaseValue() - entry.getValue(), PlayerData.MAX_HEALTH));
                 attr.setBaseValue(restored);
-                p.setHealth(Math.min(p.getHealth(), restored));
+                p.setHealth(Math.min(p.getHealth(), attr.getValue()));
             }
         }
         hpBoostPending.clear();

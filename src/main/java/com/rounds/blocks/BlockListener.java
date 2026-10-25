@@ -471,7 +471,7 @@ public class BlockListener implements Listener {
             player.setNoDamageTicks(0);
             player.damage(damage);
             if (player.getHealth() >= hpBefore && damage > 0.0) {
-                player.setHealth(Math.max(0.0, hpBefore - damage));
+                player.setHealth(Math.min(Math.max(0.0, hpBefore - damage), player.getMaxHealth()));
             }
             RoundsEntities.applyHitRedEffects(player, player.getLocation().clone().add(0, -1, 0), player.getLocation());
         } else {

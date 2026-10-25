@@ -538,12 +538,12 @@ public class GameManager implements Listener {
                 if (currentHP >= 0.9 * currentMaxHP) {
                     if (!pristineActive && currentMaxHP < enhancedMaxHP - 0.5) {
                         attr.setBaseValue(enhancedMaxHP);
-                        p.setHealth(Math.min(p.getHealth(), enhancedMaxHP));
+                        p.setHealth(Math.min(p.getHealth(), attr.getValue()));
                     }
                 } else {
                     if (pristineActive) {
                         attr.setBaseValue(baseMaxHP);
-                        p.setHealth(Math.min(p.getHealth(), baseMaxHP));
+                        p.setHealth(Math.min(p.getHealth(), attr.getValue()));
                     }
                 }
             }

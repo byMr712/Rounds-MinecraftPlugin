@@ -8,7 +8,7 @@ import java.util.List;
 
 public class PlayerData {
 
-    public static final double MAX_HEALTH = 2048.0;
+    public static final double MAX_HEALTH = 1024.0;
 
     public String playerName = "";
     public double playerUse = 0;

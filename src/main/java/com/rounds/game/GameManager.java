@@ -2535,25 +2535,29 @@ public class GameManager implements Listener {
         List<String> lines = new ArrayList<>();
 
         if (page == 0) {
-            title = ChatColor.translateAlternateColorCodes('&',
-                    plugin.getRoundsConfig().getBuiltinScoreboardTitle());
+            String cfgTitle = plugin.getRoundsConfig().getBuiltinScoreboardTitle();
+            title = (cfgTitle != null && !cfgTitle.isEmpty() && !cfgTitle.equalsIgnoreCase("&6&lROUNDS"))
+                    ? ChatColor.translateAlternateColorCodes('&', cfgTitle)
+                    : Messages.get("scoreboard.game-title");
             lines.add("\u00A77\u00A7m════════");
 
             GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
             String teamPart = (myTeam != null)
                     ? myTeam.getColor() + Messages.raw("team." + myTeam.name().toLowerCase())
                     : Messages.raw("team.none");
-            lines.add(" \u00A7fВы: " + teamPart);
+            lines.add(" \u00A7f" + Messages.raw("scoreboard.you") + ": " + teamPart);
             lines.add(" ");
-            lines.add("     \u00A7fПобеды  ");
-            lines.add(" \u00A7bСиние: \u00A7b" + (int) plugin.getTeamManager().getWins(GameTeam.BLUE));
-            lines.add(" \u00A7cКрасные: \u00A7c" + (int) plugin.getTeamManager().getWins(GameTeam.RED));
-            lines.add(" \u00A7eЖёлтые:  \u00A7e" + (int) plugin.getTeamManager().getWins(GameTeam.YELLOW));
-            lines.add(" \u00A7aЗелёные: \u00A7a" + (int) plugin.getTeamManager().getWins(GameTeam.GREEN));
+            lines.add("     \u00A7f" + Messages.raw("scoreboard.wins") + "  ");
+            lines.add(" \u00A7b" + Messages.raw("team.blue") + ": \u00A7b" + (int) plugin.getTeamManager().getWins(GameTeam.BLUE));
+            lines.add(" \u00A7c" + Messages.raw("team.red") + ": \u00A7c" + (int) plugin.getTeamManager().getWins(GameTeam.RED));
+            lines.add(" \u00A7e" + Messages.raw("team.yellow") + ": \u00A7e" + (int) plugin.getTeamManager().getWins(GameTeam.YELLOW));
+            lines.add(" \u00A7a" + Messages.raw("team.green") + ": \u00A7a" + (int) plugin.getTeamManager().getWins(GameTeam.GREEN));
             lines.add("\u00A77\u00A7m════════\u00A7r");
         } else {
-            title = ChatColor.translateAlternateColorCodes('&',
-                    plugin.getRoundsConfig().getBuiltinScoreboardStatsTitle());
+            String cfgStatsTitle = plugin.getRoundsConfig().getBuiltinScoreboardStatsTitle();
+            title = (cfgStatsTitle != null && !cfgStatsTitle.isEmpty() && !cfgStatsTitle.equalsIgnoreCase("&b&lМои статы"))
+                    ? ChatColor.translateAlternateColorCodes('&', cfgStatsTitle)
+                    : Messages.get("scoreboard.stats-title");
             lines.add("\u00A77\u00A7m════════");
 
             PlayerData data = plugin.getPlayerDataManager().getData(player.getUniqueId());
@@ -2564,11 +2568,11 @@ public class GameManager implements Listener {
             String statBullets = (data != null) ? formatStat(data.bullets) : "1";
             String statMaxAmmo = (data != null) ? formatStat(data.maxAmmo) : "3";
 
-            lines.add(" \u00A7fХП: \u00A7a" + statHp);
-            lines.add(" \u00A7fУрон: \u00A7c" + statDmg);
-            lines.add(" \u00A7fКарт: \u00A7d" + statCards);
-            lines.add(" \u00A7fПуль: \u00A76" + statBullets);
-            lines.add(" \u00A7fПатрон: \u00A7e" + statMaxAmmo);
+            lines.add(" \u00A7f" + Messages.raw("scoreboard.stat-hp") + ": \u00A7a" + statHp);
+            lines.add(" \u00A7f" + Messages.raw("scoreboard.stat-dmg") + ": \u00A7c" + statDmg);
+            lines.add(" \u00A7f" + Messages.raw("scoreboard.stat-cards") + ": \u00A7d" + statCards);
+            lines.add(" \u00A7f" + Messages.raw("scoreboard.stat-bullets") + ": \u00A76" + statBullets);
+            lines.add(" \u00A7f" + Messages.raw("scoreboard.stat-max-ammo") + ": \u00A7e" + statMaxAmmo);
             lines.add("\u00A77\u00A7m════════\u00A7r");
         }
 

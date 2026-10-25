@@ -433,3 +433,15 @@ debug:
   autodeath-status: "Автосмерть сейчас: {0}"
   autodeath-on: "Вы включили режим автоматической смерти случайного игрока, если раунд длится уже более 4 минуты"
   autodeath-off: "Вы отключили режим автоматической смерти случайного игрока, если раунд длится уже более 4 минуты"
+
+# Scoreboard
+scoreboard:
+  game-title: "&6&lROUNDS"
+  you: "Вы"
+  wins: "Победы"
+  stats-title: "&b&lМои статы"
+  stat-hp: "ХП"
+  stat-dmg: "Урон"
+  stat-cards: "Карт"
+  stat-bullets: "Пуль"
+  stat-max-ammo: "Патрон"

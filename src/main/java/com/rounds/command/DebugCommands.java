@@ -162,7 +162,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "setlanguage" -> handleSetLanguage(sender, args);
             case "effect" -> handleEffect(sender, args);
             case "heal" -> handleHeal(sender, args);
-            case "cards", "card" -> handleCards(sender, args);
+            case "cards" -> handleCards(sender, args);
             case "resetstats" -> handleResetStats(sender, args);
             case "reload" -> handleReload(sender);
             case "giveblocks" -> handleBlocks(sender, args);
@@ -807,6 +807,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         plugin.getConfig().set("language", lang);
         plugin.saveConfig();
         Messages.reload(lang);
+        plugin.getGameManager().updateScoreboard();
         sender.sendMessage(ChatColor.GREEN + Messages.get("debug.language-set", lang));
     }
 
@@ -1004,7 +1005,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
     private static final List<String> SUBCOMMANDS = Arrays.asList(
         "help", "start", "stop", "status", "rounds", "info",
-        "givegun", "cards", "card", "giveblocks", "join", "freeplay", "autodeath",
+        "givegun", "cards", "giveblocks", "join", "freeplay", "autodeath",
         "stats", "setstat", "setteam", "setlanguage", "effect", "heal",
         "resetstats", "reload", "setlobby",
         "jumppos1", "jumppos2", "jumpset", "uppos1", "uppos2", "upset",
@@ -1014,7 +1015,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         "start", "stop", "rounds", "givegun", "wheel", "bot"
     );
     private static final List<String> PUBLIC_COMMANDS = Arrays.asList(
-        "info", "stats", "cards", "card"
+        "info", "stats", "cards"
     );
     private static final List<String> TEAM_COLORS = Arrays.asList("BLUE", "RED", "YELLOW", "GREEN", "NONE");
 
@@ -1306,7 +1307,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 if (args.length == 4) yield filterStartsWith(Arrays.asList("10", "20", "40", "60", "100", "200"), input);
                 yield Collections.emptyList();
             }
-            case "cards", "card" -> {
+            case "cards" -> {
                 if (!admin) {
                     yield args.length == 2
                             ? filterStartsWith(Collections.singletonList("show"), input)

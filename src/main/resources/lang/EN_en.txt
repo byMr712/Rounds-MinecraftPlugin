@@ -433,3 +433,15 @@ debug:
   ph-desc.stat-hp-boost-on-hit: "HP Boost on Hit"
   ph-desc.stat-ammo-per-hit: "Ammo per Hit"
 
+# Scoreboard
+scoreboard:
+  game-title: "&6&lROUNDS"
+  you: "You"
+  wins: "Wins"
+  stats-title: "&b&lMy Stats"
+  stat-hp: "HP"
+  stat-dmg: "Damage"
+  stat-cards: "Cards"
+  stat-bullets: "Bullets"
+  stat-max-ammo: "Ammo"
+

@@ -322,8 +322,8 @@ Bots inspect active card modifiers in `PlayerData` to adjust combat behavior:
    - During active rounds, enemy nametags are completely invisible to players (`Team.OptionStatus.FOR_OWN_TEAM` / `NEVER`). Players only see their teammates.
    - Spectators and eliminated players can see nametags for all participants.
 3. **Combat Hit Visual Feedback:**
-   - When hitting an enemy, `victim.playHurtAnimation(yaw)` is triggered, flashing their 3D model bright red and tilting away from damage vector. Red dust particles (`Particle.REDSTONE`) burst at impact point.
-   - Players taking damage experience camera tilt toward incoming fire, directional particles in their view, and a smooth red screen border vignette (`WorldBorder` warning).
+   - When hitting an enemy, `victim.playHurtAnimation(yaw)` is triggered, flashing their 3D model bright red and tilting away from damage vector.
+   - Players taking damage experience camera tilt toward incoming fire and a smooth red screen border vignette (`WorldBorder` warning).
 4. **Card Highlight Duration and FakeBot Potion Ticking:**
    - The "Mark Was Good" card limits enemy highlights to 10 seconds (200 ticks) upon moving away.
    - `FakeBot` ticks active potion effect durations each tick, ensuring highlights and slowness effects expire naturally.

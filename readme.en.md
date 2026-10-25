@@ -37,8 +37,8 @@
   - **Automatic Cleanup:** All bots despawn cleanly when games stop (`/rdebug stop`, `/rounds stop`) or server restarts.
   - **Spectator Outlines & Team Titles:** Spectators see glowing outlines around alive players in team colors (hidden from survival combatants). Neutral team victory titles are shown to spectators.
 - **Combat Hit Visual Feedback:**
-  - Hitting an enemy flashes their 3D model bright red with a hurt animation (`playHurtAnimation`) and spawns a burst of red impact particles (`Particle.REDSTONE`).
-  - Taking damage tilts the player camera toward the attack origin, spawns directional red particles in the field of view, and triggers a smooth red screen border vignette (`WorldBorder` warning).
+  - Hitting an enemy flashes their 3D model bright red with a hurt animation (`playHurtAnimation`) and directional tilt away from the damage vector.
+  - Taking damage tilts the player camera toward the attack origin and triggers a smooth red screen border vignette (`WorldBorder` warning).
 - **Team-Only Nametags & Heart Count Display:**
   - Nametag and TAB format: `<hearts>♥ <Name>` for players and `<hearts>♥ <Name> [L<level>]` for bots.
   - Enemy nametags are completely hidden during active rounds (only teammates can see each other's nametags). Spectators can see everyone's nametags.

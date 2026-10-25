@@ -9,6 +9,8 @@ import org.bukkit.GameMode;
 import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,6 +25,7 @@ public class CardManager {
     private final CardRegistry registry;
     private final Map<UUID, List<Card>> pendingCards = new HashMap<>();
     private final Set<UUID> pendingPicks = new HashSet<>();
+    private final Map<UUID, BukkitTask> choiceTimers = new HashMap<>();
 
     public CardManager(RoundsPlugin plugin) {
         this.plugin = plugin;
@@ -35,6 +38,7 @@ public class CardManager {
         pendingCards.put(player.getUniqueId(), cards);
         pendingPicks.add(player.getUniqueId());
         plugin.getCardGUI().open(player, cards);
+        startChoiceTimer(player);
 
         List<Integer> cardIds = new java.util.ArrayList<>();
         for (Card c : cards) cardIds.add(c.getId());
@@ -42,6 +46,7 @@ public class CardManager {
     }
 
     public void selectCard(Player player, int slotIndex) {
+        cancelChoiceTimer(player.getUniqueId());
         List<Card> cards = pendingCards.remove(player.getUniqueId());
         if (cards == null || slotIndex < 0 || slotIndex >= cards.size()) return;
 
@@ -145,6 +150,7 @@ public class CardManager {
     }
 
     public void resetAllCards() {
+        cancelAllChoiceTimers();
         pendingPicks.clear();
         pendingCards.clear();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
@@ -189,18 +195,77 @@ public class CardManager {
         Player player = plugin.getServer().getPlayer(uuid);
         if (player != null && player.isOnline()) {
             plugin.getCardGUI().open(player, cards);
+            startChoiceTimer(player);
             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
         }
     }
 
     public void clearPendingPicks() {
+        cancelAllChoiceTimers();
         pendingPicks.clear();
         pendingCards.clear();
     }
 
     public void removePendingPick(UUID uuid) {
+        cancelChoiceTimer(uuid);
         pendingPicks.remove(uuid);
         pendingCards.remove(uuid);
+    }
+
+    public void startChoiceTimer(Player player) {
+        if (player == null) return;
+        UUID uuid = player.getUniqueId();
+        cancelChoiceTimer(uuid);
+        if (plugin.getBotManager() != null && plugin.getBotManager().isBot(player)) {
+            return;
+        }
+
+        int limitSec = plugin.getRoundsConfig().getCardChoiceTimeSeconds();
+        if (limitSec < 10) limitSec = 30;
+        final int totalSec = limitSec;
+
+        BukkitTask task = new BukkitRunnable() {
+            int remaining = totalSec;
+
+            @Override
+            public void run() {
+                Player p = Bukkit.getPlayer(uuid);
+                if (p == null || !p.isOnline() || !isPendingPick(uuid)) {
+                    cancel();
+                    choiceTimers.remove(uuid);
+                    return;
+                }
+
+                remaining--;
+
+                if (remaining <= 5 && remaining >= 2) {
+                    p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+                } else if (remaining == 1) {
+                    p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0f, 1.0f);
+                } else if (remaining <= 0) {
+                    cancel();
+                    choiceTimers.remove(uuid);
+                    removePendingPick(uuid);
+                    p.kickPlayer(Messages.get("card.timeout-kick", totalSec));
+                }
+            }
+        }.runTaskTimer(plugin, 20L, 20L);
+
+        choiceTimers.put(uuid, task);
+    }
+
+    public void cancelChoiceTimer(UUID uuid) {
+        BukkitTask task = choiceTimers.remove(uuid);
+        if (task != null) {
+            task.cancel();
+        }
+    }
+
+    public void cancelAllChoiceTimers() {
+        for (BukkitTask task : choiceTimers.values()) {
+            if (task != null) task.cancel();
+        }
+        choiceTimers.clear();
     }
 
     public void replacePendingCards(UUID uuid, List<Card> newCards) {

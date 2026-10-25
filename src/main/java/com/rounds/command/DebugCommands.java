@@ -184,6 +184,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "block" -> handleBlock(sender, args);
             case "spawn" -> handleBot(sender, args);
             case "despawn" -> handleBot(sender, args);
+            case "cardchoicetime" -> handleCardChoiceTime(sender, args);
             default -> sender.sendMessage(ChatColor.RED + Messages.get("debug.unknown-command", args[0]));
         }
         return true;
@@ -209,6 +210,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
         boxSection(sender, R, Messages.get("debug.help-section-cards"));
         boxKv(sender, "/rdebug cards reload", Messages.get("debug.help-cards-reload"));
+        boxKv(sender, "/rdebug cardchoicetime <sec>", Messages.get("debug.help-cardchoicetime"));
         boxKv(sender, "/rdebug cards show [player]", Messages.get("debug.help-cards-show"));
         boxKv(sender, "/rdebug cards add <name>", Messages.get("debug.help-cards-add"));
         boxKv(sender, "/rdebug wheel on|off", Messages.get("debug.help-wheel"));
@@ -977,13 +979,43 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
     }
 
+    private void handleCardChoiceTime(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("rounds.admin")) {
+            sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
+            return;
+        }
+
+        if (args.length < 2) {
+            int current = plugin.getRoundsConfig().getCardChoiceTimeSeconds();
+            sender.sendMessage(ChatColor.YELLOW + Messages.get("debug.cardchoicetime-usage", current));
+            return;
+        }
+
+        int sec;
+        try {
+            sec = Integer.parseInt(args[1]);
+        } catch (NumberFormatException e) {
+            sender.sendMessage(ChatColor.RED + Messages.get("debug.invalid-number"));
+            return;
+        }
+
+        if (sec < 10) {
+            sender.sendMessage(ChatColor.RED + Messages.get("debug.cardchoicetime-min"));
+            return;
+        }
+
+        plugin.getRoundsConfig().setCardChoiceTimeSeconds(sec);
+        sender.sendMessage(ChatColor.GREEN + Messages.get("debug.cardchoicetime-set", sec));
+    }
+
     private static final List<String> SUBCOMMANDS = Arrays.asList(
         "help", "start", "stop", "status", "rounds", "info",
         "givegun", "cards", "card", "giveblocks", "join", "freeplay", "autodeath",
         "stats", "setstat", "setteam", "setlanguage", "effect", "heal",
         "resetstats", "reload", "setlobby",
         "jumppos1", "jumppos2", "jumpset", "uppos1", "uppos2", "upset",
-        "wheel", "tab", "bot", "draft", "pick", "shoot", "block", "spawn", "despawn"
+        "wheel", "tab", "bot", "draft", "pick", "shoot", "block", "spawn", "despawn",
+        "cardchoicetime"
     );
     private static final List<String> FREEPLAY_COMMANDS = Arrays.asList(
         "start", "stop", "rounds", "givegun", "wheel", "bot", "spawn"
@@ -1473,6 +1505,10 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 yield Collections.emptyList();
             }
             case "rounds" -> filterStartsWith(Arrays.asList("1", "5", "10", "15", "20", "50", "100", "500"), input);
+            case "cardchoicetime" -> {
+                if (args.length == 2) yield filterStartsWith(Arrays.asList("10", "15", "20", "30", "45", "60"), input);
+                yield Collections.emptyList();
+            }
             case "autodeath" -> filterStartsWith(Arrays.asList("on", "off"), input);
             case "freeplay" -> filterStartsWith(Arrays.asList("on", "off"), input);
             case "wheel" -> filterStartsWith(Arrays.asList("on", "off"), input);

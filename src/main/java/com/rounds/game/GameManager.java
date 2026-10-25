@@ -734,6 +734,9 @@ public class GameManager implements Listener {
         stopGame();
         plugin.getTeamManager().clearAll();
         getStateManager().clear();
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            plugin.getPlayerDataManager().resetPlayerToLobby(p);
+        }
     }
 
     private void gameTick() {

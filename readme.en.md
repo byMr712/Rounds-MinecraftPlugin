@@ -142,6 +142,7 @@ Primary admin command: `/rdebug`. Short bot management command: `/rbot`.
 | `/rdebug giveblocks` | Receive a full set of setup blocks and switch to Creative mode. |
 | `/rdebug setlobby` | Set the lobby spawn point at your current position. |
 | `/rdebug rounds <number>` | Set the number of round wins required to win the match (default: 5). |
+| `/rdebug cardchoicetime <sec>` | Set card choice time limit (min 10s, default 30s). XP sound on last 5s, anvil on 1s, kick on timeout. |
 | `/rdebug freeplay <on\|off>` | Allow non-admin players to run `/rdebug start`. |
 | `/rdebug autodeath <on\|off>` | Toggle sudden-death elimination for overly long rounds (> 4 min). |
 | `/rdebug cards add <player> <id>` | Grant a specific card to a player or bot. |

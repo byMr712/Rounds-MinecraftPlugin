@@ -12,6 +12,7 @@ public final class RoundsConfig {
     private List<GameTeam> enabledTeams = new ArrayList<>();
     private int defaultRounds;
     private int maxRounds;
+    private int cardChoiceTimeSeconds = 30;
     private int cardSelectionTicks;
     private int respawnDelayTicks;
 
@@ -65,6 +66,8 @@ public final class RoundsConfig {
 
         defaultRounds = c.getInt("game.default-rounds", 5);
         maxRounds = c.getInt("game.max-rounds", 20);
+        cardChoiceTimeSeconds = c.getInt("game.card-choice-time", 30);
+        if (cardChoiceTimeSeconds < 10) cardChoiceTimeSeconds = 30;
         cardSelectionTicks = c.getInt("game.card-selection-time", 200);
         respawnDelayTicks = c.getInt("game.respawn-delay", 5);
 
@@ -113,6 +116,12 @@ public final class RoundsConfig {
 
     public int getDefaultRounds() { return defaultRounds; }
     public int getMaxRounds() { return maxRounds; }
+    public int getCardChoiceTimeSeconds() { return cardChoiceTimeSeconds; }
+    public void setCardChoiceTimeSeconds(int seconds) {
+        this.cardChoiceTimeSeconds = Math.max(10, seconds);
+        plugin.getConfig().set("game.card-choice-time", this.cardChoiceTimeSeconds);
+        plugin.saveConfig();
+    }
     public int getCardSelectionTicks() { return cardSelectionTicks; }
     public int getRespawnDelayTicks() { return respawnDelayTicks; }
     public double getBaseGunCooldown() { return baseGunCooldown; }

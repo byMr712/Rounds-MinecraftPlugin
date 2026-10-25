@@ -489,39 +489,58 @@ public class PlayerDataManager implements Listener {
 
                 Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                     if (!player.isOnline()) return;
-                    gm.showNameTagsInGame();
-                    gm.updateScoreboard();
+                    GameManager currentGm = plugin.getGameManager();
+                    if (!currentGm.isGameStarted() || !currentGm.isGameActive() || currentGm.getState() == GameManager.GameState.WAITING) {
+                        resetPlayerToLobby(player);
+                        return;
+                    }
+                    currentGm.showNameTagsInGame();
+                    currentGm.updateScoreboard();
 
-                    if (gameState == GameManager.GameState.PLAYING) {
-                        gm.addDeadPlayer(uuid);
+                    GameManager.GameState curState = currentGm.getState();
+                    if (curState == GameManager.GameState.PLAYING) {
+                        currentGm.addDeadPlayer(uuid);
                         player.setGameMode(GameMode.SPECTATOR);
+                        player.setAllowFlight(true);
+                        player.setFlying(true);
                         player.setInvulnerable(true);
                         GameTeam team = plugin.getTeamManager().getPlayerTeam(uuid);
                         if (team != null) {
-                            Location spawn = gm.getTeamSpawns().get(team);
+                            Location spawn = currentGm.getTeamSpawns().get(team);
                             if (spawn != null) player.teleport(spawn);
                         }
-                    } else if (gameState == GameManager.GameState.ROUND_END) {
-                        player.setGameMode(GameMode.SPECTATOR);
-                        player.setInvulnerable(true);
-                        GameTeam team = plugin.getTeamManager().getPlayerTeam(uuid);
-                        if (team != null) {
-                            Location spawn = gm.getTeamSpawns().get(team);
-                            if (spawn != null) player.teleport(spawn);
-                        }
-                    } else if (gameState == GameManager.GameState.CARDS) {
+                    } else if (curState == GameManager.GameState.ROUND_END) {
                         GameTeam team = plugin.getTeamManager().getPlayerTeam(uuid);
                         if (team != null) {
                             player.setGameMode(GameMode.ADVENTURE);
+                            player.setAllowFlight(false);
+                            player.setFlying(false);
                             player.setInvulnerable(true);
-                            Location spawn = gm.getTeamSpawns().get(team);
-                            if (spawn == null) spawn = gm.getCurrentZoneCenter();
+                            Location spawn = currentGm.getTeamSpawns().get(team);
+                            if (spawn != null) player.teleport(spawn);
+                        } else {
+                            player.setGameMode(GameMode.SPECTATOR);
+                            player.setAllowFlight(true);
+                            player.setFlying(true);
+                            player.setInvulnerable(true);
+                        }
+                    } else if (curState == GameManager.GameState.CARDS) {
+                        GameTeam team = plugin.getTeamManager().getPlayerTeam(uuid);
+                        if (team != null) {
+                            player.setGameMode(GameMode.ADVENTURE);
+                            player.setAllowFlight(false);
+                            player.setFlying(false);
+                            player.setInvulnerable(true);
+                            Location spawn = currentGm.getTeamSpawns().get(team);
+                            if (spawn == null) spawn = currentGm.getCurrentZoneCenter();
                             if (spawn != null) player.teleport(spawn);
                             if (plugin.getCardManager().isPendingPick(uuid)) {
                                 plugin.getCardManager().openCardSelection(player, team);
                             }
                         } else {
                             player.setGameMode(GameMode.SPECTATOR);
+                            player.setAllowFlight(true);
+                            player.setFlying(true);
                             player.setInvulnerable(true);
                         }
                     }
@@ -541,14 +560,21 @@ public class PlayerDataManager implements Listener {
                     plugin.getGameManager().showNameTagsInGame();
                     Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                         if (!player.isOnline()) return;
+                        GameManager currentGm = plugin.getGameManager();
+                        if (!currentGm.isGameStarted() || !currentGm.isGameActive() || currentGm.getState() == GameManager.GameState.WAITING) {
+                            resetPlayerToLobby(player);
+                            return;
+                        }
                         player.setGameMode(GameMode.SPECTATOR);
+                        player.setAllowFlight(true);
+                        player.setFlying(true);
                         player.setInvulnerable(true);
-                        Player target = plugin.getGameManager().findRandomAlivePlayer();
+                        Player target = currentGm.findRandomAlivePlayer();
                         if (target != null) {
                             player.teleport(target.getLocation());
                         } else {
                             Location spawn = plugin.getBlockListener().getBlockStorage().getLobbyBlock();
-                            if (spawn == null) spawn = plugin.getGameManager().getCurrentZoneCenter();
+                            if (spawn == null) spawn = currentGm.getCurrentZoneCenter();
                             if (spawn != null) player.teleport(spawn);
                         }
                     }, 5L);
@@ -558,45 +584,54 @@ public class PlayerDataManager implements Listener {
                         plugin.getTeamManager().leaveTeam(uuid);
                     }
                     Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-                        try {
-                            if (!player.isOnline()) return;
-                            plugin.getLogger().info("[Join] " + player.getName() + " -> executing reset now");
-                            PlayerData pdata = getData(uuid);
-                            if (pdata != null) {
-                                pdata.resetStats();
-                                pdata.resetAllCards();
-                            }
-                            clearPDC(player);
-                            removePlayerData(uuid);
-                            plugin.getGameManager().clearCardEffects(player);
-                            com.rounds.item.GunItem.cancelReload(uuid);
-                            com.rounds.item.GunItem.clearPlayer(uuid);
-                            com.rounds.listener.LegendaryEffects.clearPlayer(uuid);
-
-                            player.getInventory().clear();
-                            var attr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
-                            if (attr != null) attr.setBaseValue(20);
-                            player.setHealth(20);
-                            player.setFoodLevel(20);
-                            player.setGameMode(GameMode.ADVENTURE);
-                            player.setInvulnerable(false);
-                            player.setNoDamageTicks(0);
-                            plugin.getGameManager().restoreNameTags();
-                            org.bukkit.Location lobby = plugin.getBlockListener().getBlockStorage().getLobbyBlock();
-                            if (lobby != null) {
-                                player.teleport(lobby.clone().add(0, 1, 0));
-                            } else {
-                                plugin.getLogger().warning("[Join] Lobby is null!");
-                            }
-                        } catch (Exception e) {
-                            plugin.getLogger().severe("[Join] Error resetting " + player.getName() + ": " + e.getMessage());
-                            e.printStackTrace();
-                        }
+                        if (!player.isOnline()) return;
+                        resetPlayerToLobby(player);
                     }, 5L);
                 }
             }
         } catch (Exception e) {
             plugin.getLogger().severe("[Join] Error in onJoin for " + player.getName() + ": " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public void resetPlayerToLobby(Player player) {
+        if (player == null || !player.isOnline()) return;
+        UUID uuid = player.getUniqueId();
+        try {
+            plugin.getLogger().info("[Join] Resetting " + player.getName() + " to lobby");
+            PlayerData pdata = getData(uuid);
+            if (pdata != null) {
+                pdata.resetStats();
+                pdata.resetAllCards();
+            }
+            clearPDC(player);
+            removePlayerData(uuid);
+            plugin.getGameManager().clearCardEffects(player);
+            com.rounds.item.GunItem.cancelReload(uuid);
+            com.rounds.item.GunItem.clearPlayer(uuid);
+            com.rounds.listener.LegendaryEffects.clearPlayer(uuid);
+
+            player.getInventory().clear();
+            var attr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
+            if (attr != null) attr.setBaseValue(20);
+            player.setHealth(20);
+            player.setFoodLevel(20);
+            player.setGameMode(GameMode.ADVENTURE);
+            player.setAllowFlight(false);
+            player.setFlying(false);
+            player.setInvulnerable(false);
+            player.setNoDamageTicks(0);
+            plugin.getGameManager().restoreNameTags();
+            plugin.getGameManager().clearSpectatorGlow(player);
+            org.bukkit.Location lobby = plugin.getBlockListener().getBlockStorage().getLobbyBlock();
+            if (lobby != null) {
+                player.teleport(lobby.clone().add(0, 1, 0));
+            } else {
+                plugin.getLogger().warning("[Join] Lobby is null!");
+            }
+        } catch (Exception e) {
+            plugin.getLogger().severe("[Join] Error resetting " + player.getName() + ": " + e.getMessage());
             e.printStackTrace();
         }
     }

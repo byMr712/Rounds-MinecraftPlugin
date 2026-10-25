@@ -29,6 +29,7 @@ defaults:
 game:
   default-rounds: 5
   max-rounds: 20
+  card-choice-time: 30
   card-selection-time: 200
   respawn-delay: 5
 

@@ -72,6 +72,7 @@ public class BotAI extends BukkitRunnable {
     private boolean isSeekingCover = false;
     private boolean isAmbushing = false;
     private int ambushTicks = 0;
+    private float ambushAimYaw = 0f;
 
     // Patrol exploration navigation
     private float patrolHeading = Float.NaN;
@@ -182,6 +183,8 @@ public class BotAI extends BukkitRunnable {
         this.isPursuing = false;
         this.isSeekingCover = false;
         this.isAmbushing = false;
+        this.ambushTicks = 0;
+        this.ambushAimYaw = 0f;
         this.coverLoc = null;
 
         // Clear unique per-round exploration, gaps, and routing map
@@ -340,6 +343,7 @@ public class BotAI extends BukkitRunnable {
         long now = System.currentTimeMillis();
         if (now - lastAttackedTime < 250) return; // Debounce rapid hits
         lastAttackedTime = now;
+        this.isAmbushing = false; // Break out of ambush immediately when attacked
 
         double smartChance = getSmartBehaviorChance();
 
@@ -507,29 +511,27 @@ public class BotAI extends BukkitRunnable {
         PlayerData data = bot.getPlugin().getPlayerDataManager().getData(player.getUniqueId());
         double healthRatio = player.getHealth() / bot.getMaxHealth();
 
-        // 2. Ambush Trap handling (waiting around corner with pre-aim)
+        // 2. Ambush Trap handling (standing behind cover, pre-aiming at open corridor / sightline)
         if (isAmbushing) {
             ambushTicks++;
-            Location eye = player.getEyeLocation();
-            RayTraceResult hit = player.getWorld().rayTraceBlocks(eye, eye.getDirection(), 1.2, FluidCollisionMode.NEVER, true);
-            boolean wallInFace = hit != null && hit.getHitBlock() != null && hit.getHitBlock().getType().isSolid();
-
-            if (ambushTicks > 30 || wallInFace || (targetCurrentlyVisible && lastKnownTargetLoc != null && player.getLocation().distance(lastKnownTargetLoc) < 5.0)) {
+            if (ambushTicks > 40) {
+                // Time expired and nobody entered the ambush: resume movement!
                 isAmbushing = false;
                 coverSearchCooldown = 120;
             } else {
-                // Hold position behind corner, pre-aim at corner where enemy is expected to emerge (no jitter)
-                if (lastKnownTargetLoc != null) {
-                    bot.aimAt(lastKnownTargetLoc.clone().add(0, 1.4, 0), 45.0f, 0.0f);
-                }
+                // Hold position behind cover, pre-aim steadily down the open corridor
+                bot.getNmsPlayer().setRot(ambushAimYaw, 0f);
+                bot.getNmsPlayer().setYHeadRot(ambushAimYaw);
+                bot.getNmsPlayer().setYBodyRot(ambushAimYaw);
 
                 // If bot has Empower card, pre-charge shield!
                 if (data != null && data.empower > 0 && !data.shieldActive && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
                     bot.block();
                 }
 
-                if (targetCurrentlyVisible) {
-                    // AMBUSH TRIGGERED: instant point-blank shot!
+                if (targetCurrentlyVisible && currentTarget != null) {
+                    // AMBUSH TRIGGERED: instant shot when enemy runs into field of view!
+                    bot.aimAt(currentTarget.getEyeLocation(), 50.0f, 0.0f);
                     if (bot.hasGun()) {
                         bot.shoot();
                         shootCooldown = 4;
@@ -538,7 +540,7 @@ public class BotAI extends BukkitRunnable {
                     coverSearchCooldown = 120;
                 } else {
                     tickCooldowns();
-                    return;
+                    return; // Stand completely still, watching the open ground
                 }
             }
         }
@@ -576,12 +578,16 @@ public class BotAI extends BukkitRunnable {
                         return;
                     }
 
-                    // Set up an Ambush Trap around the corner!
+                    // Set up an Ambush Trap around the corner watching open ground!
                     if (ThreadLocalRandom.current().nextDouble() < smartChance) {
-                        isAmbushing = true;
-                        ambushTicks = 0;
-                        tickCooldowns();
-                        return;
+                        float aimYaw = calculateAmbushAimYaw(player, lastKnownTargetLoc);
+                        if (!Float.isNaN(aimYaw)) {
+                            isAmbushing = true;
+                            ambushTicks = 0;
+                            ambushAimYaw = aimYaw;
+                            tickCooldowns();
+                            return;
+                        }
                     }
                 }
             }
@@ -855,6 +861,54 @@ public class BotAI extends BukkitRunnable {
         return bestCover;
     }
 
+    /**
+     * Calculates optimal ambush aim angle pointing outwards towards an open corridor or sightline.
+     * Rejects directions facing solid obstacles within 3.5m, prioritizing long open lines of fire
+     * oriented towards the expected avenue of enemy approach.
+     */
+    private float calculateAmbushAimYaw(Player player, Location targetLoc) {
+        Location eye = player.getEyeLocation();
+        World world = eye.getWorld();
+        if (world == null) return Float.NaN;
+
+        Vector toTarget = null;
+        if (targetLoc != null && targetLoc.getWorld() != null && targetLoc.getWorld().equals(world)) {
+            toTarget = targetLoc.toVector().subtract(eye.toVector()).normalize();
+        }
+
+        float bestYaw = Float.NaN;
+        double bestScore = -Double.MAX_VALUE;
+
+        // Sweep 16 directions (every 22.5 degrees) to find open sightlines
+        for (float deg = 0f; deg < 360f; deg += 22.5f) {
+            double rad = Math.toRadians(-deg);
+            Vector dir = new Vector(Math.sin(rad), 0.0, Math.cos(rad)).normalize();
+
+            // Raycast up to 25 blocks to measure open distance
+            RayTraceResult hit = world.rayTraceBlocks(eye, dir, 25.0, FluidCollisionMode.NEVER, true);
+            double clearDist = (hit != null && hit.getHitPosition() != null)
+                    ? hit.getHitPosition().distance(eye.toVector())
+                    : 25.0;
+
+            // Reject directions facing a solid wall closer than 3.5 blocks (never stare into walls!)
+            if (clearDist < 3.5) continue;
+
+            // Score based on open sightline length + alignment towards enemy avenue of approach
+            double score = clearDist;
+            if (toTarget != null) {
+                double dot = dir.dot(toTarget);
+                score += dot * 8.0;
+            }
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestYaw = deg;
+            }
+        }
+
+        return (bestScore > -100.0) ? bestYaw : Float.NaN;
+    }
+
     private void executePursuit(Player player, Location targetLoc) {
         Location myLoc = player.getLocation();
         double dx = targetLoc.getX() - myLoc.getX();
@@ -914,7 +968,20 @@ public class BotAI extends BukkitRunnable {
             lastMoveZ = mz * profile.pursuitSpeed;
             bot.moveRel(lastMoveX, 0.0, lastMoveZ);
         } else {
-            // Reached last known location: scan left and right briefly
+            // Reached last known location: hold angle in ambush watching open corridor or scan
+            if (searchTicks > 15 && ThreadLocalRandom.current().nextDouble() < (getSmartBehaviorChance() * 0.45)) {
+                float aimYaw = calculateAmbushAimYaw(player, null);
+                if (!Float.isNaN(aimYaw)) {
+                    isPursuing = false;
+                    isAmbushing = true;
+                    ambushTicks = 0;
+                    ambushAimYaw = aimYaw;
+                    currentTarget = null;
+                    lastKnownTargetLoc = null;
+                    return;
+                }
+            }
+
             searchScanYaw += 15f;
             float yaw = player.getLocation().getYaw() + (float) Math.sin(Math.toRadians(searchScanYaw)) * 30f;
             bot.getNmsPlayer().setRot(yaw, 0f);

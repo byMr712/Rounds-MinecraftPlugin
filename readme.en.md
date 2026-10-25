@@ -128,10 +128,10 @@ flowchart TD
 1. **Preparation:** Players step on their team's wool block.
 2. **Start:** An administrator runs `/rdebug start` or steps on the Iron Block.
 3. **Countdown:** A 3-second countdown starts in chat. Players enter spectator mode for a map overview.
-4. **Card Draft:** Players choose 1 card from 5 options within 30 seconds (configured via `/rdebug cardchoicetime <sec>`).
+4. **Card Draft:** Players choose 1 card from 5 options within 30 seconds (configured via `/rdebug cardchoicetime <sec>`). All players and bots are completely immobile and invulnerable during the draft.
 5. **Combat:** Players receive guns, switch to survival, and fight on the selected arena.
 6. **Round End:** The team of the last surviving player receives a round point.
-7. **Upgrade Phase:** Losing teams open a card selection GUI to power up before the next round.
+7. **Upgrade Phase:** Losing teams open a card selection GUI to power up before the next round (all participants remain immobile and invulnerable during selection).
 8. **Match Victory:** The first team reaching the required round wins (default 5) wins the match and everyone returns to the lobby.
 
 

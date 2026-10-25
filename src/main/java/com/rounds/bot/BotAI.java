@@ -88,6 +88,7 @@ public class BotAI extends BukkitRunnable {
     // Corridor cul-de-sac & ping-pong wall escape
     private int consecutiveBounces = 0;
     private float lastTurnSign = 0f;
+    private float wallDetourSign = 0f;
     private int lockedHeadingTicks = 0;
 
     // Room confinement & 2x2 doorway escape
@@ -199,6 +200,7 @@ public class BotAI extends BukkitRunnable {
         this.lockedHeadingTicks = 0;
         this.consecutiveBounces = 0;
         this.lastTurnSign = 0f;
+        this.wallDetourSign = 0f;
         this.currentStrafeVal = 0.0;
         this.currentTarget = null;
         this.lastKnownTargetLoc = null;
@@ -1118,12 +1120,20 @@ public class BotAI extends BukkitRunnable {
                 pursuitStuckTicks = 0;
             }
 
+            float directHeading = (float) Math.toDegrees(Math.atan2(-dx, dz));
             float moveYaw;
             if (lockedHeadingTicks > 0) {
-                moveYaw = patrolHeading;
-                lockedHeadingTicks--;
+                // If direct heading towards pursuit target cleared the wall corner, resume direct pursuit immediately
+                if (isDirectionClear(myLoc, directHeading, 2.0)) {
+                    lockedHeadingTicks = 0;
+                    wallDetourSign = 0f;
+                    moveYaw = directHeading;
+                } else {
+                    moveYaw = patrolHeading;
+                    lockedHeadingTicks--;
+                }
             } else {
-                moveYaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+                moveYaw = directHeading;
                 // Obstacle avoidance during pursuit: route around blocking walls via NavMesh or clear direction
                 if (!isDirectionClear(myLoc, moveYaw, 1.2)) {
                     ArenaNavMesh mesh = bot.getManager() != null ? bot.getManager().getNavMesh() : null;
@@ -1136,7 +1146,9 @@ public class BotAI extends BukkitRunnable {
                         moveYaw = findClearDirection(myLoc, moveYaw);
                     }
                     patrolHeading = moveYaw;
-                    lockedHeadingTicks = 10; // Maintain detour heading for 10 ticks (~0.5s) to smoothly round corner
+                    lockedHeadingTicks = 35; // Maintain detour heading for up to 35 ticks (~1.75s) to smoothly round corner
+                } else {
+                    wallDetourSign = 0f;
                 }
             }
 
@@ -1252,7 +1264,8 @@ public class BotAI extends BukkitRunnable {
             currentHuntTarget = null;
             currentCorridorWaypoint = null;
             lockedHeadingTicks = 35;
-            patrolHeading = findClearDirection(myLoc, patrolHeading + (ThreadLocalRandom.current().nextBoolean() ? 90f : -90f));
+            float turn = (wallDetourSign != 0f) ? (wallDetourSign * 90f) : (ThreadLocalRandom.current().nextBoolean() ? 90f : -90f);
+            patrolHeading = findClearDirection(myLoc, patrolHeading + turn);
         }
 
         // 5. Macro target selection: Hunt enemy team spawn first, then unvisited NavMesh nodes across the whole arena
@@ -1324,17 +1337,24 @@ public class BotAI extends BukkitRunnable {
             float desiredHeading = (float) Math.toDegrees(Math.atan2(-cdx, cdz));
 
             if (lockedHeadingTicks > 0) {
-                lockedHeadingTicks--;
-                if (!isDirectionClear(myLoc, patrolHeading, 1.1)) {
+                // Check if the corner of the wall has been cleared: direct heading towards target is clear!
+                if (isDirectionClear(myLoc, desiredHeading, 2.0)) {
                     lockedHeadingTicks = 0;
-                    patrolHeading = findClearDirection(myLoc, patrolHeading);
-                    lockedHeadingTicks = 12;
+                    wallDetourSign = 0f;
+                    patrolHeading = desiredHeading;
+                } else {
+                    lockedHeadingTicks--;
+                    if (!isDirectionClear(myLoc, patrolHeading, 1.1)) {
+                        patrolHeading = findClearDirection(myLoc, patrolHeading);
+                        lockedHeadingTicks = 35;
+                    }
                 }
             } else if (isDirectionClear(myLoc, desiredHeading, 1.2)) {
                 patrolHeading = desiredHeading;
+                wallDetourSign = 0f;
             } else {
                 patrolHeading = findClearDirection(myLoc, desiredHeading);
-                lockedHeadingTicks = 12; // Maintain detour heading so bot doesn't immediately re-face wall
+                lockedHeadingTicks = 35; // Maintain detour heading so bot clears the wall
             }
         } else if (Float.isNaN(patrolHeading)) {
             patrolHeading = myLoc.getYaw();
@@ -1481,6 +1501,10 @@ public class BotAI extends BukkitRunnable {
             Location checkAt = checkLoc.getBlock().getLocation();
             boolean touchingPad = bl.isLocationTouchingJumpBlock(checkLoc) || bl.isJumpBlock(checkBelow) || bl.isJumpBlock(checkAt);
             if (touchingPad) {
+                double moveLen = Math.sqrt(dx * dx + dz * dz);
+                if (moveLen > 0.001 && bot.hasParkourTargetAhead(dx / moveLen, dz / moveLen)) {
+                    return true;
+                }
                 return false;
             }
         }
@@ -1522,12 +1546,22 @@ public class BotAI extends BukkitRunnable {
             return currentHeading + 180f;
         }
 
-        // Try alternating angle deviations from current heading
-        float[] offsets = {45f, -45f, 90f, -90f, 135f, -135f, 180f};
+        // Try alternating angle deviations from current heading, prioritizing the persistent detour direction
+        float[] offsets;
+        if (wallDetourSign > 0) {
+            offsets = new float[]{45f, 90f, 135f, -45f, -90f, -135f, 180f};
+        } else if (wallDetourSign < 0) {
+            offsets = new float[]{-45f, -90f, -135f, 45f, 90f, 135f, 180f};
+        } else {
+            offsets = new float[]{45f, -45f, 90f, -90f, 135f, -135f, 180f};
+        }
         for (float off : offsets) {
             float test = currentHeading + off;
             if (isDirectionClear(loc, test, 1.2)) {
                 float sign = Math.signum(off);
+                if (sign != 0) {
+                    wallDetourSign = sign;
+                }
                 if (sign != 0 && lastTurnSign != 0 && sign != lastTurnSign) {
                     consecutiveBounces++;
                 } else if (sign != 0) {
@@ -1540,6 +1574,7 @@ public class BotAI extends BukkitRunnable {
                     // Ping-pong between walls detected: search for room exit or escape with 180
                     consecutiveBounces = 0;
                     lastTurnSign = 0f;
+                    wallDetourSign = 0f;
                     currentHuntTarget = null;
                     currentCorridorWaypoint = null;
                     float roomExit = findRoomExit(loc);
@@ -1658,7 +1693,8 @@ public class BotAI extends BukkitRunnable {
 
             for (ArenaNavMesh.NavNode node : mesh.getAllNodes()) {
                 if (node.loc.getY() > py + 35.0 || node.loc.getY() < py - 20.0) continue;
-                if (bl != null && (bl.isJumpBlock(node.loc) || bl.isUpBlock(node.loc))) continue;
+                if (bl != null && (bl.isJumpBlock(node.loc) || bl.isUpBlock(node.loc) || bl.isLocationTouchingJumpBlock(node.loc))) continue;
+                if (node.breadth < 3) continue; // Require a wide platform, not an isolated 1-block pillar
 
                 double dx = node.loc.getX() - px;
                 double dz = node.loc.getZ() - pz;
@@ -1685,7 +1721,23 @@ public class BotAI extends BukkitRunnable {
             double dirX = center.getX() - px;
             double dirZ = center.getZ() - pz;
             double distToCenter = Math.sqrt(dirX * dirX + dirZ * dirZ);
-            if (distToCenter > 1.0) {
+            if (distToCenter <= 3.5) {
+                // Near/on center 1-block island surrounded by jump pads: steer outwards to outer arena floor
+                for (double angle = 0; angle < 2 * Math.PI; angle += Math.PI / 4) {
+                    double outX = px + Math.cos(angle) * 5.5;
+                    double outZ = pz + Math.sin(angle) * 5.5;
+                    for (int dy = 2; dy >= -8; dy--) {
+                        int by = (int) py + dy;
+                        Block fl = world.getBlockAt((int) Math.floor(outX), by, (int) Math.floor(outZ));
+                        if (fl.getType().isSolid() && !world.getBlockAt((int) Math.floor(outX), by + 1, (int) Math.floor(outZ)).getType().isSolid()) {
+                            Location flLoc = fl.getLocation();
+                            if (bl == null || (!bl.isJumpBlock(flLoc) && !bl.isLocationTouchingJumpBlock(flLoc))) {
+                                return new Location(world, Math.floor(outX) + 0.5, by + 1.0, Math.floor(outZ) + 0.5);
+                            }
+                        }
+                    }
+                }
+            } else {
                 double nx = dirX / distToCenter;
                 double nz = dirZ / distToCenter;
                 int startY = (int) Math.max(center.getY() + 3.0, py);
@@ -1703,7 +1755,7 @@ public class BotAI extends BukkitRunnable {
                         if (above1.getType().isSolid() || above2.getType().isSolid()) continue;
 
                         Location floorLoc = floor.getLocation();
-                        if (bl != null && (bl.isJumpBlock(floorLoc) || bl.isUpBlock(floorLoc))) continue;
+                        if (bl != null && (bl.isJumpBlock(floorLoc) || bl.isUpBlock(floorLoc) || bl.isLocationTouchingJumpBlock(floorLoc))) continue;
 
                         return new Location(world, bx + 0.5, by + 1.0, bz + 0.5);
                     }
@@ -1740,7 +1792,17 @@ public class BotAI extends BukkitRunnable {
                         if (above1.getType().isSolid() || above2.getType().isSolid()) continue;
 
                         Location floorLoc = floor.getLocation();
-                        if (bl != null && (bl.isJumpBlock(floorLoc) || bl.isUpBlock(floorLoc))) continue;
+                        if (bl != null && (bl.isJumpBlock(floorLoc) || bl.isUpBlock(floorLoc) || bl.isLocationTouchingJumpBlock(floorLoc))) continue;
+
+                        // Check platform breadth: require at least 2 adjacent solid blocks to avoid isolated 1-block pillar
+                        int breadth = 0;
+                        for (int ox = -1; ox <= 1; ox++) {
+                            for (int oz = -1; oz <= 1; oz++) {
+                                if (ox == 0 && oz == 0) continue;
+                                if (world.getBlockAt(bx + ox, by, bz + oz).getType().isSolid()) breadth++;
+                            }
+                        }
+                        if (breadth < 2) continue;
 
                         double d = dx * dx + dz * dz;
                         if (d < minD) {

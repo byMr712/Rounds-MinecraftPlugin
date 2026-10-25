@@ -108,10 +108,12 @@ public class GunItem implements Listener {
 
         if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
             event.setCancelled(true);
+            if (plugin.getGameManager().getState() == com.rounds.game.GameManager.GameState.CARDS) return;
             shotThisTick.add(player.getUniqueId());
             doShoot(player);
         } else if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
             event.setCancelled(true);
+            if (plugin.getGameManager().getState() == com.rounds.game.GameManager.GameState.CARDS) return;
             doBlock(player);
         }
     }

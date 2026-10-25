@@ -39,15 +39,19 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Phantom;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.*;
+import org.bukkit.util.Vector;
 
 import org.bukkit.Location;
 import java.util.HashMap;
@@ -349,7 +353,10 @@ public class GameManager implements Listener {
                 p.setFoodLevel(20);
                 p.setSaturation(5.0f);
                 p.setExhaustion(0f);
+                p.setFireTicks(0);
+                p.setHealth(p.getMaxHealth());
                 p.setInvulnerable(true);
+                p.setVelocity(new Vector(0, 0, 0));
                 p.setNoDamageTicks(0);
                 plugin.getCardManager().openCardSelection(p, team);
             }
@@ -1139,7 +1146,10 @@ public class GameManager implements Listener {
                 if (team != null) {
                     Location spawn = teamSpawns.get(team);
                     if (spawn != null) p.teleport(spawn);
+                    p.setFireTicks(0);
+                    p.setHealth(p.getMaxHealth());
                     p.setInvulnerable(true);
+                    p.setVelocity(new Vector(0, 0, 0));
                     p.setFoodLevel(20);
                     p.setSaturation(5.0f);
                     p.setExhaustion(0f);
@@ -1182,7 +1192,10 @@ public class GameManager implements Listener {
                 if (team != null) {
                     Location spawn = teamSpawns.get(team);
                     if (spawn != null) p.teleport(spawn);
+                    p.setFireTicks(0);
+                    p.setHealth(p.getMaxHealth());
                     p.setInvulnerable(true);
+                    p.setVelocity(new Vector(0, 0, 0));
                     p.setFoodLevel(20);
                     p.setSaturation(5.0f);
                     p.setExhaustion(0f);
@@ -1413,6 +1426,43 @@ public class GameManager implements Listener {
         int oldLevel = ((Player) event.getEntity()).getFoodLevel();
         if (event.getFoodLevel() < oldLevel) {
             event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onEntityDamage(EntityDamageEvent event) {
+        if (state == GameState.CARDS && event.getEntity() instanceof Player player) {
+            event.setCancelled(true);
+            if (event.getCause() == EntityDamageEvent.DamageCause.VOID) {
+                GameTeam team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+                Location spawn = (team != null) ? teamSpawns.get(team) : null;
+                if (spawn != null) {
+                    player.teleport(spawn);
+                } else if (currentZoneCenter != null) {
+                    player.teleport(currentZoneCenter);
+                }
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPlayerMove(PlayerMoveEvent event) {
+        if (state != GameState.CARDS) return;
+        Player player = event.getPlayer();
+        if (player.getGameMode() == GameMode.SPECTATOR) return;
+        if (!isParticipant(player.getUniqueId()) && plugin.getTeamManager().getPlayerTeam(player.getUniqueId()) == null) return;
+
+        Location from = event.getFrom();
+        Location to = event.getTo();
+        if (to == null) return;
+
+        // Freeze position (X, Y, Z) while cards are being picked, allow looking around (yaw, pitch)
+        if (from.getX() != to.getX() || from.getY() != to.getY() || from.getZ() != to.getZ()) {
+            Location locked = from.clone();
+            locked.setYaw(to.getYaw());
+            locked.setPitch(to.getPitch());
+            event.setTo(locked);
+            player.setVelocity(new Vector(0, 0, 0));
         }
     }
 

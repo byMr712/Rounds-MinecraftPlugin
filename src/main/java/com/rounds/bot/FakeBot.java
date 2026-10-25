@@ -188,29 +188,7 @@ public class FakeBot {
     }
 
     public boolean hasParkourTargetAhead(double dirX, double dirZ) {
-        Player bp = getBukkitPlayer();
-        if (bp == null) return false;
-        Location loc = bp.getLocation();
-        if (loc.getWorld() == null) return false;
-        double factor = getSkillFactor();
-        double speedMult = getSpeedMultiplier();
-        double jumpMult = getJumpMultiplier();
-        int maxClimb = getMaxClimbableBlocks();
-        double baseParkourDist = (factor >= 0.7) ? 4.2 : (2.4 + factor * 1.2);
-        double maxParkourDist = baseParkourDist * Math.sqrt(speedMult) * Math.sqrt(jumpMult);
-        for (double gapDist = 1.4; gapDist <= maxParkourDist; gapDist += 0.8) {
-            double maxUp = 0.6 + (maxClimb - 1) * 1.0;
-            double[] checkDys = (maxClimb > 1) ? new double[]{maxUp, 0.6, -0.4, -1.4} : new double[]{0.6, -0.4, -1.4};
-            for (double cdy : checkDys) {
-                Location landingFloor = loc.clone().add(dirX * gapDist, cdy, dirZ * gapDist);
-                if (landingFloor.getBlock().getType().isSolid()
-                        && !landingFloor.clone().add(0, 1.0, 0).getBlock().getType().isSolid()
-                        && !landingFloor.clone().add(0, 2.0, 0).getBlock().getType().isSolid()) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return findParkourLandingFloor(dirX, dirZ) != null;
     }
 
     public double getSpeedMultiplier() {
@@ -376,24 +354,24 @@ public class FakeBot {
                 double dx = safeTarget.getX() - p.getLocation().getX();
                 double dz = safeTarget.getZ() - p.getLocation().getZ();
                 double dist = Math.sqrt(dx * dx + dz * dz);
-                if (dist > 0.3) {
-                    // Strong forward impulse (~0.35 blocks/tick) directed towards safe map interior
+                if (dist > 1.2) {
+                    // Strong forward impulse (~0.38 blocks/tick) directed towards safe map interior
                     double normX = dx / dist;
                     double normZ = dz / dist;
-                    this.impulseX = normX * 0.35;
-                    this.impulseZ = normZ * 0.35;
+                    this.impulseX = normX * 0.38;
+                    this.impulseZ = normZ * 0.38;
 
                     float launchYaw = (float) Math.toDegrees(Math.atan2(-normX, normZ));
                     setRotation(launchYaw, -10f);
                 } else {
                     double rad = Math.toRadians(-p.getLocation().getYaw());
-                    this.impulseX = Math.sin(rad) * 0.35;
-                    this.impulseZ = Math.cos(rad) * 0.35;
+                    this.impulseX = Math.sin(rad) * 0.40;
+                    this.impulseZ = Math.cos(rad) * 0.40;
                 }
             } else {
                 double rad = Math.toRadians(-p.getLocation().getYaw());
-                this.impulseX = Math.sin(rad) * 0.35;
-                this.impulseZ = Math.cos(rad) * 0.35;
+                this.impulseX = Math.sin(rad) * 0.40;
+                this.impulseZ = Math.cos(rad) * 0.40;
             }
         }
         if (ai != null) {
@@ -542,6 +520,7 @@ public class FakeBot {
         Player p = getBukkitPlayer();
         ServerPlayer sp = getNmsPlayer();
         if (p.isDead() || !p.isOnline() || p.getGameMode() == GameMode.SPECTATOR) return;
+        if (manager != null && manager.getPlugin() != null && manager.getPlugin().getGameManager().getState() == com.rounds.game.GameManager.GameState.CARDS) return;
         BlockListener bl = (manager != null && manager.getPlugin() != null) ? manager.getPlugin().getBlockListener() : null;
 
         // 1. Pick up external vertical impulses (jump pads, up blocks, explosions)
@@ -645,15 +624,20 @@ public class FakeBot {
                 }
             }
 
-            // Only auto-jump over actual solid blocks; never treat other players as jumpable steps!
-            boolean solidBlockAhead = aheadFeet.getBlock().getType().isSolid()
-                    || aheadFeet.clone().add(0, 1.0, 0).getBlock().getType().isSolid();
-            boolean stepAhead = solidBlockAhead || (sp.horizontalCollision && !entityAhead);
+            // Jump blocks are hazards: NEVER treat them as walkable steps to auto-jump onto!
+            boolean hazardAhead = (bl != null) && (bl.isJumpBlock(aheadFeet.getBlock().getLocation())
+                    || bl.isJumpBlock(aheadFeet.clone().subtract(0, 1.0, 0).getBlock().getLocation())
+                    || bl.isLocationTouchingJumpBlock(aheadFeet));
+
+            // Only auto-jump over actual solid blocks; never treat other players or hazard pads as jumpable steps!
+            boolean solidBlockAhead = (aheadFeet.getBlock().getType().isSolid()
+                    || aheadFeet.clone().add(0, 1.0, 0).getBlock().getType().isSolid()) && !hazardAhead;
+            boolean stepAhead = solidBlockAhead || (sp.horizontalCollision && !entityAhead && !hazardAhead);
             int obstacleHeight = 0;
-            while (obstacleHeight < 4 && aheadFeet.clone().add(0, obstacleHeight, 0).getBlock().getType().isSolid()) {
+            while (obstacleHeight < 4 && aheadFeet.clone().add(0, obstacleHeight, 0).getBlock().getType().isSolid() && !hazardAhead) {
                 obstacleHeight++;
             }
-            if (obstacleHeight == 0 && sp.horizontalCollision) {
+            if (obstacleHeight == 0 && sp.horizontalCollision && !hazardAhead) {
                 obstacleHeight = 1;
             }
 
@@ -690,39 +674,17 @@ public class FakeBot {
                     impulseZ += dirZ * forwardImpulse;
                 }
             } else if (!stepAhead && !headSpace.getBlock().getType().isSolid()) {
-                // Check if approaching a 1-4 block gap or parkour platform ahead
+                // Check if approaching a 1-4 block gap or parkour platform ahead (or leaping over hazard/jump block)
                 Location edgeCheck = loc.clone().add(dirX * 0.6, -0.4, dirZ * 0.6);
                 Location edgeDrop = loc.clone().add(dirX * 0.6, -1.4, dirZ * 0.6);
-                if (!edgeCheck.getBlock().getType().isSolid() && !edgeDrop.getBlock().getType().isSolid()) {
-                    Location bestLandingFloor = null;
-                    double factor = getSkillFactor();
-                    double speedMult = getSpeedMultiplier();
-                    double jumpMult = getJumpMultiplier();
-                    int maxClimb = getMaxClimbableBlocks();
-
-                    // Base parkour gap: pro bots 4.2m, lower bots 2.4 - 3.6m. Scaled by speed & jump cards!
-                    double baseParkourDist = (factor >= 0.7) ? 4.2 : (2.4 + factor * 1.2);
-                    double maxParkourDist = baseParkourDist * Math.sqrt(speedMult) * Math.sqrt(jumpMult);
-
-                    for (double gapDist = 1.4; gapDist <= maxParkourDist; gapDist += 0.6) {
-                        // Check upward steps (based on climbable height), flat level (-0.4m), and downward drop (-1.4m)
-                        double maxUp = 0.6 + (maxClimb - 1) * 1.0;
-                        double[] checkDys = (maxClimb > 1) ? new double[]{maxUp, 0.6, -0.4, -1.4} : new double[]{0.6, -0.4, -1.4};
-                        for (double cdy : checkDys) {
-                            Location landingFloor = loc.clone().add(dirX * gapDist, cdy, dirZ * gapDist);
-                            Location landingBody = landingFloor.clone().add(0, 1.0, 0);
-                            Location landingHead = landingFloor.clone().add(0, 2.0, 0);
-                            if (landingFloor.getBlock().getType().isSolid() && !landingBody.getBlock().getType().isSolid() && !landingHead.getBlock().getType().isSolid()) {
-                                if (bl == null || (!bl.isJumpBlock(landingFloor.getBlock().getLocation()) && !bl.isUpBlock(landingFloor.getBlock().getLocation()))) {
-                                    bestLandingFloor = landingFloor;
-                                    break;
-                                }
-                            }
-                        }
-                        if (bestLandingFloor != null) break;
-                    }
+                boolean isEdge = !edgeCheck.getBlock().getType().isSolid() && !edgeDrop.getBlock().getType().isSolid();
+                if (isEdge || hazardAhead) {
+                    Location bestLandingFloor = findParkourLandingFloor(dirX, dirZ);
 
                     if (bestLandingFloor != null) {
+                        double factor = getSkillFactor();
+                        double speedMult = getSpeedMultiplier();
+                        double jumpMult = getJumpMultiplier();
                         if (ai != null) {
                             ai.recordJumpGap(loc, bestLandingFloor);
                         }
@@ -800,6 +762,36 @@ public class FakeBot {
         if (from.getBlockX() != to.getBlockX() || from.getBlockY() != to.getBlockY() || from.getBlockZ() != to.getBlockZ()) {
             Bukkit.getPluginManager().callEvent(new PlayerMoveEvent(p, from, to));
         }
+    }
+
+    public Location findParkourLandingFloor(double dirX, double dirZ) {
+        Player p = getBukkitPlayer();
+        if (p == null) return null;
+        Location loc = p.getLocation();
+        BlockListener bl = (manager != null && manager.getPlugin() != null) ? manager.getPlugin().getBlockListener() : null;
+        double factor = getSkillFactor();
+        double speedMult = getSpeedMultiplier();
+        double jumpMult = getJumpMultiplier();
+        int maxClimb = getMaxClimbableBlocks();
+
+        double baseParkourDist = (factor >= 0.7) ? 4.2 : (2.4 + factor * 1.2);
+        double maxParkourDist = baseParkourDist * Math.sqrt(speedMult) * Math.sqrt(jumpMult);
+
+        for (double gapDist = 1.4; gapDist <= maxParkourDist; gapDist += 0.6) {
+            double maxUp = 0.6 + (maxClimb - 1) * 1.0;
+            double[] checkDys = (maxClimb > 1) ? new double[]{maxUp, 0.6, -0.4, -1.4} : new double[]{0.6, -0.4, -1.4};
+            for (double cdy : checkDys) {
+                Location landingFloor = loc.clone().add(dirX * gapDist, cdy, dirZ * gapDist);
+                Location landingBody = landingFloor.clone().add(0, 1.0, 0);
+                Location landingHead = landingFloor.clone().add(0, 2.0, 0);
+                if (landingFloor.getBlock().getType().isSolid() && !landingBody.getBlock().getType().isSolid() && !landingHead.getBlock().getType().isSolid()) {
+                    if (bl == null || (!bl.isJumpBlock(landingFloor.getBlock().getLocation()) && !bl.isUpBlock(landingFloor.getBlock().getLocation()) && !bl.isLocationTouchingJumpBlock(landingFloor))) {
+                        return landingFloor;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     public Location findNearestJumpPad(double maxDist) {

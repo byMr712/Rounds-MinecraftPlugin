@@ -446,6 +446,7 @@ public class BlockListener implements Listener {
 
     public void handleJumpBlock(Player player) {
         if (player.getGameMode() == GameMode.SPECTATOR) return;
+        if (plugin.getGameManager().getState() == com.rounds.game.GameManager.GameState.CARDS) return;
         UUID uuid = player.getUniqueId();
         long now = System.currentTimeMillis();
         Long last = jumpCooldown.get(uuid);
@@ -495,6 +496,7 @@ public class BlockListener implements Listener {
 
     public void handleUpBlock(Player player) {
         if (player.getGameMode() == GameMode.SPECTATOR) return;
+        if (plugin.getGameManager().getState() == com.rounds.game.GameManager.GameState.CARDS) return;
         if (liftingPlayers.contains(player.getUniqueId())) return;
         liftingPlayers.add(player.getUniqueId());
         double speed = plugin.getRoundsConfig().getUpBlockLiftSpeed();

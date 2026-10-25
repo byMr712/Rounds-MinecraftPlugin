@@ -80,16 +80,25 @@ public class ArenaNavMesh {
      */
     public NavNode getNearestNode(Location loc) {
         if (loc == null || allNodes.isEmpty()) return null;
-        NavNode best = null;
-        double bestDist = Double.MAX_VALUE;
+        NavNode bestWalkable = null;
+        double bestWalkableDist = Double.MAX_VALUE;
+        NavNode fallbackBest = null;
+        double fallbackBestDist = Double.MAX_VALUE;
+
         for (NavNode node : allNodes) {
             double d = node.distanceSquared(loc);
-            if (d < bestDist) {
-                bestDist = d;
-                best = node;
+            if (d < fallbackBestDist) {
+                fallbackBestDist = d;
+                fallbackBest = node;
+            }
+            if (d < 36.0 && d < bestWalkableDist) { // within 6m: prioritize reachable node without solid wall in between
+                if (isWalkableConnection(loc.getWorld(), loc, node.loc, null)) {
+                    bestWalkableDist = d;
+                    bestWalkable = node;
+                }
             }
         }
-        return best;
+        return bestWalkable != null ? bestWalkable : fallbackBest;
     }
 
     /**

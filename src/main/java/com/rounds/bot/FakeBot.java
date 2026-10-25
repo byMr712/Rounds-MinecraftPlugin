@@ -159,7 +159,7 @@ public class FakeBot {
         this.currentMoveX = 0.0;
         this.currentMoveZ = 0.0;
         // High level bots (8-10) never attempt impossible heights; lower bots might risk it
-        this.attemptNearLimitJumps = ThreadLocalRandom.current().nextDouble() < (1.0 - getSkillFactor());
+        this.attemptNearLimitJumps = ThreadLocalRandom.current().nextDouble() < ((1.0 - getSkillFactor()) * 0.90);
     }
 
     public PlayerData getPlayerData() {
@@ -494,16 +494,16 @@ public class FakeBot {
         while (dyaw < -180.0f) dyaw += 360.0f;
         while (dyaw > 180.0f) dyaw -= 360.0f;
 
-        float turnFactor = 0.32f + 0.16f * (float) getSkillFactor();
+        float turnFactor = (0.32f + 0.16f * (float) getSkillFactor()) * 1.10f;
         float stepYaw = dyaw * turnFactor;
-        float minYawStep = Math.min(Math.abs(dyaw), 1.2f + 1.2f * (float) getSkillFactor());
+        float minYawStep = Math.min(Math.abs(dyaw), (1.2f + 1.2f * (float) getSkillFactor()) * 1.10f);
         if (Math.abs(stepYaw) < minYawStep) stepYaw = Math.signum(dyaw) * minYawStep;
         if (stepYaw > maxTurnDeg) stepYaw = maxTurnDeg;
         if (stepYaw < -maxTurnDeg) stepYaw = -maxTurnDeg;
 
         float dpitch = idealPitch - curPitch;
         float stepPitch = dpitch * (turnFactor * 0.85f);
-        float minPitchStep = Math.min(Math.abs(dpitch), 0.8f + 0.8f * (float) getSkillFactor());
+        float minPitchStep = Math.min(Math.abs(dpitch), (0.8f + 0.8f * (float) getSkillFactor()) * 1.10f);
         if (Math.abs(stepPitch) < minPitchStep) stepPitch = Math.signum(dpitch) * minPitchStep;
         float maxPitchDeg = maxTurnDeg * 0.65f;
         if (stepPitch > maxPitchDeg) stepPitch = maxPitchDeg;
@@ -531,6 +531,17 @@ public class FakeBot {
         if (p.isDead() || !p.isOnline() || p.getGameMode() == GameMode.SPECTATOR) return;
         if (manager != null && manager.getPlugin() != null && manager.getPlugin().getGameManager().getState() == com.rounds.game.GameManager.GameState.CARDS) return;
         BlockListener bl = (manager != null && manager.getPlugin() != null) ? manager.getPlugin().getBlockListener() : null;
+
+        // Tick and expire active potion effects for FakeBot (e.g. GLOWING, SLOW)
+        if (!p.getActivePotionEffects().isEmpty()) {
+            for (org.bukkit.potion.PotionEffect eff : new java.util.ArrayList<>(p.getActivePotionEffects())) {
+                if (eff.getDuration() <= 1) {
+                    p.removePotionEffect(eff.getType());
+                } else {
+                    p.addPotionEffect(new org.bukkit.potion.PotionEffect(eff.getType(), eff.getDuration() - 1, eff.getAmplifier(), eff.isAmbient(), eff.hasParticles(), eff.hasIcon()), true);
+                }
+            }
+        }
 
         // 1. Pick up external vertical impulses (jump pads, up blocks, explosions)
         boolean onGround = isOnGround();
@@ -605,7 +616,7 @@ public class FakeBot {
             double moveLen = Math.sqrt(dx * dx + dz * dz);
             double dirX = dx / moveLen;
             double dirZ = dz / moveLen;
-            double stepDist = Math.max(moveLen * 1.5, 0.55);
+            double stepDist = Math.max(moveLen * 2.0, 0.72);
             Location aheadFeet = loc.clone().add(dirX * stepDist, 0.2, dirZ * stepDist);
             Location headSpace = loc.clone().add(0, 2.1, 0);
 
@@ -639,7 +650,7 @@ public class FakeBot {
                     || bl.isLocationTouchingJumpBlock(aheadFeet));
 
             // Only auto-jump over actual solid blocks; never treat other players or hazard pads as jumpable steps!
-            Location aheadEye = loc.clone().add(dirX * stepDist, 1.5, dirZ * stepDist);
+            Location aheadEye = loc.clone().add(dirX * stepDist, 1.8, dirZ * stepDist);
             boolean wallAtEye = aheadEye.getBlock().getType().isSolid();
 
             int obstacleHeight = 0;
@@ -681,7 +692,8 @@ public class FakeBot {
                     double jumpMult = getJumpMultiplier();
                     velY = 0.42 * jumpMult; // Jump velocity scaled by jump cards
                     jumpAscentTicks = Math.max(8, (int) Math.round(8 * jumpMult));
-                    double forwardImpulse = (0.10 + 0.04 * (jumpMult - 1.0)) * Math.sqrt(getSpeedMultiplier());
+                    // 30% enhanced forward step impulse across all levels to smoothly clear block steps
+                    double forwardImpulse = (0.15 + 0.06 * (jumpMult - 1.0)) * 1.30 * Math.sqrt(getSpeedMultiplier());
                     impulseX += dirX * forwardImpulse;
                     impulseZ += dirZ * forwardImpulse;
                 }

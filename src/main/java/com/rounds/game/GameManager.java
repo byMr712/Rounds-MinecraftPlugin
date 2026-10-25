@@ -76,6 +76,7 @@ public class GameManager implements Listener {
     private final Map<UUID, Location> abyssalLastLocations = new HashMap<>();
     private final Map<UUID, Long> lastSilenceAuraTime = new HashMap<>();
     private final Map<UUID, Integer> syncedHearts = new HashMap<>();
+    private final Map<UUID, Long> highlightGlowUntil = new HashMap<>();
     private final Set<GameTeam> losingTeams = new HashSet<>();
     private final GameStateManager stateManager;
     private final com.rounds.util.TabCompat tabCompat;
@@ -432,8 +433,9 @@ public class GameManager implements Listener {
                     if (radTarget.getGameMode() == GameMode.SPECTATOR) continue;
                     GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(radTarget.getUniqueId());
                     if (myTeam != targetTeam) {
+                        highlightGlowUntil.put(radTarget.getUniqueId(), (long) musicTick + 200L); // 10 seconds limit after leaving
                         radTarget.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                            PotionEffectType.GLOWING, 30, 0));
+                            PotionEffectType.GLOWING, 200, 0), true);
                     }
                 }
             }
@@ -757,12 +759,28 @@ public class GameManager implements Listener {
             checkRoundEnd();
             updateAllPlayerNametags();
             tickWrongMapCheck();
+            tickHighlightGlowExpires();
         }
         if (musicTick % 20 == 0) {
             applyPeriodicEffects();
         }
         if (musicTick % 40 == 0) {
             sendSpectatorActionbar();
+        }
+    }
+
+    private void tickHighlightGlowExpires() {
+        if (highlightGlowUntil.isEmpty()) return;
+        Iterator<Map.Entry<UUID, Long>> it = highlightGlowUntil.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<UUID, Long> entry = it.next();
+            if (musicTick >= entry.getValue()) {
+                Player p = Bukkit.getPlayer(entry.getKey());
+                if (p != null && p.isOnline()) {
+                    p.removePotionEffect(PotionEffectType.GLOWING);
+                }
+                it.remove();
+            }
         }
     }
 
@@ -1069,6 +1087,7 @@ public class GameManager implements Listener {
         removeAllPhantoms();
         RoundsEntities.clearAllState();
         GunItem.resetRoundState();
+        highlightGlowUntil.clear();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             clearCardEffects(p);
             p.setNoDamageTicks(0);
@@ -1536,6 +1555,9 @@ public class GameManager implements Listener {
         }
 
         deadPlayers.add(dead.getUniqueId());
+        highlightGlowUntil.remove(dead.getUniqueId());
+        updateTeamNametagVisibility();
+        refreshTeamScoreboards();
 
         Player killer = dead.getKiller();
         if (killer != null) {
@@ -2076,15 +2098,13 @@ public class GameManager implements Listener {
 
         List<? extends Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
         for (Player target : players) {
-            GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(target.getUniqueId());
-            boolean targetIsBot = (plugin.getBotManager() != null && plugin.getBotManager().getBot(target.getName()) != null);
-
             for (Player viewer : players) {
                 if (target.equals(viewer)) continue;
-                GameTeam viewerTeam = plugin.getTeamManager().getPlayerTeam(viewer.getUniqueId());
 
-                boolean isTeammate = (targetTeam != null && viewerTeam != null && targetTeam == viewerTeam);
-                if (isTeammate || targetIsBot) {
+                boolean isSpectator = (viewer.getGameMode() == GameMode.SPECTATOR || deadPlayers.contains(viewer.getUniqueId()));
+                boolean isTeammate = RoundsEntities.isTeammate(target.getUniqueId(), viewer.getUniqueId());
+
+                if (isSpectator || isTeammate) {
                     if (tabCompat.isActive()) {
                         tabCompat.showNametagTo(target, viewer);
                     }
@@ -2101,27 +2121,43 @@ public class GameManager implements Listener {
         return Math.max(0, (int) Math.ceil(p.getHealth() / 2.0));
     }
 
-    private String heartsSuffix(ChatColor color, Player p) {
-        return " " + color + "\u2665" + getHeartCount(p);
+    private String heartsPrefix(ChatColor color, Player p) {
+        return color + "" + getHeartCount(p) + "\u2665 " + color;
     }
 
     private void updateColoredName(Player p, GameTeam team) {
         FakeBot bot = (plugin.getBotManager() != null) ? plugin.getBotManager().getBot(p.getName()) : null;
         ChatColor c = (team != null) ? team.getColor() : (bot != null && bot.getAssignedTeam() != null ? bot.getAssignedTeam().getColor() : ChatColor.GRAY);
-        String prefix = (bot != null) ? c + "§l[L" + bot.getLevel() + "] §r" + c : (team != null ? c.toString() : "");
-        String suffix = heartsSuffix(c, p);
+        String prefix = (team != null || bot != null) ? heartsPrefix(c, p) : "";
+        String suffix = (bot != null) ? " " + c + "§l[L" + bot.getLevel() + "]" : "";
 
         if (tabCompat.isActive()) {
             if (team != null || bot != null) {
                 tabCompat.setColoredName(p, c, prefix, suffix);
+                tabCompat.setPlayerPing(p, c + String.valueOf(p.getPing()));
             } else {
                 tabCompat.resetName(p);
+                tabCompat.setPlayerPing(p, String.valueOf(p.getPing()));
             }
         }
         if (team != null || bot != null) {
             p.setPlayerListName(prefix + p.getName() + suffix);
         } else {
             p.setPlayerListName(p.getName());
+        }
+
+        Scoreboard mainSb = Bukkit.getScoreboardManager().getMainScoreboard();
+        org.bukkit.scoreboard.Team t = mainSb.getEntryTeam(p.getName());
+        if (t != null) {
+            t.setPrefix(prefix);
+            t.setSuffix(suffix);
+        }
+        for (Scoreboard psb : playerScoreboards.values()) {
+            org.bukkit.scoreboard.Team pt = psb.getEntryTeam(p.getName());
+            if (pt != null) {
+                pt.setPrefix(prefix);
+                pt.setSuffix(suffix);
+            }
         }
     }
 
@@ -2156,7 +2192,7 @@ public class GameManager implements Listener {
         }
         Scoreboard mainSb = Bukkit.getScoreboardManager().getMainScoreboard();
         for (org.bukkit.scoreboard.Team t : new ArrayList<>(mainSb.getTeams())) {
-            if (t.getName().startsWith("rounds_") || t.getName().startsWith("rb_")) {
+            if (t.getName().startsWith("rounds_") || t.getName().startsWith("rb_") || t.getName().startsWith("rp_")) {
                 t.unregister();
             }
         }
@@ -2164,7 +2200,7 @@ public class GameManager implements Listener {
             Scoreboard pSb = p.getScoreboard();
             if (pSb != null && !pSb.equals(mainSb)) {
                 for (org.bukkit.scoreboard.Team t : new ArrayList<>(pSb.getTeams())) {
-                    if (t.getName().startsWith("rounds_") || t.getName().startsWith("rb_")) {
+                    if (t.getName().startsWith("rounds_") || t.getName().startsWith("rb_") || t.getName().startsWith("rp_")) {
                         t.unregister();
                     }
                 }
@@ -2173,10 +2209,13 @@ public class GameManager implements Listener {
     }
 
     public void setupTeamsOnScoreboard(Scoreboard sb) {
+        setupTeamsOnScoreboard(sb, null);
+    }
+
+    public void setupTeamsOnScoreboard(Scoreboard sb, Player viewer) {
         if (sb == null) return;
-        org.bukkit.scoreboard.Team.OptionStatus visibility = (isGameStarted() || isGameActive())
-                ? org.bukkit.scoreboard.Team.OptionStatus.FOR_OWN_TEAM
-                : org.bukkit.scoreboard.Team.OptionStatus.ALWAYS;
+        boolean gameRunning = isGameStarted() || isGameActive();
+        boolean isViewerSpectator = viewer != null && (viewer.getGameMode() == GameMode.SPECTATOR || deadPlayers.contains(viewer.getUniqueId()));
 
         for (GameTeam gt : GameTeam.values()) {
             String teamName = "rounds_" + gt.name().toLowerCase();
@@ -2188,7 +2227,9 @@ public class GameManager implements Listener {
             if (plugin.getRoundsConfig().isColorNicknames()) {
                 team.setPrefix(gt.getColor().toString());
             }
-            team.setOption(org.bukkit.scoreboard.Team.Option.NAME_TAG_VISIBILITY, visibility);
+            team.setOption(org.bukkit.scoreboard.Team.Option.NAME_TAG_VISIBILITY, gameRunning
+                    ? org.bukkit.scoreboard.Team.OptionStatus.FOR_OWN_TEAM
+                    : org.bukkit.scoreboard.Team.OptionStatus.ALWAYS);
         }
         org.bukkit.scoreboard.Team noTeam = sb.getTeam("rounds_noteam");
         if (noTeam != null) noTeam.unregister();
@@ -2198,9 +2239,25 @@ public class GameManager implements Listener {
             GameTeam pTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
 
             for (org.bukkit.scoreboard.Team t : sb.getTeams()) {
-                if (t.getName().startsWith("rounds_") || t.getName().startsWith("rb_")) {
+                if (t.getName().startsWith("rounds_") || t.getName().startsWith("rb_") || t.getName().startsWith("rp_")) {
                     t.removeEntry(p.getName());
                 }
+            }
+
+            ChatColor c = (pTeam != null) ? pTeam.getColor() : (bot != null && bot.getAssignedTeam() != null ? bot.getAssignedTeam().getColor() : ChatColor.GRAY);
+            int hearts = getHeartCount(p);
+            String prefix = c + "" + hearts + "\u2665 " + c;
+            String suffix = (bot != null) ? " " + c + "§l[L" + bot.getLevel() + "]" : "";
+
+            org.bukkit.scoreboard.Team.OptionStatus targetVis;
+            if (!gameRunning) {
+                targetVis = org.bukkit.scoreboard.Team.OptionStatus.ALWAYS;
+            } else if (viewer == null) {
+                targetVis = org.bukkit.scoreboard.Team.OptionStatus.FOR_OWN_TEAM;
+            } else if (isViewerSpectator || RoundsEntities.isTeammate(p.getUniqueId(), viewer.getUniqueId())) {
+                targetVis = org.bukkit.scoreboard.Team.OptionStatus.ALWAYS;
+            } else {
+                targetVis = org.bukkit.scoreboard.Team.OptionStatus.NEVER;
             }
 
             if (bot != null) {
@@ -2209,27 +2266,38 @@ public class GameManager implements Listener {
                 if (botTeam == null) {
                     botTeam = sb.registerNewTeam(botTeamName);
                 }
-                ChatColor c = (pTeam != null) ? pTeam.getColor() : (bot.getAssignedTeam() != null ? bot.getAssignedTeam().getColor() : ChatColor.GRAY);
                 botTeam.setColor(c);
-                botTeam.setPrefix(c + "§l[L" + bot.getLevel() + "] §r" + c);
-                botTeam.setOption(org.bukkit.scoreboard.Team.Option.NAME_TAG_VISIBILITY, org.bukkit.scoreboard.Team.OptionStatus.ALWAYS);
+                botTeam.setPrefix(prefix);
+                botTeam.setSuffix(suffix);
+                botTeam.setOption(org.bukkit.scoreboard.Team.Option.NAME_TAG_VISIBILITY, targetVis);
                 botTeam.setOption(org.bukkit.scoreboard.Team.Option.COLLISION_RULE, org.bukkit.scoreboard.Team.OptionStatus.NEVER);
                 botTeam.setAllowFriendlyFire(false);
                 botTeam.addEntry(p.getName());
             } else if (pTeam != null) {
-                String teamName = "rounds_" + pTeam.name().toLowerCase();
-                org.bukkit.scoreboard.Team target = sb.getTeam(teamName);
-                if (target != null) target.addEntry(p.getName());
+                String playerTeamName = "rp_" + p.getName().toLowerCase();
+                org.bukkit.scoreboard.Team playerTeam = sb.getTeam(playerTeamName);
+                if (playerTeam == null) {
+                    playerTeam = sb.registerNewTeam(playerTeamName);
+                }
+                playerTeam.setColor(c);
+                playerTeam.setPrefix(prefix);
+                playerTeam.setSuffix(suffix);
+                playerTeam.setOption(org.bukkit.scoreboard.Team.Option.NAME_TAG_VISIBILITY, targetVis);
+                playerTeam.setOption(org.bukkit.scoreboard.Team.Option.COLLISION_RULE, org.bukkit.scoreboard.Team.OptionStatus.NEVER);
+                playerTeam.setAllowFriendlyFire(false);
+                playerTeam.addEntry(p.getName());
             }
         }
     }
 
     public void refreshTeamScoreboards() {
         Scoreboard mainSb = Bukkit.getScoreboardManager().getMainScoreboard();
-        setupTeamsOnScoreboard(mainSb);
-        for (Scoreboard sb : playerScoreboards.values()) {
+        setupTeamsOnScoreboard(mainSb, null);
+        for (Map.Entry<UUID, Scoreboard> entry : playerScoreboards.entrySet()) {
+            Scoreboard sb = entry.getValue();
             if (sb != null && !sb.equals(mainSb)) {
-                setupTeamsOnScoreboard(sb);
+                Player p = Bukkit.getPlayer(entry.getKey());
+                setupTeamsOnScoreboard(sb, p);
             }
         }
     }
@@ -2239,10 +2307,18 @@ public class GameManager implements Listener {
     @EventHandler
     public void onGameModeChange(PlayerGameModeChangeEvent event) {
         if (event.getNewGameMode() == GameMode.SPECTATOR) {
-            Bukkit.getScheduler().runTask(plugin, this::updateSpectatorGlow);
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                updateSpectatorGlow();
+                updateTeamNametagVisibility();
+                refreshTeamScoreboards();
+            });
         } else {
             clearSpectatorGlow(event.getPlayer());
             playersWithSpectatorGlow.remove(event.getPlayer().getUniqueId());
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                updateTeamNametagVisibility();
+                refreshTeamScoreboards();
+            });
         }
     }
 
@@ -2410,7 +2486,7 @@ public class GameManager implements Listener {
                 ChatColor.translateAlternateColorCodes('&',
                         plugin.getRoundsConfig().getBuiltinScoreboardTitle()));
         obj.setDisplaySlot(DisplaySlot.SIDEBAR);
-        setupTeamsOnScoreboard(sb);
+        setupTeamsOnScoreboard(sb, player);
 
         List<GameTeam> activeTeams = new ArrayList<>();
         for (GameTeam gt : GameTeam.values()) {

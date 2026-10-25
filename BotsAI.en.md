@@ -60,17 +60,17 @@ Bot combat proficiency is governed by an integer level $L \in [1..10]$:
 ### Scaling Formulas:
 | Parameter | Formula | Level 1 (`factor=0.1`) | Level 10 (`factor=1.0`) |
 | :--- | :--- | :--- | :--- |
-| **Aim Error Spread** | `1.2f / factor` | $\pm 12.0^\circ$ (noticeable misses) | $\pm 1.2^\circ$ (sniper precision) |
-| **Aim Tracking Speed** | `6.0f + 8.0f * factor` | $6.8^\circ$ / tick (smooth tracking) | $14.0^\circ$ / tick (fast human flick) |
-| **Fire Cooldown** | `4 + (int)((1.0 - factor) * 14.0)` | 18 ticks (deliberate fire) | 4 ticks (maximum DPS) |
-| **Strafe Velocity (Agility)** | `0.12 + 0.04 * factor` | 0.124 blocks/tick | 0.160 blocks/tick |
+| **Aim Error Spread** | `(1.2f / factor) * 0.90f` | $\pm 10.8^\circ$ (noticeable misses) | $\pm 1.08^\circ$ (sniper precision) |
+| **Aim Tracking Speed** | `(6.0f + 8.0f * factor) * 1.10f` | $7.48^\circ$ / tick (smooth tracking) | $15.4^\circ$ / tick (fast human flick) |
+| **Fire Cooldown** | `round((4 + (1.0 - factor) * 14.0) * 0.90)` | 15 ticks (deliberate fire) | 4 ticks (maximum DPS) |
+| **Strafe Velocity (Agility)** | `(0.12 + 0.04 * factor) * 1.10` | 0.136 blocks/tick | 0.176 blocks/tick |
 | **Strafe Direction Change (Juking)** | based on playstyle | every 50–85 ticks (2.5–4.2s) | every 26–50 ticks (1.3–2.5s) |
 | **Maximum Shooting Distance** | `10.0 + 30.0 * factor` | 13.0 meters | 40.0 meters |
 | **Long-Range Shot Chance (>8m)** | `rnd < factor` | 10% chance | 100% confident fire |
 | **Shield Block Chance on Hit** | `rnd < factor` | 10% chance | 100% reflexive block |
 | **Jump Pad Shield Parry** | `level >= 5 && rnd < 0.50` | 0% (always takes 20% dmg) | 50% chance to parry pad damage |
-| **Parkour Leap Error Chance** | stepped tiers | 30% (Lv 1–3), 20% (Lv 4–7) | 0% (Lv 10, perfect leaps) |
-| **Air Control Landing Error Chance** | stepped tiers | 10% (Lv 1–3), 7% (Lv 4–7) | 1% (Lv 10) |
+| **Parkour Leap Error Chance** | stepped tiers (-10%) | 27% (Lv 1–3), 18% (Lv 4–7) | 0% (Lv 10, perfect leaps) |
+| **Air Control Landing Error Chance** | stepped tiers (-10%) | 9% (Lv 1–3), 6.3% (Lv 4–7) | 0.9% (Lv 10) |
 
 ---
 

@@ -65,7 +65,8 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
             new PlaceholderEntry("green_name",         "ph-desc.green-name"),
             new PlaceholderEntry("card_choice_time",   "ph-desc.card-choice-time"),
             new PlaceholderEntry("bots_count",         "ph-desc.bots-count"),
-            new PlaceholderEntry("alive_players",      "ph-desc.alive-players")
+            new PlaceholderEntry("alive_players",      "ph-desc.alive-players"),
+            new PlaceholderEntry("ping",               "ph-desc.ping")
         );
     }
 
@@ -216,6 +217,15 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
             if (team == null) return "";
             return Messages.raw("team.adj-" + team.name().toLowerCase());
         }
+        if (params.equalsIgnoreCase("ping")) {
+            if (player == null) return "0";
+            GameTeam t = plugin.getTeamManager().getPlayerTeam(uuid);
+            com.rounds.bot.FakeBot bot = (plugin.getBotManager() != null && player.getName() != null) ? plugin.getBotManager().getBot(player.getName()) : null;
+            org.bukkit.ChatColor c = (t != null) ? t.getColor() : (bot != null && bot.getAssignedTeam() != null ? bot.getAssignedTeam().getColor() : org.bukkit.ChatColor.GRAY);
+            int ping = (player instanceof Player online) ? online.getPing() : 0;
+            return c + String.valueOf(ping);
+        }
+
         if (params.equalsIgnoreCase("team_wins")) {
             if (team == null) return "0";
             return String.valueOf((int) tm.getWins(team));

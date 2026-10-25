@@ -27,17 +27,21 @@ public class CombatProfile {
     static {
         for (int lvl = 1; lvl <= 10; lvl++) {
             double factor = lvl / 10.0;
-            float aimInaccuracy = (float) (1.2f / factor);
-            float turnSpeed = (float) (6.0f + 8.0f * factor);
-            int minShootCooldown = 4 + (int) ((1.0 - factor) * 14.0);
-            double strafeSpeed = 0.12 + 0.04 * factor;
+            // Enhanced by +10% relative to individual level stats
+            float aimInaccuracy = (float) ((1.2f / factor) * 0.90f);
+            float turnSpeed = (float) ((6.0f + 8.0f * factor) * 1.10f);
+            int minShootCooldown = Math.max(3, (int) Math.round((4 + (1.0 - factor) * 14.0) * 0.90));
+            double strafeSpeed = (0.12 + 0.04 * factor) * 1.10;
             double maxShootDist = 10.0 + 30.0 * factor;
-            double smartChance = (lvl <= 2) ? 0.50 : ((lvl <= 4) ? 0.60 : ((lvl <= 7) ? 0.70 : ((lvl <= 9) ? 0.80 : 0.90)));
+            double baseSmartChance = (lvl <= 2) ? 0.50 : ((lvl <= 4) ? 0.60 : ((lvl <= 7) ? 0.70 : ((lvl <= 9) ? 0.80 : 0.90)));
+            double smartChance = Math.min(1.0, baseSmartChance * 1.10);
             double pursuitChance = Math.min(1.0, (smartChance * 1.20) * 1.15);
-            double jumpErrorChance = (lvl <= 3) ? 0.30 : ((lvl <= 7) ? 0.20 : ((lvl <= 9) ? 0.10 : 0.0));
-            double landingErrorChance = (lvl <= 3) ? 0.10 : ((lvl <= 7) ? 0.07 : ((lvl <= 9) ? 0.05 : 0.01));
-            double walkSpeed = 0.17 + 0.03 * factor;
-            double pursuitSpeed = 0.22 + 0.04 * factor;
+            double baseJumpError = (lvl <= 3) ? 0.30 : ((lvl <= 7) ? 0.20 : ((lvl <= 9) ? 0.10 : 0.0));
+            double jumpErrorChance = baseJumpError * 0.90;
+            double baseLandingError = (lvl <= 3) ? 0.10 : ((lvl <= 7) ? 0.07 : ((lvl <= 9) ? 0.05 : 0.01));
+            double landingErrorChance = baseLandingError * 0.90;
+            double walkSpeed = (0.17 + 0.03 * factor) * 1.10;
+            double pursuitSpeed = (0.22 + 0.04 * factor) * 1.10;
 
             for (BotAI.BotPlaystyle ps : BotAI.BotPlaystyle.values()) {
                 int juke = switch (ps) {

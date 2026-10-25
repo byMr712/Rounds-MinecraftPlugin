@@ -13,10 +13,13 @@ public class TabCompat {
     private Object api;
     private Method mGetTabListFormatManager;
     private Method mGetNameTagManager;
+    private Method mGetPlayerListObjectiveManager;
     private Method mGetPlayer;
     private Method mSetName;
     private Method mSetPrefix;
     private Method mSetSuffix;
+    private Method mSetObjectiveValue;
+    private Method mSetObjectiveFancyValue;
     private Method mHideNametag;
     private Method mShowNametag;
     private Method mHideNametagToViewer;
@@ -37,6 +40,7 @@ public class TabCompat {
 
             try { mGetTabListFormatManager = apiClass.getMethod("getTabListFormatManager"); mGetTabListFormatManager.setAccessible(true); } catch (Exception ignored) {}
             try { mGetNameTagManager = apiClass.getMethod("getNameTagManager"); mGetNameTagManager.setAccessible(true); } catch (Exception ignored) {}
+            try { mGetPlayerListObjectiveManager = apiClass.getMethod("getPlayerListObjectiveManager"); mGetPlayerListObjectiveManager.setAccessible(true); } catch (Exception ignored) {}
             try { mGetPlayer = apiClass.getMethod("getPlayer", UUID.class); mGetPlayer.setAccessible(true); } catch (Exception ignored) {}
 
             if (mGetPlayer == null) return false;
@@ -49,6 +53,10 @@ public class TabCompat {
             Object ntm = null;
             if (mGetNameTagManager != null) {
                 try { ntm = mGetNameTagManager.invoke(api); } catch (Exception ignored) {}
+            }
+            Object plom = null;
+            if (mGetPlayerListObjectiveManager != null) {
+                try { plom = mGetPlayerListObjectiveManager.invoke(api); } catch (Exception ignored) {}
             }
 
             if (tlf != null) {
@@ -97,8 +105,24 @@ public class TabCompat {
                 }
             }
 
+            if (plom != null) {
+                for (Method m : plom.getClass().getMethods()) {
+                    if (m.getName().equals("setValue") && m.getParameterCount() == 2
+                            && m.getParameterTypes()[0].isAssignableFrom(tabPlayerClass)
+                            && m.getParameterTypes()[1] == String.class) {
+                        mSetObjectiveValue = m;
+                        mSetObjectiveValue.setAccessible(true);
+                    } else if (m.getName().equals("setFancyValue") && m.getParameterCount() == 2
+                            && m.getParameterTypes()[0].isAssignableFrom(tabPlayerClass)
+                            && m.getParameterTypes()[1] == String.class) {
+                        mSetObjectiveFancyValue = m;
+                        mSetObjectiveFancyValue.setAccessible(true);
+                    }
+                }
+            }
+
             active = true;
-            Bukkit.getLogger().info("[Rounds] TAB integration active (NameTagManager=" + (ntm != null) + ", TabList=" + (tlf != null) + ")");
+            Bukkit.getLogger().info("[Rounds] TAB integration active (NameTagManager=" + (ntm != null) + ", TabList=" + (tlf != null) + ", PlayerListObjective=" + (plom != null) + ")");
             return true;
         } catch (Throwable ignored) {
             active = false;
@@ -131,12 +155,26 @@ public class TabCompat {
             Object tp = tabPlayer(player);
             if (tp == null) return;
             String effectivePrefix = (prefix != null) ? prefix : color.toString();
+            String effectiveSuffix = (suffix != null) ? suffix : "";
             Object tlf = mGetTabListFormatManager.invoke(api);
-            if (tlf != null && mSetName != null) mSetName.invoke(tlf, tp, effectivePrefix + player.getName());
+            if (tlf != null && mSetName != null) mSetName.invoke(tlf, tp, effectivePrefix + player.getName() + effectiveSuffix);
             Object ntm = mGetNameTagManager.invoke(api);
             if (ntm != null) {
                 if (mSetPrefix != null) mSetPrefix.invoke(ntm, tp, effectivePrefix);
                 if (mSetSuffix != null) mSetSuffix.invoke(ntm, tp, suffix == null ? null : suffix);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    public void setPlayerPing(Player player, String coloredPing) {
+        if (!active) return;
+        try {
+            Object tp = tabPlayer(player);
+            if (tp == null) return;
+            Object plom = (mGetPlayerListObjectiveManager != null) ? mGetPlayerListObjectiveManager.invoke(api) : null;
+            if (plom != null) {
+                if (mSetObjectiveValue != null) mSetObjectiveValue.invoke(plom, tp, coloredPing);
+                if (mSetObjectiveFancyValue != null) mSetObjectiveFancyValue.invoke(plom, tp, coloredPing);
             }
         } catch (Exception ignored) {}
     }

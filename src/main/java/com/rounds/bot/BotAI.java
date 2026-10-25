@@ -18,8 +18,10 @@ import org.bukkit.scoreboard.Team;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -91,6 +93,138 @@ public class BotAI extends BukkitRunnable {
     private float lastTurnSign = 0f;
     private float wallDetourSign = 0f;
     private int lockedHeadingTicks = 0;
+
+    // Red Rooms & Pockets: enclosed spaces (1x1 alcoves, 3x3 to 5x5 rooms) marked as red
+    private static class RedZone {
+        final int x, y, z;
+        final double radius;
+        long expireTick;
+
+        RedZone(int x, int y, int z, double radius, long expireTick) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.radius = radius;
+            this.expireTick = expireTick;
+        }
+
+        boolean contains(Location loc) {
+            if (loc == null) return false;
+            double dx = loc.getX() - (x + 0.5);
+            double dy = Math.abs(loc.getY() - y);
+            double dz = loc.getZ() - (z + 0.5);
+            return (dy <= 3.0) && (dx * dx + dz * dz <= radius * radius);
+        }
+    }
+
+    private final List<RedZone> redZones = new ArrayList<>();
+
+    public void markRedZone(Location loc, double radius, int durationTicks) {
+        if (loc == null) return;
+        redZones.removeIf(z -> z.expireTick <= tickCount);
+        for (RedZone z : redZones) {
+            if (z.contains(loc)) {
+                z.expireTick = Math.max(z.expireTick, tickCount + durationTicks);
+                return;
+            }
+        }
+        redZones.add(new RedZone(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), radius, tickCount + durationTicks));
+        penalizePath(loc, 6);
+    }
+
+    public boolean isInsideOrHeadingTowardsRedZone(Location from, float heading, double dist) {
+        if (redZones.isEmpty()) return false;
+        // Bypassed if actively pursuing or fighting an enemy (only enter for important reasons)
+        if (currentTarget != null) return false;
+
+        redZones.removeIf(z -> z.expireTick <= tickCount);
+        double rad = Math.toRadians(-heading);
+        Location testLoc = from.clone().add(Math.sin(rad) * dist, 0, Math.cos(rad) * dist);
+        for (RedZone z : redZones) {
+            if (z.contains(testLoc)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isNodeInRedZone(Location nodeLoc) {
+        if (nodeLoc == null || redZones.isEmpty()) return false;
+        for (RedZone z : redZones) {
+            if (z.contains(nodeLoc)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Detects if the bot is inside a 1x1x1 alcove / pocket with only one exit side.
+     * Returns the exit heading towards the open side, or Float.NaN if not in a 1x1 pocket.
+     */
+    private float checkSinglePocketEscape(Location loc) {
+        if (loc == null || loc.getWorld() == null) return Float.NaN;
+        float[] cardinalHeadings = new float[]{0f, 90f, 180f, 270f};
+        int blockedCount = 0;
+        float openHeading = Float.NaN;
+
+        for (float heading : cardinalHeadings) {
+            double rad = Math.toRadians(-heading);
+            Location checkFeet = loc.clone().add(Math.sin(rad) * 0.75, 0.2, Math.cos(rad) * 0.75);
+            Location checkBody = loc.clone().add(Math.sin(rad) * 0.75, 1.2, Math.cos(rad) * 0.75);
+            if (checkFeet.getBlock().getType().isSolid() || checkBody.getBlock().getType().isSolid()) {
+                blockedCount++;
+            } else {
+                openHeading = heading;
+            }
+        }
+
+        if (blockedCount == 3 && !Float.isNaN(openHeading)) {
+            return openHeading;
+        }
+        return Float.NaN;
+    }
+
+    /**
+     * Checks if a forward direction is an ascending or descending staircase made of blocks.
+     * Block stairs rise or fall by at most 1 block per ~0.7-1.1 horizontal blocks with clear headroom.
+     */
+    private boolean isBlockStaircase(Location start, float heading, double dist) {
+        if (start == null || start.getWorld() == null || dist < 0.6) return false;
+        double rad = Math.toRadians(-heading);
+        double stepLen = 0.80;
+        int steps = Math.max(1, (int) Math.round(dist / stepLen));
+
+        double lastFloorY = start.getY();
+        for (int i = 1; i <= steps; i++) {
+            double curD = Math.min(dist, i * stepLen);
+            double dx = Math.sin(rad) * curD;
+            double dz = Math.cos(rad) * curD;
+            Location col = start.clone().add(dx, 0, dz);
+
+            Double foundFloorY = null;
+            for (double dy = 1.0; dy >= -1.5; dy -= 0.5) {
+                Location test = col.clone().add(0, (lastFloorY - start.getY()) + dy, 0);
+                if (test.getBlock().getType().isSolid()) {
+                    foundFloorY = (double) test.getBlockY() + 1.0;
+                    break;
+                }
+            }
+            if (foundFloorY == null) return false;
+
+            double rise = foundFloorY - lastFloorY;
+            if (rise > 1.05 || rise < -1.5) return false;
+
+            Location headLow = col.clone();
+            headLow.setY(foundFloorY + 0.2);
+            Location headHigh = col.clone();
+            headHigh.setY(foundFloorY + 1.2);
+            if (headLow.getBlock().getType().isSolid() || headHigh.getBlock().getType().isSolid()) {
+                return false;
+            }
+
+            lastFloorY = foundFloorY;
+        }
+        return true;
+    }
 
     // Room confinement & 2x2 doorway escape
     private Location roomAnchorLoc = null;
@@ -217,6 +351,7 @@ public class BotAI extends BukkitRunnable {
         this.blockedEdges.clear();
         this.confirmedJumpGaps.clear();
         this.pathReputation.clear();
+        this.redZones.clear();
         this.spinAnchor = null;
         this.spinTicks = 0;
         this.spinAccumulatedAngle = 0f;
@@ -450,11 +585,12 @@ public class BotAI extends BukkitRunnable {
         lastKnownTargetLoc = origin.clone();
         searchTicks = 0;
         isPursuing = true;
-        reactionTicks = 3 + (int) ((1.0 - bot.getSkillFactor()) * 4.0);
+        // Reaction latency scaled 10% faster relative to difficulty
+        reactionTicks = Math.max(1, (int) Math.round((3 + (1.0 - bot.getSkillFactor()) * 4.0) * 0.90));
 
-        // Defensive reactive block when receiving enemy fire
+        // Defensive reactive block when receiving enemy fire (10% higher success relative to individual skill)
         if (bot.canBlock()) {
-            double blockChance = (bot.getSkillFactor() >= 0.8) ? 0.65 : (bot.getSkillFactor() * 0.50);
+            double blockChance = Math.min(1.0, ((bot.getSkillFactor() >= 0.8) ? 0.65 : (bot.getSkillFactor() * 0.50)) * 1.10);
             if (ThreadLocalRandom.current().nextDouble() < blockChance) {
                 bot.block();
             }
@@ -464,7 +600,7 @@ public class BotAI extends BukkitRunnable {
             Player attacker = Bukkit.getPlayer(attackerId);
             if (attacker != null && !isTeammate(player, attacker)) {
                 if (currentTarget != attacker) {
-                    reactionTicks = 3 + (int) ((1.0 - bot.getSkillFactor()) * 4.0);
+                    reactionTicks = Math.max(1, (int) Math.round((3 + (1.0 - bot.getSkillFactor()) * 4.0) * 0.90));
                 }
                 currentTarget = attacker;
             }
@@ -594,7 +730,7 @@ public class BotAI extends BukkitRunnable {
                 Player spotted = findVisibleTarget();
                 if (spotted != null) {
                     if (currentTarget != spotted) {
-                        reactionTicks = 3 + (int) ((1.0 - bot.getSkillFactor()) * 5.0);
+                        reactionTicks = Math.max(1, (int) Math.round((3 + (1.0 - bot.getSkillFactor()) * 5.0) * 0.90));
                     }
                     currentTarget = spotted;
                     lastKnownTargetLoc = spotted.getLocation().clone();
@@ -1247,6 +1383,16 @@ public class BotAI extends BukkitRunnable {
         long myCell = packCell(myLoc.getBlockX(), myLoc.getBlockY(), myLoc.getBlockZ());
         visitedTerritory.add(myCell);
 
+        // Detect single 1x1x1 alcove / pocket with 1 open side: immediately escape and blacklist as red
+        float pocketExit = checkSinglePocketEscape(myLoc);
+        if (!Float.isNaN(pocketExit)) {
+            markRedZone(myLoc, 1.8, 600); // 30s blacklist on 1x1 pocket
+            patrolHeading = pocketExit;
+            lockedHeadingTicks = 35; // Step out of the pocket
+            currentHuntTarget = null;
+            currentCorridorWaypoint = null;
+        }
+
         // High ground vantage hold: survey high ground for 3s instead of immediately jumping back down
         if (bot.isOnGround()) {
             if (!Double.isNaN(lastGroundY) && myLoc.getY() - lastGroundY >= 1.5) {
@@ -1341,7 +1487,7 @@ public class BotAI extends BukkitRunnable {
             // Priority B: Unvisited ArenaNavMesh node (pro bots / snipers prioritize elevated positions; avoids penalized red paths)
             if (currentHuntTarget == null && mesh != null && !mesh.isEmpty()) {
                 ArenaNavMesh.NavNode unvisitedNode = mesh.findNearestUnvisitedNode(myLoc, visitedTerritory, blockedEdges, bot.getLevel(), playstyle == BotPlaystyle.TACTICAL_SNIPER, pathReputation);
-                if (unvisitedNode != null) {
+                if (unvisitedNode != null && !isNodeInRedZone(unvisitedNode.loc)) {
                     currentHuntTarget = unvisitedNode.loc.clone();
                 }
             }
@@ -1443,6 +1589,9 @@ public class BotAI extends BukkitRunnable {
 
     private boolean isDirectionClear(Location loc, float heading, double dist, boolean checkPlayers) {
         if (loc == null || loc.getWorld() == null) return true;
+        if (isInsideOrHeadingTowardsRedZone(loc, heading, dist)) {
+            return false; // Avoid entering blacklisted 1x1 pockets or 3x3-5x5 dead-end rooms unless pursuing enemy
+        }
         World w = loc.getWorld();
         double rad = Math.toRadians(-heading);
         double dx = Math.sin(rad) * dist;
@@ -1464,6 +1613,10 @@ public class BotAI extends BukkitRunnable {
 
         // 1. Center ray & step/stair/obstacle climb check
         if (feetSolid) {
+            // Check if this is an ascending or descending block staircase (+30% recognition)
+            if (isBlockStaircase(loc, heading, dist)) {
+                return true;
+            }
             if (feet.clone().add(0, 1.5, 0).getBlock().getType().isSolid()) {
                 return false; // Solid wall at eye level
             }
@@ -1676,6 +1829,10 @@ public class BotAI extends BukkitRunnable {
                 maxClearDist = clearDist;
                 bestHeading = deg;
             }
+        }
+        if (!Float.isNaN(bestHeading)) {
+            // Mark this enclosed room as red zone (blacklist for 40s) so bot doesn't re-enter after exiting
+            markRedZone(loc, 4.5, 800);
         }
         return bestHeading;
     }

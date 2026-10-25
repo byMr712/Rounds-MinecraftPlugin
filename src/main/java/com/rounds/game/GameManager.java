@@ -1088,6 +1088,7 @@ public class GameManager implements Listener {
         removeAllPhantoms();
         RoundsEntities.clearAllState();
         GunItem.resetRoundState();
+        com.rounds.listener.LegendaryEffects.clearRoundState();
         highlightGlowUntil.clear();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             clearCardEffects(p);
@@ -1285,6 +1286,15 @@ public class GameManager implements Listener {
             GunItem.resetRoundState();
             RoundsEntities.clearAllState();
             restoreGameRules();
+            teamSpawns.clear();
+            resetWins();
+            deadPlayers.clear();
+            abyssalLastLocations.clear();
+            lastSilenceAuraTime.clear();
+            syncedHearts.clear();
+            chameleonLastLoc.clear();
+            chameleonStillTicks.clear();
+            com.rounds.listener.LegendaryEffects.resetAll();
             for (Player p : plugin.getServer().getOnlinePlayers()) {
                 p.getInventory().clear();
                 var attr = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);

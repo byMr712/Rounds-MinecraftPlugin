@@ -1177,6 +1177,10 @@ public class GameManager implements Listener {
         stopGameTick();
         cleanupRoundCombatState();
 
+        if (plugin.getBotManager() != null) {
+            plugin.getBotManager().despawnAll();
+        }
+
         String teamName = Messages.get("team." + winner.name().toLowerCase());
         plugin.getServer().broadcastMessage(ChatColor.GREEN + Messages.get("game.game-over"));
         plugin.getServer().broadcastMessage(ChatColor.GREEN + winner.getColor().toString() + teamName + " " + Messages.get("game.game-won"));
@@ -1205,6 +1209,9 @@ public class GameManager implements Listener {
             gameActive = false;
             saveState();
             removeScoreboard();
+            if (plugin.getBotManager() != null) {
+                plugin.getBotManager().despawnAll();
+            }
             plugin.getTeamManager().clearAll();
             plugin.getPlayerDataManager().clearActivePlayers();
             resetAllNameColors();
@@ -1787,6 +1794,9 @@ public class GameManager implements Listener {
     }
 
     public void stopGame() {
+        if (plugin.getBotManager() != null) {
+            plugin.getBotManager().despawnAll();
+        }
         if (state == GameState.WAITING) return;
         gameActive = false;
         gameGeneration++;

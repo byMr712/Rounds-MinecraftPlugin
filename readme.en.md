@@ -25,15 +25,19 @@ A competitive **ROUNDS** mini-game plugin for Paper / Purpur Minecraft servers. 
   - **Combat Playstyles (Archetypes):** Each round, bots select one of 4 distinct playstyles: `AGGRESSIVE_FLANKER` (outer ring flanks, close combat, bunnyhop evasion), `TACTICAL_SNIPER` (16-24m distance control, retreats from rushers), `DEFENSIVE_TURTLE` (active shield deflections, retreats when reloading or low on HP), `ERRATIC_BRAWLER` (rapid juking every 6-12 ticks, mid-fire bunnyhops).
   - **Realistic Vision & Pursuit:** Vision is constrained by a 140° FOV cone, 60-block maximum range, 2.5m footstep proximity, and raycast line-of-sight checks. Target pursuit chance is increased by +20%: Levels 1–2 (**60%**), 3–4 (**72%**), 5–7 (**84%**), 8–9 (**96%**), 10 (**100%**). Target pursuit timeout upon broken vision is **120 ticks** (6 seconds).
   - **Incoming Fire Reaction:** When taking damage, bots calculate the incoming fire angle and snap towards the attacker. Angle accuracy scales with difficulty: from ±45° error at lvl 1 to pinpoint ±4.5° tracking at lvl 10.
-  - **Tactical Cover & Ambush Traps:** When low on HP or out of ammo, bots raytrace nearby cover blocks, break line of sight, heal behind walls, or wait around the corner with pre-aim and pre-charged Empower shield bursts for an ambush.
-  - **3D Terrain Navigation:** Effortlessly jumps 1-block steps and obstacles using predictive jumping with forward momentum, descends stairs and slopes smoothly without looping, and executes 180° turns when stuck in tight corridor corners.
+  - **Tactical Cover & Ambush Traps:** When low on HP or out of ammo, bots raytrace nearby cover blocks, break line of sight, and heal. In an ambush, bots hold an open corridor angle (`ambushHoldYaw`) facing approach vectors, pre-charge Empower shields, and fire instantaneous reaction shots upon enemy detection.
+  - **3D Terrain Navigation & Block Stairs:** Effortlessly jumps 1-block steps with forward momentum (eliminating stair pushback), descends stairs and slopes smoothly, and executes 180° turns to break tight corner loops.
+  - **Card Parkour & 2–3 Block High Jumps:** Auto-jump clearance and movement speed dynamically scale with player card modifiers (`jumpHeightMultiplier`, `speedMultiplier`) and bot difficulty: experienced bots accurately evaluate physics clearance and leap across 2-block and 3-block barriers.
   - **1–3 Block Gap Jumping:** Recognizes 1–3 block gaps between platforms and performs sprint leaps across to safe ground. Jump error rates (under-jumping and falling) scale by difficulty: lvls 1–3 — 30%, lvls 4–7 — 20%, lvls 8–9 — 10%, lvl 10 — 0%.
   - **Room Escape (2x2 Doorway Detection):** Never gets stuck in 3-walled rooms with narrow 2x2 doorways: upon staying in a 3m radius for over 1.25s, sweeps 360° in 30° increments with 1.7m doorway clearance checks, pinpointing the exit and locking heading outside.
+  - **Up-Block Elevators Navigation:** Freely navigates into vertical lift columns, detects exit platforms on upper tiers (`findUpBlockExitPlatform`), and steps out cleanly onto upper levels.
   - **Smart Jump Pads & Platform Landing (Air Control):** Jump pad seeking is banned for the first 3–15 seconds of each round (average 5s). Pads launch with natural forward velocity without artificial center pull. While airborne or falling, bots scan and steer towards safe solid platforms below. Landing error rates: lvls 1–3 — 10%, lvls 4–7 — 7%, lvls 8–9 — 5%, lvl 10 — 1%.
-  - **High Performance & Scalability (30+ Bots Without Server Lag):** Precomputed combat profile matrix `CombatProfile` ($O(1)$), arena navigation graph `ArenaNavMesh` with precalculated cover nodes and BFS routing, adaptive AI LOD system (reducing decision tickrate to 10–7 TPS for bots over 35m away), and tick-interleaved target acquisition maintain stable 20 TPS.
-  - **Card Ability Synergies:** Intelligently leverages cards — Empower pre-charges shields before firing, Heal-on-block triggers when wounded, Shockwave & Saw detonate at close range, Grow prioritizes sniper distance, Lifesteal Aura rushes in, and Chameleon hides silently behind cover.
+  - **High Performance & Scalability (up to 500 Bots):** Precomputed combat profile matrix `CombatProfile` ($O(1)$), multi-tier navigation graph `ArenaNavMesh`, adaptive AI LOD system (reducing decision tickrate to 10–7 TPS for bots over 35m away), and tick-interleaved target acquisition maintain stable 20 TPS. Bulk spawn limit supports up to 500 bots.
+  - **Map-Placed Team Blocks Filtering:** Spawning bots dynamically checks which team blocks are placed on the arena or lobby (e.g. only Red and Blue), strictly balancing bots among available teams and offering only available teams in tab-completion.
+  - **Saw Rush & Active Block Abilities:** Bots equipped with the `Saw` card execute aggressive close-range rushes (< 2.8m, speed 0.46) while blocking. Actively triggers card block mechanics (`Implode`, `Silence`, `EMP`, `Overpower`, `BombOnBlock`, `Teleport`, `Heal`, `Shockwave`, `TacticalReload`, etc.) scaled by difficulty factor.
   - Supports shield blocking, automated smart card drafting (picks best cards by rarity at higher levels), weapon damage, card abilities, explosions, poison, and jump pad damage like regular players.
-  - **Spectator Round Titles:** Spectators without a team are never shown "VICTORY" or "DEFEAT" — instead, they receive a team-colored title (e.g., "Yellow won!").
+  - **Automatic Clean Despawn:** On game stop (`/rdebug stop`, `/rounds stop`) or game end, all fake bots are automatically removed from the server without entity leaks.
+  - **Spectator Outlines & Round Titles:** Spectators exclusively see combatants outlined with team-colored glowing silhouettes (invisible to survival players). Spectators without a team receive neutral team-colored victory titles (e.g., "Yellow won!").
 - **Integrations:** Full [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.13006/) and [TAB](https://www.spigotmc.org/resources/tab.57806/) support, plus an optional built-in scoreboard.
 - **Localization:** Complete UI and card localization powered by language packs (`lang/*.txt`).
 
@@ -427,13 +431,13 @@ The plugin includes a native NMS `ServerPlayer` fake player system managed direc
 | Command | Description |
 |---------|-------------|
 | `/rdebug bot [name] [team] [1..10]` | Spawn a bot (auto name `rbot<1..9999>` and auto-balanced team if omitted) |
-| `/rdebug bot spawn count <N>` | Spawn N bots with auto-generated names and balanced teams |
+| `/rdebug bot spawn count <N>` | Spawn N bots (up to 500) with auto-generated names and balanced across placed map team blocks |
 | `/rdebug bot level <name> [1..10]` | Check or set a bot's difficulty level (1..10) |
 | `/rdebug bot despawn <name>` | Remove a fake bot from the game (or `/rdebug despawn <name>`) |
 | `/rdebug bot despawn count <N>` | Despawn N bots (prioritizing teams with the most players) |
 | `/rdebug bot despawn all` | Remove all active bots from the server |
-| `/rbot spawn [name] [team] [1..10]` | Spawn bot (auto name `rbot<1..9999>` and auto-balanced team by default) |
-| `/rbot spawn count <N>` | Spawn N bots with unique readable names and balanced teams |
+| `/rbot spawn [name] [team] [1..10]` | Spawn bot (auto name `rbot<1..9999>` and auto-balanced across placed map team blocks) |
+| `/rbot spawn count <N>` | Spawn N bots (up to 500) with unique readable names and balanced across placed map team blocks |
 | `/rbot despawn <name>` | Remove a fake player by name |
 | `/rbot despawn count <N>` | Remove N bots randomly, prioritizing teams with the most players |
 | `/rbot despawn all` | Remove all active fake bots |

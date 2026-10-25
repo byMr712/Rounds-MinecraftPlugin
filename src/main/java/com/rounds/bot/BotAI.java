@@ -962,9 +962,9 @@ public class BotAI extends BukkitRunnable {
                 }
             }
 
-            // Priority B: Unvisited ArenaNavMesh node
+            // Priority B: Unvisited ArenaNavMesh node (pro bots / snipers prioritize elevated positions)
             if (currentHuntTarget == null && mesh != null && !mesh.isEmpty()) {
-                ArenaNavMesh.NavNode unvisitedNode = mesh.findNearestUnvisitedNode(myLoc, visitedTerritory, blockedEdges);
+                ArenaNavMesh.NavNode unvisitedNode = mesh.findNearestUnvisitedNode(myLoc, visitedTerritory, blockedEdges, bot.getLevel(), playstyle == BotPlaystyle.TACTICAL_SNIPER);
                 if (unvisitedNode != null) {
                     currentHuntTarget = unvisitedNode.loc.clone();
                 }
@@ -1059,19 +1059,29 @@ public class BotAI extends BukkitRunnable {
         boolean headSolid = head.getBlock().getType().isSolid();
         boolean overheadBlocked = overhead.getBlock().getType().isSolid();
 
-        // 1. Center ray solid check: 1-block steps are passable if body & head are clear!
-        if (bodySolid || headSolid || (feetSolid && overheadBlocked)) {
+        // Check if obstacle is a climbable 1-block step, slab, or staircase
+        boolean stepUpPassable = false;
+        if (bodySolid && !overheadBlocked) {
+            Location stepBody = loc.clone().add(dx, 2.0, dz);
+            Location stepHead = loc.clone().add(dx, 2.8, dz);
+            if (!stepBody.getBlock().getType().isSolid() && !stepHead.getBlock().getType().isSolid()) {
+                stepUpPassable = true;
+            }
+        }
+
+        // 1. Center ray solid check: 1-block steps are passable if headroom is clear!
+        if ((bodySolid && !stepUpPassable) || headSolid || (feetSolid && overheadBlocked)) {
             return false;
         }
 
         // 2. Left and right shoulders width check (prevents jamming into narrow diagonal gaps)
         Location bodyLeft = loc.clone().add(dx - perpX, 1.1, dz - perpZ);
-        if (bodyLeft.getBlock().getType().isSolid()) {
+        if (bodyLeft.getBlock().getType().isSolid() && (!stepUpPassable || loc.clone().add(dx - perpX, 2.0, dz - perpZ).getBlock().getType().isSolid())) {
             return false;
         }
 
         Location bodyRight = loc.clone().add(dx + perpX, 1.1, dz + perpZ);
-        if (bodyRight.getBlock().getType().isSolid()) {
+        if (bodyRight.getBlock().getType().isSolid() && (!stepUpPassable || loc.clone().add(dx + perpX, 2.0, dz + perpZ).getBlock().getType().isSolid())) {
             return false;
         }
 
@@ -1280,8 +1290,8 @@ public class BotAI extends BukkitRunnable {
                 double dot = (toCenterX != 0.0 || toCenterZ != 0.0) ? (dx * toCenterX + dz * toCenterZ) : 1.0;
                 if (dot < -0.2) continue; // Do not choose nodes behind the bot towards the void/wall
 
-                // Score balances proximity and alignment towards arena center
-                double score = dot * 20.0 - Math.sqrt(distSq);
+                // Score balances proximity, alignment towards arena center, and platform breadth (many walkable blocks)
+                double score = dot * 20.0 - Math.sqrt(distSq) + node.breadth * 15.0;
                 if (score > bestScore) {
                     bestScore = score;
                     bestNode = node;

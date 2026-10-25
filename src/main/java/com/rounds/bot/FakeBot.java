@@ -380,7 +380,7 @@ public class FakeBot {
             }
         }
 
-        // 3. Ground movement: obstacle auto-jump & 1-3 block gap jumping across platforms
+        // 3. Ground movement: obstacle auto-jump & parkour across gaps and platforms
         if (onGround && velY <= 0.0 && (Math.abs(dx) > 0.01 || Math.abs(dz) > 0.01)) {
             Location loc = p.getLocation();
             double moveLen = Math.sqrt(dx * dx + dz * dz);
@@ -391,28 +391,37 @@ public class FakeBot {
             Location aheadUp = ahead.clone().add(0, 1.0, 0);
             Location headSpace = loc.clone().add(0, 2.0, 0);
 
-            boolean obstacleAhead = ahead.getBlock().getType().isSolid();
+            boolean obstacleAhead = ahead.getBlock().getType().isSolid() || sp.horizontalCollision;
             if (obstacleAhead && !aheadUp.getBlock().getType().isSolid() && !headSpace.getBlock().getType().isSolid()) {
-                velY = 0.42; // Minecraft jump velocity
-                impulseX += dirX * 0.18;
-                impulseZ += dirZ * 0.18;
+                velY = 0.42; // Minecraft jump velocity to climb step/stair
+                impulseX += dirX * 0.22;
+                impulseZ += dirZ * 0.22;
             } else if (!obstacleAhead && !headSpace.getBlock().getType().isSolid()) {
-                // Check if approaching a 1-3 block gap with drop directly ahead
+                // Check if approaching a 1-4 block gap or parkour platform ahead
                 Location edgeCheck = loc.clone().add(dirX * 0.6, -0.4, dirZ * 0.6);
                 Location edgeDrop = loc.clone().add(dirX * 0.6, -1.4, dirZ * 0.6);
                 if (!edgeCheck.getBlock().getType().isSolid() && !edgeDrop.getBlock().getType().isSolid()) {
                     Location bestLandingFloor = null;
-                    for (double gapDist = 1.4; gapDist <= 3.4; gapDist += 0.6) {
-                        Location landingFloor = loc.clone().add(dirX * gapDist, -0.4, dirZ * gapDist);
-                        Location landingBody = landingFloor.clone().add(0, 1.0, 0);
-                        Location landingHead = landingFloor.clone().add(0, 2.0, 0);
-                        if (landingFloor.getBlock().getType().isSolid() && !landingBody.getBlock().getType().isSolid() && !landingHead.getBlock().getType().isSolid()) {
-                            BlockListener bl = manager.getPlugin() != null ? manager.getPlugin().getBlockListener() : null;
-                            if (bl == null || (!bl.isJumpBlock(landingFloor.getBlock().getLocation()) && !bl.isUpBlock(landingFloor.getBlock().getLocation()))) {
-                                bestLandingFloor = landingFloor;
-                                break;
+                    double factor = getSkillFactor();
+                    // Pro bots (level 7+) can parkour across gaps up to 4.2m; lower level bots attempt up to 3.0m
+                    double maxParkourDist = (factor >= 0.7) ? 4.2 : (2.4 + factor * 1.2);
+
+                    for (double gapDist = 1.4; gapDist <= maxParkourDist; gapDist += 0.6) {
+                        // Check upward steps (+0.6m), flat level (-0.4m), and downward drop (-1.4m)
+                        double[] checkDys = {0.6, -0.4, -1.4};
+                        for (double cdy : checkDys) {
+                            Location landingFloor = loc.clone().add(dirX * gapDist, cdy, dirZ * gapDist);
+                            Location landingBody = landingFloor.clone().add(0, 1.0, 0);
+                            Location landingHead = landingFloor.clone().add(0, 2.0, 0);
+                            if (landingFloor.getBlock().getType().isSolid() && !landingBody.getBlock().getType().isSolid() && !landingHead.getBlock().getType().isSolid()) {
+                                BlockListener bl = manager.getPlugin() != null ? manager.getPlugin().getBlockListener() : null;
+                                if (bl == null || (!bl.isJumpBlock(landingFloor.getBlock().getLocation()) && !bl.isUpBlock(landingFloor.getBlock().getLocation()))) {
+                                    bestLandingFloor = landingFloor;
+                                    break;
+                                }
                             }
                         }
+                        if (bestLandingFloor != null) break;
                     }
 
                     if (bestLandingFloor != null) {
@@ -422,9 +431,11 @@ public class FakeBot {
                         double errorChance = (ai != null) ? ai.getJumpErrorChance() : 0.0;
                         boolean jumpError = ThreadLocalRandom.current().nextDouble() < errorChance;
                         if (!jumpError) {
-                            velY = 0.42; // Clean leap clearing the gap
-                            impulseX += dirX * 0.32;
-                            impulseZ += dirZ * 0.32;
+                            // Pro bots sprint leap with higher velocity; lower level bots standard leap
+                            velY = (bestLandingFloor.getY() > loc.getY()) ? 0.46 : 0.42;
+                            double sprintImpulse = 0.28 + 0.12 * factor;
+                            impulseX += dirX * sprintImpulse;
+                            impulseZ += dirZ * sprintImpulse;
                         } else {
                             velY = 0.22; // Under-jump error: weak jump resulting in fall
                             impulseX += dirX * 0.08;

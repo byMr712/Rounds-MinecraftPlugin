@@ -19,12 +19,18 @@ public class ArenaNavMesh {
         public final int id;
         public final Location loc;
         public final boolean isCover;
+        public final int breadth; // Walkable platform breadth in 3x3 radius (1 to 9 blocks)
         public final List<NavNode> neighbors = new ArrayList<>(4);
 
-        public NavNode(int id, Location loc, boolean isCover) {
+        public NavNode(int id, Location loc, boolean isCover, int breadth) {
             this.id = id;
             this.loc = loc;
             this.isCover = isCover;
+            this.breadth = breadth;
+        }
+
+        public NavNode(int id, Location loc, boolean isCover) {
+            this(id, loc, isCover, 5);
         }
 
         public double distanceSquared(Location other) {
@@ -87,23 +93,43 @@ public class ArenaNavMesh {
     }
 
     /**
-     * Finds nearest unvisited node in the mesh, avoiding visited cells and blocked edges.
+     * Finds nearest unvisited node in the mesh, avoiding visited cells and blocked edges,
+     * factoring in high-ground vantage points and wide walkable platforms.
      */
-    public NavNode findNearestUnvisitedNode(Location from, Set<Long> visitedCells, Set<Long> blockedCells) {
+    public NavNode findNearestUnvisitedNode(Location from, Set<Long> visitedCells, Set<Long> blockedCells, int level, boolean preferHighGround) {
         if (from == null || allNodes.isEmpty()) return null;
         NavNode best = null;
-        double bestDist = Double.MAX_VALUE;
+        double bestScore = -Double.MAX_VALUE;
         for (NavNode node : allNodes) {
             long cell = (((long) (node.loc.getBlockX() >> 2)) << 32) | ((node.loc.getBlockZ() >> 2) & 0xFFFFFFFFL);
             if (visitedCells != null && visitedCells.contains(cell)) continue;
             if (blockedCells != null && blockedCells.contains(cell)) continue;
-            double d = node.distanceSquared(from);
-            if (d < bestDist) {
-                bestDist = d;
+
+            double dist = Math.sqrt(node.distanceSquared(from));
+            // Base score favors reachable nearby exploration nodes (10-30m range)
+            double score = (dist >= 8.0 && dist <= 35.0) ? (40.0 - Math.abs(dist - 18.0)) : (20.0 - dist);
+
+            // Wide platforms get a safety bonus (prefer areas with multiple blocks to walk on)
+            score += node.breadth * 3.0;
+
+            // Pro bots (level 7+) and snipers seek high ground (stairs/upper floors/towers)
+            if (preferHighGround || level >= 7) {
+                double deltaY = node.loc.getY() - from.getY();
+                if (deltaY > 0.5) {
+                    score += deltaY * 12.0; // Strong attraction to higher floors and platforms
+                }
+            }
+
+            if (score > bestScore) {
+                bestScore = score;
                 best = node;
             }
         }
         return best;
+    }
+
+    public NavNode findNearestUnvisitedNode(Location from, Set<Long> visitedCells, Set<Long> blockedCells) {
+        return findNearestUnvisitedNode(from, visitedCells, blockedCells, 5, false);
     }
 
     /**
@@ -186,15 +212,17 @@ public class ArenaNavMesh {
         int nodeId = 0;
         List<NavNode> generated = new ArrayList<>();
 
-        // 1. Grid sample on floor blocks
+        // 1. Grid sample on floor blocks (multi-level scanning for stairs, bridges, and upper decks)
         for (int dx = -radius; dx <= radius; dx += step) {
             for (int dz = -radius; dz <= radius; dz += step) {
                 int bx = cx + dx;
                 int bz = cz + dz;
 
-                // Scan down from cy + 6 to cy - 8 to find highest walkable floor
-                for (int dy = 6; dy >= -8; dy--) {
+                int lastBy = Integer.MAX_VALUE;
+                for (int dy = 14; dy >= -12; dy--) {
                     int by = cy + dy;
+                    if (Math.abs(by - lastBy) < 3) continue; // Minimum vertical separation between floors
+
                     Block floor = world.getBlockAt(bx, by, bz);
                     if (!floor.getType().isSolid()) continue;
 
@@ -205,6 +233,20 @@ public class ArenaNavMesh {
                     Location floorLoc = floor.getLocation();
                     if (bl != null && (bl.isJumpBlock(floorLoc) || bl.isUpBlock(floorLoc))) continue;
 
+                    // Evaluate platform breadth (density of solid neighbor blocks in 3x3 footprint)
+                    int breadth = 0;
+                    for (int ox = -1; ox <= 1; ox++) {
+                        for (int oz = -1; oz <= 1; oz++) {
+                            Block nbFloor = world.getBlockAt(bx + ox, by, bz + oz);
+                            Block nbAbove = world.getBlockAt(bx + ox, by + 1, bz + oz);
+                            if (nbFloor.getType().isSolid() && !nbAbove.getType().isSolid()) {
+                                if (bl == null || (!bl.isJumpBlock(nbFloor.getLocation()) && !bl.isUpBlock(nbFloor.getLocation()))) {
+                                    breadth++;
+                                }
+                            }
+                        }
+                    }
+
                     // Check if adjacent to at least one wall block (qualifies as tactical cover)
                     boolean hasAdjacentWall = world.getBlockAt(bx + 1, by + 1, bz).getType().isSolid()
                             || world.getBlockAt(bx - 1, by + 1, bz).getType().isSolid()
@@ -212,25 +254,25 @@ public class ArenaNavMesh {
                             || world.getBlockAt(bx, by + 1, bz - 1).getType().isSolid();
 
                     Location nodeLoc = new Location(world, bx + 0.5, by + 1.0, bz + 0.5);
-                    NavNode node = new NavNode(nodeId++, nodeLoc, hasAdjacentWall);
+                    NavNode node = new NavNode(nodeId++, nodeLoc, hasAdjacentWall, breadth);
                     generated.add(node);
                     mesh.allNodes.add(node);
                     if (hasAdjacentWall) {
                         mesh.coverNodes.add(node);
                     }
-                    break;
+                    lastBy = by;
                 }
             }
         }
 
-        // 2. Connect neighboring nodes (distance <= step * 1.5)
+        // 2. Connect neighboring nodes (distance <= step * 1.5, vertical delta <= 2.65 for stairs/ramps)
         double maxNeighborDistSq = (step * 1.5) * (step * 1.5);
         for (int i = 0; i < generated.size(); i++) {
             NavNode a = generated.get(i);
             for (int j = i + 1; j < generated.size(); j++) {
                 NavNode b = generated.get(j);
                 double dSq = a.distanceSquared(b.loc);
-                if (dSq <= maxNeighborDistSq && Math.abs(a.loc.getY() - b.loc.getY()) <= 1.25) {
+                if (dSq <= maxNeighborDistSq && Math.abs(a.loc.getY() - b.loc.getY()) <= 2.65) {
                     if (isWalkableConnection(world, a.loc, b.loc, bl)) {
                         a.neighbors.add(b);
                         b.neighbors.add(a);

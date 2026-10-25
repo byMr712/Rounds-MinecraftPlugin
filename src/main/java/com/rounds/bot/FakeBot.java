@@ -3,6 +3,7 @@ package com.rounds.bot;
 import com.rounds.RoundsPlugin;
 import com.rounds.blocks.BlockListener;
 import com.rounds.item.GunItem;
+import com.rounds.player.PlayerData;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.MoverType;
@@ -16,6 +17,7 @@ import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -36,6 +38,7 @@ public class FakeBot {
     private int jumpStuckCooldown = 0;
     private int jumpAscentTicks = 0;
     private Location lastJumpAttemptLoc = null;
+    private boolean attemptNearLimitJumps = false;
 
     public double getVelY() {
         return velY;
@@ -58,6 +61,7 @@ public class FakeBot {
         this.bukkitPlayer = bukkitPlayer;
         this.nmsPlayer = nmsPlayer;
         this.level = ThreadLocalRandom.current().nextInt(1, 11); // Random difficulty level 1..10
+        resetAttemptDecision();
         this.ai = new BotAI(this);
         this.ai.runTaskTimer(manager.getPlugin(), 1L, 1L);
     }
@@ -129,10 +133,64 @@ public class FakeBot {
 
     public void setLevel(int level) {
         this.level = Math.max(1, Math.min(10, level));
+        resetAttemptDecision();
     }
 
     public void randomizeLevel() {
         this.level = ThreadLocalRandom.current().nextInt(1, 11);
+        resetAttemptDecision();
+    }
+
+    public void resetAttemptDecision() {
+        // High level bots (8-10) never attempt impossible heights; lower bots might risk it
+        this.attemptNearLimitJumps = ThreadLocalRandom.current().nextDouble() < (1.0 - getSkillFactor());
+    }
+
+    public PlayerData getPlayerData() {
+        if (manager == null || manager.getPlugin() == null) return null;
+        var pdm = manager.getPlugin().getPlayerDataManager();
+        return (pdm != null && bukkitPlayer != null) ? pdm.getData(bukkitPlayer.getUniqueId()) : null;
+    }
+
+    public double getJumpMultiplier() {
+        PlayerData data = getPlayerData();
+        if (data == null || data.jumpHeight <= 0) return 1.0;
+        return Math.sqrt(Math.max(0.0, 1.0 + data.jumpHeight));
+    }
+
+    public int getMaxClimbableBlocks() {
+        PlayerData data = getPlayerData();
+        double jh = (data != null) ? Math.max(0.0, data.jumpHeight) : 0.0;
+        return Math.max(1, (int) Math.floor(1.25 * (1.0 + jh)));
+    }
+
+    public boolean considersObstacleClimbable(int obstacleHeight) {
+        int maxClimb = getMaxClimbableBlocks();
+        if (obstacleHeight <= maxClimb) return true;
+        if (obstacleHeight == maxClimb + 1) {
+            // Pro bots (level 8+) know exact physical clearance and never attempt beyond limit
+            if (getSkillFactor() >= 0.75) return false;
+            return attemptNearLimitJumps;
+        }
+        return false;
+    }
+
+    public double getSpeedMultiplier() {
+        PlayerData data = getPlayerData();
+        double speedBonus = 0.0;
+        if (data != null) {
+            speedBonus += data.speed * 0.35 + data.speedBoost * 0.25;
+        }
+        Player p = getBukkitPlayer();
+        if (p != null) {
+            var speedEff = p.getPotionEffect(PotionEffectType.SPEED);
+            if (speedEff != null) {
+                speedBonus += (speedEff.getAmplifier() + 1) * 0.20;
+            }
+        }
+        if (speedBonus <= 0.0) return 1.0;
+        double factor = getSkillFactor();
+        return 1.0 + speedBonus * (0.50 + 0.50 * factor);
     }
 
     public double getSkillFactor() {
@@ -407,11 +465,22 @@ public class FakeBot {
             Location headSpace = loc.clone().add(0, 2.1, 0);
 
             boolean stepAhead = aheadFeet.getBlock().getType().isSolid() || sp.horizontalCollision;
-            // A wall is only too high if the block directly above the step (Y+1) is solid
-            boolean wallTooHigh = aheadFeet.clone().add(0, 1.0, 0).getBlock().getType().isSolid()
-                    || aheadFeet.clone().add(0, 2.0, 0).getBlock().getType().isSolid();
+            int obstacleHeight = 0;
+            while (obstacleHeight < 4 && aheadFeet.clone().add(0, obstacleHeight, 0).getBlock().getType().isSolid()) {
+                obstacleHeight++;
+            }
+            if (obstacleHeight == 0 && sp.horizontalCollision) {
+                obstacleHeight = 1;
+            }
 
-            if (jumpStuckCooldown <= 0 && stepAhead && !wallTooHigh && !headSpace.getBlock().getType().isSolid()) {
+            boolean willAttempt = (obstacleHeight > 0) && considersObstacleClimbable(obstacleHeight);
+            boolean landingClear = (obstacleHeight > 0)
+                    && !aheadFeet.clone().add(0, obstacleHeight, 0).getBlock().getType().isSolid()
+                    && !aheadFeet.clone().add(0, obstacleHeight + 1.0, 0).getBlock().getType().isSolid();
+            Location overheadObstacle = loc.clone().add(0, 2.1 + Math.max(0, obstacleHeight - 1) * 0.8, 0);
+
+            if (jumpStuckCooldown <= 0 && stepAhead && willAttempt && landingClear
+                    && !headSpace.getBlock().getType().isSolid() && !overheadObstacle.getBlock().getType().isSolid()) {
                 if (lastJumpAttemptLoc != null && loc.distanceSquared(lastJumpAttemptLoc) < 0.05) {
                     consecutiveJumpAttempts++;
                 } else {
@@ -420,18 +489,21 @@ public class FakeBot {
                 lastJumpAttemptLoc = loc.clone();
 
                 if (consecutiveJumpAttempts >= 3) {
-                    // Bot jumped 3 times against an obstacle and didn't make progress (corner / 2x2 dead-end)
+                    // Bot jumped 3 times against an obstacle and didn't make progress (corner / 2x2 dead-end / failed attempt)
                     // Abort jumps, apply cooldown, and trigger AI detour immediately!
                     jumpStuckCooldown = 30;
                     consecutiveJumpAttempts = 0;
+                    this.attemptNearLimitJumps = false;
                     if (ai != null) {
                         ai.onCornerStuck(loc);
                     }
                 } else {
-                    velY = 0.42; // Minecraft jump velocity to climb step/stair
-                    jumpAscentTicks = 8;
-                    impulseX += dirX * 0.25;
-                    impulseZ += dirZ * 0.25;
+                    double jumpMult = getJumpMultiplier();
+                    velY = 0.42 * jumpMult; // Jump velocity scaled by jump cards
+                    jumpAscentTicks = Math.max(8, (int) Math.round(8 * jumpMult));
+                    double forwardImpulse = (0.25 + 0.08 * (jumpMult - 1.0)) * Math.sqrt(getSpeedMultiplier());
+                    impulseX += dirX * forwardImpulse;
+                    impulseZ += dirZ * forwardImpulse;
                 }
             } else if (!stepAhead && !headSpace.getBlock().getType().isSolid()) {
                 // Check if approaching a 1-4 block gap or parkour platform ahead
@@ -440,12 +512,18 @@ public class FakeBot {
                 if (!edgeCheck.getBlock().getType().isSolid() && !edgeDrop.getBlock().getType().isSolid()) {
                     Location bestLandingFloor = null;
                     double factor = getSkillFactor();
-                    // Pro bots (level 7+) can parkour across gaps up to 4.2m; lower level bots attempt up to 3.0m
-                    double maxParkourDist = (factor >= 0.7) ? 4.2 : (2.4 + factor * 1.2);
+                    double speedMult = getSpeedMultiplier();
+                    double jumpMult = getJumpMultiplier();
+                    int maxClimb = getMaxClimbableBlocks();
+
+                    // Base parkour gap: pro bots 4.2m, lower bots 2.4 - 3.6m. Scaled by speed & jump cards!
+                    double baseParkourDist = (factor >= 0.7) ? 4.2 : (2.4 + factor * 1.2);
+                    double maxParkourDist = baseParkourDist * Math.sqrt(speedMult) * Math.sqrt(jumpMult);
 
                     for (double gapDist = 1.4; gapDist <= maxParkourDist; gapDist += 0.6) {
-                        // Check upward steps (+0.6m), flat level (-0.4m), and downward drop (-1.4m)
-                        double[] checkDys = {0.6, -0.4, -1.4};
+                        // Check upward steps (based on climbable height), flat level (-0.4m), and downward drop (-1.4m)
+                        double maxUp = 0.6 + (maxClimb - 1) * 1.0;
+                        double[] checkDys = (maxClimb > 1) ? new double[]{maxUp, 0.6, -0.4, -1.4} : new double[]{0.6, -0.4, -1.4};
                         for (double cdy : checkDys) {
                             Location landingFloor = loc.clone().add(dirX * gapDist, cdy, dirZ * gapDist);
                             Location landingBody = landingFloor.clone().add(0, 1.0, 0);
@@ -468,14 +546,14 @@ public class FakeBot {
                         double errorChance = (ai != null) ? ai.getJumpErrorChance() : 0.0;
                         boolean jumpError = ThreadLocalRandom.current().nextDouble() < errorChance;
                         if (!jumpError) {
-                            // Pro bots sprint leap with higher velocity; lower level bots standard leap
-                            velY = (bestLandingFloor.getY() > loc.getY()) ? 0.46 : 0.42;
-                            jumpAscentTicks = 8;
-                            double sprintImpulse = 0.28 + 0.12 * factor;
+                            // Scale leap velocity with jump and speed multipliers
+                            velY = ((bestLandingFloor.getY() > loc.getY()) ? 0.46 : 0.42) * jumpMult;
+                            jumpAscentTicks = Math.max(8, (int) Math.round(8 * jumpMult));
+                            double sprintImpulse = (0.28 + 0.12 * factor) * speedMult;
                             impulseX += dirX * sprintImpulse;
                             impulseZ += dirZ * sprintImpulse;
                         } else {
-                            velY = 0.22; // Under-jump error: weak jump resulting in fall
+                            velY = 0.22 * jumpMult; // Under-jump error: weak jump resulting in fall
                             jumpAscentTicks = 4;
                             impulseX += dirX * 0.08;
                             impulseZ += dirZ * 0.08;

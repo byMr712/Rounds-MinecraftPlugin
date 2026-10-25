@@ -126,6 +126,7 @@ public class BotAI extends BukkitRunnable {
     }
 
     public void onRoundStart() {
+        bot.resetAttemptDecision();
         // Random start-of-round pad ban between 3s (60t) and 15s (300t), avg ~5s (100t)
         this.padCooldown = 60 + (int) (240.0 * Math.pow(ThreadLocalRandom.current().nextDouble(), 5.0));
         if (!manualPlaystyle) {
@@ -557,7 +558,8 @@ public class BotAI extends BukkitRunnable {
                 bot.getNmsPlayer().setRot(moveYaw, 0f);
                 bot.getNmsPlayer().setYHeadRot(moveYaw);
                 bot.getNmsPlayer().setYBodyRot(moveYaw);
-                moveCombatRel((cdx / cdist) * 0.36, (cdz / cdist) * 0.36);
+                double coverSpd = 0.36 * bot.getSpeedMultiplier();
+                moveCombatRel((cdx / cdist) * coverSpd, (cdz / cdist) * coverSpd);
                 tickCooldowns();
                 return;
             } else {
@@ -660,7 +662,8 @@ public class BotAI extends BukkitRunnable {
         float aimInaccuracy = profile.aimInaccuracy;
         float turnSpeed = profile.turnSpeed;
         int minShootCooldown = profile.minShootCooldown;
-        double strafeSpeed = profile.strafeSpeed;
+        double speedMult = bot.getSpeedMultiplier();
+        double strafeSpeed = profile.strafeSpeed * speedMult;
         int jukeThreshold = profile.jukeThreshold;
         double maxShootDist = profile.maxShootDist;
         boolean distanceShootAllowed = (dist3D <= 8.0) || (ThreadLocalRandom.current().nextDouble() < factor);
@@ -718,7 +721,7 @@ public class BotAI extends BukkitRunnable {
         // Tactical combat jumping (dodging bullet fire while strafing/moving)
         if (bot.isOnGround() && tacticalJumpCooldown <= 0 && tactic != CombatTactic.SNIPE) {
             if (ThreadLocalRandom.current().nextDouble() < profile.tacticalJumpChance) {
-                bot.getBukkitPlayer().setVelocity(bot.getBukkitPlayer().getVelocity().setY(0.38));
+                bot.getBukkitPlayer().setVelocity(bot.getBukkitPlayer().getVelocity().setY(0.38 * bot.getJumpMultiplier()));
                 tacticalJumpCooldown = 20;
             }
         }
@@ -726,7 +729,7 @@ public class BotAI extends BukkitRunnable {
         // Ground tactical combat
         switch (tactic) {
             case RUSH -> {
-                    moveCombatRel(u1_x * 0.40 + p1_x * (strafeDir * strafeSpeed * 0.3), u1_z * 0.40 + p1_z * (strafeDir * strafeSpeed * 0.3));
+                    moveCombatRel(u1_x * (0.40 * speedMult) + p1_x * (strafeDir * strafeSpeed * 0.3), u1_z * (0.40 * speedMult) + p1_z * (strafeDir * strafeSpeed * 0.3));
                     bot.aimAt(p2Loc, turnSpeed, aimInaccuracy);
                     if (shootCooldown <= 0 && canShootAtTarget) {
                         bot.shoot();
@@ -734,7 +737,7 @@ public class BotAI extends BukkitRunnable {
                     }
                 }
                 case RETREAT -> {
-                    moveCombatRel(-u1_x * 0.38 + p1_x * (strafeDir * strafeSpeed), -u1_z * 0.38 + p1_z * (strafeDir * strafeSpeed));
+                    moveCombatRel(-u1_x * (0.38 * speedMult) + p1_x * (strafeDir * strafeSpeed), -u1_z * (0.38 * speedMult) + p1_z * (strafeDir * strafeSpeed));
                     if (tickCount % 30 == 0 && hasLos && ThreadLocalRandom.current().nextDouble() < factor) {
                         bot.block();
                     }
@@ -753,7 +756,7 @@ public class BotAI extends BukkitRunnable {
                 }
                 case SNIPE -> {
                     if (dist3D < 8.0) {
-                        moveCombatRel(-u1_x * 0.3, -u1_z * 0.3);
+                        moveCombatRel(-u1_x * (0.3 * speedMult), -u1_z * (0.3 * speedMult));
                     }
                     bot.aimAt(p2Loc, turnSpeed * 0.7f, aimInaccuracy * 0.7f);
                     if (shootCooldown <= 0 && canShootAtTarget) {
@@ -762,7 +765,7 @@ public class BotAI extends BukkitRunnable {
                     }
                 }
                 case STRAFE, BALANCED -> {
-                    moveCombatRel(p1_x * (strafeDir * strafeSpeed) + u1_x * 0.05, p1_z * (strafeDir * strafeSpeed) + u1_z * 0.05);
+                    moveCombatRel(p1_x * (strafeDir * strafeSpeed) + u1_x * (0.05 * speedMult), p1_z * (strafeDir * strafeSpeed) + u1_z * (0.05 * speedMult));
                     bot.aimAt(p2Loc, turnSpeed, aimInaccuracy);
                     if (shootCooldown <= 0 && canShootAtTarget) {
                         bot.shoot();
@@ -964,8 +967,9 @@ public class BotAI extends BukkitRunnable {
             bot.getNmsPlayer().setYHeadRot(moveYaw);
             bot.getNmsPlayer().setYBodyRot(moveYaw);
 
-            lastMoveX = mx * profile.pursuitSpeed;
-            lastMoveZ = mz * profile.pursuitSpeed;
+            double pursuitSpd = profile.pursuitSpeed * bot.getSpeedMultiplier();
+            lastMoveX = mx * pursuitSpd;
+            lastMoveZ = mz * pursuitSpd;
             bot.moveRel(lastMoveX, 0.0, lastMoveZ);
         } else {
             // Reached last known location: hold angle in ambush watching open corridor or scan
@@ -1120,7 +1124,7 @@ public class BotAI extends BukkitRunnable {
 
         // 7. Continuous forward exploration movement along current yaw
         CombatProfile profile = getProfile();
-        double walkSpeed = profile.walkSpeed;
+        double walkSpeed = profile.walkSpeed * bot.getSpeedMultiplier();
         double radMove = Math.toRadians(-newYaw);
         lastMoveX = Math.sin(radMove) * walkSpeed;
         lastMoveZ = Math.cos(radMove) * walkSpeed;
@@ -1152,17 +1156,24 @@ public class BotAI extends BukkitRunnable {
         boolean headSolid = head.getBlock().getType().isSolid();
         boolean overheadBlocked = overhead.getBlock().getType().isSolid();
 
-        // 1. Center ray & step/stair check
+        // 1. Center ray & step/stair/obstacle climb check
         if (feetSolid) {
-            // Check if the obstacle at feet is a climbable 1-block step/stair with open space above
-            boolean spaceAboveStep = !feet.clone().add(0, 1.0, 0).getBlock().getType().isSolid()
-                    && !feet.clone().add(0, 2.0, 0).getBlock().getType().isSolid();
-            if (overheadBlocked || !spaceAboveStep) {
-                return false; // >= 2-block high wall or ceiling overhead blocked -> impassable!
+            int obstacleHeight = 0;
+            while (obstacleHeight < 4 && feet.clone().add(0, obstacleHeight, 0).getBlock().getType().isSolid()) {
+                obstacleHeight++;
             }
-            // Step is climbable! Check shoulder clearance above the step
-            Location stepLeft = feet.clone().add(-perpX, 1.0, -perpZ);
-            Location stepRight = feet.clone().add(perpX, 1.0, perpZ);
+            if (obstacleHeight == 0 || !bot.considersObstacleClimbable(obstacleHeight)) {
+                return false; // Obstacle too high according to bot cards & skill factor
+            }
+            boolean spaceAboveObstacle = !feet.clone().add(0, obstacleHeight, 0).getBlock().getType().isSolid()
+                    && !feet.clone().add(0, obstacleHeight + 1.0, 0).getBlock().getType().isSolid();
+            Location overheadObstacle = loc.clone().add(0, 2.1 + (obstacleHeight - 1) * 0.8, 0);
+            if (overheadBlocked || overheadObstacle.getBlock().getType().isSolid() || !spaceAboveObstacle) {
+                return false; // Landing surface or ceiling overhead blocked
+            }
+            // Check shoulder clearance above the obstacle
+            Location stepLeft = feet.clone().add(-perpX, obstacleHeight, -perpZ);
+            Location stepRight = feet.clone().add(perpX, obstacleHeight, perpZ);
             if (stepLeft.getBlock().getType().isSolid() && stepRight.getBlock().getType().isSolid()) {
                 return false;
             }

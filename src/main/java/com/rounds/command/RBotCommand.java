@@ -19,7 +19,7 @@ public class RBotCommand implements CommandExecutor, TabCompleter {
     private final BotManager botManager;
 
     private static final List<String> ROOT_ACTIONS = Arrays.asList("spawn", "despawn", "list", "level");
-    private static final List<String> BOT_ACTIONS = Arrays.asList("level", "strategy", "pick", "shoot", "block");
+    private static final List<String> BOT_ACTIONS = Arrays.asList("level", "strategy");
     private static final List<String> TEAMS = Arrays.asList("BLUE", "RED", "YELLOW", "GREEN", "NONE");
     private static final List<String> STRATEGIES = Arrays.asList(
             "flanker", "sniper", "turtle", "brawler",
@@ -210,7 +210,7 @@ public class RBotCommand implements CommandExecutor, TabCompleter {
 
     private boolean handleBotAction(CommandSender sender, FakeBot bot, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage(ChatColor.RED + "Usage: /rbot " + bot.getName() + " <strategy|pick|shoot|block> [args]");
+            sender.sendMessage(ChatColor.RED + "Usage: /rbot " + bot.getName() + " <level|strategy> [args]");
             return true;
         }
 
@@ -252,31 +252,6 @@ public class RBotCommand implements CommandExecutor, TabCompleter {
                         ChatColor.AQUA + ps.name());
                 return true;
             }
-            case "pick", "pickcard" -> {
-                if (args.length < 3) {
-                    sender.sendMessage(ChatColor.RED + "Usage: /rbot " + bot.getName() + " pick <0..4>");
-                    return true;
-                }
-                try {
-                    int slot = Integer.parseInt(args[2]);
-                    if (slot < 0 || slot > 4) {
-                        sender.sendMessage(ChatColor.RED + "Slot index must be 0..4");
-                        return true;
-                    }
-                    bot.pickCard(slot);
-                    sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Bot " + bot.getName() + " picking card slot " + slot);
-                } catch (NumberFormatException e) {
-                    sender.sendMessage(ChatColor.RED + "Invalid number: " + args[2]);
-                }
-            }
-            case "shoot" -> {
-                bot.shoot();
-                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Bot " + bot.getName() + " shot weapon.");
-            }
-            case "block", "shield" -> {
-                bot.block();
-                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Bot " + bot.getName() + " raised shield.");
-            }
             default -> sender.sendMessage(ChatColor.RED + "Unknown bot action: " + action);
         }
         return true;
@@ -292,9 +267,6 @@ public class RBotCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.YELLOW + "/rbot list " + ChatColor.GRAY + "- List active bots & difficulty levels");
         sender.sendMessage(ChatColor.YELLOW + "/rbot <name> level [1..10] " + ChatColor.GRAY + "- Set/view bot difficulty level (1..10)");
         sender.sendMessage(ChatColor.YELLOW + "/rbot <name> strategy <flanker|sniper|turtle|brawler> " + ChatColor.GRAY + "- Set combat playstyle");
-        sender.sendMessage(ChatColor.YELLOW + "/rbot <name> pick <0..4> " + ChatColor.GRAY + "- Pick draft card slot");
-        sender.sendMessage(ChatColor.YELLOW + "/rbot <name> shoot " + ChatColor.GRAY + "- Force shoot");
-        sender.sendMessage(ChatColor.YELLOW + "/rbot <name> block " + ChatColor.GRAY + "- Force shield block");
     }
 
     @Override
@@ -355,9 +327,6 @@ public class RBotCommand implements CommandExecutor, TabCompleter {
                 }
                 if (args[1].equalsIgnoreCase("strategy")) {
                     return filterStartsWith(STRATEGIES, current);
-                }
-                if (args[1].equalsIgnoreCase("pick")) {
-                    return filterStartsWith(Arrays.asList("0", "1", "2", "3", "4"), current);
                 }
             }
         }

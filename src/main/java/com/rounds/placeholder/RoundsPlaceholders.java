@@ -62,7 +62,10 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
             new PlaceholderEntry("blue_name",          "ph-desc.blue-name"),
             new PlaceholderEntry("red_name",           "ph-desc.red-name"),
             new PlaceholderEntry("yellow_name",        "ph-desc.yellow-name"),
-            new PlaceholderEntry("green_name",         "ph-desc.green-name")
+            new PlaceholderEntry("green_name",         "ph-desc.green-name"),
+            new PlaceholderEntry("card_choice_time",   "ph-desc.card-choice-time"),
+            new PlaceholderEntry("bots_count",         "ph-desc.bots-count"),
+            new PlaceholderEntry("alive_players",      "ph-desc.alive-players")
         );
     }
 
@@ -107,7 +110,40 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
             new PlaceholderEntry("stat_sneaky",        "ph-desc.stat-sneaky"),
             new PlaceholderEntry("stat_phoenix",       "ph-desc.stat-phoenix"),
             new PlaceholderEntry("stat_abyssal",       "ph-desc.stat-abyssal"),
-            new PlaceholderEntry("stat_cards",         "ph-desc.stat-cards")
+            new PlaceholderEntry("stat_cards",         "ph-desc.stat-cards"),
+            new PlaceholderEntry("stat_drill",         "ph-desc.stat-drill"),
+            new PlaceholderEntry("stat_heal",          "ph-desc.stat-heal"),
+            new PlaceholderEntry("stat_shockwave",     "ph-desc.stat-shockwave"),
+            new PlaceholderEntry("stat_implode",       "ph-desc.stat-implode"),
+            new PlaceholderEntry("stat_teleport",      "ph-desc.stat-teleport"),
+            new PlaceholderEntry("stat_tactical_reload","ph-desc.stat-tactical-reload"),
+            new PlaceholderEntry("stat_evasion",       "ph-desc.stat-evasion"),
+            new PlaceholderEntry("stat_chameleon",     "ph-desc.stat-chameleon"),
+            new PlaceholderEntry("stat_berserk",       "ph-desc.stat-berserk"),
+            new PlaceholderEntry("stat_overheat",      "ph-desc.stat-overheat"),
+            new PlaceholderEntry("stat_spikes",        "ph-desc.stat-spikes"),
+            new PlaceholderEntry("stat_bullet_rain",   "ph-desc.stat-bullet-rain"),
+            new PlaceholderEntry("stat_frost_armor",   "ph-desc.stat-frost-armor"),
+            new PlaceholderEntry("stat_no_party",      "ph-desc.stat-no-party"),
+            new PlaceholderEntry("stat_auto_reload",   "ph-desc.stat-auto-reload"),
+            new PlaceholderEntry("stat_shields_up",    "ph-desc.stat-shields-up"),
+            new PlaceholderEntry("stat_shield_charge", "ph-desc.stat-shield-charge"),
+            new PlaceholderEntry("stat_double_block",  "ph-desc.stat-double-block"),
+            new PlaceholderEntry("stat_overpower",     "ph-desc.stat-overpower"),
+            new PlaceholderEntry("stat_lifesteal_aura","ph-desc.stat-lifesteal-aura"),
+            new PlaceholderEntry("stat_target_bounce", "ph-desc.stat-target-bounce"),
+            new PlaceholderEntry("stat_damage_per_bounce","ph-desc.stat-damage-per-bounce"),
+            new PlaceholderEntry("stat_toxic_cloud",   "ph-desc.stat-toxic-cloud"),
+            new PlaceholderEntry("stat_snowball",      "ph-desc.stat-snowball"),
+            new PlaceholderEntry("stat_skyfall",       "ph-desc.stat-skyfall"),
+            new PlaceholderEntry("stat_storm_caller",  "ph-desc.stat-storm-caller"),
+            new PlaceholderEntry("stat_executioner",   "ph-desc.stat-executioner"),
+            new PlaceholderEntry("stat_blood_furry",   "ph-desc.stat-blood-furry"),
+            new PlaceholderEntry("stat_pristine_perseverance","ph-desc.stat-pristine-perseverance"),
+            new PlaceholderEntry("stat_second_wind",   "ph-desc.stat-second-wind"),
+            new PlaceholderEntry("stat_hp_cost",       "ph-desc.stat-hp-cost"),
+            new PlaceholderEntry("stat_hp_boost_on_hit","ph-desc.stat-hp-boost-on-hit"),
+            new PlaceholderEntry("stat_ammo_per_hit",  "ph-desc.stat-ammo-per-hit")
         );
     }
 
@@ -146,6 +182,21 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
         if (params.equalsIgnoreCase("red_name")) return Messages.raw("team.red");
         if (params.equalsIgnoreCase("yellow_name")) return Messages.raw("team.yellow");
         if (params.equalsIgnoreCase("green_name")) return Messages.raw("team.green");
+        if (params.equalsIgnoreCase("card_choice_time")) {
+            return String.valueOf(plugin.getRoundsConfig().getCardChoiceTimeSeconds());
+        }
+        if (params.equalsIgnoreCase("bots_count")) {
+            return String.valueOf(plugin.getBotManager() != null ? plugin.getBotManager().getBots().size() : 0);
+        }
+        if (params.equalsIgnoreCase("alive_players")) {
+            int alive = 0;
+            for (Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
+                if (p.getGameMode() != org.bukkit.GameMode.SPECTATOR && !gm.getDeadPlayers().contains(p.getUniqueId())) {
+                    alive++;
+                }
+            }
+            return String.valueOf(alive);
+        }
 
         // 2. Player-specific placeholders (require player/UUID)
         if (player == null) return "";
@@ -226,6 +277,39 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
             case "phoenix"        -> d.phoenix;
             case "abyssal"        -> d.abyssal;
             case "cards"          -> d.getOwnedCards().size();
+            case "drill"                 -> d.drill;
+            case "heal"                  -> d.heal;
+            case "shockwave"             -> d.shockwave;
+            case "implode"               -> d.implode;
+            case "teleport"              -> d.teleport;
+            case "tactical_reload"       -> d.tacticalReload;
+            case "evasion"               -> d.evasion;
+            case "chameleon"             -> d.chameleon;
+            case "berserk"               -> d.berserk;
+            case "overheat"              -> d.overheat;
+            case "spikes"                -> d.spikes;
+            case "bullet_rain"           -> d.bulletRain;
+            case "frost_armor"           -> d.frostArmor;
+            case "no_party"              -> d.noParty;
+            case "auto_reload"           -> d.autoReload;
+            case "shields_up"            -> d.shieldsUp;
+            case "shield_charge"         -> d.shieldCharge;
+            case "double_block"          -> d.doubleBlock;
+            case "overpower"             -> d.overpower;
+            case "lifesteal_aura"        -> d.lifestealAura;
+            case "target_bounce"         -> d.tgBounce;
+            case "damage_per_bounce"     -> d.damagePerBounce;
+            case "toxic_cloud"           -> d.toxicCloud;
+            case "snowball"              -> d.snowball;
+            case "skyfall"               -> d.skyfall;
+            case "storm_caller"          -> d.stormCaller;
+            case "executioner"           -> d.executioner;
+            case "blood_furry"           -> d.bloodFurry;
+            case "pristine_perseverance" -> d.pristinePerseverance;
+            case "second_wind"           -> d.secondWind;
+            case "hp_cost"               -> d.hpCost;
+            case "hp_boost_on_hit"       -> d.hpBoostOnHit;
+            case "ammo_per_hit"          -> d.ammoPerHit;
             default               -> 0.0;
         };
     }

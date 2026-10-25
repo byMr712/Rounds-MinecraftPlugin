@@ -179,9 +179,6 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "placeholders" -> handlePlaceholders(sender);
             case "bot" -> handleBot(sender, args);
             case "draft" -> handleDraft(sender, args);
-            case "pick" -> handlePick(sender, args);
-            case "shoot" -> handleShoot(sender, args);
-            case "block" -> handleBlock(sender, args);
             case "spawn" -> handleBot(sender, args);
             case "despawn" -> handleBot(sender, args);
             case "cardchoicetime" -> handleCardChoiceTime(sender, args);
@@ -225,9 +222,6 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxSection(sender, R, Messages.get("debug.help-section-debug"));
         boxKv(sender, "/rdebug bot <name> [team]", "Заспавнить бота в игру");
         boxKv(sender, "/rdebug draft [player]", "Открыть драфт карт игроку");
-        boxKv(sender, "/rdebug pick [player] <slot>", "Выбрать карту (0..4)");
-        boxKv(sender, "/rdebug shoot [player]", "Выстрелить из оружия");
-        boxKv(sender, "/rdebug block [player]", "Активировать щит");
         boxKv(sender, "/rdebug stats [player]", Messages.get("debug.help-stats"));
         boxKv(sender, "/rdebug stats <player> <stat> <value>", Messages.get("debug.help-stats-set"));
         boxKv(sender, "/rdebug setstat <stat> <value> [player]", Messages.get("debug.help-setstat"));
@@ -1014,11 +1008,11 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         "stats", "setstat", "setteam", "setlanguage", "effect", "heal",
         "resetstats", "reload", "setlobby",
         "jumppos1", "jumppos2", "jumpset", "uppos1", "uppos2", "upset",
-        "wheel", "tab", "bot", "draft", "pick", "shoot", "block", "spawn", "despawn",
+        "wheel", "tab", "bot", "draft", "spawn", "despawn",
         "cardchoicetime"
     );
     private static final List<String> FREEPLAY_COMMANDS = Arrays.asList(
-        "start", "stop", "rounds", "givegun", "wheel", "bot", "spawn"
+        "start", "stop", "rounds", "givegun", "wheel", "bot", "spawn", "despawn"
     );
     private static final List<String> PUBLIC_COMMANDS = Arrays.asList(
         "info", "stats", "cards", "card"
@@ -1251,77 +1245,6 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.GREEN + "Opened card draft GUI for " + target.getName());
     }
 
-    private void handlePick(CommandSender sender, String[] args) {
-        Player target;
-        int slotArgIndex;
-        if (args.length >= 3) {
-            target = Bukkit.getPlayer(args[1]);
-            if (target == null) {
-                sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[1]));
-                return;
-            }
-            slotArgIndex = 2;
-        } else if (args.length == 2 && sender instanceof Player p) {
-            target = p;
-            slotArgIndex = 1;
-        } else {
-            sender.sendMessage(ChatColor.RED + "Usage: /rdebug pick [player] <0..4|11..15>");
-            return;
-        }
-
-        try {
-            int slot = Integer.parseInt(args[slotArgIndex]);
-            int index = (slot >= 11 && slot <= 15) ? (slot - 11) : slot;
-            if (index < 0 || index > 4) {
-                sender.sendMessage(ChatColor.RED + "Invalid card index: " + slot + " (expected 0..4 or 11..15)");
-                return;
-            }
-            plugin.getCardManager().selectCard(target, index);
-            target.closeInventory();
-            sender.sendMessage(ChatColor.GREEN + "Selected card index " + index + " for " + target.getName());
-        } catch (NumberFormatException e) {
-            sender.sendMessage(ChatColor.RED + "Slot must be a number: " + args[slotArgIndex]);
-        }
-    }
-
-    private void handleShoot(CommandSender sender, String[] args) {
-        Player target;
-        if (args.length >= 2) {
-            target = Bukkit.getPlayer(args[1]);
-            if (target == null) {
-                sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[1]));
-                return;
-            }
-        } else if (sender instanceof Player p) {
-            target = p;
-        } else {
-            sender.sendMessage(ChatColor.RED + "Usage: /rdebug shoot [player]");
-            return;
-        }
-
-        GunItem.getInstance().doShoot(target);
-        sender.sendMessage(ChatColor.GREEN + "Triggered weapon shoot for " + target.getName());
-    }
-
-    private void handleBlock(CommandSender sender, String[] args) {
-        Player target;
-        if (args.length >= 2) {
-            target = Bukkit.getPlayer(args[1]);
-            if (target == null) {
-                sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[1]));
-                return;
-            }
-        } else if (sender instanceof Player p) {
-            target = p;
-        } else {
-            sender.sendMessage(ChatColor.RED + "Usage: /rdebug block [player]");
-            return;
-        }
-
-        GunItem.getInstance().doBlock(target);
-        sender.sendMessage(ChatColor.GREEN + "Triggered shield block for " + target.getName());
-    }
-
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         boolean admin = sender.hasPermission("rounds.admin");
@@ -1380,22 +1303,11 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 }
                 yield Collections.emptyList();
             }
-            case "draft", "shoot", "block" -> {
+            case "draft" -> {
                 if (args.length == 2) {
                     List<String> list = new ArrayList<>();
                     Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
                     yield filterStartsWith(list, input);
-                }
-                yield Collections.emptyList();
-            }
-            case "pick" -> {
-                if (args.length == 2) {
-                    List<String> list = new ArrayList<>(Arrays.asList("0", "1", "2", "3", "4"));
-                    Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
-                    yield filterStartsWith(list, input);
-                }
-                if (args.length == 3) {
-                    yield filterStartsWith(Arrays.asList("0", "1", "2", "3", "4"), input);
                 }
                 yield Collections.emptyList();
             }

@@ -403,12 +403,14 @@ Primary command: `/rdebug` (aliases `/rounds` and `/rbot`).
 
 ### Freeplay Mode (`freeplay: true`)
 
-When freeplay is enabled (`/rdebug freeplay on`), non-admin players gain access to safe commands:
+When freeplay is enabled (`/rdebug freeplay on`), non-admin players gain access to safe commands for practice and matches:
 - `/rdebug start` — Start match
 - `/rdebug stop` — Stop match
 - `/rdebug rounds <n>` — Set round win limit
 - `/rdebug givegun` — Receive weapon
 - `/rdebug wheel on|off` — Toggle draft card rotation
+- `/rdebug bot` / `/rdebug spawn` / `/rdebug despawn` — Spawn and despawn practice bots
+- `/rbot` — Complete bot management suite (`spawn`, `despawn`, `list`, `level`, `strategy`)
 
 ### Admin Commands (`rounds.admin`)
 
@@ -443,9 +445,6 @@ When freeplay is enabled (`/rdebug freeplay on`), non-admin players gain access 
 | `/rdebug heal [amount]` | `[HP]` | Heal player |
 | `/rdebug resetstats [player]` | `[player]` | Reset stats, cards, and inventory |
 | `/rdebug draft [player]` | `[player]` | Open test draft menu for player or bot |
-| `/rdebug pick [player] <0..4\|11..15>` | `[player] <slot>` | Pick card from draft menu by slot index |
-| `/rdebug shoot [player]` | `[player]` | Force player or bot to fire weapon |
-| `/rdebug block [player]` | `[player]` | Force player or bot to activate shield |
 | `/rdebug placeholders` | | Print all available placeholders to chat |
 | `/rdebug reload` | | Reload `config.yml` |
 
@@ -467,9 +466,6 @@ When freeplay is enabled (`/rdebug freeplay on`), non-admin players gain access 
 | `/rbot list` | List active bots with health and difficulty level (Lvl: 1..10) |
 | `/rbot <name> level [1..10]` | Inspect or configure bot difficulty level (1 = 10%, 10 = 100%) |
 | `/rbot <name> strategy <flanker\|sniper\|turtle\|brawler>` | Set bot playstyle (`AGGRESSIVE_FLANKER`, `TACTICAL_SNIPER`, `DEFENSIVE_TURTLE`, `ERRATIC_BRAWLER`) |
-| `/rbot <name> pick <0..4>` | Force bot to pick card draft slot |
-| `/rbot <name> shoot` | Force bot to fire gun |
-| `/rbot <name> block` | Force bot to activate shield |
 
 ### Permissions
 
@@ -503,6 +499,9 @@ Identifier: `%rounds_...%`
 | `%rounds_red_name%` | Localized Red team name |
 | `%rounds_yellow_name%` | Localized Yellow team name |
 | `%rounds_green_name%` | Localized Green team name |
+| `%rounds_card_choice_time%` | Card selection timer duration in seconds |
+| `%rounds_bots_count%` | Number of active bots on the server |
+| `%rounds_alive_players%` | Number of currently alive survival players |
 
 ### Player Attributes
 
@@ -543,6 +542,39 @@ Identifier: `%rounds_...%`
 | `%rounds_stat_phoenix%` | Phoenix revival charges |
 | `%rounds_stat_abyssal%` | Abyssal phantom level |
 | `%rounds_stat_cards%` | Total cards drafted |
+| `%rounds_stat_drill%` | Drill wall-piercing level |
+| `%rounds_stat_heal%` | Health regeneration level |
+| `%rounds_stat_shockwave%` | Shockwave knockback power on block |
+| `%rounds_stat_implode%` | Implode enemy pull power on block |
+| `%rounds_stat_teleport%` | Forward teleportation on block |
+| `%rounds_stat_tactical_reload%` | Instant weapon reload on block |
+| `%rounds_stat_evasion%` | Incoming damage dodge chance |
+| `%rounds_stat_chameleon%` | Chameleon standing invisibility level |
+| `%rounds_stat_berserk%` | Berserk stat boost at low HP |
+| `%rounds_stat_overheat%` | Overheat shooting level (HP cost) |
+| `%rounds_stat_spikes%` | Spikes damage return percentage |
+| `%rounds_stat_bullet_rain%` | Bullet rain rapid fire level |
+| `%rounds_stat_frost_armor%` | Frost armor attacker slow level |
+| `%rounds_stat_no_party%` | No Party enemy lock ability |
+| `%rounds_stat_auto_reload%` | Passive ammunition regeneration speed |
+| `%rounds_stat_shields_up%` | Auto shield activation on empty clip |
+| `%rounds_stat_shield_charge%` | Extra shield block charges |
+| `%rounds_stat_double_block%` | Double block charges |
+| `%rounds_stat_overpower%` | Overpower HP-based damage on block |
+| `%rounds_stat_lifesteal_aura%` | Lifesteal aura radius and power |
+| `%rounds_stat_target_bounce%` | Projectile bounce homing toward enemies |
+| `%rounds_stat_damage_per_bounce%` | Bonus damage per bounce |
+| `%rounds_stat_toxic_cloud%` | Poison cloud spawned on hit |
+| `%rounds_stat_snowball%` | Win streak bonus multiplier |
+| `%rounds_stat_skyfall%` | High landing AoE slam damage |
+| `%rounds_stat_storm_caller%` | Lightning strike summon on hit |
+| `%rounds_stat_executioner%` | Low-health execute damage multiplier |
+| `%rounds_stat_blood_furry%` | Damage taken fury buff level |
+| `%rounds_stat_pristine_perseverance%` | Full-health perseverance bonus |
+| `%rounds_stat_second_wind%` | Fatal hit survival with invulnerability |
+| `%rounds_stat_hp_cost%` | Health cost per shot |
+| `%rounds_stat_hp_boost_on_hit%` | Health gain per hit |
+| `%rounds_stat_ammo_per_hit%` | Ammo returned per hit |
 
 
 ## Localization

@@ -169,6 +169,6 @@ builtin-scoreboard:
 # ==============================================================================
 # FREEPLAY MODE
 # ==============================================================================
-# Allows non-admin players to use safe commands (/rdebug start, stop, stats, etc.)
+# Allows non-admin players to use safe commands (/rdebug start, stop, stats, wheel, and /rbot for practice)
 freeplay:
   enabled: false

@@ -81,6 +81,7 @@ public class BotAI extends BukkitRunnable {
 
     // Round start warmup reaction delay
     private int roundWarmupTicks = 0;
+    private int reactionTicks = 0;
 
     // Corridor cul-de-sac & ping-pong wall escape
     private int consecutiveBounces = 0;
@@ -390,6 +391,9 @@ public class BotAI extends BukkitRunnable {
         if (attackerId != null) {
             Player attacker = Bukkit.getPlayer(attackerId);
             if (attacker != null && canSee(player, attacker)) {
+                if (currentTarget != attacker) {
+                    reactionTicks = 2 + (int) ((1.0 - bot.getSkillFactor()) * 3.0);
+                }
                 currentTarget = attacker;
             }
         }
@@ -480,7 +484,7 @@ public class BotAI extends BukkitRunnable {
                 patrolHeading = flightYaw; // Preserve forward flight heading so bot moves away from edge upon landing
             }
 
-            if (currentTarget != null && canSee(player, currentTarget) && bot.hasGun() && shootCooldown <= 0) {
+            if (currentTarget != null && canSee(player, currentTarget) && bot.hasGun() && shootCooldown <= 0 && reactionTicks <= 0) {
                 bot.shoot();
                 shootCooldown = 6;
             }
@@ -506,6 +510,9 @@ public class BotAI extends BukkitRunnable {
             if (shouldScan) {
                 Player spotted = findVisibleTarget();
                 if (spotted != null) {
+                    if (currentTarget != spotted) {
+                        reactionTicks = 2 + (int) ((1.0 - bot.getSkillFactor()) * 4.0);
+                    }
                     currentTarget = spotted;
                     lastKnownTargetLoc = spotted.getLocation().clone();
                     targetCurrentlyVisible = true;
@@ -571,7 +578,7 @@ public class BotAI extends BukkitRunnable {
                 bot.getNmsPlayer().setRot(moveYaw, 0f);
                 bot.getNmsPlayer().setYHeadRot(moveYaw);
                 bot.getNmsPlayer().setYBodyRot(moveYaw);
-                double coverSpd = 0.36 * bot.getSpeedMultiplier();
+                double coverSpd = 0.26 * bot.getSpeedMultiplier();
                 moveCombatRel((cdx / cdist) * coverSpd, (cdz / cdist) * coverSpd);
                 tickCooldowns();
                 return;
@@ -765,28 +772,28 @@ public class BotAI extends BukkitRunnable {
                     if (attemptSawRush) {
                         // User requested: saw card changes bot behavior on block to approach enemy to deal damage with the ability
                         if (dist3D > 3.0) {
-                            double sawRushSpeed = 0.46 * speedMult;
+                            double sawRushSpeed = 0.28 * speedMult;
                             moveCombatRel(u1_x * sawRushSpeed + p1_x * (strafeDir * strafeSpeed * 0.15), u1_z * sawRushSpeed + p1_z * (strafeDir * strafeSpeed * 0.15));
                         } else {
                             // Inside saw damage radius (<= 3.0m): circle and stick close to target
                             moveCombatRel(u1_x * (0.15 * speedMult) + p1_x * (strafeDir * strafeSpeed * 0.8), u1_z * (0.15 * speedMult) + p1_z * (strafeDir * strafeSpeed * 0.8));
                         }
                     } else {
-                        moveCombatRel(u1_x * (0.40 * speedMult) + p1_x * (strafeDir * strafeSpeed * 0.3), u1_z * (0.40 * speedMult) + p1_z * (strafeDir * strafeSpeed * 0.3));
+                        moveCombatRel(u1_x * (0.28 * speedMult) + p1_x * (strafeDir * strafeSpeed * 0.35), u1_z * (0.28 * speedMult) + p1_z * (strafeDir * strafeSpeed * 0.35));
                     }
                     bot.aimAt(p2Loc, turnSpeed, aimInaccuracy);
-                    if (shootCooldown <= 0 && canShootAtTarget) {
+                    if (shootCooldown <= 0 && canShootAtTarget && reactionTicks <= 0) {
                         bot.shoot();
                         shootCooldown = minShootCooldown;
                     }
                 }
                 case RETREAT -> {
-                    moveCombatRel(-u1_x * (0.38 * speedMult) + p1_x * (strafeDir * strafeSpeed), -u1_z * (0.38 * speedMult) + p1_z * (strafeDir * strafeSpeed));
+                    moveCombatRel(-u1_x * (0.18 * speedMult) + p1_x * (strafeDir * strafeSpeed), -u1_z * (0.18 * speedMult) + p1_z * (strafeDir * strafeSpeed));
                     if (tickCount % 30 == 0 && hasLos && ThreadLocalRandom.current().nextDouble() < factor) {
                         bot.block();
                     }
                     bot.aimAt(p2Loc, turnSpeed * 0.8f, aimInaccuracy);
-                    if (shootCooldown <= 0 && canShootAtTarget && tickCount % 2 == 0) {
+                    if (shootCooldown <= 0 && canShootAtTarget && tickCount % 2 == 0 && reactionTicks <= 0) {
                         bot.shoot();
                         shootCooldown = minShootCooldown;
                     }
@@ -800,18 +807,18 @@ public class BotAI extends BukkitRunnable {
                 }
                 case SNIPE -> {
                     if (dist3D < 8.0) {
-                        moveCombatRel(-u1_x * (0.3 * speedMult), -u1_z * (0.3 * speedMult));
+                        moveCombatRel(-u1_x * (0.18 * speedMult), -u1_z * (0.18 * speedMult));
                     }
                     bot.aimAt(p2Loc, turnSpeed * 0.7f, aimInaccuracy * 0.7f);
-                    if (shootCooldown <= 0 && canShootAtTarget) {
+                    if (shootCooldown <= 0 && canShootAtTarget && reactionTicks <= 0) {
                         bot.shoot();
                         shootCooldown = minShootCooldown;
                     }
                 }
                 case STRAFE, BALANCED -> {
-                    moveCombatRel(p1_x * (strafeDir * strafeSpeed) + u1_x * (0.05 * speedMult), p1_z * (strafeDir * strafeSpeed) + u1_z * (0.05 * speedMult));
+                    moveCombatRel(p1_x * (strafeDir * strafeSpeed) + u1_x * (0.04 * speedMult), p1_z * (strafeDir * strafeSpeed) + u1_z * (0.04 * speedMult));
                     bot.aimAt(p2Loc, turnSpeed, aimInaccuracy);
-                    if (shootCooldown <= 0 && canShootAtTarget) {
+                    if (shootCooldown <= 0 && canShootAtTarget && reactionTicks <= 0) {
                         bot.shoot();
                         shootCooldown = minShootCooldown;
                     }
@@ -1630,6 +1637,9 @@ public class BotAI extends BukkitRunnable {
     }
 
     private void tickCooldowns() {
+        if (reactionTicks > 0) {
+            reactionTicks--;
+        }
         if (shootCooldown > 0) {
             shootCooldown--;
         }

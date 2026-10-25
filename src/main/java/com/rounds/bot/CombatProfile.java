@@ -28,27 +28,27 @@ public class CombatProfile {
         for (int lvl = 1; lvl <= 10; lvl++) {
             double factor = lvl / 10.0;
             float aimInaccuracy = (float) (1.2f / factor);
-            float turnSpeed = (float) (10.0f + 35.0f * factor);
+            float turnSpeed = (float) (8.0f + 14.0f * factor);
             int minShootCooldown = 4 + (int) ((1.0 - factor) * 14.0);
-            double strafeSpeed = 0.05 + 0.30 * factor;
+            double strafeSpeed = 0.13 + 0.06 * factor;
             double maxShootDist = 10.0 + 30.0 * factor;
             double smartChance = (lvl <= 2) ? 0.50 : ((lvl <= 4) ? 0.60 : ((lvl <= 7) ? 0.70 : ((lvl <= 9) ? 0.80 : 0.90)));
             double pursuitChance = Math.min(1.0, smartChance * 1.20);
             double jumpErrorChance = (lvl <= 3) ? 0.30 : ((lvl <= 7) ? 0.20 : ((lvl <= 9) ? 0.10 : 0.0));
             double landingErrorChance = (lvl <= 3) ? 0.10 : ((lvl <= 7) ? 0.07 : ((lvl <= 9) ? 0.05 : 0.01));
-            double walkSpeed = 0.20 + 0.12 * factor;
-            double pursuitSpeed = 0.25 + 0.12 * factor;
+            double walkSpeed = 0.19 + 0.03 * factor;
+            double pursuitSpeed = 0.24 + 0.04 * factor;
 
             for (BotAI.BotPlaystyle ps : BotAI.BotPlaystyle.values()) {
                 int juke = switch (ps) {
-                    case ERRATIC_BRAWLER -> (int) (6 + (1.0 - factor) * 12.0);
-                    case AGGRESSIVE_FLANKER -> (int) (10 + (1.0 - factor) * 18.0);
-                    case DEFENSIVE_TURTLE -> (int) (18 + (1.0 - factor) * 28.0);
-                    case TACTICAL_SNIPER -> (int) (24 + (1.0 - factor) * 36.0);
+                    case ERRATIC_BRAWLER -> (int) (16 + (1.0 - factor) * 16.0);
+                    case AGGRESSIVE_FLANKER -> (int) (22 + (1.0 - factor) * 22.0);
+                    case DEFENSIVE_TURTLE -> (int) (28 + (1.0 - factor) * 28.0);
+                    case TACTICAL_SNIPER -> (int) (35 + (1.0 - factor) * 35.0);
                 };
                 double jumpChance = switch (ps) {
-                    case ERRATIC_BRAWLER -> 0.08 * factor;
-                    case AGGRESSIVE_FLANKER -> 0.04 * factor;
+                    case ERRATIC_BRAWLER -> 0.05 * factor;
+                    case AGGRESSIVE_FLANKER -> 0.03 * factor;
                     default -> 0.01 * factor;
                 };
                 double rushThresh = switch (ps) {

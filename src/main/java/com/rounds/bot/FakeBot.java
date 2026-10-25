@@ -42,6 +42,11 @@ public class FakeBot {
     private int jumpAscentTicks = 0;
     private Location lastJumpAttemptLoc = null;
     private boolean attemptNearLimitJumps = false;
+    private float aimDriftYaw = 0f;
+    private float aimDriftPitch = 0f;
+    private float targetDriftYaw = 0f;
+    private float targetDriftPitch = 0f;
+    private int driftTicks = 0;
 
     public double getVelY() {
         return velY;
@@ -448,12 +453,20 @@ public class FakeBot {
         if (idealPitch > 89.0f) idealPitch = 89.0f;
         if (idealPitch < -89.0f) idealPitch = -89.0f;
 
-        // Realistic inaccuracy
+        // Smooth humanized aim drift (replaces 20Hz vibrating jitter with natural hand drift)
         if (inaccuracyDeg > 0.05f) {
-            float randY = ((ThreadLocalRandom.current().nextFloat() * 2f) - 1f) * inaccuracyDeg;
-            float randP = ((ThreadLocalRandom.current().nextFloat() * 2f) - 1f) * (inaccuracyDeg * 0.7f);
-            idealYaw += randY;
-            idealPitch += randP;
+            if (--driftTicks <= 0) {
+                targetDriftYaw = ((ThreadLocalRandom.current().nextFloat() * 2f) - 1f) * inaccuracyDeg;
+                targetDriftPitch = ((ThreadLocalRandom.current().nextFloat() * 2f) - 1f) * (inaccuracyDeg * 0.6f);
+                driftTicks = ThreadLocalRandom.current().nextInt(8, 16);
+            }
+            aimDriftYaw += (targetDriftYaw - aimDriftYaw) * 0.18f;
+            aimDriftPitch += (targetDriftPitch - aimDriftPitch) * 0.18f;
+            idealYaw += aimDriftYaw;
+            idealPitch += aimDriftPitch;
+        } else {
+            aimDriftYaw = 0f;
+            aimDriftPitch = 0f;
         }
 
         // Smooth rotation interpolation
@@ -475,7 +488,15 @@ public class FakeBot {
 
         sp.setRot(newYaw, newPitch);
         sp.setYHeadRot(newYaw);
-        sp.setYBodyRot(newYaw);
+
+        // Natural player body rotation: lags behind head rotation unless turning sharply
+        float bodyYaw = sp.yBodyRot;
+        float bodyDiff = newYaw - bodyYaw;
+        while (bodyDiff < -180.0f) bodyDiff += 360.0f;
+        while (bodyDiff > 180.0f) bodyDiff -= 360.0f;
+        if (Math.abs(bodyDiff) > 35.0f) {
+            sp.setYBodyRot(bodyYaw + (bodyDiff > 0 ? bodyDiff - 35.0f : bodyDiff + 35.0f));
+        }
     }
 
     public void moveRel(double dx, double dy, double dz) {
@@ -598,7 +619,7 @@ public class FakeBot {
                     double jumpMult = getJumpMultiplier();
                     velY = 0.42 * jumpMult; // Jump velocity scaled by jump cards
                     jumpAscentTicks = Math.max(8, (int) Math.round(8 * jumpMult));
-                    double forwardImpulse = (0.25 + 0.08 * (jumpMult - 1.0)) * Math.sqrt(getSpeedMultiplier());
+                    double forwardImpulse = (0.10 + 0.04 * (jumpMult - 1.0)) * Math.sqrt(getSpeedMultiplier());
                     impulseX += dirX * forwardImpulse;
                     impulseZ += dirZ * forwardImpulse;
                 }
@@ -645,7 +666,7 @@ public class FakeBot {
                             // Scale leap velocity with jump and speed multipliers
                             velY = ((bestLandingFloor.getY() > loc.getY()) ? 0.46 : 0.42) * jumpMult;
                             jumpAscentTicks = Math.max(8, (int) Math.round(8 * jumpMult));
-                            double sprintImpulse = (0.28 + 0.12 * factor) * speedMult;
+                            double sprintImpulse = (0.16 + 0.08 * factor) * speedMult;
                             impulseX += dirX * sprintImpulse;
                             impulseZ += dirZ * sprintImpulse;
                         } else {
@@ -681,6 +702,11 @@ public class FakeBot {
         }
         // Clear deltaMovement so move's residual vector doesn't pollute next tick
         sp.setDeltaMovement(Vec3.ZERO);
+
+        // Turn body towards movement direction when running
+        if (Math.abs(moveX) > 0.04 || Math.abs(moveZ) > 0.04) {
+            sp.setYBodyRot(sp.getYHeadRot());
+        }
 
         // 4. Trigger Jump Pads and Up Blocks directly on landing / stepping (percentage damage & lift)
         Location locBelow = to.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getLocation();

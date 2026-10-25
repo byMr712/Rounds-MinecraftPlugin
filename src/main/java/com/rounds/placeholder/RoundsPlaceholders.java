@@ -8,6 +8,7 @@ import com.rounds.teams.TeamManager;
 import com.rounds.teams.TeamManager.GameTeam;
 import com.rounds.util.Messages;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -111,13 +112,20 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
     }
 
     @Override
-    public @Nullable String onPlaceholderRequest(Player player, @NotNull String params) {
-        if (player == null) return "";
+    public @Nullable String onRequest(OfflinePlayer player, @NotNull String params) {
+        return handlePlaceholder(player, params);
+    }
 
+    @Override
+    public @Nullable String onPlaceholderRequest(Player player, @NotNull String params) {
+        return handlePlaceholder(player, params);
+    }
+
+    private @Nullable String handlePlaceholder(@Nullable OfflinePlayer player, @NotNull String params) {
         GameManager gm = plugin.getGameManager();
         TeamManager tm = plugin.getTeamManager();
-        GameTeam team = tm.getPlayerTeam(player.getUniqueId());
 
+        // 1. Global game placeholders (work without player context: e.g. TAB header/footer, scoreboard)
         if (params.equalsIgnoreCase("round")) {
             return String.valueOf((int) gm.getCurrentRound());
         }
@@ -130,6 +138,21 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
         if (params.equalsIgnoreCase("state")) {
             return gm.getState().name();
         }
+        if (params.equalsIgnoreCase("blue_wins")) return String.valueOf((int) tm.getWins(GameTeam.BLUE));
+        if (params.equalsIgnoreCase("red_wins")) return String.valueOf((int) tm.getWins(GameTeam.RED));
+        if (params.equalsIgnoreCase("yellow_wins")) return String.valueOf((int) tm.getWins(GameTeam.YELLOW));
+        if (params.equalsIgnoreCase("green_wins")) return String.valueOf((int) tm.getWins(GameTeam.GREEN));
+        if (params.equalsIgnoreCase("blue_name")) return Messages.raw("team.blue");
+        if (params.equalsIgnoreCase("red_name")) return Messages.raw("team.red");
+        if (params.equalsIgnoreCase("yellow_name")) return Messages.raw("team.yellow");
+        if (params.equalsIgnoreCase("green_name")) return Messages.raw("team.green");
+
+        // 2. Player-specific placeholders (require player/UUID)
+        if (player == null) return "";
+
+        UUID uuid = player.getUniqueId();
+        GameTeam team = tm.getPlayerTeam(uuid);
+
         if (params.equalsIgnoreCase("team")) {
             if (team == null) return Messages.raw("team.none");
             return Messages.raw("team." + team.name().toLowerCase());
@@ -146,18 +169,10 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
             if (team == null) return "0";
             return String.valueOf((int) tm.getWins(team));
         }
-        if (params.equalsIgnoreCase("blue_wins")) return String.valueOf((int) tm.getWins(GameTeam.BLUE));
-        if (params.equalsIgnoreCase("red_wins")) return String.valueOf((int) tm.getWins(GameTeam.RED));
-        if (params.equalsIgnoreCase("yellow_wins")) return String.valueOf((int) tm.getWins(GameTeam.YELLOW));
-        if (params.equalsIgnoreCase("green_wins")) return String.valueOf((int) tm.getWins(GameTeam.GREEN));
-        if (params.equalsIgnoreCase("blue_name")) return Messages.raw("team.blue");
-        if (params.equalsIgnoreCase("red_name")) return Messages.raw("team.red");
-        if (params.equalsIgnoreCase("yellow_name")) return Messages.raw("team.yellow");
-        if (params.equalsIgnoreCase("green_name")) return Messages.raw("team.green");
 
         if (params.startsWith("stat_")) {
             PlayerDataManager pdm = plugin.getPlayerDataManager();
-            PlayerData data = pdm.getData(player.getUniqueId());
+            PlayerData data = pdm.getData(uuid);
             if (data == null) return "0";
             double v = getStatValue(data, params.substring(5));
             if (v == Math.floor(v) && !Double.isInfinite(v)) {

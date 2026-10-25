@@ -1,564 +1,214 @@
-# RoundsPlugin
+# 🎯 RoundsPlugin — The ROUNDS Minigame in Minecraft
 
-> **Language:** English · [Русский](readme.md)
+> **Language:** [Русский](readme.md) · English
 
-A competitive **ROUNDS** mini-game plugin for Paper / Purpur Minecraft servers. Features 4 teams, an extensive card system with 111+ built-in cards and custom card support, up to 20+ rounds, special interactive physical blocks for quick arena setup, card draft compensation for losers, sudden death auto-elimination for prolonged rounds, freeplay mode, and complete TAB / PlaceholderAPI integration.
+**RoundsPlugin** brings the chaotic, competitive 2D/3D platformer shooter **ROUNDS** directly to your Minecraft server!
 
+No tedious sword clicking here: players wield fast-firing guns paired with projectile-deflecting shields, battle round by round, and losing teams draft game-changing upgrade cards (ricochets, lifesteal, poison clouds, chain lightning, saws, phantoms, wall-piercing drills, and much more).
 
-## Features
+The plugin is 100% self-contained, sets up in just 2 minutes using in-game physical blocks, and includes **advanced native AI bots** allowing players to duel and practice even completely solo!
 
-- **Team Combat (up to 4 teams):** Blue, Red, Yellow, and Green teams.
-- **Special Weapon (The Gun):**
-  - **LMB:** Fire bullets with calculated physics, spread, ricochets, and card effects.
-  - **RMB:** Shield block (damage negation, triggers offensive and defensive card abilities).
-  - **Q (Drop):** Manual magazine reload with a visual progress bar in the Action Bar.
-- **Card System (111+ Cards):**
-  - Bullet modifiers, damage multipliers, health scalers, speed bonuses, lifesteal, poison, frost, wall-piercing drill ammo, phantom summoning, explosions, homing bullets, and more.
-  - 5 rarity tiers with configurable weights.
-  - Multi-tier card variations (single card definition with different stats per rarity).
-  - Comeback mechanics: losing teams draft new cards between rounds.
-  - Interactive player card deck viewer (`/rdebug cards show`) with administrative card duplication and deletion.
-  - Card selection rotation wheel (Wheel mode).
-- **Physical Setup Blocks:** Interactive blocks for team selection, lobby center, map zones, spawn points, jump pads, and vertical lift columns.
-- **Built-in AI Combat Bots (Fast NMS Fake Players with 10 Difficulty Levels):** Native fake players for singleplayer practice and testing (`/rdebug bot spawn [name] [team] [1..10]`, `/rbot`).
-  - **Dynamic Difficulty (Levels 1..10):** Each bot receives a randomized difficulty level (1..10) upon spawn, re-rolled automatically at the start of every round (`factor = level / 10.0`).
-  - **Combat Playstyles (Archetypes):** Each round, bots select one of 4 distinct playstyles: `AGGRESSIVE_FLANKER` (outer ring flanks, close combat, bunnyhop evasion), `TACTICAL_SNIPER` (16-24m distance control, retreats from rushers), `DEFENSIVE_TURTLE` (active shield deflections, retreats when reloading or low on HP), `ERRATIC_BRAWLER` (rapid juking every 6-12 ticks, mid-fire bunnyhops).
-  - **Realistic Vision & Pursuit:** Vision is constrained by a 140° FOV cone, 60-block maximum range, 2.5m footstep proximity, and raycast line-of-sight checks. Target pursuit chance is increased by +20%: Levels 1–2 (**60%**), 3–4 (**72%**), 5–7 (**84%**), 8–9 (**96%**), 10 (**100%**). Target pursuit timeout upon broken vision is **120 ticks** (6 seconds).
-  - **Incoming Fire Reaction:** When taking damage, bots calculate the incoming fire angle and snap towards the attacker. Angle accuracy scales with difficulty: from ±45° error at lvl 1 to pinpoint ±4.5° tracking at lvl 10.
-  - **Tactical Cover & Ambush Traps:** When low on HP or out of ammo, bots raytrace nearby cover blocks, break line of sight, and heal. In an ambush, bots hold an open corridor angle (`ambushHoldYaw`) facing approach vectors, pre-charge Empower shields, and fire instantaneous reaction shots upon enemy detection.
-  - **3D Terrain Navigation & Block Stairs:** Effortlessly jumps 1-block steps with forward momentum (eliminating stair pushback), descends stairs and slopes smoothly, and executes 180° turns to break tight corner loops.
-  - **Card Parkour & 2–3 Block High Jumps:** Auto-jump clearance and movement speed dynamically scale with player card modifiers (`jumpHeightMultiplier`, `speedMultiplier`) and bot difficulty: experienced bots accurately evaluate physics clearance and leap across 2-block and 3-block barriers.
-  - **1–3 Block Gap Jumping:** Recognizes 1–3 block gaps between platforms and performs sprint leaps across to safe ground. Jump error rates (under-jumping and falling) scale by difficulty: lvls 1–3 — 30%, lvls 4–7 — 20%, lvls 8–9 — 10%, lvl 10 — 0%.
-  - **Room Escape (2x2 Doorway Detection):** Never gets stuck in 3-walled rooms with narrow 2x2 doorways: upon staying in a 3m radius for over 1.25s, sweeps 360° in 30° increments with 1.7m doorway clearance checks, pinpointing the exit and locking heading outside.
-  - **Up-Block Elevators Navigation:** Freely navigates into vertical lift columns, detects exit platforms on upper tiers (`findUpBlockExitPlatform`), and steps out cleanly onto upper levels.
-  - **Smart Jump Pads & Platform Landing (Air Control):** Jump pad seeking is banned for the first 3–15 seconds of each round (average 5s). Pads launch with natural forward velocity without artificial center pull. While airborne or falling, bots scan and steer towards safe solid platforms below. Landing error rates: lvls 1–3 — 10%, lvls 4–7 — 7%, lvls 8–9 — 5%, lvl 10 — 1%.
-  - **High Performance & Scalability (up to 500 Bots):** Precomputed combat profile matrix `CombatProfile` ($O(1)$), multi-tier navigation graph `ArenaNavMesh`, adaptive AI LOD system (reducing decision tickrate to 10–7 TPS for bots over 35m away), and tick-interleaved target acquisition maintain stable 20 TPS. Bulk spawn limit supports up to 500 bots.
-  - **Map-Placed Team Blocks Filtering:** Spawning bots dynamically checks which team blocks are placed on the arena or lobby (e.g. only Red and Blue), strictly balancing bots among available teams and offering only available teams in tab-completion.
-  - **Saw Rush & Active Block Abilities:** Bots equipped with the `Saw` card execute aggressive close-range rushes (< 2.8m, speed 0.46) while blocking. Actively triggers card block mechanics (`Implode`, `Silence`, `EMP`, `Overpower`, `BombOnBlock`, `Teleport`, `Heal`, `Shockwave`, `TacticalReload`, etc.) scaled by difficulty factor.
-  - Supports shield blocking, automated smart card drafting (picks best cards by rarity at higher levels), weapon damage, card abilities, explosions, poison, and jump pad damage like regular players.
-  - **Automatic Clean Despawn:** On game stop (`/rdebug stop`, `/rounds stop`) or game end, all fake bots are automatically removed from the server without entity leaks.
-  - **Spectator Outlines & Round Titles:** Spectators exclusively see combatants outlined with team-colored glowing silhouettes (invisible to survival players). Spectators without a team receive neutral team-colored victory titles (e.g., "Yellow won!").
-- **Integrations:** Full [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.13006/) and [TAB](https://www.spigotmc.org/resources/tab.57806/) support, plus an optional built-in scoreboard.
-- **Localization:** Complete UI and card localization powered by language packs (`lang/*.txt`).
+---
 
+## 💥 Key Features
 
-## Requirements
+- ⚔️ **Team Firefights (Up to 4 Teams):** Blue, Red, Yellow, Green teams + seamless spectator mode.
+- 🔫 **Custom Weapon (Gun & Shield):**
+  - **Left Click:** Fires physics-driven bullets with ricochets, bullet speed, and card effects.
+  - **Right Click:** Raises shield to deflect bullets and trigger explosive counter-abilities.
+  - **Q (Drop Key):** Manually reload your magazine with a live Action Bar progress bar.
+- 🃏 **111+ Unique Upgrade Cards:**
+  - Massive ability catalog: homing bullets, poison clouds, frost slow, wall drills, executions, close-range saw shredding, and second-wind revives.
+  - 5 rarity tiers: `COMMON`, `UNCOMMON`, `RARE`, `EPIC`, `LEGENDARY`.
+  - **Comeback Mechanics:** The losing team drafts a new card between rounds. The more you lose, the stronger you become!
+  - In-game deck inventory viewer (`/rdebug cards show`) and administrative card management.
+- 🤖 **Native Smart Bots (NMS Fake Players):**
+  - Real server-side players with 10 difficulty tiers — not dumb zombies.
+  - They strafe, take cover, heal behind walls, hold open hallway angles in ambushes, ride jump pads and elevator lifts, and draft cards.
+  - Bulk spawn up to 500 bots with zero server lag (profile matrix, multi-level NavMesh, and adaptive LOD tickrate).
+  - Automatically detect placed team blocks on the arena and only join valid teams!
+- 👁️ **Spectator Outlines & Team Glow:**
+  - Spectators and eliminated players exclusively see glowing outlines around all alive players in their team colors.
+  - Survival players do NOT see this glow — keeping stealth, sneaking, and the Chameleon card fair and effective!
+  - Spectators receive clean, team-colored victory titles at the end of each round.
+- 🧱 **2-Minute Arena Setup:** No messing around with coordinate math in configs — grab special blocks with `/rdebug giveblocks` and place them directly in the world.
+- 🔌 **Full Server Integration:** Compatible with Paper / Purpur 1.20.4+ (up to 1.21.x / 26.2), full TAB and PlaceholderAPI support, plus instant multi-language switching.
 
-- **Server:** Paper / Purpur 1.20.4+ (compatible with 1.20.x — 1.21.x)
-- **Java:** Java 17 or newer
-- **Optional:** [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.13006/)
-- **Optional:** [TAB](https://www.spigotmc.org/resources/tab.57806/)
+---
 
+## 🛠️ Quick Start: Setting up an Arena in 2 Minutes
 
-## Installation
+You never need to copy-paste coordinates into YAML files. Everything is configured with physical blocks in-game:
 
-1. Place `RoundsPlugin.jar` into your server's `plugins/` folder.
-2. Restart the server (or load with PlugMan) to generate configuration files.
-3. Configure `plugins/RoundsPlugin/config.yml` if desired.
-4. Add or tweak cards in `plugins/RoundsPlugin/cards/custom/`.
-5. Join the server as an administrator (`rounds.admin` permission or OP), run `/rdebug giveblocks`, and place the setup blocks in the world.
-
-
-
-## Quick Setup & Arena Configuration
-
-### 1. Getting the Setup Blocks
-
-Run the following command:
+### Step 1. Get the Setup Blocks
+Join your server with OP permissions (or `rounds.admin`) and run:
 ```
 /rdebug giveblocks
 ```
-This gives you stacks of all special blocks and switches your game mode to **Creative**.
+You will receive stacks of all special blocks, and your gamemode will automatically switch to **Creative**.
 
-### 2. Special Blocks Reference
+### Step 2. Build the Lobby
+1. Place a **Lobby Block** (Emerald Block / Beacon) where players should spawn before and after matches.
+2. Place colored wool blocks on the floor for team selection:
+   - 🟦 **Light Blue Wool** — Join Blue Team.
+   - 🟥 **Red Wool** — Join Red Team.
+   - 🟨 **Yellow Wool** — Join Yellow Team.
+   - 🟩 **Lime Wool** — Join Green Team.
+   - ⬜ **White Wool** — Become a Spectator.
+   > *Tip:* Building a 1v1 duel map? Simply place only Red and Blue wool — the plugin and bots will know only those two teams are active!
 
-#### Team Selection Blocks (Lobby)
-Stepping on these wool blocks joins the corresponding team before match start.
+### Step 3. Mark the Combat Arena
+1. Place a **Map Zone Block** (Diamond Block for 50x50, Emerald Block for 100x100) at the center of your battle arena. You can set up multiple zones — the plugin randomly picks one each round!
+2. Place **Spawn Blocks** (Obsidian) within that zone where teams will appear each round.
+3. Add interactive elements:
+   - **Coal Block** — Jump pad (deals 20% max HP damage and launches entities high into the air).
+   - **Glazed Terracotta / Prismarine** — Vertical elevator lift column.
 
-| Block | Item / Material | Purpose |
-|-------|-----------------|---------|
-| **Blue Team Entrance** | Light Blue Wool (`LIGHT_BLUE_WOOL`) | Join the Blue team |
-| **Red Team Entrance** | Red Wool (`RED_WOOL`) | Join the Red team |
-| **Yellow Team Entrance** | Yellow Wool (`YELLOW_WOOL`) | Join the Yellow team |
-| **Green Team Entrance** | Lime Wool (`LIME_WOOL`) | Join the Green team |
-| **Leave Team (Spectator)** | White Wool (`WHITE_WOOL`) | Leave all teams and become a spectator |
+### Step 4. Start the Battle!
+Step on your team's wool block, then step on the **Iron Block** (Start Block) OR run:
+```
+/rdebug start
+```
+The countdown begins, players draft their opening cards, and the match goes live!
 
-#### Map, Lobby & Spawn Blocks
+---
 
-| Block | Item / Material | Purpose |
-|-------|-----------------|---------|
-| **Lobby Block** | Emerald Block (`EMERALD_BLOCK`) | Lobby center. Return point before/after matches. Only 1 active lobby block exists per world (placing a new one updates the location). Can also be set via `/rdebug setlobby`. |
-| **50x50 Map Zone Block** | Diamond Block (`DIAMOND_BLOCK`) | Center of a 50x50 X/Z combat zone. |
-| **100x100 Map Zone Block** | Emerald Block (`EMERALD_BLOCK`) | Center of a 100x100 X/Z combat zone. |
-| **Spawn Block** | Obsidian (`OBSIDIAN`) | Team spawn point inside a map zone. |
-| **Jump Block (Bounce Pad)** | Coal Block (`COAL_BLOCK`) | Stepping/landing on it deals % max HP damage and launches the player high into the air. |
-| **Up Block (Lift Column)** | Purple Glazed Terracotta (`PURPLE_GLAZED_TERRACOTTA`) | Stepping on it smoothly lifts the player upwards for a set duration. |
+## 🧱 Special Blocks Reference
 
-#### Match Control Blocks
+| In-Game Block | Material | Purpose |
+| :--- | :--- | :--- |
+| **Team Join** | Colored Wool (`LIGHT_BLUE`, `RED`, `YELLOW`, `LIME_WOOL`) | Players and bots step on this to instantly join that team. |
+| **Spectator** | White Wool (`WHITE_WOOL`) | Steps into spectator mode. |
+| **Lobby Center** | Emerald Block / Beacon | Central lobby spawn point. |
+| **50x50 Map Zone** | Diamond Block (`DIAMOND_BLOCK`) | Center of a 50x50 battle zone. |
+| **100x100 Map Zone** | Emerald Block (`EMERALD_BLOCK`) | Center of a 100x100 battle zone. |
+| **Team Spawn Point** | Obsidian (`OBSIDIAN`) | Team spawn position on the active arena. |
+| **Jump Pad** | Coal Block (`COAL_BLOCK`) | Deals 20% HP damage and propels players high into the air. |
+| **Elevator Lift** | Purple Glazed Terracotta / Prismarine | Smoothly lifts players to upper floors. |
+| **START Button** | Iron Block (`IRON_BLOCK`) | Starts the game when stepped on. |
+| **STOP Button** | Redstone Block (`REDSTONE_BLOCK`) | Stops the game and returns all players to the lobby. |
 
-| Block | Item / Material | Purpose |
-|-------|-----------------|---------|
-| **Game Start Block** | Iron Block (`IRON_BLOCK`) | Starts the match when stepped on (admin or freeplay mode). |
-| **Game End Block** | Redstone Block (`REDSTONE_BLOCK`) | Stops the match and resets state when stepped on. |
+---
 
-### 3. Step-by-Step Arena Setup
+## 🤖 Smart AI Combat Bots
 
-1. **Lobby:** Place a **Lobby Block** in your waiting area and place team wool blocks nearby.
-2. **Map Zones:** Place one or more **Map Zone Blocks** (50x50 or 100x100) at the center of each combat arena. Each round, a random zone is selected.
-3. **Team Spawns:** Inside each map zone, place **Spawn Blocks** (Obsidian) where teams will appear.
-4. **Interactive Arena Elements (Optional):** Place jump or lift blocks manually, or fill selected regions using `/rdebug jumppos1` / `jumppos2` / `jumpset` and `/rdebug uppos1` / `uppos2` / `upset`.
+The built-in Fake Player bot system runs natively on the Minecraft server tick without external bridge plugins:
 
+- **10 Difficulty Levels:** Randomly assigned each round (1 = rookie with wide aim error, 10 = pinpoint sniper with instant flick reactions and shield parries).
+- **4 Combat Playstyles:** Bots adapt between Aggressive Flanker, Tactical Sniper, Defensive Turtle, and Erratic Brawler.
+- **Fair Vision:** Real 140° FOV, 60m range, 2.5m footstep hearing, and strict raytraced Line-of-Sight (no wallhacks).
+- **Tactical Ambushes:** Bots hold open hallway angles (`ambushHoldYaw`), pre-charge shields for Empower damage boosts, and fire instantly when a target rounds the corner.
+- **Card-Aware Parkour:** When bots draft jump upgrade cards, they recognize their new jump clearance and effortlessly leap over 2-block and 3-block walls, clear gaps, and ride elevator lifts.
+- **Close-Range Saw Rush:** With the Saw card, bots sprint in close (< 2.8m, speed 0.46) while blocking to shred opponents in their flame ring.
+- **Map Block Awareness:** Bots automatically detect which team spawn blocks are placed on the map and only balance into available teams.
 
-## Gameplay Flow
+### Bot Commands:
+```bash
+# Spawn a single bot (auto name and balanced team)
+/rbot spawn
 
-```mermaid
-flowchart TD
-    A[Players join teams in the lobby] --> B[Start match: /rdebug start or Iron Block]
-    B --> C[Teleport to lobby + 3.. 2.. 1.. Countdown]
-    C --> D[Spectator mode map preview]
-    D --> E[Pick random map zone & assign team spawns]
-    E --> F[Opening draft: pick 1 of 5 cards]
-    F --> G[Combat round: shooting, blocking, abilities]
-    G --> H{Only 1 team alive?}
-    H -- No (round > 4 mins) --> I[Sudden death: random player auto-kill]
-    I --> G
-    H -- Yes --> J[Round win: +1 score]
-    J --> K{Match win target reached?}
-    K -- No --> L[Losing teams draft new cards]
-    L --> E
-    K -- Yes --> M[Game over: victory broadcast & return to lobby]
+# Bulk spawn 10 balanced bots across available map teams
+/rbot spawn count 10
+
+# Spawn a specific bot (e.g., lvl 10 sniper on Blue team)
+/rbot spawn ProBot BLUE 10
+
+# Despawn all active bots
+/rbot despawn all
+
+# List all active bots, their current health, and difficulty level
+/rbot list
 ```
 
-1. **Team Selection:** Players step on their chosen team wool block.
-2. **Match Start:** An admin runs `/rdebug start` or steps on the Iron Block.
-3. **Countdown:** A 3-second countdown displays in chat while players preview the arena in spectator mode.
-4. **Initial Card Draft:** All players open an inventory GUI offering 5 random cards.
-5. **Round Combat:** Players receive their weapon, switch to survival mode, and engage in battle.
-6. **Round End:** The last surviving team scores a round point.
-7. **Comeback Draft:** Members of losing teams choose another card to upgrade their build.
-8. **Victory:** The first team to reach the target win threshold (default 5) wins the match and everyone is returned to the lobby.
+---
 
-## Configuration (`config.yml`)
+## 📋 Commands & Permissions
+
+Primary admin command: `/rdebug`. Short bot management command: `/rbot`.
+
+### For Players:
+| Command | Purpose |
+| :--- | :--- |
+| `/rdebug join` | Join an ongoing game (places into the team with least players). |
+| `/rdebug cards show [player]` | View your active card deck. |
+| `/rdebug stats [player]` | View combat stats (damage, HP, ammo, attack speed). |
+| `/rdebug info` | Display match and arena status. |
+
+### For Administrators (`rounds.admin` or OP):
+| Command | Purpose |
+| :--- | :--- |
+| `/rdebug start` | Start a match on the arena. |
+| `/rdebug stop` | Stop the game, remove bots, and return everyone to lobby. |
+| `/rdebug giveblocks` | Receive a full set of setup blocks and switch to Creative mode. |
+| `/rdebug setlobby` | Set the lobby spawn point at your current position. |
+| `/rdebug rounds <number>` | Set the number of round wins required to win the match (default: 5). |
+| `/rdebug freeplay <on\|off>` | Allow non-admin players to run `/rdebug start`. |
+| `/rdebug autodeath <on\|off>` | Toggle sudden-death elimination for overly long rounds (> 4 min). |
+| `/rdebug cards add <player> <id>` | Grant a specific card to a player or bot. |
+| `/rdebug givegun [player\|@a]` | Give the custom gun to yourself or everyone. |
+| `/rdebug resetstats [player]` | Reset cards, HP, and stats to defaults. |
+| `/rdebug setlanguage <EN_en\|RU_ru>` | Switch plugin language on the fly. |
+| `/rdebug reload` | Hot-reload `config.yml` and card files without a server restart. |
+
+---
+
+## ⚙️ Configuration (`config.yml`)
 
 ```yaml
-# Language ID from plugins/RoundsPlugin/lang/ (without .txt extension)
+# Language pack from lang/ folder (EN_en, RU_ru, etc.)
 language: EN_en
 
-# Default player stats (reset every round)
+# Round 1 default stats
 defaults:
-  damage: 3.0            # Base damage per bullet
-  attack-speed: 20       # Attack cooldown in ticks (20 ticks = 1 sec; lower = faster)
-  attack-speed-modifier: 0
-  attack-range: 0
-  ammo: 3                # Starting magazine ammo
-  max-ammo: 3            # Maximum magazine capacity
-  bullets: 1             # Number of bullets fired per shot (1 = single bullet, >1 = shotgun)
-  hp: 20                 # Starting max health (supports up to 2048)
-  bullet-speed: 1.0      # Bullet velocity multiplier
-  reload-speed: 0        # Reload speed modifier (formula: 100 * (1 - reloadSpeed) ticks)
+  hp: 20                 # Health (20 = 10 hearts)
+  damage: 3.0            # Bullet base damage
+  ammo: 3                # Magazine size
+  max-ammo: 3            # Max ammo capacity
+  attack-speed: 20       # Firing cooldown in ticks (20 ticks = 1 second)
+  bullet-speed: 1.0      # Projectile flight speed
 
+# Match settings
 game:
-  default-rounds: 5      # Default rounds needed to win the match
-  max-rounds: 20         # Maximum configurable rounds
-  card-selection-time: 200 # Time window for card selection (ticks)
-  respawn-delay: 5
+  default-rounds: 5      # Round wins needed for overall victory
+  max-rounds: 20         # Maximum rounds cap
+  card-selection-time: 200 # Card draft duration (200 ticks = 10 seconds)
 
-teams:
-  enabled:
-    - BLUE
-    - RED
-    - YELLOW
-    - GREEN
-
-gun:
-  material: STICK        # Item material used for the weapon
-  base-cooldown: 20      # Base shooting cooldown
-
-cards:
-  selection-count: 5     # Number of cards offered during selection
-  weighted-rarity: true  # Use rarity weights during card generation
-
-# Automatic world rule overrides during the game
+# Automatic arena gamerules (isolated to arena players)
 game-rules:
   enabled: true
   instant-respawn: true       # Instant respawn without death screen
-  keep-inventory: true        # Keep inventory on death
-  freeze-time: true           # Freeze time at midday
-  disable-weather: true       # Disable rain and thunderstorms
-  disable-mob-spawning: true  # Disable natural mob spawns
+  keep-inventory: true        # Keep inventory enabled
+  freeze-time: true           # Fixed daytime on arena
+  disable-weather: true       # Clear weather
+  disable-mob-spawning: true  # Block mob spawning on arena
 
-# Colorize player names in tablist and nametags to match their team
-color-nicknames: true
-
-# Built-in scoreboard (recommended: use TAB + PlaceholderAPI instead)
-builtin-scoreboard:
-  enabled: false
-  title: "&6&lROUNDS"
-
-# Interactive block settings
+# Jump pad settings
 jump-block:
-  damage-percent: 20.0   # Percentage of max HP deducted upon bounce
+  damage-percent: 20.0   # Percentage of max HP deducted on launch
   launch-height: 10.0    # Launch height in blocks
-
-up-block:
-  lift-speed: 0.3        # Vertical lift velocity
-  duration-ticks: 40     # Duration in ticks (40 ticks = 2 sec)
-
-# Freeplay mode (allows non-admins to start/stop games)
-freeplay:
-  enabled: false
 ```
 
+---
 
-## Card System
+## 📊 PlaceholderAPI Support
 
-Cards are stored as standalone YAML files:
-- `plugins/RoundsPlugin/cards/original/` — 111+ built-in cards.
-- `plugins/RoundsPlugin/cards/custom/` — user-created custom cards.
+Full PlaceholderAPI integration under the `%rounds_...%` identifier:
 
-### Standard Card Example (`burst.yml`)
-```yaml
-id: 8
-name:
-  ru: "&aОчередь"
-  en: "&aBurst"
-description:
-  ru: "+2 пули, +3 патрона, -60% урона, +10% к времени перезарядки"
-  en: "+2 Bullets, +3 Ammo, -60% DMG, +10% Reload time"
-material: ARROW
-enabled: true
-variations:
-  - rarity: COMMON
-    effects:
-      bullets: 2
-      ammo: 3
-      damage: -0.6
-      reload: 1
-```
+- `%rounds_round%` — Current round number.
+- `%rounds_rounds_to_win%` — Wins needed for match victory.
+- `%rounds_round_display%` — Formatted round progress (e.g. `3/5`).
+- `%rounds_state%` — Match state (`WAITING`, `CARDS`, `PLAYING`, `ROUND_END`, `GAME_END`).
+- `%rounds_team%` — Player's team name (Blue, Red...).
+- `%rounds_team_color%` — Team color code (`§9`, `§c`, `§e`, `§a`).
+- `%rounds_blue_wins%`, `%rounds_red_wins%`, `%rounds_yellow_wins%`, `%rounds_green_wins%` — Win counts per team.
+- `%rounds_stat_hp%`, `%rounds_stat_dmg%`, `%rounds_stat_ammo%` — Live player attributes including all card modifiers.
+- `%rounds_stat_cards%` — Total count of drafted cards.
 
-### Card Variation Example (`combine.yml`)
-```yaml
-id: 13
-name:
-  ru: "&4Объединение"
-  en: "&4Combine"
-description:
-  ru: "+{0} урона, -{1} патрона, +{2} к перезарядке"
-  en: "+{0} DMG, -{1} Ammo, +{2} Reload time"
-material: REDSTONE
-enabled: true
-variations:
-  - rarity: COMMON
-    values: ["50%", "1", "5%"]
-    effects:
-      damage: 0.5
-      ammo: -1
-      reload: 0.5
-  - rarity: UNCOMMON
-    values: ["75%", "2", "8%"]
-    effects:
-      damage: 0.75
-      ammo: -2
-      reload: 0.8
-  - rarity: RARE
-    values: ["100%", "2", "10%"]
-    effects:
-      damage: 1.0
-      ammo: -2
-      reload: 1.0
-  - rarity: EPIC
-    values: ["125%", "3", "13%"]
-    effects:
-      damage: 1.25
-      ammo: -3
-      reload: 1.3
-```
+---
 
-### Card Effect Keys
+## 💻 Requirements & Installation
 
-| YAML Key | Description |
-|----------|-------------|
-| `damage` | Damage multiplier (+0.5 = +50% damage, -0.6 = -60%) |
-| `attack-speed` | Attack rate modifier (changes shot cooldown) |
-| `attack-speed-reload` / `reload` | Additional reload time penalty |
-| `attack-range` | Extra attack range |
-| `bullets` | Additional bullets fired per shot |
-| `ammo` | Magazine capacity and current ammo |
-| `bullet-speed` | Bullet flight velocity |
-| `bounce` | Number of wall/surface ricochets |
-| `target-bounce` | Ricochet tracking toward nearest enemy |
-| `damage-per-bounce` | Bonus damage added per completed ricochet |
-| `hp` | Max health multiplier (+0.5 = +50% HP) |
-| `hp-cost` | Percentage of max HP consumed per shot |
-| `cold` / `cold-level` | Slow/frost effect chance and intensity |
-| `poison` / `poison-level` | Poison effect chance and intensity |
-| `toxic-cloud` | Spawns a toxic lingering cloud on hit |
-| `parazit` / `parazit-level` | Wither drain effect chance and level |
-| `leech` | Lifesteal percentage from dealt damage |
-| `homing` | Bullet homing tracking strength |
-| `homing-on-block` | Grants homing bullets for N seconds after blocking |
-| `empower` / `empower-charge` | Boosts the next shot's damage after blocking |
-| `dark-strength` | Flat damage increase (+0.5 per stack) |
-| `big-bullet` | Big Bullet: +70% hitbox/size, +30% reload time per stack |
-| `bomb-bullet` | Spawns an explosion/bomb at bullet impact |
-| `bomb-on-block` | Spawns explosive bombs around the player upon blocking |
-| `explode-bullets` | Exploding AoE damage on bullet impact |
-| `shield` | Shield cooldown baseline |
-| `shield-charge` | Additional shield block charges |
-| `double-block` | Double block charge capacity |
-| `shields-up` | Automatically activates shield when ammo reaches 0 |
-| `block-cd` / `shield-cooldown` | Shield block cooldown modifier |
-| `reload-speed` | Reload speed bonus (up to 0.95) |
-| `tactical-reload` | Instantly reloads the gun upon shield block |
-| `auto-reload` | Passive automatic ammunition regeneration over time |
-| `truster` / `truster-lvl` | Increased bullet knockback strength |
-| `jump-height` | Player jump height modifier |
-| `grow` | Increases max HP and character model scale |
-| `speed` / `speed-boost` | Movement speed modifier |
-| `stun` | Stuns target on hit |
-| `heal` | Periodic health regeneration |
-| `saw` | Saw: spinning flame damage ring around the player on block |
-| `shockwave` | Shockwave: strong knockback wave on block |
-| `implode` | Pulls nearby enemies toward player on block |
-| `silence` | Silence: disables enemy shooting and blocking on block |
-| `silence-aura` | Persistent silence aura around the player |
-| `sneaky` | Invisibility and stealth effects |
-| `emp` | EMP: heavy slowness applied to nearby enemies on block |
-| `overpower` | Overpower: deals % of current HP to nearby enemies on block |
-| `refresh` | Resets shield cooldown and refills magazine |
-| `radiance` / `highlight` | Highlights enemy silhouettes with glowing outline |
-| `lifesteal-aura` | Drains health from nearby enemies over time |
-| `phoenix` | Phoenix: revives player from lethal damage once per round |
-| `abyssal` | Abyssal: summons a phantom ally when standing still for 10s |
-| `drill` | Drill Ammo: bullets pierce through walls and solid blocks |
-| `teleport` | Teleports player forward in facing direction upon blocking |
-| `ammo-per-hit` | Restores ammo upon hitting an enemy |
-| `hp-boost-on-hit` | Increases max health upon hitting an enemy |
-| `pristine-perseverance` | Max HP bonus when at full health |
-| `blood-furry` | Blood Fury: stat boost rage upon taking damage |
-| `executioner` | Executioner: extra execute damage against low HP targets |
-| `storm-caller` | Strikes lightning at target upon hit |
-| `evasion` | Dodge chance against incoming hits |
-| `chameleon` | Chameleon invisibility when standing still |
-| `snowball` | Snowball: stacking bonuses for consecutive round wins |
-| `skyfall` | Skyfall: AoE impact upon landing from heights (negates fall damage) |
-| `berserk` | Increases stats as health decreases |
-| `overheat` | Allows shooting beyond empty magazine by consuming HP |
-| `second-wind` | Second Wind: survives lethal blow with 1 HP and invulnerability |
-| `spikes` | Reflects damage back to attacker |
-| `bullet-rain` | Bullet rain bonus projectiles and extra ammo capacity |
-| `frost-armor` | Frost Armor: slows attackers |
-| `no-party` | Disables blocking and reloading for nearby enemies |
-
-### Card Rarities and Weights
-
-| Rarity | Color | Base Drop Weight |
-|--------|-------|------------------|
-| **COMMON** | White (`&f`) | 40 |
-| **UNCOMMON** | Green (`&a`) | 30 |
-| **RARE** | Aqua (`&b`) | 18 |
-| **EPIC** | Light Purple (`&d`) | 9 |
-| **LEGENDARY** | Gold (`&6`) | 3 |
-
-
-## Commands & Permissions
-
-Base command: `/rdebug`.
-
-### Public Commands (All Players)
-
-| Command | Description |
-|---------|-------------|
-| `/rdebug join` | Join an ongoing match (assigned to smallest team or restored from saved session) |
-| `/rdebug info` | Display plugin version, game state, team scores, and loaded card count |
-| `/rdebug stats [player]` | View your own stats or inspect another player's stats |
-| `/rdebug cards show [player] [page]` | Open an interactive GUI showing all cards owned by a player |
-
-### Freeplay Mode (`freeplay: true`)
-
-When freeplay is enabled (`/rdebug freeplay on`), regular players without admin permissions can execute safe commands:
-- `/rdebug start` — start match
-- `/rdebug stop` — stop match
-- `/rdebug rounds <n>` — set rounds to win
-- `/rdebug givegun` — obtain weapon
-- `/rdebug wheel on|off` — toggle card wheel rotation
-
-### Admin Commands (`rounds.admin`)
-
-| Command | Arguments | Description |
-|---------|-----------|-------------|
-| `/rdebug help` | | Displays full formatted command help |
-| `/rdebug start` | | Starts the match (countdown → preview → draft → round) |
-| `/rdebug stop` | | Force-stops the game and teleports players to lobby |
-| `/rdebug status` | | Shows current round, match state, and team scores |
-| `/rdebug rounds <number>` | `<1..N>` | Sets the number of round wins required for victory |
-| `/rdebug autodeath <on\|off>` | `on/off` | Toggles automatic elimination of a random player in long rounds (>4 min) |
-| `/rdebug freeplay <on\|off>` | `on/off` | Toggles non-admin access to safe commands |
-| `/rdebug giveblocks [player]` | `[player]` | Gives all setup blocks and switches player to Creative mode |
-| `/rdebug setlobby` | | Sets the lobby block location to player's current position |
-| `/rdebug jumppos1` / `jumppos2` | | Sets corner 1 and 2 for the jump pad selection |
-| `/rdebug jumpset` | | Fills selected region with Jump Blocks (`COAL_BLOCK`) |
-| `/rdebug uppos1` / `uppos2` | | Sets corner 1 and 2 for the vertical lift selection |
-| `/rdebug upset` | | Fills selected region with Up Blocks (`PURPLE_GLAZED_TERRACOTTA`) |
-| `/rdebug cards` | | Opens a test card selection GUI |
-| `/rdebug cards reload` | | Reloads card files from `cards/original` and `cards/custom` |
-| `/rdebug cards add [player] <name\|id>` | `[player] <card>` | Grants a specific card to a player |
-| `/rdebug wheel <on\|off>` | `on/off` | Toggles automatic card rerolling every 6 seconds during draft |
-| `/rdebug givegun [player\|@a]` | `[player\|@a]` | Gives a gun to self, specified player, or all players |
-| `/rdebug tab <on\|off>` | `on/off` | Toggles built-in scoreboard display |
-| `/rdebug tab name <title>` | `<title>` | Sets built-in scoreboard title |
-| `/rdebug stats <player> <stat> <value>` | `<player> <stat> <val>` | Modifies a player's stat value |
-| `/rdebug setstat <stat> <value> [player]` | `<stat> <val> [player]` | Sets a stat value directly |
-| `/rdebug setteam <COLOR> [player]` | `<BLUE\|RED\|YELLOW\|GREEN>` | Assigns a player to a team |
-| `/rdebug setlanguage <lang>` | `<RU_ru\|EN_en...>` | Changes plugin language dynamically |
-| `/rdebug effect <type> <amp> <dur>` | `<type> <amp> <dur>` | Applies a potion effect |
-| `/rdebug heal [amount]` | `[HP]` | Heals player to maximum health |
-| `/rdebug resetstats [player]` | `[player]` | Clears stats, cards, and inventory for self or target player |
-| `/rdebug draft [player]` | `[player]` | Open test 5-card draft GUI for player or bot |
-| `/rdebug pick [player] <0..4\|11..15>` | `[player] <slot>` | Pick a card from the active draft menu by slot number |
-| `/rdebug shoot [player]` | `[player]` | Force player or bot to fire weapon |
-| `/rdebug block [player]` | `[player]` | Force player or bot to activate shield block |
-| `/rdebug reload` | | Fully reloads `config.yml`, cards, and language packs |
-| `/rdebug placeholders` | | Displays list of PlaceholderAPI placeholders |
-| `/rdebug bot <name> [team]` | `[team]` | Spawns a combat NMS bot into the smallest team |
-| `/rdebug bot despawn <name>` | `<name>` | Despawns a bot from the server (also `/rdebug despawn <name>`) |
-| `/rbot <spawn\|despawn\|list>` | | Built-in bot manager commands (tactics, forced shoot, block, card pick) |
-
-### Built-in Bots Control (`/rbot` and `/rdebug bot`)
-
-The plugin includes a native NMS `ServerPlayer` fake player system managed directly by the server:
-
-| Command | Description |
-|---------|-------------|
-| `/rdebug bot [name] [team] [1..10]` | Spawn a bot (auto name `rbot<1..9999>` and auto-balanced team if omitted) |
-| `/rdebug bot spawn count <N>` | Spawn N bots (up to 500) with auto-generated names and balanced across placed map team blocks |
-| `/rdebug bot level <name> [1..10]` | Check or set a bot's difficulty level (1..10) |
-| `/rdebug bot despawn <name>` | Remove a fake bot from the game (or `/rdebug despawn <name>`) |
-| `/rdebug bot despawn count <N>` | Despawn N bots (prioritizing teams with the most players) |
-| `/rdebug bot despawn all` | Remove all active bots from the server |
-| `/rbot spawn [name] [team] [1..10]` | Spawn bot (auto name `rbot<1..9999>` and auto-balanced across placed map team blocks) |
-| `/rbot spawn count <N>` | Spawn N bots (up to 500) with unique readable names and balanced across placed map team blocks |
-| `/rbot despawn <name>` | Remove a fake player by name |
-| `/rbot despawn count <N>` | Remove N bots randomly, prioritizing teams with the most players |
-| `/rbot despawn all` | Remove all active fake bots |
-| `/rbot list` | List all active bots with their HP and current difficulty level (Lvl: 1..10) |
-| `/rbot <name> level [1..10]` | Check or configure bot difficulty level (1 = -90%, 10 = 100%) |
-| `/rbot <name> strategy <flanker\|sniper\|turtle\|brawler>` | Set combat playstyle (`AGGRESSIVE_FLANKER`, `TACTICAL_SNIPER`, `DEFENSIVE_TURTLE`, `ERRATIC_BRAWLER`) |
-| `/rbot <name> pick <0..4>` | Force a bot to select a specific card from the draft |
-| `/rbot <name> shoot` | Force a bot to fire its weapon |
-| `/rbot <name> block` | Force a bot to raise its shield |
-
-### Permissions
-
-| Permission | Description | Default |
-|------------|-------------|---------|
-| `rounds.admin` | Full access to `/rdebug` commands and match management | `op` |
-| `rounds.join` | Ability to join teams via wool blocks and `/rdebug join` | `true` (everyone) |
-
-
-## Placeholders (PlaceholderAPI)
-
-Expansion identifier: `%rounds_...%`
-
-### Match Placeholders
-
-| Placeholder | Description |
-|-------------|-------------|
-| `%rounds_round%` | Current round number |
-| `%rounds_rounds_to_win%` | Wins required for victory |
-| `%rounds_round_display%` | Formatted round progress (e.g. `3/5`) |
-| `%rounds_state%` | Current game state (`WAITING`, `CARDS`, `PLAYING`, `ROUND_END`, `GAME_END`) |
-| `%rounds_team%` | Player's team name |
-| `%rounds_team_color%` | Team color code (`§9`, `§c`, `§e`, `§a`) |
-| `%rounds_team_adjective%` | Team adjective form (blue, red, etc.) |
-| `%rounds_team_wins%` | Player's team win count |
-| `%rounds_blue_wins%` | Blue team wins |
-| `%rounds_red_wins%` | Red team wins |
-| `%rounds_yellow_wins%` | Yellow team wins |
-| `%rounds_green_wins%` | Green team wins |
-| `%rounds_blue_name%` | Localized Blue team name |
-| `%rounds_red_name%` | Localized Red team name |
-| `%rounds_yellow_name%` | Localized Yellow team name |
-| `%rounds_green_name%` | Localized Green team name |
-
-### Player Stat Placeholders
-
-| Placeholder | Description |
-|-------------|-------------|
-| `%rounds_stat_hp%` | Max health |
-| `%rounds_stat_dmg%` | Bullet damage |
-| `%rounds_stat_atk_speed%` | Attack speed modifier |
-| `%rounds_stat_atkr%` | Attack radius |
-| `%rounds_stat_ammo%` | Current ammo |
-| `%rounds_stat_max_ammo%` | Max magazine capacity |
-| `%rounds_stat_bullets%` | Bullets per shot |
-| `%rounds_stat_bullet_speed%` | Bullet flight velocity |
-| `%rounds_stat_reload_time%` | Reload time in seconds |
-| `%rounds_stat_bounce%` | Ricochet count |
-| `%rounds_stat_homing%` | Homing strength |
-| `%rounds_stat_big_bullet%` | Big bullet level |
-| `%rounds_stat_cold%` / `%rounds_stat_cold_lvl%` | Cold chance and level |
-| `%rounds_stat_poison%` / `%rounds_stat_poison_lvl%` | Poison chance and level |
-| `%rounds_stat_parazit%` / `%rounds_stat_parazit_lvl%` | Wither drain chance and level |
-| `%rounds_stat_leech%` | Lifesteal |
-| `%rounds_stat_truster%` | Knockback strength |
-| `%rounds_stat_jump_height%` | Jump height modifier |
-| `%rounds_stat_empower%` / `%rounds_stat_empower_charge%` | Empower boost and charges |
-| `%rounds_stat_dark_strength%` / `%rounds_stat_dark%` | Dark energy stats |
-| `%rounds_stat_grow%` | Growth level |
-| `%rounds_stat_bomb_bullet%` | Bomb bullets |
-| `%rounds_stat_bomb_on_block%` | Bombs on block |
-| `%rounds_stat_shield_active%` | Shield active state (`1` or `0`) |
-| `%rounds_stat_shield_hp%` | Shield health |
-| `%rounds_stat_shield_cd%` | Shield cooldown |
-| `%rounds_stat_speed%` | Movement speed |
-| `%rounds_stat_stun%` | Stun duration |
-| `%rounds_stat_saw%` | Saw level |
-| `%rounds_stat_silence%` | Silence duration |
-| `%rounds_stat_emp%` | EMP strength |
-| `%rounds_stat_sneaky%` | Sneaky stealth level |
-| `%rounds_stat_phoenix%` | Phoenix revive charges |
-| `%rounds_stat_abyssal%` | Abyssal phantom level |
-| `%rounds_stat_cards%` | Total collected cards |
-
-
-## Localization
-
-Language files reside in `plugins/RoundsPlugin/lang/`:
-- Each `<LanguageID>.txt` file represents a distinct language (e.g. `RU_ru.txt`, `EN_en.txt`).
-- The filename without `.txt` serves as the language identifier.
-
-### Changing Language
-1. In game: `/rdebug setlanguage <lang>` (features tab-completion for all available languages).
-2. Or update `language: EN_en` in `config.yml`.
-
-### Adding a Custom Translation
-1. Copy `plugins/RoundsPlugin/lang/EN_en.txt` to `ES_es.txt`.
-2. Translate the string values.
-3. Run `/rdebug reload` — the new language will be registered immediately.
-
-
-## File Structure
-
-| File Path | Description |
-|-----------|-------------|
-| `plugins/RoundsPlugin/config.yml` | Main plugin configuration |
-| `plugins/RoundsPlugin/lang/*.txt` | Language packs |
-| `plugins/RoundsPlugin/cards/original/*.yml` | Built-in standard cards (111+ files) |
-| `plugins/RoundsPlugin/cards/custom/*.yml` | User-created custom cards |
-| `plugins/RoundsPlugin/playerdata/` | Saved player data (stats, cards) |
-| `plugins/RoundsPlugin/game-state.yml` | Saved active match state (restores on restart) |
-| `plugins/RoundsPlugin/active-players.yml` | Active participant list for current session |
-| `<World>/rounds-blocks.yml` | Saved positions of team join, start, stop, jump, and lift blocks |
-| `<World>/rounds-map-blocks.yml` | Saved positions of lobby, map zone centers, and spawn points |
-
-
-## Building from Source
-
-Requirements: **Java 17** and **Gradle 8.9+**:
-
-```bash
-./gradlew clean build
-```
-
-The output artifact is generated at: `build/libs/RoundsPlugin-1.X.jar`.
+1. **Server:** Paper, Purpur, or compatible forks 1.20.4+ (compatible up to 1.21.x / 26.2).
+2. **Java:** Java 17 or newer.
+3. Drop `RoundsPlugin.jar` into your `plugins/` directory and restart your server.
+4. Enjoy! 🚀

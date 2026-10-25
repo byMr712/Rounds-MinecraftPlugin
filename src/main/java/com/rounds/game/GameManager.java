@@ -2136,12 +2136,14 @@ public class GameManager implements Listener {
         String suffix = (bot != null) ? " " + c + "§l[L" + bot.getLevel() + "]" : "";
 
         if (tabCompat.isActive()) {
+            int ping = 0;
+            try { ping = p.getPing(); } catch (Throwable ignored) {}
             if (team != null || bot != null) {
                 tabCompat.setColoredName(p, c, prefix, suffix);
-                tabCompat.setPlayerPing(p, c + String.valueOf(p.getPing()));
+                tabCompat.setPlayerPing(p, ping, c + String.valueOf(ping) + " ms");
             } else {
                 tabCompat.resetName(p);
-                tabCompat.setPlayerPing(p, String.valueOf(p.getPing()));
+                tabCompat.setPlayerPing(p, ping, String.valueOf(ping) + " ms");
             }
         }
         if (team != null || bot != null) {
@@ -2642,6 +2644,16 @@ public class GameManager implements Listener {
         deadPlayers.remove(uuid);
         syncedHearts.remove(uuid);
         playersWithSpectatorGlow.remove(uuid);
+        abyssalLastLocations.remove(uuid);
+        lastSilenceAuraTime.remove(uuid);
+        highlightGlowUntil.remove(uuid);
+        wrongMapTasks.remove(uuid);
+        lastWrongMapCheckTime.remove(uuid);
+        lastWrongMapResult.remove(uuid);
+        chameleonLastLoc.remove(uuid);
+        chameleonStillTicks.remove(uuid);
+        pendingCardJoiners.remove(uuid);
+        returningJoiners.remove(uuid);
     }
 
     public void removeScoreboard() {

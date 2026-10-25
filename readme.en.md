@@ -34,7 +34,7 @@
   - **High Performance & Bulk Limits (192+ and up to 500 Bots):** Precomputed `CombatProfile` lookup matrices (O(1)), shared `ArenaNavMesh`, two-stage target filtering (FOV & distance checks prior to raycasting, cutting 99% of block collision queries), adaptive 4-tier LOD down to 5 TPS for distant entities, and O(1) batch scoreboard team synchronization guarantee rock-solid 20 TPS with zero freeze spikes even on entry-level servers (3 CPU cores / 4 GB RAM). Bulk spawn limit supported up to 500 bots.
   - **Arena Team Detection:** Bots automatically balance only across teams that have physical wool blocks placed in the lobby/arena.
   - **Card Synergy & Saw Rush:** With the Saw card, bots sprint in point-blank (<2.8m, speed 0.46) while blocking. Bots dynamically cast Implode, Silence, EMP, Overpower, BombOnBlock, Teleport, Heal, and Tactical Reload. Enemy highlights from "Mark Was Good" are limited to 10 seconds upon moving away, and FakeBot ticks active potion effects normally.
-  - **Automatic Cleanup:** All bots despawn cleanly when games stop (`/rdebug stop`, `/rounds stop`) or server restarts.
+  - **Automatic Cleanup & RAM Release:** All bots despawn cleanly when games stop (`/rdebug stop`, `/rounds stop`), when bots are removed, or on reload. All manager references are severed, NMS entities are cleanly discarded, and `System.gc()` is triggered to immediately release virtual memory back to the hosting OS kernel.
   - **Spectator Outlines & Team Titles:** Spectators see glowing outlines around alive players in team colors (hidden from survival combatants). Neutral team victory titles are shown to spectators.
 - **Combat Hit Visual Feedback:**
   - Hitting an enemy flashes their 3D model bright red with a hurt animation (`playHurtAnimation`) and directional tilt away from the damage vector.
@@ -42,7 +42,7 @@
 - **Team-Only Nametags & Heart Count Display:**
   - Nametag and TAB format: `<hearts>♥ <Name>` for players and `<hearts>♥ <Name> [L<level>]` for bots.
   - Enemy nametags are completely hidden during active rounds (only teammates can see each other's nametags). Spectators can see everyone's nametags.
-  - Player ping in TAB is colored according to their team color (`%rounds_ping%`).
+  - Player ping in TAB is colored according to their team color (`%rounds_ping%` for fancy formatted text, `%rounds_ping_raw%` for numeric slots). Objective values in TAB remain protected from color code parsing errors.
 - **Integration & Built-in Scoreboard:**
   - Built-in scoreboard is enabled by default when TAB is not present, and automatically disables itself if TAB plugin is detected to avoid conflicts. Can be permanently disabled via `config.yml`.
   - Automatically alternates every 5 seconds between Match Score (team wins) and Player Stats (HP, DMG, Cards, Bullets, Max Ammo).

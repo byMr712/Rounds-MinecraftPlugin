@@ -51,6 +51,19 @@ public class RoundsEntities implements Listener {
             new Particle.DustOptions(Color.fromRGB(255, 190, 60), 0.95f);
     private static final Map<UUID, org.bukkit.scheduler.BukkitTask> vignetteTasks = new ConcurrentHashMap<>();
 
+    public static void clearPlayer(UUID uuid) {
+        if (uuid == null) return;
+        hpBoostPending.remove(uuid);
+        Integer taskId = hpBoostTasks.remove(uuid);
+        if (taskId != null) {
+            try { Bukkit.getScheduler().cancelTask(taskId); } catch (Throwable ignored) {}
+        }
+        org.bukkit.scheduler.BukkitTask task = vignetteTasks.remove(uuid);
+        if (task != null) {
+            try { task.cancel(); } catch (Throwable ignored) {}
+        }
+    }
+
     public static void applyHitRedEffects(LivingEntity victim, Location attackerLoc, Location hitPos) {
         if (victim == null || !victim.isValid()) return;
         Location vEye = victim.getEyeLocation();

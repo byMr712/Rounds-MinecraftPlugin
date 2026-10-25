@@ -45,6 +45,12 @@ public class CardManager {
         plugin.getPlayerDataManager().savePlayerFullData(player.getUniqueId(), team, cardIds);
     }
 
+    public void cleanupPlayer(UUID uuid) {
+        cancelChoiceTimer(uuid);
+        pendingCards.remove(uuid);
+        pendingPicks.remove(uuid);
+    }
+
     public void selectCard(Player player, int slotIndex) {
         cancelChoiceTimer(player.getUniqueId());
         List<Card> cards = pendingCards.remove(player.getUniqueId());

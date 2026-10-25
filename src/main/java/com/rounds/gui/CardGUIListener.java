@@ -39,6 +39,10 @@ public class CardGUIListener implements Listener {
         this.plugin = plugin;
     }
 
+    public void cleanupPlayer(UUID uuid) {
+        openGUIs.remove(uuid);
+    }
+
     public void open(Player player, List<Card> cards) {
         String title = "\u00A78[\u00A76Rounds\u00A78] " + Messages.get("card.gui-title");
         Inventory inv = Bukkit.createInventory(new CardGUIHolder(), SIZE, title);

@@ -222,19 +222,60 @@ public class BotManager implements Listener {
         FakeBot bot = bots.remove(name.toLowerCase());
         if (bot == null) return false;
 
-        bot.cleanup();
-        MinecraftServer nmsServer = ((CraftServer) Bukkit.getServer()).getServer();
-        nmsServer.getPlayerList().remove(bot.getNmsPlayer());
+        Player bukkitPlayer = bot.getBukkitPlayer();
+        ServerPlayer nmsPlayer = bot.getNmsPlayer();
+        UUID botUuid = (bukkitPlayer != null) ? bukkitPlayer.getUniqueId() : null;
 
-        if (bot.getBukkitPlayer().isValid()) {
-            bot.getBukkitPlayer().remove();
+        // 1. Cleanup bot AI and internal state
+        bot.cleanup();
+
+        // 2. Disconnect and remove NMS player cleanly from level and connection
+        if (nmsPlayer != null) {
+            try {
+                nmsPlayer.unRide();
+                nmsPlayer.closeContainer();
+                nmsPlayer.discard();
+                if (bukkitPlayer != null && bukkitPlayer.getWorld() != null) {
+                    ServerLevel level = ((CraftWorld) bukkitPlayer.getWorld()).getHandle();
+                    if (level != null) {
+                        level.removePlayerImmediately(nmsPlayer, net.minecraft.world.entity.Entity.RemovalReason.DISCARDED);
+                    }
+                }
+            } catch (Throwable ignored) {}
+
+            MinecraftServer nmsServer = ((CraftServer) Bukkit.getServer()).getServer();
+            if (nmsServer != null && nmsServer.getPlayerList() != null) {
+                nmsServer.getPlayerList().remove(nmsPlayer);
+            }
+
+            if (nmsPlayer.connection != null) {
+                try {
+                    nmsPlayer.connection.disconnect(net.minecraft.network.chat.Component.literal("Despawned"));
+                } catch (Throwable ignored) {}
+                nmsPlayer.connection = null;
+            }
         }
 
-        // Remove from RoundsPlugin active players and team
-        plugin.getPlayerDataManager().removeActivePlayer(bot.getBukkitPlayer().getUniqueId());
-        plugin.getTeamManager().leaveTeam(bot.getBukkitPlayer().getUniqueId());
+        // 3. Clear all plugin registrations and memory caches across managers
+        if (botUuid != null) {
+            plugin.getPlayerDataManager().unregisterPlayer(botUuid);
+            plugin.getTeamManager().leaveTeam(botUuid);
+            if (plugin.getGameManager() != null) {
+                plugin.getGameManager().onPlayerQuit(botUuid);
+            }
+            if (plugin.getCardManager() != null) {
+                plugin.getCardManager().cleanupPlayer(botUuid);
+            }
+            if (plugin.getCardGUI() != null) {
+                plugin.getCardGUI().cleanupPlayer(botUuid);
+            }
+            com.rounds.entity.RoundsEntities.clearPlayer(botUuid);
+            if (plugin.getBlockListener() != null) {
+                plugin.getBlockListener().cleanupPlayer(botUuid);
+            }
+        }
 
-        // Unregister bot dedicated team if present
+        // 4. Unregister bot dedicated team if present
         Scoreboard mainSb = Bukkit.getScoreboardManager().getMainScoreboard();
         org.bukkit.scoreboard.Team bt = mainSb.getTeam("rb_" + name.toLowerCase());
         if (bt != null) {
@@ -259,6 +300,8 @@ public class BotManager implements Listener {
         for (String name : new ArrayList<>(bots.keySet())) {
             despawnBot(name);
         }
+        this.navMesh = null;
+        System.gc();
         return count;
     }
 
@@ -297,6 +340,10 @@ public class BotManager implements Listener {
                 despawned++;
             }
         }
+        if (bots.isEmpty()) {
+            this.navMesh = null;
+        }
+        System.gc();
         return despawned;
     }
 

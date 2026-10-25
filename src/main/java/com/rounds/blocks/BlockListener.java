@@ -53,6 +53,13 @@ public class BlockListener implements Listener {
     private final Map<UUID, Long> jumpCooldown = new HashMap<>();
     private final Set<UUID> liftingPlayers = new HashSet<>();
 
+    public void cleanupPlayer(UUID uuid) {
+        if (uuid == null) return;
+        stepCooldown.remove(uuid);
+        jumpCooldown.remove(uuid);
+        liftingPlayers.remove(uuid);
+    }
+
     private Location jumpPos1;
     private Location jumpPos2;
     private Location upPos1;

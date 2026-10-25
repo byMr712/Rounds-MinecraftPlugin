@@ -94,6 +94,16 @@ public class PlayerDataManager implements Listener {
         saveActivePlayers();
     }
 
+    public void unregisterPlayer(UUID uuid) {
+        activePlayers.remove(uuid);
+        cache.remove(uuid);
+        savedData.remove(uuid);
+        GunCooldowns.clear(uuid);
+        com.rounds.item.GunItem.clearPlayer(uuid);
+        com.rounds.listener.LegendaryEffects.clearPlayer(uuid);
+        saveActivePlayers();
+    }
+
     public void clearActivePlayers() {
         flushScheduled = false;
         activePlayers.clear();

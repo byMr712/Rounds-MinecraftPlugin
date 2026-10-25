@@ -14,7 +14,7 @@ scoreboard-teams:
 playerlist-objective:
   enabled: true
   value: '%ping%'
-  fancy-value: '&a%ping% ms'
+  fancy-value: '%rounds_ping% ms'
   title: Ping
   render-type: INTEGER
   disable-condition: ''

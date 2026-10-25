@@ -399,6 +399,7 @@ debug:
   ph-desc.bots-count: "Active bots count"
   ph-desc.alive-players: "Alive players count"
   ph-desc.ping: "Player ping colored with team color"
+  ph-desc.ping-raw: "Player ping as numeric value"
   ph-desc.stat-drill: "Drill"
   ph-desc.stat-heal: "Heal"
   ph-desc.stat-shockwave: "Shockwave"

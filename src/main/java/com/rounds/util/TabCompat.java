@@ -166,17 +166,25 @@ public class TabCompat {
         } catch (Exception ignored) {}
     }
 
-    public void setPlayerPing(Player player, String coloredPing) {
+    public void setPlayerPing(Player player, int rawPing, String coloredPing) {
         if (!active) return;
         try {
             Object tp = tabPlayer(player);
             if (tp == null) return;
             Object plom = (mGetPlayerListObjectiveManager != null) ? mGetPlayerListObjectiveManager.invoke(api) : null;
             if (plom != null) {
-                if (mSetObjectiveValue != null) mSetObjectiveValue.invoke(plom, tp, coloredPing);
+                if (mSetObjectiveValue != null) mSetObjectiveValue.invoke(plom, tp, String.valueOf(rawPing));
                 if (mSetObjectiveFancyValue != null) mSetObjectiveFancyValue.invoke(plom, tp, coloredPing);
             }
         } catch (Exception ignored) {}
+    }
+
+    public void setPlayerPing(Player player, String coloredPing) {
+        int ping = 0;
+        try {
+            if (player != null) ping = player.getPing();
+        } catch (Throwable ignored) {}
+        setPlayerPing(player, ping, coloredPing);
     }
 
     public void resetName(Player player) {

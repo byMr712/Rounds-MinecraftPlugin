@@ -394,6 +394,7 @@ debug:
   ph-desc.bots-count: "Количество активных ботов"
   ph-desc.alive-players: "Количество живых бойцов"
   ph-desc.ping: "Пинг игрока в цвете его команды"
+  ph-desc.ping-raw: "Пинг игрока числовым значением"
   ph-desc.stat-drill: "Буровые пули"
   ph-desc.stat-heal: "Регенерация"
   ph-desc.stat-shockwave: "Ударная волна"

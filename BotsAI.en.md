@@ -13,7 +13,7 @@ The Rounds plugin features a fully autonomous server-side Fake Player system bui
   - `FakeConnection`: simulates client-side connection semantics, ensuring proper registration within Minecraft's `PlayerList`.
 - Bots are registered in the server `PlayerList`, displayed on Tab lists, scoreboards, and targeting systems identically to human players.
 - **Bulk Spawning (Up to 500 Bots):** bulk bot spawning is supported up to 500 bots in a single command via `/rbot spawn count <N>` with automatic team balancing.
-- **Safe Despawn on Match Stop:** when the game stops, the round ends, or the server reloads, `botManager.despawnAll()` is called to safely remove entities, cancel tick tasks, and prevent memory leaks.
+- **Safe Despawn and Memory Release (Zero Memory Leak):** when the game stops, the round ends, or bots are despawned (`despawnBot`/`despawnAll`), all references across plugin managers (`PlayerDataManager.unregisterPlayer`, `GameManager.onPlayerQuit`, `CardManager`, `CardGUI`, `RoundsEntities`, `BlockListener`) are unlinked, NMS entities are cleanly disconnected and discarded (`discard()`, `removePlayerImmediately`), `ArenaNavMesh` is released, and `System.gc()` is triggered to return uncommitted virtual memory pages back to the hosting OS kernel.
 
 ### 1.2. Dynamic Entity Reference Safety on Respawn
 In Spigot/Paper, when a player dies and respawns, the `ServerPlayer` instance is recreated with a new physical object. To prevent calls to stale (dead/invalid) references, `FakeBot` enforces dynamic entity getters:

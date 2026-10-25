@@ -909,8 +909,13 @@ public class FakeBot {
     }
 
     public void cleanup() {
-        if (!ai.isCancelled()) {
-            ai.cancel();
+        if (ai != null) {
+            if (!ai.isCancelled()) {
+                ai.cancel();
+            }
+            ai.cleanup();
         }
+        this.bukkitPlayer = null;
+        this.nmsPlayer = null;
     }
 }

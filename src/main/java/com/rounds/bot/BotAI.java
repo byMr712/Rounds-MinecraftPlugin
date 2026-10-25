@@ -379,6 +379,14 @@ public class BotAI extends BukkitRunnable {
         searchTicks = 0;
         isPursuing = true;
 
+        // Defensive reactive block when receiving enemy fire
+        if (bot.canBlock()) {
+            double blockChance = (bot.getSkillFactor() >= 0.8) ? 0.65 : (bot.getSkillFactor() * 0.50);
+            if (ThreadLocalRandom.current().nextDouble() < blockChance) {
+                bot.block();
+            }
+        }
+
         if (attackerId != null) {
             Player attacker = Bukkit.getPlayer(attackerId);
             if (attacker != null && canSee(player, attacker)) {
@@ -515,7 +523,8 @@ public class BotAI extends BukkitRunnable {
         // 2. Ambush Trap handling (standing behind cover, pre-aiming at open corridor / sightline)
         if (isAmbushing) {
             ambushTicks++;
-            if (ambushTicks > 40) {
+            int maxAmbushTicks = (data != null && data.abyssal > 0) ? 190 : 40;
+            if (ambushTicks > maxAmbushTicks) {
                 // Time expired and nobody entered the ambush: resume movement!
                 isAmbushing = false;
                 coverSearchCooldown = 120;
@@ -525,9 +534,13 @@ public class BotAI extends BukkitRunnable {
                 bot.getNmsPlayer().setYHeadRot(ambushAimYaw);
                 bot.getNmsPlayer().setYBodyRot(ambushAimYaw);
 
-                // If bot has Empower card, pre-charge shield!
-                if (data != null && data.empower > 0 && !data.shieldActive && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
-                    bot.block();
+                // If bot has Empower or Homing on block, pre-charge shield!
+                if (data != null && bot.canBlock()) {
+                    if (data.empower > 0 && !data.shieldActive && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
+                        bot.block();
+                    } else if (data.homingOnBlock > 0 && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
+                        bot.block();
+                    }
                 }
 
                 if (targetCurrentlyVisible && currentTarget != null) {
@@ -669,32 +682,47 @@ public class BotAI extends BukkitRunnable {
         boolean distanceShootAllowed = (dist3D <= 8.0) || (ThreadLocalRandom.current().nextDouble() < factor);
         boolean canShootAtTarget = hasLos && bot.hasGun() && (dist3D <= maxShootDist) && distanceShootAllowed;
 
-        // Card ability synergy: Empower next shot right before firing
-        if (data != null && data.empower > 0 && !data.shieldActive && shootCooldown <= 1 && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
-            bot.block();
-        }
-
-        // Card ability synergy: Heal on block when damaged
-        if (data != null && data.heal > 0 && healthRatio < 0.75 && (tickCount % 20 == 0) && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
-            bot.block();
-        }
-
-        // Card ability synergy: Close-range Shockwave or Saw blast
-        if (data != null && (data.shockwave > 0 || data.saw > 0) && dist3D < 4.5 && (tickCount % 15 == 0) && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
-            bot.block();
-        }
+        // Card ability synergies: Intelligent block usage
+        handleCardBlockSynergies(data, dist3D, healthRatio, hasLos, shootCooldown);
 
         // Determine tactic
         CombatTactic tactic;
 
-        // Card ability synergy: Grow card prefers sniping distance
-        if (data != null && data.grow > 0 && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
-            tactic = CombatTactic.SNIPE;
-        } else if (data != null && data.lifestealAura > 0 && dist3D > 4.5 && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
-            // Lifesteal Aura card prefers close proximity (3.5 - 4.5m)
+        boolean sawActive = bot.isSawActive();
+        boolean attemptSawRush = false;
+        if (sawActive) {
+            // User requested: saw card changes bot behavior on block to approach enemy to deal damage with the ability
+            if (factor >= 0.75) {
+                attemptSawRush = true; // Pro bots always aggressively close in during saw
+            } else {
+                attemptSawRush = ThreadLocalRandom.current().nextDouble() < (0.45 + factor * 0.55); // Lower bots attempt
+            }
+        }
+
+        double targetHealthRatio = (target.getMaxHealth() > 0) ? (target.getHealth() / target.getMaxHealth()) : 1.0;
+        boolean isTargetLow = targetHealthRatio <= 0.40;
+        boolean isBerserkOrRaging = (data != null && (data.berserk > 0 || data.bloodFurry > 0 || com.rounds.listener.LegendaryEffects.isRaging(player.getUniqueId())));
+
+        if (attemptSawRush) {
+            // Saw active: close in to shred enemy with saw blades!
             tactic = CombatTactic.RUSH;
+        } else if (data != null && data.lifestealAura > 0 && dist3D > 2.5 && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
+            // Lifesteal Aura card prefers close proximity (<= 2.5m)
+            tactic = CombatTactic.RUSH;
+        } else if (data != null && data.silenceAura > 0 && dist3D > 4.5 && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
+            // Silence Aura card keeps enemy within 4.5m
+            tactic = CombatTactic.RUSH;
+        } else if (data != null && data.executioner > 0 && isTargetLow && (ThreadLocalRandom.current().nextDouble() < (0.40 + 0.60 * factor))) {
+            // Executioner: target is low on HP, relentlessly close in for the execute!
+            tactic = CombatTactic.RUSH;
+        } else if (isBerserkOrRaging && healthRatio < 0.50 && (ThreadLocalRandom.current().nextDouble() < (0.50 + 0.50 * factor))) {
+            // Berserk / Rage: instead of retreating, rush with frenzy!
+            tactic = CombatTactic.RUSH;
+        } else if (data != null && (data.grow > 0 || data.bulletSpeed >= 2.0) && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
+            // Sniper / Grow cards prefer sniping distance
+            tactic = (dist3D < 10.0) ? CombatTactic.RETREAT : CombatTactic.SNIPE;
         } else {
-            boolean smartRetreat = (healthRatio < 0.37) && (ThreadLocalRandom.current().nextDouble() < (0.2 + 0.8 * factor));
+            boolean smartRetreat = (healthRatio < 0.37) && (ThreadLocalRandom.current().nextDouble() < (0.20 + 0.80 * factor));
             if (smartRetreat) {
                 tactic = CombatTactic.RETREAT;
             } else if (data != null && data.ammo <= 0) {
@@ -707,6 +735,11 @@ public class BotAI extends BukkitRunnable {
                 } else {
                     double rushThreshold = profile.rushThreshold;
                     double retreatThreshold = profile.retreatThreshold;
+                    // Brawler / shotgun cards prefer closer engagement range
+                    if (data != null && (data.bullets >= 3 || data.toxicCloud > 0)) {
+                        rushThreshold = Math.min(rushThreshold, 7.0);
+                        retreatThreshold = Math.min(retreatThreshold, 3.0);
+                    }
                     if (dist3D > rushThreshold) {
                         tactic = CombatTactic.RUSH;
                     } else if (dist3D < retreatThreshold) {
@@ -729,7 +762,18 @@ public class BotAI extends BukkitRunnable {
         // Ground tactical combat
         switch (tactic) {
             case RUSH -> {
-                    moveCombatRel(u1_x * (0.40 * speedMult) + p1_x * (strafeDir * strafeSpeed * 0.3), u1_z * (0.40 * speedMult) + p1_z * (strafeDir * strafeSpeed * 0.3));
+                    if (attemptSawRush) {
+                        // User requested: saw card changes bot behavior on block to approach enemy to deal damage with the ability
+                        if (dist3D > 3.0) {
+                            double sawRushSpeed = 0.46 * speedMult;
+                            moveCombatRel(u1_x * sawRushSpeed + p1_x * (strafeDir * strafeSpeed * 0.15), u1_z * sawRushSpeed + p1_z * (strafeDir * strafeSpeed * 0.15));
+                        } else {
+                            // Inside saw damage radius (<= 3.0m): circle and stick close to target
+                            moveCombatRel(u1_x * (0.15 * speedMult) + p1_x * (strafeDir * strafeSpeed * 0.8), u1_z * (0.15 * speedMult) + p1_z * (strafeDir * strafeSpeed * 0.8));
+                        }
+                    } else {
+                        moveCombatRel(u1_x * (0.40 * speedMult) + p1_x * (strafeDir * strafeSpeed * 0.3), u1_z * (0.40 * speedMult) + p1_z * (strafeDir * strafeSpeed * 0.3));
+                    }
                     bot.aimAt(p2Loc, turnSpeed, aimInaccuracy);
                     if (shootCooldown <= 0 && canShootAtTarget) {
                         bot.shoot();
@@ -785,6 +829,89 @@ public class BotAI extends BukkitRunnable {
         }
 
         tickCooldowns();
+    }
+
+    private void handleCardBlockSynergies(PlayerData data, double dist3D, double healthRatio, boolean hasLos, int shootCooldown) {
+        if (data == null || !bot.canBlock()) return;
+        double smartChance = getSmartBehaviorChance();
+        double factor = bot.getSkillFactor();
+
+        // 1. Tactical reload: empty clip and canBlock -> instant refill!
+        if (data.tacticalReload > 0 && data.ammo <= 0) {
+            if (ThreadLocalRandom.current().nextDouble() < (0.60 + 0.40 * factor)) {
+                bot.block();
+                return;
+            }
+        }
+
+        // 2. Saw synergy: activate saw when closing in (<= 6.5m)
+        if (data.saw > 0 && !bot.isSawActive() && dist3D <= 6.5) {
+            boolean willUseSaw = (factor >= 0.75) || (ThreadLocalRandom.current().nextDouble() < (0.45 + 0.55 * factor));
+            if (willUseSaw) {
+                bot.block();
+                return;
+            }
+        }
+
+        // 3. Implode synergy: drag enemy in when within 5.5m
+        if (data.implode > 0 && dist3D <= 5.5 && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
+            bot.block();
+            return;
+        }
+
+        // 4. Overpower synergy: high HP AoE blast within 5.0m
+        if (data.overpower > 0 && dist3D <= 5.0 && healthRatio >= 0.50 && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
+            bot.block();
+            return;
+        }
+
+        // 5. Silence & EMP synergy: disable/slow enemy within 5.0m
+        if ((data.silence > 0 || data.emp > 0) && dist3D <= 5.0 && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
+            bot.block();
+            return;
+        }
+
+        // 6. Bomb on block: drop bombs when enemy is close (<= 6.0m)
+        if (data.bombOnBlock > 0 && dist3D <= 6.0 && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
+            bot.block();
+            return;
+        }
+
+        // 7. Shield Charge: gap-close dash when rushing (distance 5.0 to 12.0m)
+        if (data.shieldCharge > 0 && dist3D >= 5.0 && dist3D <= 12.0 && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
+            bot.block();
+            return;
+        }
+
+        // 8. Teleport: forward blink when rushing (distance 7.0 to 14.0m)
+        if (data.teleport > 0 && dist3D >= 7.0 && dist3D <= 14.0 && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
+            bot.block();
+            return;
+        }
+
+        // 9. Empower: buff next shot right before firing
+        if (data.empower > 0 && !data.shieldActive && shootCooldown <= 1 && hasLos && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
+            bot.block();
+            return;
+        }
+
+        // 10. Homing on block: grant homing right before shooting burst
+        if (data.homingOnBlock > 0 && shootCooldown <= 1 && hasLos && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
+            bot.block();
+            return;
+        }
+
+        // 11. Heal on block: damaged bot heals up
+        if (data.heal > 0 && healthRatio < 0.75 && (tickCount % 15 == 0) && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
+            bot.block();
+            return;
+        }
+
+        // 12. Shockwave: blow enemy away when dangerously close (<= 4.0m)
+        if (data.shockwave > 0 && dist3D <= 4.0 && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
+            bot.block();
+            return;
+        }
     }
 
     private void moveCombatRel(double mX, double mZ) {

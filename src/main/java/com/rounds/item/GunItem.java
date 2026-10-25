@@ -536,6 +536,22 @@ public class GunItem implements Listener {
         return activeShields.contains(uuid);
     }
 
+    public static boolean isSawActive(UUID uuid) {
+        return activeSawTasks.containsKey(uuid);
+    }
+
+    public static boolean canBlock(UUID uuid, com.rounds.player.PlayerData data) {
+        if (silencedPlayers.contains(uuid) || activeShields.contains(uuid)) return false;
+        double cooldownMultiplier = 1.0 + (data != null ? data.blockCd : 0.0);
+        if (data != null && data.shieldCooldown > 0) {
+            cooldownMultiplier -= data.shieldCooldown * 0.1;
+        }
+        long actualCooldown = (long) (SHIELD_COOLDOWN_MS * cooldownMultiplier);
+        Long lastUse = shieldCooldowns.get(uuid);
+        int currentCharges = shieldCharges.getOrDefault(uuid, 0);
+        return currentCharges > 0 || lastUse == null || (System.currentTimeMillis() - lastUse >= actualCooldown);
+    }
+
     public static void silencePlayer(UUID uuid) { silencedPlayers.add(uuid); }
     public static void unsilencePlayer(UUID uuid) { silencedPlayers.remove(uuid); }
     public static boolean isSilenced(UUID uuid) { return silencedPlayers.contains(uuid); }

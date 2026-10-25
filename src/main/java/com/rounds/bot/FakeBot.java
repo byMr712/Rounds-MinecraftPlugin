@@ -288,6 +288,16 @@ public class FakeBot {
         GunItem.getInstance().doBlock(p);
     }
 
+    public boolean canBlock() {
+        Player p = getBukkitPlayer();
+        return p != null && !p.isDead() && p.isOnline() && hasGun() && GunItem.canBlock(p.getUniqueId(), getPlayerData());
+    }
+
+    public boolean isSawActive() {
+        Player p = getBukkitPlayer();
+        return p != null && GunItem.isSawActive(p.getUniqueId());
+    }
+
     public void setRotation(float yaw, float pitch) {
         ServerPlayer sp = getNmsPlayer();
         if (sp != null) {

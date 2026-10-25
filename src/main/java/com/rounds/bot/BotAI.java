@@ -864,10 +864,10 @@ public class BotAI extends BukkitRunnable {
         CombatProfile profile = getProfile();
 
         if (distXZ > 1.2) {
-            // Abort pursuit immediately if stuck running into a wall
-            if (bot.getNmsPlayer().horizontalCollision) {
+            // Abort pursuit immediately if stuck running into a wall on ground (not while in mid-air jumping up steps)
+            if (bot.isOnGround() && bot.getNmsPlayer().horizontalCollision) {
                 pursuitStuckTicks++;
-                if (pursuitStuckTicks > 6) {
+                if (pursuitStuckTicks > 12) {
                     pursuitStuckTicks = 0;
                     isPursuing = false;
                     currentTarget = null;
@@ -937,8 +937,8 @@ public class BotAI extends BukkitRunnable {
         long myCell = packCell(myLoc.getBlockX(), myLoc.getBlockZ());
         visitedTerritory.add(myCell);
 
-        // 2. Track stuck status (detect getting blocked by walls/corners)
-        boolean physicallyBlocked = bot.getNmsPlayer().horizontalCollision;
+        // 2. Track stuck status (detect getting blocked by walls/corners on ground)
+        boolean physicallyBlocked = bot.isOnGround() && bot.getNmsPlayer().horizontalCollision;
         if (physicallyBlocked || (lastHuntPos != null && myLoc.getWorld().equals(lastHuntPos.getWorld()) && myLoc.distanceSquared(lastHuntPos) < 0.005)) {
             huntStuckTicks++;
         } else {
@@ -947,7 +947,7 @@ public class BotAI extends BukkitRunnable {
         lastHuntPos = myLoc.clone();
 
         // 3. If stuck trying to reach current target, record edge as blocked and pick a new target
-        if (huntStuckTicks > 6) {
+        if (huntStuckTicks > 12) {
             huntStuckTicks = 0;
             if (currentHuntTarget != null) {
                 blockedEdges.add(packCell(currentHuntTarget.getBlockX(), currentHuntTarget.getBlockZ()));
@@ -1085,21 +1085,31 @@ public class BotAI extends BukkitRunnable {
         boolean headSolid = head.getBlock().getType().isSolid();
         boolean overheadBlocked = overhead.getBlock().getType().isSolid();
 
-        // 1. Center ray: If body (1.2m) or head (1.8m) is solid, obstacle is a >=2-block high wall -> IMPASSABLE!
-        // A 1-block step or stair only has feet solid (0.2m), with body and head clear.
-        if (bodySolid || headSolid || (feetSolid && overheadBlocked)) {
-            return false;
-        }
-
-        // 2. Left and right shoulders width check at body height (prevents jamming into narrow 2x2 corners)
-        Location bodyLeft = loc.clone().add(dx - perpX, 1.2, dz - perpZ);
-        if (bodyLeft.getBlock().getType().isSolid()) {
-            return false;
-        }
-
-        Location bodyRight = loc.clone().add(dx + perpX, 1.2, dz + perpZ);
-        if (bodyRight.getBlock().getType().isSolid()) {
-            return false;
+        // 1. Center ray & step/stair check
+        if (feetSolid) {
+            // Check if the obstacle at feet is a climbable 1-block step/stair with open space above
+            boolean spaceAboveStep = !feet.clone().add(0, 1.0, 0).getBlock().getType().isSolid()
+                    && !feet.clone().add(0, 2.0, 0).getBlock().getType().isSolid();
+            if (overheadBlocked || !spaceAboveStep) {
+                return false; // >= 2-block high wall or ceiling overhead blocked -> impassable!
+            }
+            // Step is climbable! Check shoulder clearance above the step
+            Location stepLeft = feet.clone().add(-perpX, 1.0, -perpZ);
+            Location stepRight = feet.clone().add(perpX, 1.0, perpZ);
+            if (stepLeft.getBlock().getType().isSolid() && stepRight.getBlock().getType().isSolid()) {
+                return false;
+            }
+        } else {
+            // Flat ground / open air
+            if (bodySolid || headSolid) {
+                return false;
+            }
+            // 2. Left and right shoulders width check at body height
+            Location bodyLeft = loc.clone().add(dx - perpX, 1.2, dz - perpZ);
+            Location bodyRight = loc.clone().add(dx + perpX, 1.2, dz + perpZ);
+            if (bodyLeft.getBlock().getType().isSolid() || bodyRight.getBlock().getType().isSolid()) {
+                return false;
+            }
         }
 
         // 3. Midpoint width check for longer rays (catches diagonal pinches along the movement path)

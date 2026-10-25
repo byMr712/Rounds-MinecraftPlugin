@@ -34,6 +34,7 @@ public class FakeBot {
     private int padLaunchTicks = 0;
     private int consecutiveJumpAttempts = 0;
     private int jumpStuckCooldown = 0;
+    private int jumpAscentTicks = 0;
     private Location lastJumpAttemptLoc = null;
 
     public double getVelY() {
@@ -245,6 +246,7 @@ public class FakeBot {
         this.padLaunchTicks = 0;
         this.consecutiveJumpAttempts = 0;
         this.jumpStuckCooldown = 0;
+        this.jumpAscentTicks = 0;
         this.lastJumpAttemptLoc = null;
         ServerPlayer sp = getNmsPlayer();
         if (sp != null) {
@@ -378,8 +380,12 @@ public class FakeBot {
             velY = Math.max(velY - 0.08, -3.92) * 0.98;
         }
 
+        if (jumpAscentTicks > 0) {
+            jumpAscentTicks--;
+        }
+
         // Smooth step down: if walking down stairs/slope, smoothly descend to the lower block
-        if (!onGround && velY <= 0.0 && padLaunchTicks <= 0) {
+        if (!onGround && velY <= 0.0 && padLaunchTicks <= 0 && jumpAscentTicks <= 0) {
             Location checkStepBelow = p.getLocation().clone().subtract(0, 1.1, 0);
             if (checkStepBelow.getBlock().getType().isSolid()) {
                 velY = -0.32;
@@ -398,33 +404,34 @@ public class FakeBot {
             double dirZ = dz / moveLen;
             double stepDist = Math.max(moveLen * 1.5, 0.55);
             Location aheadFeet = loc.clone().add(dirX * stepDist, 0.2, dirZ * stepDist);
-            Location aheadBody = loc.clone().add(dirX * stepDist, 1.2, dirZ * stepDist);
-            Location aheadHead = loc.clone().add(dirX * stepDist, 1.8, dirZ * stepDist);
             Location headSpace = loc.clone().add(0, 2.1, 0);
 
             boolean stepAhead = aheadFeet.getBlock().getType().isSolid() || sp.horizontalCollision;
-            boolean wallTooHigh = aheadBody.getBlock().getType().isSolid() || aheadHead.getBlock().getType().isSolid();
+            // A wall is only too high if the block directly above the step (Y+1) is solid
+            boolean wallTooHigh = aheadFeet.clone().add(0, 1.0, 0).getBlock().getType().isSolid()
+                    || aheadFeet.clone().add(0, 2.0, 0).getBlock().getType().isSolid();
 
             if (jumpStuckCooldown <= 0 && stepAhead && !wallTooHigh && !headSpace.getBlock().getType().isSolid()) {
-                if (lastJumpAttemptLoc != null && loc.distanceSquared(lastJumpAttemptLoc) < 0.1) {
+                if (lastJumpAttemptLoc != null && loc.distanceSquared(lastJumpAttemptLoc) < 0.05) {
                     consecutiveJumpAttempts++;
                 } else {
                     consecutiveJumpAttempts = 1;
                 }
                 lastJumpAttemptLoc = loc.clone();
 
-                if (consecutiveJumpAttempts >= 2) {
-                    // Bot jumped twice against an obstacle and didn't make progress (corner / 2x2 dead-end)
+                if (consecutiveJumpAttempts >= 3) {
+                    // Bot jumped 3 times against an obstacle and didn't make progress (corner / 2x2 dead-end)
                     // Abort jumps, apply cooldown, and trigger AI detour immediately!
-                    jumpStuckCooldown = 35;
+                    jumpStuckCooldown = 30;
                     consecutiveJumpAttempts = 0;
                     if (ai != null) {
                         ai.onCornerStuck(loc);
                     }
                 } else {
                     velY = 0.42; // Minecraft jump velocity to climb step/stair
-                    impulseX += dirX * 0.22;
-                    impulseZ += dirZ * 0.22;
+                    jumpAscentTicks = 8;
+                    impulseX += dirX * 0.25;
+                    impulseZ += dirZ * 0.25;
                 }
             } else if (!stepAhead && !headSpace.getBlock().getType().isSolid()) {
                 // Check if approaching a 1-4 block gap or parkour platform ahead
@@ -463,11 +470,13 @@ public class FakeBot {
                         if (!jumpError) {
                             // Pro bots sprint leap with higher velocity; lower level bots standard leap
                             velY = (bestLandingFloor.getY() > loc.getY()) ? 0.46 : 0.42;
+                            jumpAscentTicks = 8;
                             double sprintImpulse = 0.28 + 0.12 * factor;
                             impulseX += dirX * sprintImpulse;
                             impulseZ += dirZ * sprintImpulse;
                         } else {
                             velY = 0.22; // Under-jump error: weak jump resulting in fall
+                            jumpAscentTicks = 4;
                             impulseX += dirX * 0.08;
                             impulseZ += dirZ * 0.08;
                         }

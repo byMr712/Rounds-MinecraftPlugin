@@ -712,6 +712,18 @@ public class FakeBot {
         Location locBelow = to.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getLocation();
         Location locAt = to.getBlock().getLocation();
         if (bl != null) {
+            // Anticipate jump pad impact 1 tick ahead while descending: raise shield in mid-air right before hit
+            if (velY < -0.05 && level >= 5 && !GunItem.isShieldActive(p.getUniqueId())) {
+                Location aheadDown = to.clone().add(0, velY * 1.2, 0);
+                Location aheadDownBelow = aheadDown.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getLocation();
+                if (bl.isJumpBlock(aheadDown) || bl.isJumpBlock(aheadDownBelow)) {
+                    if (ThreadLocalRandom.current().nextDouble() < 0.50) {
+                        GunItem.resetShieldCooldown(p.getUniqueId());
+                        block();
+                    }
+                }
+            }
+
             boolean touchingJump = bl.isLocationTouchingJumpBlock(to) || bl.isJumpBlock(locBelow) || bl.isJumpBlock(locAt);
             if (touchingJump) {
                 bl.handleJumpBlock(p);

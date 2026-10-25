@@ -536,6 +536,10 @@ public class GunItem implements Listener {
         return activeShields.contains(uuid);
     }
 
+    public static void resetShieldCooldown(UUID uuid) {
+        shieldCooldowns.remove(uuid);
+    }
+
     public static boolean isSawActive(UUID uuid) {
         return activeSawTasks.containsKey(uuid);
     }

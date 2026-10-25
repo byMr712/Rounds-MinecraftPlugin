@@ -3,6 +3,7 @@ package com.rounds.blocks;
 import com.rounds.RoundsKeys;
 import com.rounds.RoundsPlugin;
 import com.rounds.bot.FakeBot;
+import com.rounds.item.GunItem;
 import com.rounds.player.PlayerData;
 import com.rounds.teams.TeamManager;
 import com.rounds.teams.TeamManager.GameTeam;
@@ -24,6 +25,7 @@ import org.bukkit.persistence.PersistentDataType;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class BlockListener implements Listener {
 
@@ -450,19 +452,38 @@ public class BlockListener implements Listener {
         if (last != null && now - last < JUMP_BLOCK_COOLDOWN_MS) return;
         jumpCooldown.put(uuid, now);
 
-        double maxHp = player.getMaxHealth();
-        double damage = maxHp * plugin.getRoundsConfig().getJumpBlockDamagePercent() / 100.0;
-        double hpBefore = player.getHealth();
-        player.setNoDamageTicks(0);
-        player.damage(damage);
-        if (player.getHealth() >= hpBefore && damage > 0.0) {
-            player.setHealth(Math.max(0.0, hpBefore - damage));
+        FakeBot bot = plugin.getBotManager() != null ? plugin.getBotManager().getBot(player.getName()) : null;
+
+        // Level 5+ bots have a 50% chance to press block before hitting the jump pad to parry damage
+        boolean parried = false;
+        if (bot != null && bot.getLevel() >= 5) {
+            if (GunItem.isShieldActive(uuid)) {
+                parried = true;
+            } else if (ThreadLocalRandom.current().nextDouble() < 0.50) {
+                GunItem.resetShieldCooldown(uuid);
+                bot.block();
+                parried = true;
+            }
+        } else if (GunItem.isShieldActive(uuid)) {
+            parried = true;
+        }
+
+        if (!parried) {
+            double maxHp = player.getMaxHealth();
+            double damage = maxHp * plugin.getRoundsConfig().getJumpBlockDamagePercent() / 100.0;
+            double hpBefore = player.getHealth();
+            player.setNoDamageTicks(0);
+            player.damage(damage);
+            if (player.getHealth() >= hpBefore && damage > 0.0) {
+                player.setHealth(Math.max(0.0, hpBefore - damage));
+            }
+        } else {
+            player.getWorld().playSound(player.getLocation(), Sound.ITEM_SHIELD_BLOCK, 1.0f, 1.2f);
         }
 
         double launchHeight = plugin.getRoundsConfig().getJumpBlockLaunchHeight();
         float velocityY = (float) (launchHeight * 0.2);
 
-        FakeBot bot = plugin.getBotManager() != null ? plugin.getBotManager().getBot(player.getName()) : null;
         if (bot != null) {
             bot.applyJumpPad(launchHeight);
         }

@@ -100,6 +100,7 @@ The built-in Fake Player bot system runs natively on the Minecraft server tick w
 - **Tactical Ambushes:** Bots hold open hallway angles (`ambushHoldYaw`), pre-charge shields for Empower damage boosts, and fire instantly when a target rounds the corner.
 - **Card-Aware Parkour:** When bots draft jump upgrade cards, they recognize their new jump clearance and effortlessly leap over 2-block and 3-block walls, clear gaps, and ride elevator lifts.
 - **Close-Range Saw Rush:** With the Saw card, bots sprint in close (< 2.8m, speed 0.46) while blocking to shred opponents in their flame ring.
+- **Jump Pad Parry:** Level 5+ bots have a 50% chance to raise their shield right before landing on jump pads, parrying all damage and launching without HP loss.
 - **Map Block Awareness:** Bots automatically detect which team spawn blocks are placed on the map and only balance into available teams.
 
 ### Bot Commands:

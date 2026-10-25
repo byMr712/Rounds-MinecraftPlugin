@@ -229,7 +229,8 @@ public class GunItem implements Listener {
             cooldownMultiplier -= data.shieldCooldown * 0.1;
         }
         cooldownMultiplier = Math.max(0.5, cooldownMultiplier);
-        long actualCooldown = (long) (SHIELD_COOLDOWN_MS * cooldownMultiplier);
+        long baseCd = (plugin != null) ? plugin.getRoundsConfig().getShieldCooldownMs() : SHIELD_COOLDOWN_MS;
+        long actualCooldown = (long) (baseCd * cooldownMultiplier);
 
         Long lastUse = shieldCooldowns.get(uuid);
         long now = System.currentTimeMillis();
@@ -250,7 +251,7 @@ public class GunItem implements Listener {
         }
         activeShields.add(uuid);
 
-        long shieldDuration = (long) SHIELD_DURATION_TICKS;
+        long shieldDuration = (plugin != null) ? plugin.getRoundsConfig().getShieldDurationTicks() : (long) SHIELD_DURATION_TICKS;
         if (data.shieldsUp > 0) {
             shieldDuration += (long) (data.shieldsUp * 20);
         }
@@ -261,7 +262,8 @@ public class GunItem implements Listener {
         if (data.noParty > 0) {
             long lastParty = noPartyCooldowns.getOrDefault(uuid, 0L);
             long nowMs = System.currentTimeMillis();
-            if (nowMs - lastParty >= NO_PARTY_COOLDOWN_MS) {
+            long noPartyCd = (plugin != null) ? plugin.getRoundsConfig().getNoPartyCooldownMs() : NO_PARTY_COOLDOWN_MS;
+            if (nowMs - lastParty >= noPartyCd) {
                 noPartyCooldowns.put(uuid, nowMs);
                 applyNoParty(player);
             }
@@ -536,10 +538,6 @@ public class GunItem implements Listener {
         return activeShields.contains(uuid);
     }
 
-    public static void resetShieldCooldown(UUID uuid) {
-        shieldCooldowns.remove(uuid);
-    }
-
     public static boolean isSawActive(UUID uuid) {
         return activeSawTasks.containsKey(uuid);
     }
@@ -550,7 +548,8 @@ public class GunItem implements Listener {
         if (data != null && data.shieldCooldown > 0) {
             cooldownMultiplier -= data.shieldCooldown * 0.1;
         }
-        long actualCooldown = (long) (SHIELD_COOLDOWN_MS * cooldownMultiplier);
+        long baseCd = (plugin != null) ? plugin.getRoundsConfig().getShieldCooldownMs() : SHIELD_COOLDOWN_MS;
+        long actualCooldown = (long) (baseCd * cooldownMultiplier);
         Long lastUse = shieldCooldowns.get(uuid);
         int currentCharges = shieldCharges.getOrDefault(uuid, 0);
         return currentCharges > 0 || lastUse == null || (System.currentTimeMillis() - lastUse >= actualCooldown);
@@ -578,7 +577,8 @@ public class GunItem implements Listener {
         Location center = player.getLocation();
         int locked = 0;
 
-        for (Entity entity : center.getNearbyEntities(NO_PARTY_RADIUS, NO_PARTY_RADIUS, NO_PARTY_RADIUS)) {
+        double radius = (plugin != null) ? plugin.getRoundsConfig().getNoPartyRadius() : NO_PARTY_RADIUS;
+        for (Entity entity : center.getNearbyEntities(radius, radius, radius)) {
             if (!(entity instanceof Player target)) continue;
             if (target.getUniqueId().equals(casterId)) continue;
             if (target.getGameMode() == GameMode.SPECTATOR) continue;

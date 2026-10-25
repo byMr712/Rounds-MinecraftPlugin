@@ -82,7 +82,8 @@ public class BotManager implements Listener {
 
     public List<FakeBot> spawnBots(int count, Location location) {
         List<FakeBot> spawned = new ArrayList<>();
-        int clamped = Math.max(1, Math.min(500, count));
+        int maxBulk = (plugin != null) ? plugin.getRoundsConfig().getBotBulkLimit() : 500;
+        int clamped = Math.max(1, Math.min(maxBulk, count));
         for (int i = 0; i < clamped; i++) {
             String name = generateUniqueBotName();
             String team = pickBestTeam(location);

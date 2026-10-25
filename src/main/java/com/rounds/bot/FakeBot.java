@@ -712,17 +712,7 @@ public class FakeBot {
         Location locBelow = to.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getLocation();
         Location locAt = to.getBlock().getLocation();
         if (bl != null) {
-            // Anticipate jump pad impact 1 tick ahead while descending: raise shield in mid-air right before hit
-            if (velY < -0.05 && level >= 5 && !GunItem.isShieldActive(p.getUniqueId())) {
-                Location aheadDown = to.clone().add(0, velY * 1.2, 0);
-                Location aheadDownBelow = aheadDown.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getLocation();
-                if (bl.isJumpBlock(aheadDown) || bl.isJumpBlock(aheadDownBelow)) {
-                    if (ThreadLocalRandom.current().nextDouble() < 0.50) {
-                        GunItem.resetShieldCooldown(p.getUniqueId());
-                        block();
-                    }
-                }
-            }
+            checkJumpPadAnticipation(bl, to, dx, dz);
 
             boolean touchingJump = bl.isLocationTouchingJumpBlock(to) || bl.isJumpBlock(locBelow) || bl.isJumpBlock(locAt);
             if (touchingJump) {
@@ -759,6 +749,57 @@ public class FakeBot {
         }
 
         return best;
+    }
+
+    private void checkJumpPadAnticipation(BlockListener bl, Location currentLoc, double dx, double dz) {
+        int minLevel = manager != null && manager.getPlugin() != null ? manager.getPlugin().getRoundsConfig().getBotJumpPadParryMinLevel() : 5;
+        if (level < minLevel) return;
+        Player p = getBukkitPlayer();
+        if (p == null || !canBlock() || GunItem.isShieldActive(p.getUniqueId())) return;
+
+        double chance = manager != null && manager.getPlugin() != null ? manager.getPlugin().getRoundsConfig().getBotJumpPadParryChance() : 0.50;
+
+        // 1. Vertical descent anticipation (simulates falling trajectory 10-20 ticks ahead)
+        if (velY < -0.05) {
+            double simY = currentLoc.getY();
+            double simVelY = velY;
+            double simX = currentLoc.getX();
+            double simZ = currentLoc.getZ();
+            for (int tick = 1; tick <= 20; tick++) {
+                simVelY = Math.max(simVelY - 0.08, -3.92) * 0.98;
+                simY += simVelY;
+                simX += dx;
+                simZ += dz;
+                Location checkLoc = new Location(currentLoc.getWorld(), simX, simY, simZ);
+                Location checkBelow = checkLoc.clone().subtract(0, 0.5, 0);
+                if (bl.isLocationTouchingJumpBlock(checkLoc) || bl.isJumpBlock(checkBelow) || bl.isJumpBlock(checkLoc)) {
+                    if (tick >= 10 && tick <= 20) {
+                        if (ThreadLocalRandom.current().nextDouble() < chance) {
+                            block();
+                        }
+                    }
+                    return;
+                }
+            }
+        }
+
+        // 2. Horizontal approach anticipation (10-20 ticks ahead)
+        double moveLen = Math.sqrt(dx * dx + dz * dz);
+        if (moveLen > 0.01 && isOnGround()) {
+            double dirX = dx / moveLen;
+            double dirZ = dz / moveLen;
+            for (int tick = 10; tick <= 20; tick += 2) {
+                double testDist = moveLen * tick;
+                Location stepLoc = currentLoc.clone().add(dirX * testDist, 0, dirZ * testDist);
+                Location stepBelow = stepLoc.clone().subtract(0, 0.8, 0);
+                if (bl.isLocationTouchingJumpBlock(stepLoc) || bl.isJumpBlock(stepBelow) || bl.isJumpBlock(stepLoc)) {
+                    if (ThreadLocalRandom.current().nextDouble() < chance) {
+                        block();
+                    }
+                    return;
+                }
+            }
+        }
     }
 
     public void pickCard(int slotIndex) {

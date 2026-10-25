@@ -96,7 +96,7 @@ public class ArenaNavMesh {
      * Finds nearest unvisited node in the mesh, avoiding visited cells and blocked edges,
      * factoring in high-ground vantage points and wide walkable platforms.
      */
-    public NavNode findNearestUnvisitedNode(Location from, Set<Long> visitedCells, Set<Long> blockedCells, int level, boolean preferHighGround) {
+    public NavNode findNearestUnvisitedNode(Location from, Set<Long> visitedCells, Set<Long> blockedCells, int level, boolean preferHighGround, Map<Long, Integer> pathReputation) {
         if (from == null || allNodes.isEmpty()) return null;
         NavNode best = null;
         double bestScore = -Double.MAX_VALUE;
@@ -120,12 +120,24 @@ public class ArenaNavMesh {
                 }
             }
 
+            // Path reputation penalty: heavily penalize nodes marked as dead-ends / unreliable (red)
+            if (pathReputation != null) {
+                int rep = pathReputation.getOrDefault(cell, 0);
+                if (rep < 0) {
+                    score -= (-rep * 120.0);
+                }
+            }
+
             if (score > bestScore) {
                 bestScore = score;
                 best = node;
             }
         }
         return best;
+    }
+
+    public NavNode findNearestUnvisitedNode(Location from, Set<Long> visitedCells, Set<Long> blockedCells, int level, boolean preferHighGround) {
+        return findNearestUnvisitedNode(from, visitedCells, blockedCells, level, preferHighGround, null);
     }
 
     public NavNode findNearestUnvisitedNode(Location from, Set<Long> visitedCells, Set<Long> blockedCells) {
@@ -159,30 +171,55 @@ public class ArenaNavMesh {
      * Fast BFS corridor path search: returns the immediate next waypoint on the graph towards target.
      */
     public Location findNextWaypoint(Location from, Location to) {
+        return findNextWaypoint(from, to, null);
+    }
+
+    /**
+     * Weighted Dijkstra corridor path search: factors in individual bot path reputation,
+     * penalizing unreliable paths (red) and using them only as a last resort.
+     */
+    public Location findNextWaypoint(Location from, Location to, Map<Long, Integer> pathReputation) {
         if (from == null || to == null || allNodes.isEmpty()) return null;
         NavNode start = getNearestNode(from);
         NavNode goal = getNearestNode(to);
         if (start == null || goal == null || start == goal) return null;
 
-        Map<NavNode, NavNode> prev = new HashMap<>();
-        Queue<NavNode> queue = new ArrayDeque<>();
-        Set<NavNode> visited = new HashSet<>();
+        record NodeScore(NavNode node, double dist) implements Comparable<NodeScore> {
+            @Override
+            public int compareTo(NodeScore o) {
+                return Double.compare(this.dist, o.dist);
+            }
+        }
 
-        queue.add(start);
-        visited.add(start);
+        Map<NavNode, NavNode> prev = new HashMap<>();
+        Map<NavNode, Double> dists = new HashMap<>();
+        PriorityQueue<NodeScore> pq = new PriorityQueue<>();
+
+        dists.put(start, 0.0);
+        pq.add(new NodeScore(start, 0.0));
 
         boolean found = false;
-        while (!queue.isEmpty()) {
-            NavNode curr = queue.poll();
+        while (!pq.isEmpty()) {
+            NodeScore top = pq.poll();
+            NavNode curr = top.node();
+            if (top.dist() > dists.getOrDefault(curr, Double.MAX_VALUE)) continue;
+
             if (curr == goal) {
                 found = true;
                 break;
             }
+
             for (NavNode neighbor : curr.neighbors) {
-                if (!visited.contains(neighbor)) {
-                    visited.add(neighbor);
+                double edgeDist = Math.sqrt(curr.distanceSquared(neighbor.loc));
+                long cell = (((long) (neighbor.loc.getBlockX() >> 2)) << 32) | ((neighbor.loc.getBlockZ() >> 2) & 0xFFFFFFFFL);
+                int rep = (pathReputation != null) ? pathReputation.getOrDefault(cell, 0) : 0;
+                double penalty = (rep < 0) ? (-rep * 50.0) : 0.0;
+                double newDist = top.dist() + edgeDist + penalty;
+
+                if (newDist < dists.getOrDefault(neighbor, Double.MAX_VALUE)) {
+                    dists.put(neighbor, newDist);
                     prev.put(neighbor, curr);
-                    queue.add(neighbor);
+                    pq.add(new NodeScore(neighbor, newDist));
                 }
             }
         }

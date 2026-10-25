@@ -452,21 +452,8 @@ public class BlockListener implements Listener {
         if (last != null && now - last < JUMP_BLOCK_COOLDOWN_MS) return;
         jumpCooldown.put(uuid, now);
 
-        FakeBot bot = plugin.getBotManager() != null ? plugin.getBotManager().getBot(player.getName()) : null;
-
-        // Level 5+ bots have a 50% chance to press block before hitting the jump pad to parry damage
-        boolean parried = false;
-        if (bot != null && bot.getLevel() >= 5) {
-            if (GunItem.isShieldActive(uuid)) {
-                parried = true;
-            } else if (ThreadLocalRandom.current().nextDouble() < 0.50) {
-                GunItem.resetShieldCooldown(uuid);
-                bot.block();
-                parried = true;
-            }
-        } else if (GunItem.isShieldActive(uuid)) {
-            parried = true;
-        }
+        // If player or bot has an active shield (raised prior to impact), damage is parried cleanly
+        boolean parried = GunItem.isShieldActive(uuid);
 
         if (!parried) {
             double maxHp = player.getMaxHealth();
@@ -484,6 +471,7 @@ public class BlockListener implements Listener {
         double launchHeight = plugin.getRoundsConfig().getJumpBlockLaunchHeight();
         float velocityY = (float) (launchHeight * 0.2);
 
+        com.rounds.bot.FakeBot bot = (plugin.getBotManager() != null) ? plugin.getBotManager().getBot(player.getName()) : null;
         if (bot != null) {
             bot.applyJumpPad(launchHeight);
         }

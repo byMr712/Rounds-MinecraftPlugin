@@ -17,6 +17,7 @@ import org.bukkit.scoreboard.Team;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -96,11 +97,24 @@ public class BotAI extends BukkitRunnable {
     private final Set<Long> visitedTerritory = new HashSet<>();
     private final Set<Long> blockedEdges = new HashSet<>();
     private final Set<Long> confirmedJumpGaps = new HashSet<>();
+    private final Map<Long, Integer> pathReputation = new HashMap<>();
     private Location currentHuntTarget = null;
     private Location currentCorridorWaypoint = null;
     private int huntStuckTicks = 0;
     private int pursuitStuckTicks = 0;
     private Location lastHuntPos = null;
+
+    // Spinning in place detection (circling within small radius)
+    private Location spinAnchor = null;
+    private int spinTicks = 0;
+    private float spinAccumulatedAngle = 0f;
+    private float spinLastYaw = 0f;
+
+    public void penalizePath(Location loc, int amount) {
+        if (loc == null) return;
+        long cell = packCell(loc.getBlockX(), loc.getBlockZ());
+        pathReputation.merge(cell, -amount, Integer::sum);
+    }
 
     // Optimized landing platform cache & room exit cooldown
     private Location cachedLandingPlatform = null;
@@ -193,6 +207,11 @@ public class BotAI extends BukkitRunnable {
         this.visitedTerritory.clear();
         this.blockedEdges.clear();
         this.confirmedJumpGaps.clear();
+        this.pathReputation.clear();
+        this.spinAnchor = null;
+        this.spinTicks = 0;
+        this.spinAccumulatedAngle = 0f;
+        this.spinLastYaw = 0f;
         this.currentHuntTarget = null;
         this.currentCorridorWaypoint = null;
         this.huntStuckTicks = 0;
@@ -317,19 +336,22 @@ public class BotAI extends BukkitRunnable {
         Location targetEye = target.getEyeLocation();
         if (botEye.getWorld() == null || !botEye.getWorld().equals(targetEye.getWorld())) return false;
 
+        double maxDist = (bot.getPlugin() != null) ? bot.getPlugin().getRoundsConfig().getBotMaxVisionDistance() : 60.0;
         double distSq = botEye.distanceSquared(targetEye);
-        if (distSq > MAX_VISION_DISTANCE_SQ) return false; // Beyond vision range (40 blocks)
+        if (distSq > (maxDist * maxDist)) return false;
 
-        // Close proximity (under 2.5m): audible footsteps or proximity allows detection if raycast is clear
-        if (distSq < PROXIMITY_HEARING_DISTANCE_SQ) {
+        // Close proximity (audible footsteps or proximity allows detection if raycast is clear)
+        double hearDist = (bot.getPlugin() != null) ? bot.getPlugin().getRoundsConfig().getBotProximityHearingDistance() : 2.5;
+        if (distSq < (hearDist * hearDist)) {
             return botPlayer.hasLineOfSight(target);
         }
 
-        // Field of View check: 130 degree viewing cone (65 degrees from look vector)
+        // Field of View check
         Vector dirToTarget = targetEye.toVector().subtract(botEye.toVector()).normalize();
         Vector lookDir = botEye.getDirection().normalize();
         double angle = Math.toDegrees(dirToTarget.angle(lookDir));
-        if (angle > FOV_HALF_ANGLE_DEG) {
+        double fovHalf = (bot.getPlugin() != null) ? (bot.getPlugin().getRoundsConfig().getBotVisionFov() / 2.0) : FOV_HALF_ANGLE_DEG;
+        if (angle > fovHalf) {
             return false;
         }
 
@@ -1080,7 +1102,7 @@ public class BotAI extends BukkitRunnable {
                 // Obstacle avoidance during pursuit: route around blocking walls via NavMesh or clear direction
                 if (!isDirectionClear(myLoc, moveYaw, 1.2)) {
                     ArenaNavMesh mesh = bot.getManager() != null ? bot.getManager().getNavMesh() : null;
-                    Location nextWp = (mesh != null) ? mesh.findNextWaypoint(myLoc, targetLoc) : null;
+                    Location nextWp = (mesh != null) ? mesh.findNextWaypoint(myLoc, targetLoc, pathReputation) : null;
                     if (nextWp != null) {
                         double wdx = nextWp.getX() - myLoc.getX();
                         double wdz = nextWp.getZ() - myLoc.getZ();
@@ -1142,7 +1164,33 @@ public class BotAI extends BukkitRunnable {
         long myCell = packCell(myLoc.getBlockX(), myLoc.getBlockZ());
         visitedTerritory.add(myCell);
 
-        // 2. Track stuck status (detect getting blocked by walls/corners on ground)
+        // 2. Spinning in place detection (circling / rotating repeatedly within small radius <= 1.5m)
+        if (spinAnchor == null || !myLoc.getWorld().equals(spinAnchor.getWorld()) || myLoc.distanceSquared(spinAnchor) > 2.25) {
+            spinAnchor = myLoc.clone();
+            spinTicks = 0;
+            spinAccumulatedAngle = 0f;
+            spinLastYaw = player.getLocation().getYaw();
+        } else {
+            spinTicks++;
+            float curYaw = player.getLocation().getYaw();
+            float diff = ((curYaw - spinLastYaw + 540f) % 360f) - 180f;
+            spinAccumulatedAngle += Math.abs(diff);
+            spinLastYaw = curYaw;
+
+            // Spinning/circling detected: mark path with negative reputation (red) and break out with 180 turn
+            if (spinTicks >= 20) {
+                if (spinAccumulatedAngle >= 240f) {
+                    penalizePath(myLoc, 3);
+                    patrolHeading = curYaw + 180f;
+                    lockedHeadingTicks = 30;
+                }
+                spinTicks = 0;
+                spinAccumulatedAngle = 0f;
+                spinAnchor = myLoc.clone();
+            }
+        }
+
+        // 3. Track stuck status (detect getting blocked by walls/corners on ground)
         boolean physicallyBlocked = bot.isOnGround() && bot.getNmsPlayer().horizontalCollision;
         if (physicallyBlocked || (lastHuntPos != null && myLoc.getWorld().equals(lastHuntPos.getWorld()) && myLoc.distanceSquared(lastHuntPos) < 0.005)) {
             huntStuckTicks++;
@@ -1151,9 +1199,10 @@ public class BotAI extends BukkitRunnable {
         }
         lastHuntPos = myLoc.clone();
 
-        // 3. If stuck trying to reach current target, record edge as blocked and pick a new target
+        // 4. If stuck trying to reach current target, penalize path, record edge as blocked and pick a new target
         if (huntStuckTicks > 12) {
             huntStuckTicks = 0;
+            penalizePath(myLoc, 2);
             if (currentHuntTarget != null) {
                 blockedEdges.add(packCell(currentHuntTarget.getBlockX(), currentHuntTarget.getBlockZ()));
             }
@@ -1163,7 +1212,7 @@ public class BotAI extends BukkitRunnable {
             patrolHeading = findClearDirection(myLoc, patrolHeading + (ThreadLocalRandom.current().nextBoolean() ? 90f : -90f));
         }
 
-        // 4. Macro target selection: Hunt enemy team spawn first, then unvisited NavMesh nodes across the whole arena
+        // 5. Macro target selection: Hunt enemy team spawn first, then unvisited NavMesh nodes across the whole arena
         ArenaNavMesh mesh = (bot.getManager() != null) ? bot.getManager().getNavMesh() : null;
         if (currentHuntTarget == null || myLoc.distanceSquared(currentHuntTarget) < 4.0) {
             currentHuntTarget = null;
@@ -1187,9 +1236,9 @@ public class BotAI extends BukkitRunnable {
                 }
             }
 
-            // Priority B: Unvisited ArenaNavMesh node (pro bots / snipers prioritize elevated positions)
+            // Priority B: Unvisited ArenaNavMesh node (pro bots / snipers prioritize elevated positions; avoids penalized red paths)
             if (currentHuntTarget == null && mesh != null && !mesh.isEmpty()) {
-                ArenaNavMesh.NavNode unvisitedNode = mesh.findNearestUnvisitedNode(myLoc, visitedTerritory, blockedEdges, bot.getLevel(), playstyle == BotPlaystyle.TACTICAL_SNIPER);
+                ArenaNavMesh.NavNode unvisitedNode = mesh.findNearestUnvisitedNode(myLoc, visitedTerritory, blockedEdges, bot.getLevel(), playstyle == BotPlaystyle.TACTICAL_SNIPER, pathReputation);
                 if (unvisitedNode != null) {
                     currentHuntTarget = unvisitedNode.loc.clone();
                 }
@@ -1213,11 +1262,12 @@ public class BotAI extends BukkitRunnable {
             }
         }
 
-        // 5. Corridor micro-routing using NavMesh BFS towards macro hunt target
+        // 6. Corridor micro-routing using NavMesh Dijkstra towards macro hunt target with path reputation
         if (currentHuntTarget != null && mesh != null && !mesh.isEmpty()) {
             if (currentCorridorWaypoint == null || myLoc.distanceSquared(currentCorridorWaypoint) < 2.5) {
-                currentCorridorWaypoint = mesh.findNextWaypoint(myLoc, currentHuntTarget);
+                currentCorridorWaypoint = mesh.findNextWaypoint(myLoc, currentHuntTarget, pathReputation);
                 if (currentCorridorWaypoint == null && myLoc.distanceSquared(currentHuntTarget) > 16.0) {
+                    penalizePath(currentHuntTarget, 3);
                     blockedEdges.add(packCell(currentHuntTarget.getBlockX(), currentHuntTarget.getBlockZ()));
                     currentHuntTarget = null;
                 }
@@ -1385,6 +1435,7 @@ public class BotAI extends BukkitRunnable {
         boolean leftBlocked = !isDirectionClear(loc, currentHeading - 90f, 1.1);
         boolean rightBlocked = !isDirectionClear(loc, currentHeading + 90f, 1.1);
         if (frontBlocked && leftBlocked && rightBlocked) {
+            penalizePath(loc, 3);
             consecutiveBounces = 0;
             lastTurnSign = 0f;
             float roomExit = findRoomExit(loc);
@@ -1410,6 +1461,7 @@ public class BotAI extends BukkitRunnable {
                 lastTurnSign = sign;
 
                 if (consecutiveBounces >= 3) {
+                    penalizePath(loc, 2);
                     // Ping-pong between walls detected: search for room exit or escape with 180
                     consecutiveBounces = 0;
                     lastTurnSign = 0f;

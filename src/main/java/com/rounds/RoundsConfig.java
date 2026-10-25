@@ -42,6 +42,23 @@ public final class RoundsConfig {
     private double upBlockLiftSpeed;
     private int upBlockDurationTicks;
 
+    private int shieldDurationTicks;
+    private long shieldCooldownMs;
+    private long noPartyCooldownMs;
+    private double noPartyRadius;
+
+    private int countdownSeconds;
+    private boolean autoDeathEnabled;
+    private int autoDeathDelaySeconds;
+    private int autoDeathIntervalSeconds;
+
+    private int botBulkLimit;
+    private double botVisionFov;
+    private double botMaxVisionDistance;
+    private double botProximityHearingDistance;
+    private double botJumpPadParryChance;
+    private int botJumpPadParryMinLevel;
+
     public RoundsConfig(RoundsPlugin plugin) {
         this.plugin = plugin;
         reload();
@@ -100,6 +117,24 @@ public final class RoundsConfig {
         upBlockLiftSpeed = c.getDouble(ub + "lift-speed", 0.3);
         upBlockDurationTicks = c.getInt(ub + "duration-ticks", 40);
 
+        String sh = "shield.";
+        shieldDurationTicks = c.getInt(sh + "duration-ticks", 20);
+        shieldCooldownMs = c.getLong(sh + "cooldown-ms", 10000L);
+        noPartyCooldownMs = c.getLong(sh + "no-party-cooldown-ms", 30000L);
+        noPartyRadius = c.getDouble(sh + "no-party-radius", 5.0);
+
+        countdownSeconds = c.getInt("game.countdown-seconds", 3);
+        autoDeathEnabled = c.getBoolean("game.auto-death.enabled", true);
+        autoDeathDelaySeconds = c.getInt("game.auto-death.delay-seconds", 240);
+        autoDeathIntervalSeconds = c.getInt("game.auto-death.interval-seconds", 60);
+
+        botBulkLimit = c.getInt("bots.bulk-limit", 500);
+        botVisionFov = c.getDouble("bots.vision.fov-degrees", 140.0);
+        botMaxVisionDistance = c.getDouble("bots.vision.max-distance", 60.0);
+        botProximityHearingDistance = c.getDouble("bots.vision.proximity-hearing", 2.5);
+        botJumpPadParryChance = c.getDouble("bots.jump-pad-parry.chance", 0.50);
+        botJumpPadParryMinLevel = c.getInt("bots.jump-pad-parry.min-level", 5);
+
         DefaultStats ds = new DefaultStats();
         ds.dmg = c.getDouble("defaults.damage", 3.0);
         ds.atks = c.getDouble("defaults.attack-speed", 20);
@@ -141,6 +176,23 @@ public final class RoundsConfig {
     public double getJumpBlockLaunchHeight() { return jumpBlockLaunchHeight; }
     public double getUpBlockLiftSpeed() { return upBlockLiftSpeed; }
     public int getUpBlockDurationTicks() { return upBlockDurationTicks; }
+
+    public int getShieldDurationTicks() { return shieldDurationTicks; }
+    public long getShieldCooldownMs() { return shieldCooldownMs; }
+    public long getNoPartyCooldownMs() { return noPartyCooldownMs; }
+    public double getNoPartyRadius() { return noPartyRadius; }
+
+    public int getCountdownSeconds() { return countdownSeconds; }
+    public boolean isAutoDeathEnabled() { return autoDeathEnabled; }
+    public int getAutoDeathDelaySeconds() { return autoDeathDelaySeconds; }
+    public int getAutoDeathIntervalSeconds() { return autoDeathIntervalSeconds; }
+
+    public int getBotBulkLimit() { return botBulkLimit; }
+    public double getBotVisionFov() { return botVisionFov; }
+    public double getBotMaxVisionDistance() { return botMaxVisionDistance; }
+    public double getBotProximityHearingDistance() { return botProximityHearingDistance; }
+    public double getBotJumpPadParryChance() { return botJumpPadParryChance; }
+    public int getBotJumpPadParryMinLevel() { return botJumpPadParryMinLevel; }
 
     public boolean isFreeplay() { return freeplay; }
 

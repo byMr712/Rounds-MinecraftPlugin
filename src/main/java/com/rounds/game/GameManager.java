@@ -258,7 +258,7 @@ public class GameManager implements Listener {
         }
 
         BukkitRunnable countdown = new BukkitRunnable() {
-            int count = 3;
+            int count = (plugin != null) ? plugin.getRoundsConfig().getCountdownSeconds() : 3;
             final int gen = gameGeneration;
 
             @Override
@@ -759,7 +759,9 @@ public class GameManager implements Listener {
     }
 
     private void checkAutoDeath() {
+        if (!autoDeathEnabled || (plugin != null && !plugin.getRoundsConfig().isAutoDeathEnabled())) return;
         long now = System.currentTimeMillis();
+        long intervalMs = (plugin != null) ? plugin.getRoundsConfig().getAutoDeathIntervalSeconds() * 1000L : AUTO_DEATH_INTERVAL_MS;
         int guard = 0;
         while (now >= autoDeathNextEvent && guard++ < 10) {
             if (autoDeathNextIsKill) {
@@ -769,9 +771,9 @@ public class GameManager implements Listener {
                 Bukkit.broadcastMessage(ChatColor.DARK_RED + Messages.get("game.auto-death-warning"));
                 autoDeathNextIsKill = true;
             }
-            autoDeathNextEvent += AUTO_DEATH_INTERVAL_MS;
+            autoDeathNextEvent += intervalMs;
         }
-        if (now - autoDeathNextEvent > AUTO_DEATH_INTERVAL_MS * 10) autoDeathNextEvent = now;
+        if (now - autoDeathNextEvent > intervalMs * 10) autoDeathNextEvent = now;
     }
 
     private void killRandomPlayer() {
@@ -855,7 +857,9 @@ public class GameManager implements Listener {
         GunItem.resetRoundState();
         com.rounds.listener.LegendaryEffects.clearRoundState();
         chameleonStillTicks.clear();
-        autoDeathNextEvent = System.currentTimeMillis() + AUTO_DEATH_DELAY_MS - AUTO_DEATH_INTERVAL_MS;
+        long delayMs = (plugin != null) ? plugin.getRoundsConfig().getAutoDeathDelaySeconds() * 1000L : AUTO_DEATH_DELAY_MS;
+        long intervalMs = (plugin != null) ? plugin.getRoundsConfig().getAutoDeathIntervalSeconds() * 1000L : AUTO_DEATH_INTERVAL_MS;
+        autoDeathNextEvent = System.currentTimeMillis() + delayMs - intervalMs;
         autoDeathNextIsKill = false;
 
         plugin.getServer().broadcastMessage(ChatColor.YELLOW + Messages.get("game.round-start", currentRound));

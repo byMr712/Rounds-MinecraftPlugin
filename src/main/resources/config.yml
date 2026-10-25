@@ -1,38 +1,67 @@
+# ==============================================================================
 # Rounds Plugin Configuration
+# ==============================================================================
 
-# Language: id of a file from plugins/<Plugin>/lang/ without .txt (legacy "ru"/"en" values are still accepted)
+# Language configuration:
+# File name from plugins/Rounds/lang/ without the .txt extension (e.g. EN_en, RU_ru).
+# Legacy short codes ("ru", "en") are also accepted.
 language: EN_en
 
-# Default player stats (reset each round)
+# ==============================================================================
+# DEFAULT PLAYER STATS
+# ==============================================================================
+# Base statistics assigned to each player at the start of a round before cards apply.
 defaults:
-  # Base damage per bullet
+  # Base bullet damage
   damage: 3.0
   # Base attack cooldown in ticks (20 ticks = 1 second). Lower = faster shooting
   attack-speed: 20
-  # Additional attack speed modifier (added by cards, usually 0)
+  # Additional attack speed modifier (modified by cards, default 0)
   attack-speed-modifier: 0
-  # Extra attack range in blocks (added by cards, usually 0)
+  # Extra projectile range in blocks
   attack-range: 0
-  # Starting ammo (current bullets in magazine)
+  # Starting ammunition in the current magazine
   ammo: 3
-  # Maximum ammo capacity (reload restores to this value)
+  # Maximum magazine capacity (reloading fills up to this value)
   max-ammo: 3
-  # Number of bullets fired per shot (1 = single shot, >1 = shotgun)
+  # Projectiles fired per shot (1 = single projectile, >1 = spread/shotgun)
   bullets: 1
-  # Starting health (max 20 in vanilla, but can be higher)
+  # Starting player health points (20 = 10 hearts)
   hp: 20
-  # Bullet flight speed multiplier (1.0 = default)
+  # Projectile flight velocity multiplier (1.0 = standard speed)
   bullet-speed: 1.0
-  # Reload speed bonus (0 = base 3 seconds, 0.95 = near-instant). Formula: 60 * (1.0 - reloadSpeed) ticks
+  # Reload speed modifier (0.0 = base ~3.0s, 0.95 = near instant)
   reload-speed: 0
 
+# ==============================================================================
+# MATCH & ROUND MECHANICS
+# ==============================================================================
 game:
+  # Default number of rounds required to win the match
   default-rounds: 5
+  # Upper limit for the rounds setting
   max-rounds: 20
+  # Countdown before a round officially starts in seconds
+  countdown-seconds: 3
+  # Time in seconds for players to choose an upgrade card (minimum 10 seconds)
   card-choice-time: 30
+  # Inventory GUI display duration in ticks (200 ticks = 10 seconds)
   card-selection-time: 200
+  # Delay in ticks before respawning players into the arena
   respawn-delay: 5
+  # Sudden death timer to prevent infinite stall rounds
+  auto-death:
+    # Whether auto-death kicks in if a round runs too long
+    enabled: true
+    # Delay in seconds after round start before the first death event
+    delay-seconds: 240
+    # Interval in seconds between subsequent warning / death events
+    interval-seconds: 60
 
+# ==============================================================================
+# TEAM SETUP
+# ==============================================================================
+# Participating team colors enabled in matchmaking and arena spawns.
 teams:
   enabled:
     - BLUE
@@ -40,95 +69,106 @@ teams:
     - YELLOW
     - GREEN
 
+# ==============================================================================
+# WEAPON & SHIELD SETTINGS
+# ==============================================================================
 gun:
-  material: STICK
+  # Item material representing the primary weapon
+  material: CROSSBOW
+  # Base attack cooldown in ticks
   base-cooldown: 20
 
+shield:
+  # Base shield duration in ticks (20 ticks = 1.0 second)
+  duration-ticks: 20
+  # Base shield cooldown in milliseconds (10000 = 10 seconds)
+  cooldown-ms: 10000
+  # Cooldown for the "No Party" card pulse in milliseconds (30000 = 30 seconds)
+  no-party-cooldown-ms: 30000
+  # Radius in blocks for the "No Party" pulse effect
+  no-party-radius: 5.0
+
+# ==============================================================================
+# CARD SYSTEM
+# ==============================================================================
 cards:
+  # Number of random upgrade cards offered to the player in the draft GUI
   selection-count: 5
+  # Whether card drop chances scale with rarity (Common, Uncommon, Rare, Legendary)
   weighted-rarity: true
 
-# ============================================
-# GAME RULES
-# ============================================
-# Automatically override world game rules during the game.
-# Master switch — turns ALL game rule overrides on/off at once.
+# ==============================================================================
+# FAKE PLAYER BOTS (AI)
+# ==============================================================================
+bots:
+  # Maximum bots allowed to spawn in a single bulk command
+  bulk-limit: 500
+  # Vision parameters (anti-wallhack mechanics)
+  vision:
+    # Field of view cone in degrees (140.0 = 70.0 degrees left and right)
+    fov-degrees: 140.0
+    # Maximum visual raycast detection distance in blocks
+    max-distance: 60.0
+    # Footstep hearing radius in blocks (allows awareness behind back if unblocked)
+    proximity-hearing: 2.5
+  # Jump pad parrying mechanics (fair shield block 10-20 ticks ahead)
+  jump-pad-parry:
+    # Chance for eligible bots to parry jump pads with shield
+    chance: 0.50
+    # Minimum bot difficulty level (1-10) required to anticipate and parry jump pads
+    min-level: 5
+
+# ==============================================================================
+# ARENA INTERACTIVE BLOCKS
+# ==============================================================================
+# Jump Pad Block: Launches players upwards. Deals percentage damage unless parried.
+jump-block:
+  # Percentage of maximum HP taken upon landing (20.0 = 20% max HP)
+  damage-percent: 20.0
+  # Vertical launch height in blocks
+  launch-height: 10.0
+
+# Up Block: Creates an anti-gravity elevator beam.
+up-block:
+  # Upward velocity vector applied per tick
+  lift-speed: 0.3
+  # Duration in ticks of the upward levitation effect
+  duration-ticks: 40
+
+# ==============================================================================
+# WORLD GAME RULES
+# ==============================================================================
+# Automatically enforced world game rules during active matches.
 game-rules:
+  # Master toggle for automatic world game rules overrides
   enabled: true
-  # Instant respawn (no death screen)
+  # Instant respawn without death screen
   instant-respawn: true
-  # Keep inventory on death
+  # Preserve player inventory on death
   keep-inventory: true
-  # Freeze time at daytime (disable daylight cycle)
+  # Lock daylight cycle to permanent daytime
   freeze-time: true
-  # Disable weather changes (rain, thunder)
+  # Disable rain, thunder, and storms
   disable-weather: true
-  # Disable natural mob spawning
+  # Prevent vanilla mob spawning
   disable-mob-spawning: true
 
-# ============================================
-# NICKNAME COLORING
-# ============================================
-# Color player names in tab-list and above heads
-# according to their team color (blue, red, etc.)
+# ==============================================================================
+# DISPLAY & SCOREBOARD
+# ==============================================================================
+# Color player names in the tab list and above heads matching team color
 color-nicknames: true
 
-# ============================================
-# SCOREBOARD
-# ============================================
-# ВАРИАНТ 1 (РЕКОМЕНДУЕМЫЙ): Плагин TAB
-# Установите плагин TAB + PlaceholderAPI.
-# Используйте плейсхолдеры в конфиге TAB:
-#   %rounds_round%          - текущий раунд
-#   %rounds_rounds_to_win%  - побед для выигрыша
-#   %rounds_round_display%  - "3/5"
-#   %rounds_state%          - состояние игры
-#   %rounds_team%           - название команды игрока
-#   %rounds_team_wins%      - победы команды игрока
-#   %rounds_team_color%     - цвет команды (&a, &c и т.д.)
-#   %rounds_blue_wins%      - победы синих
-#   %rounds_red_wins%       - победы красных
-#   %rounds_yellow_wins%    - победы жёлтых
-#   %rounds_green_wins%     - победы зелёных
-#
-# ВАРИАНТ 2: Встроенный scoreboard (ниже)
-# ВНИМАНИЕ: Встроенный SB конфликтует с TAB и другими
-#     плагинами, которые управляют scoreboard'ом игроков!
-#     Если у вас стоит TAB — НЕ включайте этот вариант!
-#     Также встроенный SB не поддерживает цвета команд
-#     в именах игроков и кастомные форматы.
+# Built-in scoreboard:
+# Note: Recommended option is using TAB + PlaceholderAPI.
+# If using TAB plugin, leave this disabled to prevent scoreboard flicker.
 builtin-scoreboard:
   enabled: false
   title: "&6&lROUNDS"
 
-# ============================================
-# JUMP BLOCK
-# ============================================
-# Блок прыжка — при падении на него игрок теряет
-# процент здоровья и подбрасывается вверх.
-jump-block:
-  # Процент от максимального здоровья, отнимаемый при прыжке (20 = 20%)
-  damage-percent: 20.0
-  # Высота подбрасывания в блоках
-  launch-height: 10.0
-
-# ============================================
-# UP BLOCK
-# ============================================
-# Блок вверх — при наступлении на него игрок
-# медленно поднимается вверх на заданное время.
-up-block:
-  # Скорость подъёма (вектор velocity по Y)
-  lift-speed: 0.3
-  # Длительность подъёма в тиках (20 тиков = 1 секунда)
-  duration-ticks: 40
-
-# ============================================
-# FREEPLAY
-# ============================================
-# Разрешает обычным игрокам (без прав админа)
-# запускать/останавливать игру и использовать
-# безопасные команды: /rdebug stats/start/stop/rounds/givegun/wheel
-# Управляется из игры: /rdebug freeplay on|off
+# ==============================================================================
+# FREEPLAY MODE
+# ==============================================================================
+# Allows non-admin players to use safe commands (/rdebug start, stop, stats, etc.)
 freeplay:
   enabled: false

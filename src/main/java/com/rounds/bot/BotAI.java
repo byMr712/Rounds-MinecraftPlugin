@@ -1343,14 +1343,13 @@ public class BotAI extends BukkitRunnable {
             }
         }
 
-        // 5. Strictly avoid walking into jump blocks and up blocks in front on foot (prevents 20% max HP damage)
+        // 5. Strictly avoid walking into jump blocks in front on foot (prevents 20% max HP damage)
         com.rounds.blocks.BlockListener bl = bot.getPlugin() != null ? bot.getPlugin().getBlockListener() : null;
         if (bl != null) {
             Location checkLoc = loc.clone().add(dx, 0.1, dz);
             Location checkBelow = checkLoc.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getLocation();
             Location checkAt = checkLoc.getBlock().getLocation();
-            boolean touchingPad = bl.isLocationTouchingJumpBlock(checkLoc) || bl.isJumpBlock(checkBelow) || bl.isJumpBlock(checkAt)
-                    || bl.isLocationTouchingUpBlock(checkLoc) || bl.isUpBlock(checkBelow) || bl.isUpBlock(checkAt);
+            boolean touchingPad = bl.isLocationTouchingJumpBlock(checkLoc) || bl.isJumpBlock(checkBelow) || bl.isJumpBlock(checkAt);
             if (touchingPad) {
                 return false;
             }

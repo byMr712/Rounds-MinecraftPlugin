@@ -12,6 +12,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.entity.Player;
@@ -34,6 +35,8 @@ public class FakeBot {
     private double impulseX = 0.0;
     private double impulseZ = 0.0;
     private int padLaunchTicks = 0;
+    private int upBlockLiftTicks = 0;
+    private Location cachedUpBlockExit = null;
     private int consecutiveJumpAttempts = 0;
     private int jumpStuckCooldown = 0;
     private int jumpAscentTicks = 0;
@@ -312,6 +315,8 @@ public class FakeBot {
         this.impulseX = 0.0;
         this.impulseZ = 0.0;
         this.padLaunchTicks = 0;
+        this.upBlockLiftTicks = 0;
+        this.cachedUpBlockExit = null;
         this.consecutiveJumpAttempts = 0;
         this.jumpStuckCooldown = 0;
         this.jumpAscentTicks = 0;
@@ -363,6 +368,67 @@ public class FakeBot {
 
     public void applyUpBlock(double speed) {
         this.velY = speed;
+        this.upBlockLiftTicks = 8;
+        Player p = getBukkitPlayer();
+        if (p != null) {
+            Location exit = findUpBlockExitPlatform(p);
+            if (exit != null) {
+                this.cachedUpBlockExit = exit;
+                double dx = exit.getX() - p.getLocation().getX();
+                double dz = exit.getZ() - p.getLocation().getZ();
+                double dist = Math.sqrt(dx * dx + dz * dz);
+                if (dist > 0.25) {
+                    double normX = dx / dist;
+                    double normZ = dz / dist;
+                    // Apply gentle guiding horizontal impulse towards upper exit platform
+                    this.impulseX = normX * 0.28;
+                    this.impulseZ = normZ * 0.28;
+                    float exitYaw = (float) Math.toDegrees(Math.atan2(-normX, normZ));
+                    setRotation(exitYaw, 0f);
+                }
+            }
+        }
+    }
+
+    public Location findUpBlockExitPlatform(Player p) {
+        Location loc = p.getLocation();
+        World world = loc.getWorld();
+        if (world == null) return null;
+        BlockListener bl = (manager != null && manager.getPlugin() != null) ? manager.getPlugin().getBlockListener() : null;
+
+        Location bestPlatform = null;
+        double bestDistSq = Double.MAX_VALUE;
+
+        // Check radial directions around current position (distances 1.2 to 2.6m, vertical delta -0.5 to +2.5m)
+        double[] checkDistances = {1.2, 1.8, 2.6};
+        for (double d : checkDistances) {
+            for (int angleDeg = 0; angleDeg < 360; angleDeg += 45) {
+                double rad = Math.toRadians(angleDeg);
+                double cx = loc.getX() + Math.cos(rad) * d;
+                double cz = loc.getZ() + Math.sin(rad) * d;
+
+                for (double dy = -0.5; dy <= 2.5; dy += 1.0) {
+                    Location candFloor = new Location(world, cx, Math.floor(loc.getY() + dy), cz);
+                    Location candFeet = candFloor.clone().add(0, 1.0, 0);
+                    Location candHead = candFloor.clone().add(0, 2.0, 0);
+
+                    if (candFloor.getBlock().getType().isSolid()
+                            && !candFeet.getBlock().getType().isSolid()
+                            && !candHead.getBlock().getType().isSolid()) {
+                        if (bl != null && (bl.isJumpBlock(candFloor) || bl.isUpBlock(candFloor))) {
+                            continue;
+                        }
+                        double dSq = candFloor.distanceSquared(loc);
+                        if (dSq < bestDistSq) {
+                            bestDistSq = dSq;
+                            bestPlatform = candFloor.clone().add(0, 1.0, 0);
+                        }
+                    }
+                }
+            }
+            if (bestPlatform != null) break;
+        }
+        return bestPlatform;
     }
 
     public void aimAt(Location targetLoc, float maxTurnDeg, float inaccuracyDeg) {
@@ -416,6 +482,7 @@ public class FakeBot {
         Player p = getBukkitPlayer();
         ServerPlayer sp = getNmsPlayer();
         if (p.isDead() || !p.isOnline() || p.getGameMode() == GameMode.SPECTATOR) return;
+        BlockListener bl = (manager != null && manager.getPlugin() != null) ? manager.getPlugin().getBlockListener() : null;
 
         // 1. Pick up external vertical impulses (jump pads, up blocks, explosions)
         boolean onGround = isOnGround();
@@ -427,17 +494,21 @@ public class FakeBot {
         if (padLaunchTicks > 0) {
             padLaunchTicks--;
         }
+        if (upBlockLiftTicks > 0) {
+            upBlockLiftTicks--;
+        }
 
-        // 2. Ground check (do not abort pad launch while ascending or over hazard blocks)
-        boolean padActive = padLaunchTicks > 0;
+        // 2. Ground check (do not abort pad launch or up-block lift while ascending or over hazard blocks)
+        boolean padActive = padLaunchTicks > 0 || (upBlockLiftTicks > 0 && velY > 0.0);
         if (onGround && velY <= 0.0 && (!padActive || padLaunchTicks < 30)) {
-            BlockListener bl = manager.getPlugin() != null ? manager.getPlugin().getBlockListener() : null;
             boolean onHazard = (bl != null) && (bl.isJumpBlock(p.getLocation()) || bl.isJumpBlock(p.getLocation().subtract(0, 0.5, 0)));
             if (!onHazard) {
-                if (padActive && ai != null) {
+                if (padActive && ai != null && padLaunchTicks > 0) {
                     ai.onSafeLanding();
                 }
                 padLaunchTicks = 0;
+                upBlockLiftTicks = 0;
+                cachedUpBlockExit = null;
                 velY = 0.0;
                 impulseX = 0.0;
                 impulseZ = 0.0;
@@ -453,10 +524,26 @@ public class FakeBot {
         }
 
         // Smooth step down: if walking down stairs/slope, smoothly descend to the lower block
-        if (!onGround && velY <= 0.0 && padLaunchTicks <= 0 && jumpAscentTicks <= 0) {
+        if (!onGround && velY <= 0.0 && padLaunchTicks <= 0 && jumpAscentTicks <= 0 && upBlockLiftTicks <= 0) {
             Location checkStepBelow = p.getLocation().clone().subtract(0, 1.1, 0);
             if (checkStepBelow.getBlock().getType().isSolid()) {
                 velY = -0.32;
+            }
+        }
+
+        // Steer towards upper platform if descending above up-block column (prevents infinite elevator loop)
+        if (bl != null && !onGround && velY <= 0.0 && cachedUpBlockExit != null) {
+            Location curLoc = p.getLocation();
+            Location down1 = curLoc.clone().subtract(0, 1.0, 0);
+            Location down2 = curLoc.clone().subtract(0, 2.0, 0);
+            if (bl.isUpBlock(down1) || bl.isUpBlock(down2)) {
+                double ex = cachedUpBlockExit.getX() - curLoc.getX();
+                double ez = cachedUpBlockExit.getZ() - curLoc.getZ();
+                double edist = Math.sqrt(ex * ex + ez * ez);
+                if (edist > 0.2) {
+                    impulseX += (ex / edist) * 0.22;
+                    impulseZ += (ez / edist) * 0.22;
+                }
             }
         }
 
@@ -539,7 +626,6 @@ public class FakeBot {
                             Location landingBody = landingFloor.clone().add(0, 1.0, 0);
                             Location landingHead = landingFloor.clone().add(0, 2.0, 0);
                             if (landingFloor.getBlock().getType().isSolid() && !landingBody.getBlock().getType().isSolid() && !landingHead.getBlock().getType().isSolid()) {
-                                BlockListener bl = manager.getPlugin() != null ? manager.getPlugin().getBlockListener() : null;
                                 if (bl == null || (!bl.isJumpBlock(landingFloor.getBlock().getLocation()) && !bl.isUpBlock(landingFloor.getBlock().getLocation()))) {
                                     bestLandingFloor = landingFloor;
                                     break;
@@ -599,7 +685,6 @@ public class FakeBot {
         // 4. Trigger Jump Pads and Up Blocks directly on landing / stepping (percentage damage & lift)
         Location locBelow = to.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getLocation();
         Location locAt = to.getBlock().getLocation();
-        BlockListener bl = manager.getPlugin().getBlockListener();
         if (bl != null) {
             boolean touchingJump = bl.isLocationTouchingJumpBlock(to) || bl.isJumpBlock(locBelow) || bl.isJumpBlock(locAt);
             if (touchingJump) {

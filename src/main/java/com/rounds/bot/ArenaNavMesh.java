@@ -281,6 +281,39 @@ public class ArenaNavMesh {
             }
         }
 
+        // 3. Connect nodes across Up-Blocks (elevator vertical lifts to higher platforms)
+        if (bl != null && !bl.getUpBlocks().isEmpty()) {
+            for (Location upLoc : bl.getUpBlocks()) {
+                if (upLoc.getWorld() == null || !upLoc.getWorld().equals(world)) continue;
+                // Find node nearest to up-block at ground level
+                NavNode bottomNode = null;
+                double bestBottomDistSq = 9.0; // within 3 blocks horizontally
+                for (NavNode n : generated) {
+                    if (Math.abs(n.loc.getY() - upLoc.getY()) <= 2.0) {
+                        double dSq = (n.loc.getX() - upLoc.getX()) * (n.loc.getX() - upLoc.getX())
+                                + (n.loc.getZ() - upLoc.getZ()) * (n.loc.getZ() - upLoc.getZ());
+                        if (dSq < bestBottomDistSq) {
+                            bestBottomDistSq = dSq;
+                            bottomNode = n;
+                        }
+                    }
+                }
+                if (bottomNode == null) continue;
+
+                // Find upper node reachable by this up-block lift (height delta +3 to +14, within 4 blocks horizontally)
+                for (NavNode topNode : generated) {
+                    double vertDelta = topNode.loc.getY() - upLoc.getY();
+                    if (vertDelta >= 3.0 && vertDelta <= 14.0) {
+                        double horizDistSq = (topNode.loc.getX() - upLoc.getX()) * (topNode.loc.getX() - upLoc.getX())
+                                + (topNode.loc.getZ() - upLoc.getZ()) * (topNode.loc.getZ() - upLoc.getZ());
+                        if (horizDistSq <= 16.0) { // within 4 blocks horizontally
+                            bottomNode.neighbors.add(topNode);
+                        }
+                    }
+                }
+            }
+        }
+
         return mesh;
     }
 
@@ -306,11 +339,11 @@ public class ArenaNavMesh {
                 return false;
             }
 
-            // Hazard check: do not connect across jump blocks or up blocks
+            // Hazard check: do not connect across jump blocks (which deal 20% max HP damage)
             if (bl != null) {
                 Location pt = new Location(world, bx + 0.5, by, bz + 0.5);
                 Location below = new Location(world, bx + 0.5, by - 1, bz + 0.5);
-                if (bl.isJumpBlock(pt) || bl.isJumpBlock(below) || bl.isUpBlock(pt) || bl.isUpBlock(below)) {
+                if (bl.isJumpBlock(pt) || bl.isJumpBlock(below)) {
                     return false;
                 }
             }

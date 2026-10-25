@@ -85,10 +85,6 @@ placeholder-refresh-intervals:
   '%player_ping%': 1000
   '%viaversion_version%': 5000
   '%player_health%': 200
-  '%PLACE_DAMAGE%': 500
-  '%PLACE_AMMO%': 500
-  '%PLACE_BULLETS%': 500
-  '%PLACE_CARDS%': 500
 assign-groups-by-permissions: false
 primary-group-finding-list:
 - default

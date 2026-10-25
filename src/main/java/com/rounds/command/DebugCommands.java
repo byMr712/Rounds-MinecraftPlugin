@@ -179,8 +179,6 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "placeholders" -> handlePlaceholders(sender);
             case "bot" -> handleBot(sender, args);
             case "draft" -> handleDraft(sender, args);
-            case "spawn" -> handleBot(sender, args);
-            case "despawn" -> handleBot(sender, args);
             case "cardchoicetime" -> handleCardChoiceTime(sender, args);
             default -> sender.sendMessage(ChatColor.RED + Messages.get("debug.unknown-command", args[0]));
         }
@@ -1008,11 +1006,10 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         "stats", "setstat", "setteam", "setlanguage", "effect", "heal",
         "resetstats", "reload", "setlobby",
         "jumppos1", "jumppos2", "jumpset", "uppos1", "uppos2", "upset",
-        "wheel", "tab", "bot", "draft", "spawn", "despawn",
-        "cardchoicetime"
+        "wheel", "tab", "bot", "draft", "cardchoicetime"
     );
     private static final List<String> FREEPLAY_COMMANDS = Arrays.asList(
-        "start", "stop", "rounds", "givegun", "wheel", "bot", "spawn", "despawn"
+        "start", "stop", "rounds", "givegun", "wheel", "bot"
     );
     private static final List<String> PUBLIC_COMMANDS = Arrays.asList(
         "info", "stats", "cards", "card"
@@ -1034,59 +1031,15 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
 
         Location loc = (sender instanceof Player p) ? p.getLocation() : null;
-        String sub = args[0].toLowerCase();
 
-        // 1. /rdebug despawn [bot] <bot_name|all|count <int>>
-        if (sub.equals("despawn")) {
-            if (args.length >= 2 && args[1].equalsIgnoreCase("all")) {
-                int count = bm.despawnAll();
-                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned all active bots (total: " + count + ")");
-                return;
-            }
-            if (args.length >= 3 && args[1].equalsIgnoreCase("count")) {
-                try {
-                    int count = Integer.parseInt(args[2]);
-                    int removed = bm.despawnBots(count);
-                    sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned " + removed + " bots (prioritizing largest teams).");
-                } catch (NumberFormatException e) {
-                    sender.sendMessage(ChatColor.RED + "Invalid number: " + args[2]);
-                }
-                return;
-            }
-            if (args.length >= 2 && args[1].matches("\\d+")) {
-                int count = Integer.parseInt(args[1]);
-                int removed = bm.despawnBots(count);
-                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned " + removed + " bots (prioritizing largest teams).");
-                return;
-            }
-            if (args.length < 2) {
-                sender.sendMessage(ChatColor.RED + "Usage: /rdebug despawn <bot_name|all|count <int>>");
-                return;
-            }
-            int nameIndex = (args.length >= 3 && args[1].equalsIgnoreCase("bot")) ? 2 : 1;
-            String name = args[nameIndex];
-            if (name.equalsIgnoreCase("all")) {
-                int count = bm.despawnAll();
-                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned all active bots (total: " + count + ")");
-                return;
-            }
-            boolean ok = bm.despawnBot(name);
-            if (ok) {
-                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned bot " + name);
-            } else {
-                sender.sendMessage(ChatColor.RED + "[RoundsBot] Bot not found: " + name);
-            }
-            return;
-        }
-
-        // 2. /rdebug bot (with no extra args -> show usage, do NOT spawn)
+        // 1. /rdebug bot (with no extra args -> show usage, do NOT spawn)
         if (args.length == 1) {
             sender.sendMessage(ChatColor.RED + "Usage: /rdebug bot <spawn|despawn|level> [args]");
             sender.sendMessage(ChatColor.GRAY + "Example: /rdebug bot spawn");
             return;
         }
 
-        // 3. /rdebug bot despawn ...
+        // 2. /rdebug bot despawn ...
         if (args[1].equalsIgnoreCase("despawn") || args[1].equalsIgnoreCase("remove") || args[1].equalsIgnoreCase("kill")) {
             if (args.length >= 3 && args[2].equalsIgnoreCase("all")) {
                 int count = bm.despawnAll();
@@ -1140,8 +1093,8 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             return;
         }
 
-        // 4. /rdebug bot spawn count <int> / /rdebug spawn bot count <int> / /rdebug bot spawn
-        boolean isSpawnKeyword = args[1].equalsIgnoreCase("spawn") || (sub.equals("spawn") && args[1].equalsIgnoreCase("bot"));
+        // 3. /rdebug bot spawn count <int> / /rdebug bot spawn
+        boolean isSpawnKeyword = args[1].equalsIgnoreCase("spawn");
         if (isSpawnKeyword) {
             int countIdx = -1;
             if (args.length >= 4 && args[2].equalsIgnoreCase("count")) {
@@ -1193,13 +1146,10 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             return;
         }
 
-        // 6. Spawn: /rdebug bot <name> [team] [1..10] or /rdebug spawn bot <name> [team] [1..10]
+        // 5. Spawn: /rdebug bot <name> [team] [1..10] or /rdebug bot spawn <name> [team] [1..10]
         int nameIndex = 1;
         int teamIndex = 2;
-        if (args[1].equalsIgnoreCase("bot") && args.length >= 3) {
-            nameIndex = 2;
-            teamIndex = 3;
-        } else if (args[1].equalsIgnoreCase("spawn") && args.length >= 3) {
+        if (args[1].equalsIgnoreCase("spawn") && args.length >= 3) {
             nameIndex = 2;
             teamIndex = 3;
         }
@@ -1308,45 +1258,6 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                     List<String> list = new ArrayList<>();
                     Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
                     yield filterStartsWith(list, input);
-                }
-                yield Collections.emptyList();
-            }
-            case "spawn" -> {
-                if (args.length == 2) yield filterStartsWith(Collections.singletonList("bot"), input);
-                if (args.length == 3) yield filterStartsWith(Arrays.asList("count", "auto"), input);
-                if (args.length == 4) {
-                    if (args[2].equalsIgnoreCase("count")) {
-                        yield filterStartsWith(Arrays.asList("1", "2", "3", "4", "5", "8"), input);
-                    }
-                    Location loc = (sender instanceof Player p) ? p.getLocation() : null;
-                    List<String> available = plugin.getBotManager() != null
-                            ? plugin.getBotManager().getAvailableTeams(loc).stream().map(Enum::name).collect(java.util.stream.Collectors.toList())
-                            : TEAM_COLORS;
-                    yield filterStartsWith(available, input);
-                }
-                yield Collections.emptyList();
-            }
-            case "despawn" -> {
-                if (args.length == 2) {
-                    List<String> list = new ArrayList<>(Arrays.asList("all", "count", "bot"));
-                    if (plugin.getBotManager() != null) {
-                        plugin.getBotManager().getBots().forEach(b -> list.add(b.getName()));
-                    }
-                    Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
-                    yield filterStartsWith(list, input);
-                }
-                if (args.length == 3) {
-                    if (args[1].equalsIgnoreCase("count")) {
-                        yield filterStartsWith(Arrays.asList("1", "2", "3", "4", "5", "8"), input);
-                    }
-                    if (args[1].equalsIgnoreCase("bot")) {
-                        List<String> list = new ArrayList<>(Arrays.asList("all", "count"));
-                        if (plugin.getBotManager() != null) {
-                            plugin.getBotManager().getBots().forEach(b -> list.add(b.getName()));
-                        }
-                        Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
-                        yield filterStartsWith(list, input);
-                    }
                 }
                 yield Collections.emptyList();
             }

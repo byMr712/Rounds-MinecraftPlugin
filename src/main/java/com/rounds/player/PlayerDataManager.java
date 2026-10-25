@@ -25,14 +25,15 @@ import org.bukkit.persistence.PersistentDataType;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayerDataManager implements Listener {
 
     private final RoundsPlugin plugin;
-    private final Map<UUID, PlayerData> cache = new HashMap<>();
-    private final Set<UUID> activePlayers = new HashSet<>();
+    private final Map<UUID, PlayerData> cache = new ConcurrentHashMap<>();
+    private final Set<UUID> activePlayers = ConcurrentHashMap.newKeySet();
     private final File activeFile;
-    private final Map<UUID, SavedPlayerData> savedData = new HashMap<>();
+    private final Map<UUID, SavedPlayerData> savedData = new ConcurrentHashMap<>();
 
     private static final Map<String, NamespacedKey> STAT_KEYS = new HashMap<>();
 

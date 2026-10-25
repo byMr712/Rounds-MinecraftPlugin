@@ -409,7 +409,7 @@ When freeplay is enabled (`/rdebug freeplay on`), non-admin players gain access 
 - `/rdebug rounds <n>` — Set round win limit
 - `/rdebug givegun` — Receive weapon
 - `/rdebug wheel on|off` — Toggle draft card rotation
-- `/rdebug bot` / `/rdebug spawn` / `/rdebug despawn` — Spawn and despawn practice bots
+- `/rdebug bot` — Spawn, configure, and despawn practice bots
 - `/rbot` — Complete bot management suite (`spawn`, `despawn`, `list`, `level`, `strategy`)
 
 ### Admin Commands (`rounds.admin`)
@@ -455,7 +455,7 @@ When freeplay is enabled (`/rdebug freeplay on`), non-admin players gain access 
 | `/rdebug bot [name] [team] [1..10]` | Spawn combat bot (auto name `rbot<1..9999>` and auto team if omitted) |
 | `/rdebug bot spawn count <N>` | Spawn N bots (up to 500) balanced across placed team blocks |
 | `/rdebug bot level <name> [1..10]` | Check or set bot difficulty level (1..10) |
-| `/rdebug bot despawn <name>` | Despawn specific bot (alias `/rdebug despawn <name>`) |
+| `/rdebug bot despawn <name>` | Despawn specific bot |
 | `/rdebug bot despawn count <N>` | Despawn N bots prioritizing largest teams |
 | `/rdebug bot despawn all` | Remove all active bots from server |
 | `/rbot spawn [name] [team] [1..10]` | Spawn bot (auto name `rbot<1..9999>` and auto team) |
@@ -575,6 +575,125 @@ Identifier: `%rounds_...%`
 | `%rounds_stat_hp_cost%` | Health cost per shot |
 | `%rounds_stat_hp_boost_on_hit%` | Health gain per hit |
 | `%rounds_stat_ammo_per_hit%` | Ammo returned per hit |
+
+
+## TAB Plugin Setup (Scoreboard & Dynamic Switcher)
+
+The **ROUNDS** plugin integrates seamlessly with the popular **TAB** plugin (version 6.1.2+ / 6.2+) via PlaceholderAPI. This allows displaying an elegant sidebar scoreboard that automatically and smoothly switches every 5 seconds between the overall match score (team round wins) and the player's personal combat statistics (HP, damage, ammo, bullets, cards).
+
+### Quick Setup with Pre-configured Files (No Manual Configuration Needed)
+
+The plugin repository includes pre-configured and tested configuration files inside the [`TAB config/`](TAB%20config) directory. To avoid setting everything up by hand:
+
+1. Install both **TAB** and **PlaceholderAPI** plugins on your server.
+2. Copy the entire contents of the `TAB config/` folder from this repository into your server's `plugins/TAB/` directory (overwriting existing files if prompted).
+3. Execute the reload command in your server console or in-game:
+   ```
+   /tab reload
+   ```
+4. Done! The sidebar scoreboard will immediately display your active team, win counters for all 4 teams, and switch every 5 seconds to show your current combat statistics.
+
+---
+
+### Detailed Breakdown of TAB Configuration Files
+
+If you wish to customize the design or configure the files manually:
+
+#### 1. `animations.yml`
+Controls the timer and frame values for cyclic switching between the match scoreboard and the personal stats scoreboard.
+
+```yaml
+# animations.yml - Switcher animation for TAB
+scoreboard-switcher:
+  change-interval: 5000  # Interval in milliseconds (5000 = 5 seconds)
+  texts:
+    - "1"  # Frame 1: displays match win counters (game)
+    - "2"  # Frame 2: displays player combat stats (stats)
+```
+
+- `change-interval`: 5000 ms (5 seconds). You can decrease or increase this value as desired.
+- `texts`: values `"1"` and `"2"` are evaluated by the `display-condition` in `config.yml`.
+
+#### 2. `config.yml`
+The main configuration file of the TAB plugin. Contains the layout lines for both scoreboards, display conditions, tablist ping indicator, and team display settings.
+
+```yaml
+scoreboard:
+  enabled: true
+  toggle-command: /sb
+  remember-toggle-choice: false
+  hidden-by-default: false
+  delay-on-join-milliseconds: 0
+
+  scoreboards:
+    # Screen 1: Team & round wins
+    game:
+      title: "&6&lROUNDS"
+      display-condition: "%animation:scoreboard-switcher%=1"
+      lines:
+        - "&7&m════════"
+        - " &fYou: &e%rounds_team%"
+        - " "
+        - "      Wins   "
+        - " &bBlue:   ||&b%rounds_blue_wins%"
+        - " &cRed:    ||&c%rounds_red_wins%"
+        - " &eYellow: ||&e%rounds_yellow_wins%"
+        - " &aGreen:  ||&a%rounds_green_wins%"
+        - "&7&m════════"
+
+    # Screen 2: Combat statistics & active cards
+    stats:
+      title: "&b&lMy Stats"
+      display-condition: "%animation:scoreboard-switcher%=2"
+      lines:
+        - "&7&m════════"
+        - " &fHP:      || &a%rounds_stat_hp%"
+        - " &fDamage:  || &c%rounds_stat_dmg%"
+        - " &fCards:   || &d%rounds_stat_cards%"
+        - " &fBullets: || &6%rounds_stat_bullets%"
+        - " &fAmmo:    || &e%rounds_stat_max_ammo%"
+        - "&7&m════════"
+
+# Tablist player name formatting
+tablist-name-formatting:
+  enabled: true
+
+# Green ping display in milliseconds in player list
+playerlist-objective:
+  enabled: true
+  value: '%ping%'
+  fancy-value: '&a%ping% ms'
+  title: Ping
+  render-type: INTEGER
+```
+
+- The `||` separator in scoreboard lines aligns numbers to the right-hand side of the column.
+- Placeholders `%rounds_blue_wins%`, `%rounds_stat_hp%`, etc., are automatically resolved by RoundsPlugin via PlaceholderAPI.
+
+#### 3. `groups.yml`
+Manages group prefixes and suffixes in the player tab list and above player nametags. Supports group inheritance and seamless integration with LuckPerms via `%luckperms-prefix%` and `%luckperms-suffix%`.
+
+```yaml
+_DEFAULT_:
+  tabprefix: "%luckperms-prefix%"
+  tagprefix: "%luckperms-prefix%"
+  customtabname: "%player%"
+  tabsuffix: "%luckperms-suffix%"
+  tagsuffix: "%luckperms-suffix%"
+
+Player:
+  tabprefix: "&0&l[&7&lPlayer&0&l] &3"
+  tagprefix: "&2&lPlayer &3"
+```
+
+#### 4. `users.yml`
+Allows assigning persistent individual prefixes, suffixes, or custom tab formatting to specific players based on their username or UUID.
+
+```yaml
+_NEZNAMY_:
+  tabprefix: "&6&lTAB&r &a"
+  tagprefix: "&6&lTAB&r &a"
+```
 
 
 ## Localization

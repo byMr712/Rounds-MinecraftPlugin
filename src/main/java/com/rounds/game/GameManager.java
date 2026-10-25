@@ -280,7 +280,16 @@ public class GameManager implements Listener {
                 applyDarkness();
 
                 for (Player p : plugin.getServer().getOnlinePlayers()) {
-                    p.setGameMode(GameMode.SPECTATOR);
+                    GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+                    if (team == null) {
+                        p.setGameMode(GameMode.SPECTATOR);
+                        p.setAllowFlight(true);
+                        p.setFlying(true);
+                    } else {
+                        p.setGameMode(GameMode.ADVENTURE);
+                        p.setAllowFlight(false);
+                        p.setFlying(false);
+                    }
                     p.setInvulnerable(true);
                 }
                 count--;
@@ -838,7 +847,6 @@ public class GameManager implements Listener {
         currentRound++;
         state = GameState.PLAYING;
         deadPlayers.clear();
-        clearAllSpectatorGlow();
         refreshTeamScoreboards();
         saveState();
         GunItem.resetRoundState();
@@ -902,6 +910,8 @@ public class GameManager implements Listener {
                 }
             }
         }
+        clearAllSpectatorGlow();
+        updateSpectatorGlow();
         musicTick = 0;
         showNameTagsInGame();
         updateScoreboard();
@@ -1277,20 +1287,25 @@ public class GameManager implements Listener {
                     plugin.getCardManager().openCardSelection(p, team);
                 }
             } else {
-                // Not picking this round: must be in Spectator mode until picks are done
-                p.setGameMode(GameMode.SPECTATOR);
-                p.setAllowFlight(true);
-                p.setFlying(true);
-                p.setInvulnerable(true);
-                p.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
+                // Not picking this round: team members wait in Adventure mode at spawn, true spectators stay in Spectator
                 GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
                 if (team != null) {
+                    p.setGameMode(GameMode.ADVENTURE);
+                    p.setAllowFlight(false);
+                    p.setFlying(false);
+                    p.setInvulnerable(true);
+                    p.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
                     Location safe = teamSpawns.get(team);
                     if (safe != null && safe.getWorld() != null && safe.getWorld().equals(p.getWorld())) {
                         p.teleport(safe.clone().add(0, 1.2, 0));
                     }
+                    sendEnemyPickingCardsTitle(p, 100);
+                } else {
+                    p.setGameMode(GameMode.SPECTATOR);
+                    p.setAllowFlight(true);
+                    p.setFlying(true);
+                    p.setInvulnerable(true);
                 }
-                sendEnemyPickingCardsTitle(p, 100);
             }
         }
         pendingCardJoiners.clear();
@@ -2132,17 +2147,33 @@ public class GameManager implements Listener {
         }
     }
 
+    private final Set<UUID> playersWithSpectatorGlow = new HashSet<>();
+
     @EventHandler
     public void onGameModeChange(PlayerGameModeChangeEvent event) {
         if (event.getNewGameMode() == GameMode.SPECTATOR) {
             Bukkit.getScheduler().runTask(plugin, this::updateSpectatorGlow);
-        } else if (event.getPlayer().getGameMode() == GameMode.SPECTATOR) {
+        } else {
             clearSpectatorGlow(event.getPlayer());
+            playersWithSpectatorGlow.remove(event.getPlayer().getUniqueId());
         }
     }
 
     public void updateSpectatorGlow() {
         if (!isGameStarted() && !isGameActive()) return;
+
+        // Auto-clear glow for anyone who is no longer a spectator
+        Iterator<UUID> it = playersWithSpectatorGlow.iterator();
+        while (it.hasNext()) {
+            UUID id = it.next();
+            Player p = Bukkit.getPlayer(id);
+            if (p == null || !p.isOnline() || p.getGameMode() != GameMode.SPECTATOR) {
+                if (p != null && p.isOnline()) {
+                    clearSpectatorGlow(p);
+                }
+                it.remove();
+            }
+        }
 
         List<Player> spectators = new ArrayList<>();
         List<Player> livingPlayers = new ArrayList<>();
@@ -2160,14 +2191,7 @@ public class GameManager implements Listener {
         MinecraftServer nmsServer = ((CraftServer) Bukkit.getServer()).getServer();
 
         for (Player target : livingPlayers) {
-            byte flags = 0;
-            if (target.getFireTicks() > 0) flags |= 0x01;
-            if (target.isSneaking()) flags |= 0x02;
-            if (target.isSprinting()) flags |= 0x08;
-            if (target.isSwimming()) flags |= 0x10;
-            if (target.isInvisible()) flags |= 0x20;
-            flags |= 0x40; // Spectator glow
-            if (target.isGliding()) flags |= 0x80;
+            byte flags = getEntitySharedFlags(target, true);
 
             SynchedEntityData.DataValue<Byte> dataValue = new SynchedEntityData.DataValue<>(0, EntityDataSerializers.BYTE, flags);
             ClientboundSetEntityDataPacket packet = new ClientboundSetEntityDataPacket(target.getEntityId(), List.of(dataValue));
@@ -2176,6 +2200,7 @@ public class GameManager implements Listener {
                 ServerPlayer sp = nmsServer.getPlayerList().getPlayer(spectator.getUniqueId());
                 if (sp != null && sp.connection != null) {
                     sp.connection.send(packet);
+                    playersWithSpectatorGlow.add(spectator.getUniqueId());
                 }
             }
         }
@@ -2190,14 +2215,7 @@ public class GameManager implements Listener {
         for (Player target : Bukkit.getOnlinePlayers()) {
             if (target.equals(formerSpectator)) continue;
             boolean hasCardGlow = target.hasPotionEffect(PotionEffectType.GLOWING);
-            byte flags = 0;
-            if (target.getFireTicks() > 0) flags |= 0x01;
-            if (target.isSneaking()) flags |= 0x02;
-            if (target.isSprinting()) flags |= 0x08;
-            if (target.isSwimming()) flags |= 0x10;
-            if (target.isInvisible()) flags |= 0x20;
-            if (hasCardGlow) flags |= 0x40; // Preserve card effect glow!
-            if (target.isGliding()) flags |= 0x80;
+            byte flags = getEntitySharedFlags(target, hasCardGlow);
 
             SynchedEntityData.DataValue<Byte> dataValue = new SynchedEntityData.DataValue<>(0, EntityDataSerializers.BYTE, flags);
             ClientboundSetEntityDataPacket packet = new ClientboundSetEntityDataPacket(target.getEntityId(), List.of(dataValue));
@@ -2205,10 +2223,23 @@ public class GameManager implements Listener {
         }
     }
 
+    private byte getEntitySharedFlags(Player target, boolean glow) {
+        byte flags = 0;
+        if (target.getFireTicks() > 0) flags |= 0x01;
+        if (target.isSneaking()) flags |= 0x02;
+        if (target.isSprinting()) flags |= 0x08;
+        if (target.isSwimming()) flags |= 0x10;
+        if (target.isInvisible()) flags |= 0x20;
+        if (glow) flags |= 0x40;
+        if (target.isGliding()) flags |= 0x80;
+        return flags;
+    }
+
     public void clearAllSpectatorGlow() {
         for (Player p : Bukkit.getOnlinePlayers()) {
             clearSpectatorGlow(p);
         }
+        playersWithSpectatorGlow.clear();
     }
 
     private void saveState() {

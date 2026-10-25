@@ -66,10 +66,10 @@ public class CardManager {
         if (allPicksDone()) {
             plugin.getGameManager().onAllCardsPicked();
         } else {
-            // Player has chosen, but other players/bots are still selecting: switch to Spectator mode
-            player.setGameMode(GameMode.SPECTATOR);
-            player.setAllowFlight(true);
-            player.setFlying(true);
+            // Player has chosen, but other players/bots are still selecting: stay in Adventure mode at spawn
+            player.setGameMode(GameMode.ADVENTURE);
+            player.setAllowFlight(false);
+            player.setFlying(false);
             player.setInvulnerable(true);
             player.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
             plugin.getGameManager().sendEnemyPickingCardsTitle(player, 100);

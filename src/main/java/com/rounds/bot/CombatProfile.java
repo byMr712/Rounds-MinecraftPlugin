@@ -33,7 +33,7 @@ public class CombatProfile {
             double strafeSpeed = 0.12 + 0.04 * factor;
             double maxShootDist = 10.0 + 30.0 * factor;
             double smartChance = (lvl <= 2) ? 0.50 : ((lvl <= 4) ? 0.60 : ((lvl <= 7) ? 0.70 : ((lvl <= 9) ? 0.80 : 0.90)));
-            double pursuitChance = Math.min(1.0, smartChance * 1.20);
+            double pursuitChance = Math.min(1.0, (smartChance * 1.20) * 1.15);
             double jumpErrorChance = (lvl <= 3) ? 0.30 : ((lvl <= 7) ? 0.20 : ((lvl <= 9) ? 0.10 : 0.0));
             double landingErrorChance = (lvl <= 3) ? 0.10 : ((lvl <= 7) ? 0.07 : ((lvl <= 9) ? 0.05 : 0.01));
             double walkSpeed = 0.17 + 0.03 * factor;

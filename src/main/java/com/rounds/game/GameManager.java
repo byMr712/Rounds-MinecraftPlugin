@@ -1913,6 +1913,12 @@ public class GameManager implements Listener {
     }
 
     public Set<GameTeam> getAvailableTeams() {
+        if (plugin.getBlockListener() != null) {
+            Set<GameTeam> placed = plugin.getBlockListener().getJoinBlockTeams();
+            if (!placed.isEmpty()) {
+                return placed;
+            }
+        }
         Set<GameTeam> available = new HashSet<>(plugin.getRoundsConfig().getEnabledTeams());
         if (available.isEmpty()) {
             available.addAll(Arrays.asList(GameTeam.values()));

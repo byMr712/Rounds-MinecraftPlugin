@@ -88,7 +88,7 @@ public class RBotCommand implements CommandExecutor, TabCompleter {
                 String name = args[1];
                 String team = (args.length >= 3 && !args[2].equalsIgnoreCase("auto"))
                         ? args[2].toUpperCase()
-                        : botManager.pickBestTeam();
+                        : botManager.pickBestTeam(loc);
 
                 Integer initialLevel = null;
                 if (args.length >= 4) {
@@ -101,6 +101,9 @@ public class RBotCommand implements CommandExecutor, TabCompleter {
                 if (bot == null) {
                     sender.sendMessage(ChatColor.RED + "[RoundsBot] Invalid bot name: " + name + " (1-16 chars [a-zA-Z0-9_])");
                     return true;
+                }
+                if (args.length >= 3 && !args[2].equalsIgnoreCase("auto") && !bot.getTeamName().equalsIgnoreCase(args[2])) {
+                    sender.sendMessage(ChatColor.YELLOW + "[RoundsBot] Team " + args[2].toUpperCase() + " has no spawn/join blocks on map. Assigned to " + ChatColor.GOLD + bot.getTeamName());
                 }
                 sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Spawned bot " + ChatColor.AQUA + bot.getName() +
                         ChatColor.GREEN + " on team " + ChatColor.GOLD + bot.getTeamName() +
@@ -333,7 +336,11 @@ public class RBotCommand implements CommandExecutor, TabCompleter {
                 if (args[1].equalsIgnoreCase("count")) {
                     return filterStartsWith(Arrays.asList("1", "2", "3", "4", "5", "8"), current);
                 }
-                return filterStartsWith(TEAMS, current);
+                Location loc = (sender instanceof Player p) ? p.getLocation() : null;
+                List<String> available = botManager.getAvailableTeams(loc).stream()
+                        .map(Enum::name)
+                        .collect(Collectors.toList());
+                return filterStartsWith(available, current);
             }
             if (args[0].equalsIgnoreCase("despawn") && args[1].equalsIgnoreCase("count")) {
                 return filterStartsWith(Arrays.asList("1", "2", "3", "4", "5", "8"), current);

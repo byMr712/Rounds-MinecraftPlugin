@@ -69,6 +69,7 @@ public class BlockListener implements Listener {
 
     public BlockStorage getBlockStorage() { return blockStorage; }
     public Set<GameTeam> getJoinBlockTeams() { return new HashSet<>(joinBlocks.values()); }
+    public Map<Location, GameTeam> getJoinBlocks() { return Collections.unmodifiableMap(joinBlocks); }
     public Set<Location> getJumpBlocks() { return Collections.unmodifiableSet(jumpBlocks); }
     public Set<Location> getUpBlocks() { return Collections.unmodifiableSet(upBlocks); }
 

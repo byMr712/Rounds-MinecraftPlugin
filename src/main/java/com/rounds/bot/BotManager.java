@@ -85,7 +85,7 @@ public class BotManager implements Listener {
         int clamped = Math.max(1, Math.min(500, count));
         for (int i = 0; i < clamped; i++) {
             String name = generateUniqueBotName();
-            String team = pickBestTeam();
+            String team = pickBestTeam(location);
             FakeBot bot = spawnBot(name, team, location);
             if (bot != null) {
                 spawned.add(bot);
@@ -151,7 +151,23 @@ public class BotManager implements Listener {
         plugin.getPlayerDataManager().trackPlayer(bukkitPlayer.getUniqueId());
 
         // 4. Team assignment and Gun equipment
-        String targetTeam = (teamName != null && !teamName.isBlank()) ? teamName : pickBestTeam();
+        Set<GameTeam> availableTeams = getAvailableTeams(loc);
+        String targetTeam;
+        if (teamName != null && !teamName.isBlank()) {
+            try {
+                GameTeam requested = GameTeam.valueOf(teamName.toUpperCase());
+                if (!availableTeams.isEmpty() && !availableTeams.contains(requested)) {
+                    plugin.getLogger().warning("Team " + requested + " has no spawn/join blocks on map. Reassigning bot " + name + " to available team.");
+                    targetTeam = pickBestTeam(loc);
+                } else {
+                    targetTeam = requested.name();
+                }
+            } catch (IllegalArgumentException e) {
+                targetTeam = pickBestTeam(loc);
+            }
+        } else {
+            targetTeam = pickBestTeam(loc);
+        }
         assignTeam(bukkitPlayer, targetTeam);
 
         // Give gun directly
@@ -271,11 +287,54 @@ public class BotManager implements Listener {
         }
     }
 
-    public String pickBestTeam() {
-        Collection<GameTeam> teams = plugin.getRoundsConfig().getEnabledTeams();
-        if (teams == null || teams.isEmpty()) {
-            teams = EnumSet.allOf(GameTeam.class);
+    public Set<GameTeam> getAvailableTeams() {
+        return getAvailableTeams(null);
+    }
+
+    public Set<GameTeam> getAvailableTeams(Location loc) {
+        com.rounds.blocks.BlockListener bl = plugin.getBlockListener();
+        if (bl != null) {
+            Map<Location, GameTeam> joinBlocks = bl.getJoinBlocks();
+            if (loc != null && bl.getBlockStorage() != null) {
+                com.rounds.blocks.BlockStorage.MapBlock zone = bl.getBlockStorage().findMapBlock(loc);
+                if (zone != null && zone.center != null && zone.center.getWorld() != null) {
+                    Set<GameTeam> zoneTeams = new HashSet<>();
+                    int half = zone.size / 2;
+                    for (Map.Entry<Location, GameTeam> entry : joinBlocks.entrySet()) {
+                        Location bLoc = entry.getKey();
+                        if (bLoc != null && bLoc.getWorld() == zone.center.getWorld()
+                                && Math.abs(bLoc.getBlockX() - zone.center.getBlockX()) <= half
+                                && Math.abs(bLoc.getBlockZ() - zone.center.getBlockZ()) <= half) {
+                            zoneTeams.add(entry.getValue());
+                        }
+                    }
+                    if (!zoneTeams.isEmpty()) {
+                        return zoneTeams;
+                    }
+                }
+            }
+            Set<GameTeam> allPlaced = bl.getJoinBlockTeams();
+            if (!allPlaced.isEmpty()) {
+                return allPlaced;
+            }
         }
+        com.rounds.game.GameManager gm = plugin.getGameManager();
+        if (gm != null && !gm.getTeamSpawns().isEmpty()) {
+            return new HashSet<>(gm.getTeamSpawns().keySet());
+        }
+        Collection<GameTeam> configTeams = plugin.getRoundsConfig().getEnabledTeams();
+        if (configTeams != null && !configTeams.isEmpty()) {
+            return new HashSet<>(configTeams);
+        }
+        return EnumSet.allOf(GameTeam.class);
+    }
+
+    public String pickBestTeam() {
+        return pickBestTeam(null);
+    }
+
+    public String pickBestTeam(Location location) {
+        Set<GameTeam> teams = getAvailableTeams(location);
         GameTeam best = null;
         int minCount = Integer.MAX_VALUE;
         for (GameTeam gt : teams) {
@@ -285,7 +344,8 @@ public class BotManager implements Listener {
                 best = gt;
             }
         }
-        return (best != null) ? best.name() : "BLUE";
+        if (best != null) return best.name();
+        return teams.isEmpty() ? "BLUE" : teams.iterator().next().name();
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

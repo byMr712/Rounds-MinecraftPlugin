@@ -1181,7 +1181,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         String name = args[nameIndex];
         String team = (args.length > teamIndex && !args[teamIndex].isBlank())
                 ? args[teamIndex].toUpperCase()
-                : bm.pickBestTeam();
+                : bm.pickBestTeam(loc);
 
         Integer initialLevel = null;
         if (args.length > teamIndex + 1) {
@@ -1374,7 +1374,11 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                     if (args[2].equalsIgnoreCase("count")) {
                         yield filterStartsWith(Arrays.asList("1", "2", "3", "4", "5", "8"), input);
                     }
-                    yield filterStartsWith(TEAM_COLORS, input);
+                    Location loc = (sender instanceof Player p) ? p.getLocation() : null;
+                    List<String> available = plugin.getBotManager() != null
+                            ? plugin.getBotManager().getAvailableTeams(loc).stream().map(Enum::name).collect(java.util.stream.Collectors.toList())
+                            : TEAM_COLORS;
+                    yield filterStartsWith(available, input);
                 }
                 yield Collections.emptyList();
             }

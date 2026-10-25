@@ -2,7 +2,7 @@
 
 > **Language:** [Русский](readme.md) · English
 
-**RoundsPlugin** brings the chaotic, competitive 2D/3D platformer shooter **ROUNDS** directly to your Minecraft server! 4 teams, a deep card system with 112 unique upgrade cards and custom card support, up to 20+ rounds, physical interactive setup blocks, comeback card drafting for losing teams, auto-death for stalled rounds, freeplay mode, and full TAB / PlaceholderAPI integration.
+**RoundsPlugin** brings the chaotic, competitive 2D/3D platformer shooter **ROUNDS** directly to your Minecraft server! 4 teams, a deep card system with 112 unique upgrade cards and custom card support, up to 20+ rounds, physical interactive setup blocks, comeback card drafting for losing teams, auto-death for stalled rounds, freeplay mode, and full [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) / [**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi) integration.
 
 
 ## Key Features
@@ -35,7 +35,7 @@
   - **Card Synergy & Saw Rush:** With the Saw card, bots sprint in point-blank (<2.8m, speed 0.46) while blocking. Bots dynamically cast Implode, Silence, EMP, Overpower, BombOnBlock, Teleport, Heal, and Tactical Reload.
   - **Automatic Cleanup:** All bots despawn cleanly when games stop (`/rdebug stop`, `/rounds stop`) or server restarts.
   - **Spectator Outlines & Team Titles:** Spectators see glowing outlines around alive players in team colors (hidden from survival combatants). Neutral team victory titles are shown to spectators.
-- **Server Integration:** Paper / Purpur 1.20.4+ compatible, full TAB and PlaceholderAPI support, built-in scoreboard.
+- **Server Integration:** Paper / Purpur 1.20.4+ compatible, full [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) and [**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi) support, built-in scoreboard.
 - **Localization:** Complete UI and card translation system (`lang/*.txt`).
 
 
@@ -43,7 +43,7 @@
 
 - **Server:** Paper / Purpur 1.20.4+ (compatible with 1.20.x — 1.21.x / 26.2+)
 - **Java:** Java 17 bytecode (major version 61)
-- **PlaceholderAPI and TAB (For full experience)**
+- [**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi) and [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) (For full experience)
 
 
 ## Installation
@@ -475,7 +475,7 @@ When freeplay is enabled (`/rdebug freeplay on`), non-admin players gain access 
 | `rounds.join` | Ability to join teams via lobby blocks and `/rdebug join` | `true` (all players) |
 
 
-## Placeholders (PlaceholderAPI)
+## Placeholders ([**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi))
 
 Identifier: `%rounds_...%`
 
@@ -577,15 +577,15 @@ Identifier: `%rounds_...%`
 | `%rounds_stat_ammo_per_hit%` | Ammo returned per hit |
 
 
-## TAB Plugin Setup (Scoreboard & Dynamic Switcher)
+## [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) Plugin Setup (Scoreboard & Dynamic Switcher)
 
-The **ROUNDS** plugin integrates seamlessly with the popular **TAB** plugin (version 6.1.2+ / 6.2+) via PlaceholderAPI. This allows displaying an elegant sidebar scoreboard that automatically and smoothly switches every 5 seconds between the overall match score (team round wins) and the player's personal combat statistics (HP, damage, ammo, bullets, cards).
+The **ROUNDS** plugin integrates seamlessly with the popular [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) plugin (version 6.1.2+ / 6.2+) via [**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi). This allows displaying an elegant sidebar scoreboard that automatically and smoothly switches every 5 seconds between the overall match score (team round wins) and the player's personal combat statistics (HP, damage, ammo, bullets, cards).
 
 ### Quick Setup with Pre-configured Files (No Manual Configuration Needed)
 
 The plugin repository includes pre-configured and tested configuration files inside the [`TAB config/`](TAB%20config) directory. To avoid setting everything up by hand:
 
-1. Install both **TAB** and **PlaceholderAPI** plugins on your server.
+1. Install both [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) and [**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi) plugins on your server.
 2. Copy the entire contents of the `TAB config/` folder from this repository into your server's `plugins/TAB/` directory (overwriting existing files if prompted).
 3. Execute the reload command in your server console or in-game:
    ```
@@ -595,7 +595,7 @@ The plugin repository includes pre-configured and tested configuration files ins
 
 ---
 
-### Detailed Breakdown of TAB Configuration Files
+### Detailed Breakdown of [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) Configuration Files
 
 If you wish to customize the design or configure the files manually:
 
@@ -615,7 +615,7 @@ scoreboard-switcher:
 - `texts`: values `"1"` and `"2"` are evaluated by the `display-condition` in `config.yml`.
 
 #### 2. `config.yml`
-The main configuration file of the TAB plugin. Contains the layout lines for both scoreboards, display conditions, tablist ping indicator, and team display settings.
+The main configuration file of the [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) plugin. Contains the layout lines for both scoreboards, display conditions, tablist ping indicator, and team display settings.
 
 ```yaml
 scoreboard:
@@ -668,7 +668,7 @@ playerlist-objective:
 ```
 
 - The `||` separator in scoreboard lines aligns numbers to the right-hand side of the column.
-- Placeholders `%rounds_blue_wins%`, `%rounds_stat_hp%`, etc., are automatically resolved by RoundsPlugin via PlaceholderAPI.
+- Placeholders `%rounds_blue_wins%`, `%rounds_stat_hp%`, etc., are automatically resolved by RoundsPlugin via [**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi).
 
 
 ## Localization
@@ -711,4 +711,4 @@ Requires **Java 17** (or higher) and **Gradle 8.9+**:
 ```
 
 The resulting JAR will be located at:
-`build/libs/RoundsPlugin-1.0.jar`
+`build/libs/RoundsPlugin-1.X.jar`

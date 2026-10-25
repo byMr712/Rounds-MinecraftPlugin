@@ -18,6 +18,7 @@ import org.bukkit.World;
 import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.entity.Player;
+import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -176,10 +177,16 @@ public class BotManager implements Listener {
 
         FakeBot bot = new FakeBot(this, bukkitPlayer, nmsPlayer);
         bot.resetPhysics();
+        try {
+            bot.setAssignedTeam(GameTeam.valueOf(targetTeam.toUpperCase()));
+        } catch (Exception ignored) {}
         if (level != null && level >= 1 && level <= 10) {
             bot.setLevel(level);
         }
         bots.put(name.toLowerCase(), bot);
+        if (plugin.getGameManager() != null) {
+            plugin.getGameManager().showNameTagsInGame();
+        }
         plugin.getLogger().info("Spawned fake bot: " + name + " [team: " + targetTeam + ", level: " + bot.getLevel() + "]");
         return bot;
     }
@@ -189,6 +196,9 @@ public class BotManager implements Listener {
         for (FakeBot bot : bots.values()) {
             bot.randomizeLevel();
             plugin.getLogger().info("Rerolled bot " + bot.getName() + " difficulty to level " + bot.getLevel() + " (" + (bot.getLevel() * 10) + "%)");
+        }
+        if (plugin.getGameManager() != null) {
+            plugin.getGameManager().showNameTagsInGame();
         }
     }
 
@@ -223,6 +233,22 @@ public class BotManager implements Listener {
         // Remove from RoundsPlugin active players and team
         plugin.getPlayerDataManager().removeActivePlayer(bot.getBukkitPlayer().getUniqueId());
         plugin.getTeamManager().leaveTeam(bot.getBukkitPlayer().getUniqueId());
+
+        // Unregister bot dedicated team if present
+        Scoreboard mainSb = Bukkit.getScoreboardManager().getMainScoreboard();
+        org.bukkit.scoreboard.Team bt = mainSb.getTeam("rb_" + name.toLowerCase());
+        if (bt != null) {
+            try { bt.unregister(); } catch (Exception ignored) {}
+        }
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            Scoreboard pSb = p.getScoreboard();
+            if (pSb != null && !pSb.equals(mainSb)) {
+                org.bukkit.scoreboard.Team pbt = pSb.getTeam("rb_" + name.toLowerCase());
+                if (pbt != null) {
+                    try { pbt.unregister(); } catch (Exception ignored) {}
+                }
+            }
+        }
 
         plugin.getLogger().info("Despawned fake bot: " + name);
         return true;
@@ -278,13 +304,21 @@ public class BotManager implements Listener {
         if (teamName == null || teamName.isBlank()) return;
         if (teamName.equalsIgnoreCase("NONE")) {
             plugin.getTeamManager().leaveTeam(player.getUniqueId());
+            FakeBot bot = getBot(player.getName());
+            if (bot != null) bot.setAssignedTeam(null);
             return;
         }
+        GameTeam gt;
         try {
-            GameTeam gt = GameTeam.valueOf(teamName.toUpperCase());
+            gt = GameTeam.valueOf(teamName.toUpperCase());
             plugin.getTeamManager().joinTeam(player.getUniqueId(), gt);
         } catch (IllegalArgumentException ignored) {
-            plugin.getTeamManager().joinTeam(player.getUniqueId(), GameTeam.BLUE);
+            gt = GameTeam.BLUE;
+            plugin.getTeamManager().joinTeam(player.getUniqueId(), gt);
+        }
+        FakeBot bot = getBot(player.getName());
+        if (bot != null) {
+            bot.setAssignedTeam(gt);
         }
     }
 
@@ -376,6 +410,9 @@ public class BotManager implements Listener {
         FakeBot bot = getBot(p.getName());
         if (bot != null) {
             bot.updatePlayer(p);
+            if (plugin.getGameManager() != null) {
+                plugin.getGameManager().showNameTagsInGame();
+            }
         }
     }
 

@@ -206,30 +206,22 @@ public class RoundsEntities implements Listener {
 
         if (b.homing > 0) {
             // Цель ищем не каждый тик: кэшируем и обновляем раз в 10 тиков или при потере.
-            GameTeam ownerTeam = plugin.getTeamManager().getPlayerTeam(b.ownerId);
             LivingEntity cached = b.homingTarget;
             boolean targetInvalid = cached == null || !cached.isValid()
                     || cached.isDead()
                     || b.loc.distanceSquared(cached.getLocation()) > 400.0
                     || (cached instanceof Player ht
                         && (!plugin.getGameManager().isTargetable(ht)
-                            || plugin.getTeamManager().getPlayerTeam(ht.getUniqueId()) == null
-                            || (ownerTeam != null && ownerTeam == plugin.getTeamManager().getPlayerTeam(ht.getUniqueId()))));
+                            || isTeammate(b.ownerId, ht.getUniqueId())));
             if (targetInvalid || b.ticksLived % 10 == 0) {
                 b.homingTarget = findNearestEnemy(b.loc, b.ownerId);
             }
             LivingEntity nearest = b.homingTarget;
             if (nearest != null) {
                 if (nearest instanceof Player p) {
-                    if (!plugin.getGameManager().isTargetable(p)) {
+                    if (!plugin.getGameManager().isTargetable(p) || isTeammate(b.ownerId, p.getUniqueId())) {
                         b.homingTarget = null;
                         nearest = null;
-                    } else {
-                        GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-                        if (targetTeam == null || (ownerTeam != null && ownerTeam == targetTeam)) {
-                            b.homingTarget = null;
-                            nearest = null;
-                        }
                     }
                 }
             }
@@ -357,9 +349,7 @@ public class RoundsEntities implements Listener {
                 boolean shield = false;
                 if (living instanceof Player p) {
                     if (!plugin.getGameManager().isTargetable(p)) continue;
-                    GameTeam ownerTeam = plugin.getTeamManager().getPlayerTeam(b.ownerId);
-                    GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-                    if (ownerTeam != null && targetTeam != null && ownerTeam == targetTeam) continue;
+                    if (isTeammate(b.ownerId, p.getUniqueId())) continue;
                     shield = GunItem.isShieldActive(p.getUniqueId());
                 }
                 if (t < bestT) {
@@ -644,13 +634,11 @@ public class RoundsEntities implements Listener {
         }
         if (data.splash > 0) {
             double splashRadius = 2.0 + data.splash;
-            GameTeam ownerTeam = plugin.getTeamManager().getPlayerTeam(ownerId);
             for (Entity entity : living.getNearbyEntities(splashRadius, splashRadius, splashRadius)) {
                 if (entity instanceof LivingEntity splashTarget && !splashTarget.getUniqueId().equals(ownerId)) {
                     if (splashTarget instanceof Player sp) {
                         if (!plugin.getGameManager().isTargetable(sp)) continue;
-                        GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(sp.getUniqueId());
-                        if (ownerTeam != null && targetTeam != null && ownerTeam == targetTeam) continue;
+                        if (isTeammate(ownerId, sp.getUniqueId())) continue;
                     }
                     splashTarget.setNoDamageTicks(0);
                     splashTarget.damage(finalDamage * 0.5);
@@ -659,13 +647,11 @@ public class RoundsEntities implements Listener {
             living.getWorld().playSound(living.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 0.5f, 2.0f);
         }
         if (data.shockwave > 0) {
-            GameTeam ownerTeam = plugin.getTeamManager().getPlayerTeam(ownerId);
             for (Entity entity : living.getNearbyEntities(5.0, 5.0, 5.0)) {
                 if (entity instanceof LivingEntity shockTarget && !shockTarget.getUniqueId().equals(ownerId)) {
                     if (shockTarget instanceof Player sp) {
                         if (!plugin.getGameManager().isTargetable(sp)) continue;
-                        GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(sp.getUniqueId());
-                        if (ownerTeam != null && targetTeam != null && ownerTeam == targetTeam) continue;
+                        if (isTeammate(ownerId, sp.getUniqueId())) continue;
                     }
                     Vector toTarget = shockTarget.getLocation().toVector()
                         .subtract(living.getLocation().toVector());
@@ -891,20 +877,50 @@ public class RoundsEntities implements Listener {
         shieldPlayer.getWorld().playSound(shieldPlayer.getLocation(), Sound.BLOCK_ANVIL_USE, 0.6f, 2.0f);
     }
 
+    // ==================== Teammate helper ====================
+
+    public static boolean isTeammate(UUID u1, UUID u2) {
+        if (u1 == null || u2 == null) return false;
+        if (u1.equals(u2)) return true;
+        if (plugin == null || plugin.getTeamManager() == null) return false;
+
+        GameTeam t1 = plugin.getTeamManager().getPlayerTeam(u1);
+        if (t1 == null && plugin.getBotManager() != null) {
+            Player p1 = Bukkit.getPlayer(u1);
+            if (p1 != null) {
+                com.rounds.bot.FakeBot b1 = plugin.getBotManager().getBot(p1.getName());
+                if (b1 != null) t1 = b1.getAssignedTeam();
+            }
+        }
+
+        GameTeam t2 = plugin.getTeamManager().getPlayerTeam(u2);
+        if (t2 == null && plugin.getBotManager() != null) {
+            Player p2 = Bukkit.getPlayer(u2);
+            if (p2 != null) {
+                com.rounds.bot.FakeBot b2 = plugin.getBotManager().getBot(p2.getName());
+                if (b2 != null) t2 = b2.getAssignedTeam();
+            }
+        }
+
+        if (t1 != null && t2 != null) {
+            return t1 == t2;
+        }
+
+        return false;
+    }
+
     // ==================== Find nearest enemy ====================
 
     private static LivingEntity findNearestEnemy(Location center, UUID ownerId) {
         double closest = Double.MAX_VALUE;
         LivingEntity nearest = null;
-        GameTeam ownerTeam = plugin.getTeamManager().getPlayerTeam(ownerId);
         for (Entity entity : center.getWorld().getNearbyEntities(center, 30, 30, 30)) {
             if (!(entity instanceof LivingEntity living)) continue;
             if (entity.getUniqueId().equals(ownerId)) continue;
             if (entity instanceof ArmorStand) continue;
             if (entity instanceof Player p) {
                 if (!plugin.getGameManager().isTargetable(p)) continue;
-                GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-                if (targetTeam == null || (ownerTeam != null && ownerTeam == targetTeam)) continue;
+                if (isTeammate(ownerId, p.getUniqueId())) continue;
             }
             double dist = living.getLocation().distanceSquared(center);
             if (dist < closest) {
@@ -924,13 +940,11 @@ public class RoundsEntities implements Listener {
     public static void spawnBomb(Location loc, UUID owner, double bombDamage) {
         loc.getWorld().playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 1.2f);
         loc.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, loc, 1);
-        GameTeam ownerTeam = plugin.getTeamManager().getPlayerTeam(owner);
         for (var entity : loc.getNearbyLivingEntities(5.0)) {
             if (entity.getUniqueId().equals(owner)) continue;
             if (entity instanceof Player p) {
                 if (!plugin.getGameManager().isTargetable(p)) continue;
-                GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-                if (ownerTeam != null && targetTeam != null && ownerTeam == targetTeam) continue;
+                if (isTeammate(owner, p.getUniqueId())) continue;
             }
             double dmg = Math.max(0, bombDamage);
             if (dmg > 0) {
@@ -997,13 +1011,11 @@ public class RoundsEntities implements Listener {
         loc.getWorld().spawnParticle(Particle.EXPLOSION_HUGE, loc, 1, 0, 0, 0, 0);
         loc.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, loc, 3, 0.5, 0.5, 0.5, 0.05);
         loc.getWorld().playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 1.2f);
-        GameTeam ownerTeam = plugin.getTeamManager().getPlayerTeam(owner);
         for (var entity : loc.getNearbyLivingEntities(2.0)) {
             if (entity.getUniqueId().equals(owner)) continue;
             if (entity instanceof Player sp) {
                 if (!plugin.getGameManager().isTargetable(sp)) continue;
-                GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(sp.getUniqueId());
-                if (ownerTeam != null && targetTeam != null && ownerTeam == targetTeam) continue;
+                if (isTeammate(owner, sp.getUniqueId())) continue;
             }
             double dist = entity.getLocation().distance(loc);
             double dmg = Math.max(0, 5.0 * (1.0 - dist / 2.0));
@@ -1025,13 +1037,11 @@ public class RoundsEntities implements Listener {
         } catch (IllegalArgumentException e) {
             return;
         }
-        GameTeam ownerTeam = plugin.getTeamManager().getPlayerTeam(ownerId);
         event.getAffectedEntities().removeIf(e -> {
             if (e.getUniqueId().equals(ownerId)) return true;
             if (e instanceof Player p) {
                 if (p.getGameMode() == GameMode.SPECTATOR) return true;
-                GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-                if (ownerTeam != null && targetTeam != null && ownerTeam == targetTeam) return true;
+                if (isTeammate(ownerId, p.getUniqueId())) return true;
             }
             return false;
         });
@@ -1063,9 +1073,7 @@ public class RoundsEntities implements Listener {
             if (plugin.getGameManager().getState() != com.rounds.game.GameManager.GameState.PLAYING) return;
 
             if (event.getEntity() instanceof Player victim) {
-                GameTeam victimTeam = plugin.getTeamManager().getPlayerTeam(victim.getUniqueId());
-                GameTeam attackerTeam = plugin.getTeamManager().getPlayerTeam(attacker.getUniqueId());
-                if (victimTeam != null && attackerTeam != null && victimTeam == attackerTeam) {
+                if (isTeammate(attacker.getUniqueId(), victim.getUniqueId())) {
                     return;
                 }
             }

@@ -31,6 +31,7 @@ public class FakeBot {
     private final BotAI ai;
     private BotStrategy strategy = BotStrategy.BALANCED;
     private int level;
+    private com.rounds.teams.TeamManager.GameTeam assignedTeam;
     private double velY = 0.0;
     private double impulseX = 0.0;
     private double impulseZ = 0.0;
@@ -144,6 +145,9 @@ public class FakeBot {
     public void setLevel(int level) {
         this.level = Math.max(1, Math.min(10, level));
         resetAttemptDecision();
+        if (manager != null && manager.getPlugin() != null && manager.getPlugin().getGameManager() != null) {
+            manager.getPlugin().getGameManager().showNameTagsInGame();
+        }
     }
 
     public void randomizeLevel() {
@@ -217,9 +221,20 @@ public class FakeBot {
         return ai;
     }
 
+    public com.rounds.teams.TeamManager.GameTeam getAssignedTeam() {
+        if (assignedTeam != null) return assignedTeam;
+        if (manager != null && manager.getPlugin() != null && manager.getPlugin().getTeamManager() != null) {
+            return manager.getPlugin().getTeamManager().getPlayerTeam(getBukkitPlayer().getUniqueId());
+        }
+        return null;
+    }
+
+    public void setAssignedTeam(com.rounds.teams.TeamManager.GameTeam assignedTeam) {
+        this.assignedTeam = assignedTeam;
+    }
+
     public String getTeamName() {
-        if (manager == null || manager.getPlugin() == null) return "NONE";
-        com.rounds.teams.TeamManager.GameTeam gt = manager.getPlugin().getTeamManager().getPlayerTeam(getBukkitPlayer().getUniqueId());
+        com.rounds.teams.TeamManager.GameTeam gt = getAssignedTeam();
         return (gt != null) ? gt.name() : "NONE";
     }
 

@@ -109,15 +109,20 @@ public class TabCompat {
     }
 
     public void setColoredName(Player player, ChatColor color, String suffix) {
+        setColoredName(player, color, null, suffix);
+    }
+
+    public void setColoredName(Player player, ChatColor color, String prefix, String suffix) {
         if (!active) return;
         try {
             Object tp = tabPlayer(player);
             if (tp == null) return;
+            String effectivePrefix = (prefix != null) ? prefix : color.toString();
             Object tlf = mGetTabListFormatManager.invoke(api);
-            if (tlf != null && mSetName != null) mSetName.invoke(tlf, tp, color + player.getName());
+            if (tlf != null && mSetName != null) mSetName.invoke(tlf, tp, effectivePrefix + player.getName());
             Object ntm = mGetNameTagManager.invoke(api);
             if (ntm != null) {
-                if (mSetPrefix != null) mSetPrefix.invoke(ntm, tp, color.toString());
+                if (mSetPrefix != null) mSetPrefix.invoke(ntm, tp, effectivePrefix);
                 if (mSetSuffix != null) mSetSuffix.invoke(ntm, tp, suffix == null ? null : suffix);
             }
         } catch (Exception ignored) {}

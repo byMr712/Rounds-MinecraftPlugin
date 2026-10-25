@@ -12,6 +12,7 @@ import com.rounds.RoundsConfig;
 import com.rounds.RoundsPlugin;
 import com.rounds.blocks.BlockStorage;
 import com.rounds.blocks.SpawnManager;
+import com.rounds.bot.FakeBot;
 import com.rounds.entity.RoundsEntities;
 import com.rounds.item.GunItem;
 import com.rounds.player.PlayerData;
@@ -2040,7 +2041,8 @@ public class GameManager implements Listener {
         if (tabCompat.isActive()) {
             for (Player p : plugin.getServer().getOnlinePlayers()) {
                 GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-                if (team != null && plugin.getRoundsConfig().isColorNicknames()) {
+                boolean isBot = (plugin.getBotManager() != null && plugin.getBotManager().getBot(p.getName()) != null);
+                if ((team != null && plugin.getRoundsConfig().isColorNicknames()) || isBot) {
                     updateColoredName(p, team);
                 } else {
                     tabCompat.resetName(p);
@@ -2055,10 +2057,10 @@ public class GameManager implements Listener {
     }
 
     public void updateAllPlayerNametags() {
-        if (!plugin.getRoundsConfig().isColorNicknames()) return;
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-            if (team != null) {
+            boolean isBot = (plugin.getBotManager() != null && plugin.getBotManager().getBot(p.getName()) != null);
+            if (team != null || isBot) {
                 updateColoredName(p, team);
             }
         }
@@ -2075,12 +2077,14 @@ public class GameManager implements Listener {
         List<? extends Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
         for (Player target : players) {
             GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(target.getUniqueId());
+            boolean targetIsBot = (plugin.getBotManager() != null && plugin.getBotManager().getBot(target.getName()) != null);
+
             for (Player viewer : players) {
                 if (target.equals(viewer)) continue;
                 GameTeam viewerTeam = plugin.getTeamManager().getPlayerTeam(viewer.getUniqueId());
 
                 boolean isTeammate = (targetTeam != null && viewerTeam != null && targetTeam == viewerTeam);
-                if (isTeammate) {
+                if (isTeammate || targetIsBot) {
                     if (tabCompat.isActive()) {
                         tabCompat.showNametagTo(target, viewer);
                     }
@@ -2102,16 +2106,20 @@ public class GameManager implements Listener {
     }
 
     private void updateColoredName(Player p, GameTeam team) {
+        FakeBot bot = (plugin.getBotManager() != null) ? plugin.getBotManager().getBot(p.getName()) : null;
+        ChatColor c = (team != null) ? team.getColor() : (bot != null && bot.getAssignedTeam() != null ? bot.getAssignedTeam().getColor() : ChatColor.GRAY);
+        String prefix = (bot != null) ? c + "§l[Lvl " + bot.getLevel() + "] §r" + c : (team != null ? c.toString() : "");
+        String suffix = heartsSuffix(c, p);
+
         if (tabCompat.isActive()) {
-            if (team != null) {
-                tabCompat.setColoredName(p, team.getColor(), heartsSuffix(team.getColor(), p));
+            if (team != null || bot != null) {
+                tabCompat.setColoredName(p, c, prefix, suffix);
             } else {
                 tabCompat.resetName(p);
             }
         }
-        if (team != null) {
-            ChatColor c = team.getColor();
-            p.setPlayerListName(c + p.getName() + heartsSuffix(c, p));
+        if (team != null || bot != null) {
+            p.setPlayerListName(prefix + p.getName() + suffix);
         } else {
             p.setPlayerListName(p.getName());
         }
@@ -2148,7 +2156,7 @@ public class GameManager implements Listener {
         }
         Scoreboard mainSb = Bukkit.getScoreboardManager().getMainScoreboard();
         for (org.bukkit.scoreboard.Team t : new ArrayList<>(mainSb.getTeams())) {
-            if (t.getName().startsWith("rounds_")) {
+            if (t.getName().startsWith("rounds_") || t.getName().startsWith("rb_")) {
                 t.unregister();
             }
         }
@@ -2156,7 +2164,7 @@ public class GameManager implements Listener {
             Scoreboard pSb = p.getScoreboard();
             if (pSb != null && !pSb.equals(mainSb)) {
                 for (org.bukkit.scoreboard.Team t : new ArrayList<>(pSb.getTeams())) {
-                    if (t.getName().startsWith("rounds_")) {
+                    if (t.getName().startsWith("rounds_") || t.getName().startsWith("rb_")) {
                         t.unregister();
                     }
                 }
@@ -2186,16 +2194,32 @@ public class GameManager implements Listener {
         if (noTeam != null) noTeam.unregister();
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
+            FakeBot bot = (plugin.getBotManager() != null) ? plugin.getBotManager().getBot(p.getName()) : null;
             GameTeam pTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-            String teamName = pTeam != null ? "rounds_" + pTeam.name().toLowerCase() : null;
+
             for (org.bukkit.scoreboard.Team t : sb.getTeams()) {
-                if (t.getName().startsWith("rounds_")) {
-                    t.removePlayer(p);
+                if (t.getName().startsWith("rounds_") || t.getName().startsWith("rb_")) {
+                    t.removeEntry(p.getName());
                 }
             }
-            if (teamName != null) {
+
+            if (bot != null) {
+                String botTeamName = "rb_" + p.getName().toLowerCase();
+                org.bukkit.scoreboard.Team botTeam = sb.getTeam(botTeamName);
+                if (botTeam == null) {
+                    botTeam = sb.registerNewTeam(botTeamName);
+                }
+                ChatColor c = (pTeam != null) ? pTeam.getColor() : (bot.getAssignedTeam() != null ? bot.getAssignedTeam().getColor() : ChatColor.GRAY);
+                botTeam.setColor(c);
+                botTeam.setPrefix(c + "§l[Lvl " + bot.getLevel() + "] §r" + c);
+                botTeam.setOption(org.bukkit.scoreboard.Team.Option.NAME_TAG_VISIBILITY, org.bukkit.scoreboard.Team.OptionStatus.ALWAYS);
+                botTeam.setOption(org.bukkit.scoreboard.Team.Option.COLLISION_RULE, org.bukkit.scoreboard.Team.OptionStatus.NEVER);
+                botTeam.setAllowFriendlyFire(false);
+                botTeam.addEntry(p.getName());
+            } else if (pTeam != null) {
+                String teamName = "rounds_" + pTeam.name().toLowerCase();
                 org.bukkit.scoreboard.Team target = sb.getTeam(teamName);
-                if (target != null) target.addPlayer(p);
+                if (target != null) target.addEntry(p.getName());
             }
         }
     }

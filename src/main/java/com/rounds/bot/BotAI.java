@@ -2,6 +2,7 @@ package com.rounds.bot;
 
 import com.rounds.RoundsPlugin;
 import com.rounds.blocks.BlockListener;
+import com.rounds.entity.RoundsEntities;
 import com.rounds.game.GameManager;
 import com.rounds.player.PlayerData;
 import com.rounds.teams.TeamManager.GameTeam;
@@ -380,6 +381,13 @@ public class BotAI extends BukkitRunnable {
      */
     public void onAttacked(Location origin, UUID attackerId) {
         if (origin == null) return;
+        Player player = bot.getBukkitPlayer();
+        if (attackerId != null) {
+            if (attackerId.equals(player.getUniqueId())) return;
+            Player attacker = Bukkit.getPlayer(attackerId);
+            if (attacker != null && isTeammate(player, attacker)) return;
+        }
+
         long now = System.currentTimeMillis();
         if (now - lastAttackedTime < 250) return; // Debounce rapid hits
         lastAttackedTime = now;
@@ -392,7 +400,6 @@ public class BotAI extends BukkitRunnable {
             return; // Lower level bot panics or ignores shot direction
         }
 
-        Player player = bot.getBukkitPlayer();
         Location myLoc = player.getLocation();
 
         double dx = origin.getX() - myLoc.getX();
@@ -427,7 +434,7 @@ public class BotAI extends BukkitRunnable {
 
         if (attackerId != null) {
             Player attacker = Bukkit.getPlayer(attackerId);
-            if (attacker != null) {
+            if (attacker != null && !isTeammate(player, attacker)) {
                 if (currentTarget != attacker) {
                     reactionTicks = 3 + (int) ((1.0 - bot.getSkillFactor()) * 4.0);
                 }
@@ -441,6 +448,17 @@ public class BotAI extends BukkitRunnable {
         Player player = bot.getBukkitPlayer();
         if (player.isDead() || !player.isOnline() || player.getGameMode() == GameMode.SPECTATOR) {
             return;
+        }
+
+        if (currentTarget != null) {
+            if (!currentTarget.isOnline() || currentTarget.isDead()
+                    || currentTarget.getGameMode() == GameMode.SPECTATOR
+                    || currentTarget.getGameMode() == GameMode.CREATIVE
+                    || isTeammate(player, currentTarget)) {
+                currentTarget = null;
+                isPursuing = false;
+                lastKnownTargetLoc = null;
+            }
         }
 
         if (!isCombatAllowed()) {
@@ -521,7 +539,7 @@ public class BotAI extends BukkitRunnable {
                 patrolHeading = flightYaw; // Preserve forward flight heading so bot moves away from edge upon landing
             }
 
-            if (currentTarget != null && canSee(player, currentTarget) && bot.hasGun() && shootCooldown <= 0 && reactionTicks <= 0) {
+            if (currentTarget != null && !isTeammate(player, currentTarget) && canSee(player, currentTarget) && bot.hasGun() && shootCooldown <= 0 && reactionTicks <= 0) {
                 bot.shoot();
                 shootCooldown = 6;
             }
@@ -587,7 +605,7 @@ public class BotAI extends BukkitRunnable {
                     }
                 }
 
-                if (targetCurrentlyVisible && currentTarget != null) {
+                if (targetCurrentlyVisible && currentTarget != null && !isTeammate(player, currentTarget)) {
                     // AMBUSH TRIGGERED: aim with natural high-alert reaction rather than 50 deg instant snap
                     CombatProfile profile = getProfile();
                     bot.aimAt(currentTarget.getEyeLocation(), profile.turnSpeed * 1.3f, profile.aimInaccuracy * 0.5f);
@@ -725,7 +743,7 @@ public class BotAI extends BukkitRunnable {
         int jukeThreshold = profile.jukeThreshold;
         double maxShootDist = profile.maxShootDist;
         boolean distanceShootAllowed = (dist3D <= 8.0) || (ThreadLocalRandom.current().nextDouble() < factor);
-        boolean canShootAtTarget = hasLos && bot.hasGun() && (dist3D <= maxShootDist) && distanceShootAllowed;
+        boolean canShootAtTarget = hasLos && bot.hasGun() && (dist3D <= maxShootDist) && distanceShootAllowed && !isTeammate(player, target);
 
         // Card ability synergies: Intelligent block usage
         handleCardBlockSynergies(data, dist3D, healthRatio, hasLos, shootCooldown);
@@ -1276,7 +1294,7 @@ public class BotAI extends BukkitRunnable {
 
             // Priority A: Search enemy team spawn
             GameManager gm = (bot.getPlugin() != null) ? bot.getPlugin().getGameManager() : null;
-            GameTeam myTeam = (bot.getPlugin() != null) ? bot.getPlugin().getTeamManager().getPlayerTeam(player.getUniqueId()) : null;
+            GameTeam myTeam = bot.getAssignedTeam();
             if (gm != null) {
                 for (Map.Entry<GameTeam, Location> entry : gm.getTeamSpawns().entrySet()) {
                     if (myTeam == null || entry.getKey() != myTeam) {
@@ -1852,34 +1870,23 @@ public class BotAI extends BukkitRunnable {
         tickCount++;
     }
 
+    public boolean isTeammate(Player p1, Player p2) {
+        if (p1 == null || p2 == null) return false;
+        if (p1.equals(p2) || p1.getUniqueId().equals(p2.getUniqueId())) return true;
+        return RoundsEntities.isTeammate(p1.getUniqueId(), p2.getUniqueId());
+    }
+
     private Player findVisibleTarget() {
         Player player = bot.getBukkitPlayer();
         Location myLoc = player.getLocation();
         Player closest = null;
         double closestDist = 65.0 * 65.0;
 
-        RoundsPlugin plugin = bot.getPlugin();
-        GameTeam myRoundsTeam = (plugin != null) ? plugin.getTeamManager().getPlayerTeam(player.getUniqueId()) : null;
-        Team myScoreboardTeam = player.getScoreboard().getEntryTeam(player.getName());
-
         for (Player other : player.getWorld().getPlayers()) {
             if (other.equals(player)) continue;
             if (other.isDead() || !other.isOnline()) continue;
             if (other.getGameMode() == GameMode.SPECTATOR || other.getGameMode() == GameMode.CREATIVE) continue;
-
-            // Check RoundsPlugin team
-            if (myRoundsTeam != null && plugin != null) {
-                GameTeam otherRoundsTeam = plugin.getTeamManager().getPlayerTeam(other.getUniqueId());
-                if (otherRoundsTeam != null && myRoundsTeam == otherRoundsTeam) {
-                    continue; // Teammate
-                }
-            }
-
-            // Check Scoreboard team
-            Team otherScoreboardTeam = other.getScoreboard().getEntryTeam(other.getName());
-            if (myScoreboardTeam != null && otherScoreboardTeam != null && myScoreboardTeam.equals(otherScoreboardTeam)) {
-                continue; // Teammate
-            }
+            if (isTeammate(player, other)) continue;
 
             // Must be visible within realistic FOV cone and line of sight!
             if (!canSee(player, other)) {

@@ -43,7 +43,7 @@ Minecraft плагин соревновательной мини-игры **ROUN
 
 - **Сервер:** Paper / Purpur 1.20.4+ (совместимо с 1.20.x — 1.21.x / 26.2+)
 - **Java:** Байткод Java 17 (major version 61)
-- **Опционально:** PlaceholderAPI, TAB
+- **PlaceholderAPI и TAB (Для полного опыта)**
 
 
 ## Установка
@@ -665,31 +665,6 @@ playerlist-objective:
 
 - Символ `||` в строках скорборда выравнивает значения чисел по правому краю колонки.
 - Плейсхолдеры `%rounds_blue_wins%`, `%rounds_stat_hp%` и др. подставляются автоматически из RoundsPlugin.
-
-#### 3. `groups.yml`
-Управляет префиксами и суффиксами групп игроков в таб-листе и над головой. Содержит правила наследования групп и интеграцию с LuckPerms через `%luckperms-prefix%` и `%luckperms-suffix%`.
-
-```yaml
-_DEFAULT_:
-  tabprefix: "%luckperms-prefix%"
-  tagprefix: "%luckperms-prefix%"
-  customtabname: "%player%"
-  tabsuffix: "%luckperms-suffix%"
-  tagsuffix: "%luckperms-suffix%"
-
-Player:
-  tabprefix: "&0&l[&7&lPlayer&0&l] &3"
-  tagprefix: "&2&lPlayer &3"
-```
-
-#### 4. `users.yml`
-Позволяет при необходимости задать индивидуальные постоянные префиксы, суффиксы или особые статусы конкретным игрокам по их никнейму или UUID.
-
-```yaml
-_NEZNAMY_:
-  tabprefix: "&6&lTAB&r &a"
-  tagprefix: "&6&lTAB&r &a"
-```
 
 
 ## Локализация

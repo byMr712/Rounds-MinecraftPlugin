@@ -43,7 +43,7 @@
 
 - **Server:** Paper / Purpur 1.20.4+ (compatible with 1.20.x — 1.21.x / 26.2+)
 - **Java:** Java 17 bytecode (major version 61)
-- **Optional:** PlaceholderAPI, TAB
+- **PlaceholderAPI and TAB (For full experience)**
 
 
 ## Installation
@@ -669,31 +669,6 @@ playerlist-objective:
 
 - The `||` separator in scoreboard lines aligns numbers to the right-hand side of the column.
 - Placeholders `%rounds_blue_wins%`, `%rounds_stat_hp%`, etc., are automatically resolved by RoundsPlugin via PlaceholderAPI.
-
-#### 3. `groups.yml`
-Manages group prefixes and suffixes in the player tab list and above player nametags. Supports group inheritance and seamless integration with LuckPerms via `%luckperms-prefix%` and `%luckperms-suffix%`.
-
-```yaml
-_DEFAULT_:
-  tabprefix: "%luckperms-prefix%"
-  tagprefix: "%luckperms-prefix%"
-  customtabname: "%player%"
-  tabsuffix: "%luckperms-suffix%"
-  tagsuffix: "%luckperms-suffix%"
-
-Player:
-  tabprefix: "&0&l[&7&lPlayer&0&l] &3"
-  tagprefix: "&2&lPlayer &3"
-```
-
-#### 4. `users.yml`
-Allows assigning persistent individual prefixes, suffixes, or custom tab formatting to specific players based on their username or UUID.
-
-```yaml
-_NEZNAMY_:
-  tabprefix: "&6&lTAB&r &a"
-  tagprefix: "&6&lTAB&r &a"
-```
 
 
 ## Localization

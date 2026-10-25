@@ -101,7 +101,7 @@ public class ArenaNavMesh {
         NavNode best = null;
         double bestScore = -Double.MAX_VALUE;
         for (NavNode node : allNodes) {
-            long cell = (((long) (node.loc.getBlockX() >> 2)) << 32) | ((node.loc.getBlockZ() >> 2) & 0xFFFFFFFFL);
+            long cell = BotAI.packCell(node.loc.getBlockX(), node.loc.getBlockY(), node.loc.getBlockZ());
             if (visitedCells != null && visitedCells.contains(cell)) continue;
             if (blockedCells != null && blockedCells.contains(cell)) continue;
 
@@ -211,7 +211,7 @@ public class ArenaNavMesh {
 
             for (NavNode neighbor : curr.neighbors) {
                 double edgeDist = Math.sqrt(curr.distanceSquared(neighbor.loc));
-                long cell = (((long) (neighbor.loc.getBlockX() >> 2)) << 32) | ((neighbor.loc.getBlockZ() >> 2) & 0xFFFFFFFFL);
+                long cell = BotAI.packCell(neighbor.loc.getBlockX(), neighbor.loc.getBlockY(), neighbor.loc.getBlockZ());
                 int rep = (pathReputation != null) ? pathReputation.getOrDefault(cell, 0) : 0;
                 double penalty = (rep < 0) ? (-rep * 50.0) : 0.0;
                 double newDist = top.dist() + edgeDist + penalty;

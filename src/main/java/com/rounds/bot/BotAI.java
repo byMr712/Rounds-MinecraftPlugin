@@ -53,6 +53,7 @@ public class BotAI extends BukkitRunnable {
     private boolean manualPlaystyle = false;
     private int tickCount = 0;
     private int strafeDir = 1;
+    private double currentStrafeVal = 0.0;
     private int dirTicks = 0;
     private int shootCooldown = 0;
     private int padCooldown = 100;
@@ -112,9 +113,13 @@ public class BotAI extends BukkitRunnable {
 
     public void penalizePath(Location loc, int amount) {
         if (loc == null) return;
-        long cell = packCell(loc.getBlockX(), loc.getBlockZ());
+        long cell = packCell(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
         pathReputation.merge(cell, -amount, Integer::sum);
     }
+
+    // High-ground vantage hold & parkour stability
+    private int highGroundHoldTicks = 0;
+    private double lastGroundY = Double.NaN;
 
     // Optimized landing platform cache & room exit cooldown
     private Location cachedLandingPlatform = null;
@@ -194,6 +199,7 @@ public class BotAI extends BukkitRunnable {
         this.lockedHeadingTicks = 0;
         this.consecutiveBounces = 0;
         this.lastTurnSign = 0f;
+        this.currentStrafeVal = 0.0;
         this.currentTarget = null;
         this.lastKnownTargetLoc = null;
         this.isPursuing = false;
@@ -217,10 +223,18 @@ public class BotAI extends BukkitRunnable {
         this.huntStuckTicks = 0;
         this.pursuitStuckTicks = 0;
         this.lastHuntPos = null;
+        this.highGroundHoldTicks = 0;
+        this.lastGroundY = Double.NaN;
+    }
+
+    public static long packCell(int blockX, int blockY, int blockZ) {
+        return (((long) (blockX >> 2) & 0xFFFFFFL) << 40)
+             | (((long) (blockY >> 2) & 0xFFFFL) << 24)
+             | ((long) (blockZ >> 2) & 0xFFFFFFL);
     }
 
     public static long packCell(int blockX, int blockZ) {
-        return (((long) (blockX >> 2)) << 32) | ((blockZ >> 2) & 0xFFFFFFFFL);
+        return packCell(blockX, 0, blockZ);
     }
 
     public static long packEdge(int x1, int z1, int x2, int z2) {
@@ -393,14 +407,13 @@ public class BotAI extends BukkitRunnable {
         float pitchError = (ThreadLocalRandom.current().nextFloat() * 2f - 1f) * (maxError * 0.3f);
 
         float reactYaw = idealYaw + yawError;
-        float reactPitch = idealPitch + pitchError;
 
-        bot.getNmsPlayer().setRot(reactYaw, reactPitch);
-        bot.getNmsPlayer().setYHeadRot(reactYaw);
-
+        // Smooth reaction turn towards incoming fire (no instant 0ms 180-degree teleport)
+        patrolHeading = reactYaw;
         lastKnownTargetLoc = origin.clone();
         searchTicks = 0;
         isPursuing = true;
+        reactionTicks = 3 + (int) ((1.0 - bot.getSkillFactor()) * 4.0);
 
         // Defensive reactive block when receiving enemy fire
         if (bot.canBlock()) {
@@ -412,9 +425,9 @@ public class BotAI extends BukkitRunnable {
 
         if (attackerId != null) {
             Player attacker = Bukkit.getPlayer(attackerId);
-            if (attacker != null && canSee(player, attacker)) {
+            if (attacker != null) {
                 if (currentTarget != attacker) {
-                    reactionTicks = 2 + (int) ((1.0 - bot.getSkillFactor()) * 3.0);
+                    reactionTicks = 3 + (int) ((1.0 - bot.getSkillFactor()) * 4.0);
                 }
                 currentTarget = attacker;
             }
@@ -533,7 +546,7 @@ public class BotAI extends BukkitRunnable {
                 Player spotted = findVisibleTarget();
                 if (spotted != null) {
                     if (currentTarget != spotted) {
-                        reactionTicks = 2 + (int) ((1.0 - bot.getSkillFactor()) * 4.0);
+                        reactionTicks = 3 + (int) ((1.0 - bot.getSkillFactor()) * 5.0);
                     }
                     currentTarget = spotted;
                     lastKnownTargetLoc = spotted.getLocation().clone();
@@ -573,14 +586,15 @@ public class BotAI extends BukkitRunnable {
                 }
 
                 if (targetCurrentlyVisible && currentTarget != null) {
-                    // AMBUSH TRIGGERED: instant shot when enemy runs into field of view!
-                    bot.aimAt(currentTarget.getEyeLocation(), 50.0f, 0.0f);
-                    if (bot.hasGun()) {
+                    // AMBUSH TRIGGERED: aim with natural high-alert reaction rather than 50 deg instant snap
+                    CombatProfile profile = getProfile();
+                    bot.aimAt(currentTarget.getEyeLocation(), profile.turnSpeed * 1.3f, profile.aimInaccuracy * 0.5f);
+                    if (bot.hasGun() && reactionTicks <= 0) {
                         bot.shoot();
-                        shootCooldown = 4;
+                        shootCooldown = profile.minShootCooldown;
+                        isAmbushing = false;
+                        coverSearchCooldown = 120;
                     }
-                    isAmbushing = false;
-                    coverSearchCooldown = 120;
                 } else {
                     tickCooldowns();
                     return; // Stand completely still, watching the open ground
@@ -780,13 +794,16 @@ public class BotAI extends BukkitRunnable {
             }
         }
 
-        // Tactical combat jumping (dodging bullet fire while strafing/moving)
+        // Tactical combat jumping (dodging bullet fire while strafing/moving, realistic cooldown)
         if (bot.isOnGround() && tacticalJumpCooldown <= 0 && tactic != CombatTactic.SNIPE) {
             if (ThreadLocalRandom.current().nextDouble() < profile.tacticalJumpChance) {
                 bot.getBukkitPlayer().setVelocity(bot.getBukkitPlayer().getVelocity().setY(0.38 * bot.getJumpMultiplier()));
-                tacticalJumpCooldown = 20;
+                tacticalJumpCooldown = ThreadLocalRandom.current().nextInt(50, 90);
             }
         }
+
+        // Smooth strafe velocity interpolation (eliminates robotic instantaneous direction snaps)
+        currentStrafeVal += (strafeDir - currentStrafeVal) * 0.16;
 
         // Ground tactical combat
         switch (tactic) {
@@ -794,14 +811,14 @@ public class BotAI extends BukkitRunnable {
                     if (attemptSawRush) {
                         // User requested: saw card changes bot behavior on block to approach enemy to deal damage with the ability
                         if (dist3D > 3.0) {
-                            double sawRushSpeed = 0.28 * speedMult;
-                            moveCombatRel(u1_x * sawRushSpeed + p1_x * (strafeDir * strafeSpeed * 0.15), u1_z * sawRushSpeed + p1_z * (strafeDir * strafeSpeed * 0.15));
+                            double sawRushSpeed = 0.24 * speedMult;
+                            moveCombatRel(u1_x * sawRushSpeed + p1_x * (currentStrafeVal * strafeSpeed * 0.15), u1_z * sawRushSpeed + p1_z * (currentStrafeVal * strafeSpeed * 0.15));
                         } else {
                             // Inside saw damage radius (<= 3.0m): circle and stick close to target
-                            moveCombatRel(u1_x * (0.15 * speedMult) + p1_x * (strafeDir * strafeSpeed * 0.8), u1_z * (0.15 * speedMult) + p1_z * (strafeDir * strafeSpeed * 0.8));
+                            moveCombatRel(u1_x * (0.14 * speedMult) + p1_x * (currentStrafeVal * strafeSpeed * 0.7), u1_z * (0.14 * speedMult) + p1_z * (currentStrafeVal * strafeSpeed * 0.7));
                         }
                     } else {
-                        moveCombatRel(u1_x * (0.28 * speedMult) + p1_x * (strafeDir * strafeSpeed * 0.35), u1_z * (0.28 * speedMult) + p1_z * (strafeDir * strafeSpeed * 0.35));
+                        moveCombatRel(u1_x * (0.24 * speedMult) + p1_x * (currentStrafeVal * strafeSpeed * 0.3), u1_z * (0.24 * speedMult) + p1_z * (currentStrafeVal * strafeSpeed * 0.3));
                     }
                     bot.aimAt(p2Loc, turnSpeed, aimInaccuracy);
                     if (shootCooldown <= 0 && canShootAtTarget && reactionTicks <= 0) {
@@ -810,7 +827,7 @@ public class BotAI extends BukkitRunnable {
                     }
                 }
                 case RETREAT -> {
-                    moveCombatRel(-u1_x * (0.18 * speedMult) + p1_x * (strafeDir * strafeSpeed), -u1_z * (0.18 * speedMult) + p1_z * (strafeDir * strafeSpeed));
+                    moveCombatRel(-u1_x * (0.14 * speedMult) + p1_x * (currentStrafeVal * strafeSpeed * 0.7), -u1_z * (0.14 * speedMult) + p1_z * (currentStrafeVal * strafeSpeed * 0.7));
                     if (tickCount % 30 == 0 && hasLos && ThreadLocalRandom.current().nextDouble() < factor) {
                         bot.block();
                     }
@@ -824,12 +841,12 @@ public class BotAI extends BukkitRunnable {
                     if (tickCount % 20 == 0 && hasLos && ThreadLocalRandom.current().nextDouble() < factor) {
                         bot.block();
                     }
-                    moveCombatRel(p1_x * (strafeDir * strafeSpeed * 0.6), p1_z * (strafeDir * strafeSpeed * 0.6));
+                    moveCombatRel(p1_x * (currentStrafeVal * strafeSpeed * 0.6), p1_z * (currentStrafeVal * strafeSpeed * 0.6));
                     bot.aimAt(p2Loc, turnSpeed * 0.7f, aimInaccuracy);
                 }
                 case SNIPE -> {
                     if (dist3D < 8.0) {
-                        moveCombatRel(-u1_x * (0.18 * speedMult), -u1_z * (0.18 * speedMult));
+                        moveCombatRel(-u1_x * (0.14 * speedMult), -u1_z * (0.14 * speedMult));
                     }
                     bot.aimAt(p2Loc, turnSpeed * 0.7f, aimInaccuracy * 0.7f);
                     if (shootCooldown <= 0 && canShootAtTarget && reactionTicks <= 0) {
@@ -838,7 +855,7 @@ public class BotAI extends BukkitRunnable {
                     }
                 }
                 case STRAFE, BALANCED -> {
-                    moveCombatRel(p1_x * (strafeDir * strafeSpeed) + u1_x * (0.04 * speedMult), p1_z * (strafeDir * strafeSpeed) + u1_z * (0.04 * speedMult));
+                    moveCombatRel(p1_x * (currentStrafeVal * strafeSpeed) + u1_x * (0.03 * speedMult), p1_z * (currentStrafeVal * strafeSpeed) + u1_z * (0.03 * speedMult));
                     bot.aimAt(p2Loc, turnSpeed, aimInaccuracy);
                     if (shootCooldown <= 0 && canShootAtTarget && reactionTicks <= 0) {
                         bot.shoot();
@@ -850,11 +867,11 @@ public class BotAI extends BukkitRunnable {
                 }
             }
 
-        // Reverse strafe direction periodically
+        // Reverse strafe direction periodically with human variability
         dirTicks++;
         if (dirTicks > jukeThreshold) {
             strafeDir = -strafeDir;
-            dirTicks = 0;
+            dirTicks = -ThreadLocalRandom.current().nextInt(0, 8);
         }
 
         tickCooldowns();
@@ -947,6 +964,14 @@ public class BotAI extends BukkitRunnable {
         Location myLoc = bot.getBukkitPlayer().getLocation();
         double dist = Math.sqrt(mX * mX + mZ * mZ);
         if (dist < 0.001) return;
+
+        // Cap maximum combat movement speed so combined vector never exceeds realistic sprint
+        double maxSpeed = 0.25 * bot.getSpeedMultiplier();
+        if (dist > maxSpeed) {
+            mX = (mX / dist) * maxSpeed;
+            mZ = (mZ / dist) * maxSpeed;
+            dist = maxSpeed;
+        }
 
         if (lockedHeadingTicks > 0) {
             lockedHeadingTicks--;
@@ -1161,8 +1186,19 @@ public class BotAI extends BukkitRunnable {
         if (myLoc == null || myLoc.getWorld() == null) return;
 
         // 1. Mark current location in this round's visited territory map
-        long myCell = packCell(myLoc.getBlockX(), myLoc.getBlockZ());
+        long myCell = packCell(myLoc.getBlockX(), myLoc.getBlockY(), myLoc.getBlockZ());
         visitedTerritory.add(myCell);
+
+        // High ground vantage hold: survey high ground for 3s instead of immediately jumping back down
+        if (bot.isOnGround()) {
+            if (!Double.isNaN(lastGroundY) && myLoc.getY() - lastGroundY >= 1.5) {
+                highGroundHoldTicks = 60; // 3s hold on elevated vantage point
+            }
+            lastGroundY = myLoc.getY();
+        }
+        if (highGroundHoldTicks > 0) {
+            highGroundHoldTicks--;
+        }
 
         // 2. Spinning in place detection (circling / rotating repeatedly within small radius <= 1.5m)
         if (spinAnchor == null || !myLoc.getWorld().equals(spinAnchor.getWorld()) || myLoc.distanceSquared(spinAnchor) > 2.25) {
@@ -1177,12 +1213,19 @@ public class BotAI extends BukkitRunnable {
             spinAccumulatedAngle += Math.abs(diff);
             spinLastYaw = curYaw;
 
-            // Spinning/circling detected: mark path with negative reputation (red) and break out with 180 turn
-            if (spinTicks >= 20) {
-                if (spinAccumulatedAngle >= 240f) {
-                    penalizePath(myLoc, 3);
-                    patrolHeading = curYaw + 180f;
-                    lockedHeadingTicks = 30;
+            // Spinning/circling detected: mark path with negative reputation (red) and break out with doorway escape
+            if (spinTicks >= 16) {
+                if (spinAccumulatedAngle >= 200f) {
+                    penalizePath(myLoc, 4);
+                    currentHuntTarget = null;
+                    currentCorridorWaypoint = null;
+                    float roomExit = findRoomExit(myLoc);
+                    if (!Float.isNaN(roomExit)) {
+                        patrolHeading = roomExit;
+                    } else {
+                        patrolHeading = curYaw + 180f;
+                    }
+                    lockedHeadingTicks = 50; // Lock for 2.5s to completely leave the pocket
                 }
                 spinTicks = 0;
                 spinAccumulatedAngle = 0f;
@@ -1202,13 +1245,13 @@ public class BotAI extends BukkitRunnable {
         // 4. If stuck trying to reach current target, penalize path, record edge as blocked and pick a new target
         if (huntStuckTicks > 12) {
             huntStuckTicks = 0;
-            penalizePath(myLoc, 2);
+            penalizePath(myLoc, 3);
             if (currentHuntTarget != null) {
-                blockedEdges.add(packCell(currentHuntTarget.getBlockX(), currentHuntTarget.getBlockZ()));
+                blockedEdges.add(packCell(currentHuntTarget.getBlockX(), currentHuntTarget.getBlockY(), currentHuntTarget.getBlockZ()));
             }
             currentHuntTarget = null;
             currentCorridorWaypoint = null;
-            lockedHeadingTicks = 25;
+            lockedHeadingTicks = 35;
             patrolHeading = findClearDirection(myLoc, patrolHeading + (ThreadLocalRandom.current().nextBoolean() ? 90f : -90f));
         }
 
@@ -1226,7 +1269,7 @@ public class BotAI extends BukkitRunnable {
                     if (myTeam == null || entry.getKey() != myTeam) {
                         Location sp = entry.getValue();
                         if (sp != null && sp.getWorld() != null && sp.getWorld().equals(myLoc.getWorld())) {
-                            long spCell = packCell(sp.getBlockX(), sp.getBlockZ());
+                            long spCell = packCell(sp.getBlockX(), sp.getBlockY(), sp.getBlockZ());
                             if (!visitedTerritory.contains(spCell) && !blockedEdges.contains(spCell)) {
                                 currentHuntTarget = sp.clone();
                                 break;
@@ -1268,7 +1311,7 @@ public class BotAI extends BukkitRunnable {
                 currentCorridorWaypoint = mesh.findNextWaypoint(myLoc, currentHuntTarget, pathReputation);
                 if (currentCorridorWaypoint == null && myLoc.distanceSquared(currentHuntTarget) > 16.0) {
                     penalizePath(currentHuntTarget, 3);
-                    blockedEdges.add(packCell(currentHuntTarget.getBlockX(), currentHuntTarget.getBlockZ()));
+                    blockedEdges.add(packCell(currentHuntTarget.getBlockX(), currentHuntTarget.getBlockY(), currentHuntTarget.getBlockZ()));
                     currentHuntTarget = null;
                 }
             }
@@ -1300,11 +1343,24 @@ public class BotAI extends BukkitRunnable {
         // 6. Smooth natural head/body turn towards patrol heading
         float currentYaw = player.getLocation().getYaw();
         float deltaYaw = ((patrolHeading - currentYaw + 540f) % 360f) - 180f;
-        float maxTurn = 18f; // ~18 deg/tick smooth rotation for realistic navigation
-        float newYaw = (Math.abs(deltaYaw) <= maxTurn) ? patrolHeading : currentYaw + Math.signum(deltaYaw) * maxTurn;
-        bot.getNmsPlayer().setRot(newYaw, 0f);
+        float turnStep = deltaYaw * 0.25f;
+        float minStep = Math.min(Math.abs(deltaYaw), 1.6f);
+        if (Math.abs(turnStep) < minStep) turnStep = Math.signum(deltaYaw) * minStep;
+        if (turnStep > 12.0f) turnStep = 12.0f;
+        if (turnStep < -12.0f) turnStep = -12.0f;
+        float newYaw = currentYaw + turnStep;
+
+        float curPitch = player.getLocation().getPitch();
+        float newPitch = curPitch + (0f - curPitch) * 0.12f;
+
+        bot.getNmsPlayer().setRot(newYaw, newPitch);
         bot.getNmsPlayer().setYHeadRot(newYaw);
-        bot.getNmsPlayer().setYBodyRot(newYaw);
+
+        float bodyYaw = bot.getNmsPlayer().yBodyRot;
+        float bodyDiff = ((newYaw - bodyYaw + 540f) % 360f) - 180f;
+        if (Math.abs(bodyDiff) > 30.0f) {
+            bot.getNmsPlayer().setYBodyRot(bodyYaw + (bodyDiff > 0 ? bodyDiff - 30.0f : bodyDiff + 30.0f));
+        }
 
         // 7. Continuous forward exploration movement along current yaw
         CombatProfile profile = getProfile();
@@ -1374,6 +1430,23 @@ public class BotAI extends BukkitRunnable {
             }
         }
 
+        // Drop-off / cliff edge check: prevent casually walking off high parkour platforms to the floor
+        if (!feetSolid && bot.isOnGround() && dist >= 0.8) {
+            boolean hasFloorBelow = false;
+            for (int dy = 1; dy <= 2; dy++) {
+                if (loc.clone().add(dx, -dy, dz).getBlock().getType().isSolid()) {
+                    hasFloorBelow = true;
+                    break;
+                }
+            }
+            if (!hasFloorBelow && (currentTarget == null || highGroundHoldTicks > 0)) {
+                double dLen = Math.sqrt(dx * dx + dz * dz);
+                if (dLen > 0.001 && !bot.hasParkourTargetAhead(dx / dLen, dz / dLen)) {
+                    return false; // Cliff edge with steep drop and no parkour landing
+                }
+            }
+        }
+
         // 3. Midpoint width check for longer rays (catches diagonal pinches along the movement path)
         if (dist >= 0.8) {
             double midDx = dx * 0.5;
@@ -1430,20 +1503,22 @@ public class BotAI extends BukkitRunnable {
     }
 
     private float findClearDirection(Location loc, float currentHeading) {
-        // 1. Check for 3-sided dead end (cul-de-sac): front, left and right blocked
-        boolean frontBlocked = !isDirectionClear(loc, currentHeading, 1.2);
-        boolean leftBlocked = !isDirectionClear(loc, currentHeading - 90f, 1.1);
-        boolean rightBlocked = !isDirectionClear(loc, currentHeading + 90f, 1.1);
+        // 1. Check for 3-sided dead end (cul-de-sac / 3x3 room): front, left, and right blocked within 2.2m
+        boolean frontBlocked = !isDirectionClear(loc, currentHeading, 2.2);
+        boolean leftBlocked = !isDirectionClear(loc, currentHeading - 90f, 2.0);
+        boolean rightBlocked = !isDirectionClear(loc, currentHeading + 90f, 2.0);
         if (frontBlocked && leftBlocked && rightBlocked) {
-            penalizePath(loc, 3);
+            penalizePath(loc, 4);
             consecutiveBounces = 0;
             lastTurnSign = 0f;
+            currentHuntTarget = null;
+            currentCorridorWaypoint = null;
             float roomExit = findRoomExit(loc);
             if (!Float.isNaN(roomExit)) {
-                lockedHeadingTicks = 35;
+                lockedHeadingTicks = 50; // Lock for 2.5s to completely leave the 3x3 room
                 return roomExit;
             }
-            lockedHeadingTicks = 35; // Lock heading for ~1.75s to run out of dead end
+            lockedHeadingTicks = 50;
             return currentHeading + 180f;
         }
 
@@ -1461,16 +1536,18 @@ public class BotAI extends BukkitRunnable {
                 lastTurnSign = sign;
 
                 if (consecutiveBounces >= 3) {
-                    penalizePath(loc, 2);
+                    penalizePath(loc, 3);
                     // Ping-pong between walls detected: search for room exit or escape with 180
                     consecutiveBounces = 0;
                     lastTurnSign = 0f;
+                    currentHuntTarget = null;
+                    currentCorridorWaypoint = null;
                     float roomExit = findRoomExit(loc);
                     if (!Float.isNaN(roomExit)) {
-                        lockedHeadingTicks = 35;
+                        lockedHeadingTicks = 50;
                         return roomExit;
                     }
-                    lockedHeadingTicks = 35;
+                    lockedHeadingTicks = 50;
                     return currentHeading + 180f;
                 }
                 return test;
@@ -1478,40 +1555,40 @@ public class BotAI extends BukkitRunnable {
         }
 
         // If standard angle deviations fail, sweep 360 to find narrow doorway
+        currentHuntTarget = null;
+        currentCorridorWaypoint = null;
         float roomExit = findRoomExit(loc);
         if (!Float.isNaN(roomExit)) {
             consecutiveBounces = 0;
             lastTurnSign = 0f;
-            lockedHeadingTicks = 35;
+            lockedHeadingTicks = 50;
             return roomExit;
         }
 
         consecutiveBounces = 0;
         lastTurnSign = 0f;
-        lockedHeadingTicks = 35;
+        lockedHeadingTicks = 50;
         return currentHeading + 180f;
     }
 
     /**
-     * Sweep 360 degrees in 30-degree steps to detect narrow openings / doorways (e.g. 2x2 doors in a 3-walled room).
-     * Throttled with roomExitCooldown and avoids entity allocations for peak performance.
+     * Sweep 360 degrees in 45-degree steps to detect room exit doorways.
      */
     private float findRoomExit(Location loc) {
-        if (loc == null || loc.getWorld() == null || roomExitCooldown > 0) return Float.NaN;
-        roomExitCooldown = 30; // 1.5s cooldown
+        if (loc == null || loc.getWorld() == null) return Float.NaN;
         float bestHeading = Float.NaN;
         double maxClearDist = 0.0;
 
-        for (float deg = 0f; deg < 360f; deg += 30f) {
+        for (float deg = 0f; deg < 360f; deg += 45f) {
             double clearDist = 0.0;
-            for (double d = 1.5; d <= 4.5; d += 1.5) {
+            for (double d = 1.5; d <= 6.0; d += 1.5) {
                 if (isDirectionClear(loc, deg, d, false)) {
                     clearDist = d;
                 } else {
                     break;
                 }
             }
-            if (clearDist > maxClearDist && clearDist >= 2.0) {
+            if (clearDist > maxClearDist && clearDist >= 2.5) {
                 maxClearDist = clearDist;
                 bestHeading = deg;
             }

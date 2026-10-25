@@ -34,6 +34,8 @@ public class FakeBot {
     private double velY = 0.0;
     private double impulseX = 0.0;
     private double impulseZ = 0.0;
+    private double currentMoveX = 0.0;
+    private double currentMoveZ = 0.0;
     private int padLaunchTicks = 0;
     private int upBlockLiftTicks = 0;
     private Location cachedUpBlockExit = null;
@@ -150,6 +152,8 @@ public class FakeBot {
     }
 
     public void resetAttemptDecision() {
+        this.currentMoveX = 0.0;
+        this.currentMoveZ = 0.0;
         // High level bots (8-10) never attempt impossible heights; lower bots might risk it
         this.attemptNearLimitJumps = ThreadLocalRandom.current().nextDouble() < (1.0 - getSkillFactor());
     }
@@ -179,6 +183,32 @@ public class FakeBot {
             // Pro bots (level 8+) know exact physical clearance and never attempt beyond limit
             if (getSkillFactor() >= 0.75) return false;
             return attemptNearLimitJumps;
+        }
+        return false;
+    }
+
+    public boolean hasParkourTargetAhead(double dirX, double dirZ) {
+        Player bp = getBukkitPlayer();
+        if (bp == null) return false;
+        Location loc = bp.getLocation();
+        if (loc.getWorld() == null) return false;
+        double factor = getSkillFactor();
+        double speedMult = getSpeedMultiplier();
+        double jumpMult = getJumpMultiplier();
+        int maxClimb = getMaxClimbableBlocks();
+        double baseParkourDist = (factor >= 0.7) ? 4.2 : (2.4 + factor * 1.2);
+        double maxParkourDist = baseParkourDist * Math.sqrt(speedMult) * Math.sqrt(jumpMult);
+        for (double gapDist = 1.4; gapDist <= maxParkourDist; gapDist += 0.8) {
+            double maxUp = 0.6 + (maxClimb - 1) * 1.0;
+            double[] checkDys = (maxClimb > 1) ? new double[]{maxUp, 0.6, -0.4, -1.4} : new double[]{0.6, -0.4, -1.4};
+            for (double cdy : checkDys) {
+                Location landingFloor = loc.clone().add(dirX * gapDist, cdy, dirZ * gapDist);
+                if (landingFloor.getBlock().getType().isSolid()
+                        && !landingFloor.clone().add(0, 1.0, 0).getBlock().getType().isSolid()
+                        && !landingFloor.clone().add(0, 2.0, 0).getBlock().getType().isSolid()) {
+                    return true;
+                }
+            }
         }
         return false;
     }
@@ -469,22 +499,31 @@ public class FakeBot {
             aimDriftPitch = 0f;
         }
 
-        // Smooth rotation interpolation
+        // Smooth rotation interpolation with humanized acceleration curve (avoids 1-tick robotic snaps)
         float curYaw = myLoc.getYaw();
         float curPitch = myLoc.getPitch();
 
         float dyaw = idealYaw - curYaw;
         while (dyaw < -180.0f) dyaw += 360.0f;
         while (dyaw > 180.0f) dyaw -= 360.0f;
-        if (dyaw > maxTurnDeg) dyaw = maxTurnDeg;
-        if (dyaw < -maxTurnDeg) dyaw = -maxTurnDeg;
+
+        float turnFactor = 0.32f + 0.16f * (float) getSkillFactor();
+        float stepYaw = dyaw * turnFactor;
+        float minYawStep = Math.min(Math.abs(dyaw), 1.2f + 1.2f * (float) getSkillFactor());
+        if (Math.abs(stepYaw) < minYawStep) stepYaw = Math.signum(dyaw) * minYawStep;
+        if (stepYaw > maxTurnDeg) stepYaw = maxTurnDeg;
+        if (stepYaw < -maxTurnDeg) stepYaw = -maxTurnDeg;
 
         float dpitch = idealPitch - curPitch;
-        if (dpitch > maxTurnDeg * 0.8f) dpitch = maxTurnDeg * 0.8f;
-        if (dpitch < -maxTurnDeg * 0.8f) dpitch = -maxTurnDeg * 0.8f;
+        float stepPitch = dpitch * (turnFactor * 0.85f);
+        float minPitchStep = Math.min(Math.abs(dpitch), 0.8f + 0.8f * (float) getSkillFactor());
+        if (Math.abs(stepPitch) < minPitchStep) stepPitch = Math.signum(dpitch) * minPitchStep;
+        float maxPitchDeg = maxTurnDeg * 0.65f;
+        if (stepPitch > maxPitchDeg) stepPitch = maxPitchDeg;
+        if (stepPitch < -maxPitchDeg) stepPitch = -maxPitchDeg;
 
-        float newYaw = curYaw + dyaw;
-        float newPitch = curPitch + dpitch;
+        float newYaw = curYaw + stepYaw;
+        float newPitch = curPitch + stepPitch;
 
         sp.setRot(newYaw, newPitch);
         sp.setYHeadRot(newYaw);
@@ -494,8 +533,8 @@ public class FakeBot {
         float bodyDiff = newYaw - bodyYaw;
         while (bodyDiff < -180.0f) bodyDiff += 360.0f;
         while (bodyDiff > 180.0f) bodyDiff -= 360.0f;
-        if (Math.abs(bodyDiff) > 35.0f) {
-            sp.setYBodyRot(bodyYaw + (bodyDiff > 0 ? bodyDiff - 35.0f : bodyDiff + 35.0f));
+        if (Math.abs(bodyDiff) > 30.0f) {
+            sp.setYBodyRot(bodyYaw + (bodyDiff > 0 ? bodyDiff - 30.0f : bodyDiff + 30.0f));
         }
     }
 
@@ -582,7 +621,34 @@ public class FakeBot {
             Location aheadFeet = loc.clone().add(dirX * stepDist, 0.2, dirZ * stepDist);
             Location headSpace = loc.clone().add(0, 2.1, 0);
 
-            boolean stepAhead = aheadFeet.getBlock().getType().isSolid() || sp.horizontalCollision;
+            // Anti-stacking: check if bot is standing on another player/bot, or if another player is directly ahead
+            boolean entityAhead = false;
+            if (loc.getWorld() != null) {
+                for (Player other : loc.getWorld().getPlayers()) {
+                    if (other.getUniqueId().equals(p.getUniqueId()) || other.getGameMode() == GameMode.SPECTATOR || other.isDead()) continue;
+                    Location oLoc = other.getLocation();
+                    double dxOther = oLoc.getX() - loc.getX();
+                    double dzOther = oLoc.getZ() - loc.getZ();
+                    double dyOther = oLoc.getY() - loc.getY();
+
+                    // If standing on another player's head (other player directly below us), push off sideways immediately!
+                    if (dyOther >= -1.95 && dyOther <= -0.4 && (dxOther * dxOther + dzOther * dzOther) < 0.64) {
+                        double pushAng = ThreadLocalRandom.current().nextDouble(0, 2 * Math.PI);
+                        impulseX += Math.cos(pushAng) * 0.32;
+                        impulseZ += Math.sin(pushAng) * 0.32;
+                    }
+
+                    // Player directly in front in direction of movement
+                    if (Math.abs(dyOther) <= 1.2 && (dxOther * dirX + dzOther * dirZ) > 0.1 && (dxOther * dxOther + dzOther * dzOther) < 1.0) {
+                        entityAhead = true;
+                    }
+                }
+            }
+
+            // Only auto-jump over actual solid blocks; never treat other players as jumpable steps!
+            boolean solidBlockAhead = aheadFeet.getBlock().getType().isSolid()
+                    || aheadFeet.clone().add(0, 1.0, 0).getBlock().getType().isSolid();
+            boolean stepAhead = solidBlockAhead || (sp.horizontalCollision && !entityAhead);
             int obstacleHeight = 0;
             while (obstacleHeight < 4 && aheadFeet.clone().add(0, obstacleHeight, 0).getBlock().getType().isSolid()) {
                 obstacleHeight++;
@@ -682,8 +748,15 @@ public class FakeBot {
 
         double finalVelY = (onGround && velY <= 0.0) ? -0.0784 : velY;
 
-        double moveX = dx + impulseX;
-        double moveZ = dz + impulseZ;
+        // Humanized horizontal movement inertia (smooth acceleration and deceleration)
+        double accel = onGround ? 0.42 : 0.28;
+        currentMoveX += (dx - currentMoveX) * accel;
+        currentMoveZ += (dz - currentMoveZ) * accel;
+        if (Math.abs(currentMoveX) < 0.001) currentMoveX = 0.0;
+        if (Math.abs(currentMoveZ) < 0.001) currentMoveZ = 0.0;
+
+        double moveX = currentMoveX + impulseX;
+        double moveZ = currentMoveZ + impulseZ;
         impulseX *= 0.82;
         impulseZ *= 0.82;
         if (Math.abs(impulseX) < 0.01) impulseX = 0.0;

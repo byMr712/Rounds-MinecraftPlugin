@@ -56,6 +56,7 @@ public class CardManager {
         data.setCard(card.getId(), true);
         syncPlayerHP(player, data);
         pendingPicks.remove(player.getUniqueId());
+        plugin.getGameManager().removePendingCardJoiner(player.getUniqueId());
 
         GameTeam team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
         plugin.getPlayerDataManager().savePlayerFullData(player.getUniqueId(), team, null);

@@ -852,6 +852,8 @@ public class GameManager implements Listener {
         currentRound++;
         state = GameState.PLAYING;
         deadPlayers.clear();
+        pendingCardJoiners.clear();
+        returningJoiners.clear();
         refreshTeamScoreboards();
         saveState();
         GunItem.resetRoundState();
@@ -1019,8 +1021,7 @@ public class GameManager implements Listener {
                         && p.getGameMode() != GameMode.SPECTATOR
                         && p.getHealth() > 0
                         && !p.isDead()
-                        && !deadPlayers.contains(uuid)
-                        && !pendingCardJoiners.contains(uuid)) {
+                        && !deadPlayers.contains(uuid)) {
                     alive++;
                 }
             }
@@ -1969,6 +1970,11 @@ public class GameManager implements Listener {
     public void markPendingCardJoiner(UUID uuid, boolean returning) {
         pendingCardJoiners.add(uuid);
         if (returning) returningJoiners.add(uuid); else returningJoiners.remove(uuid);
+    }
+
+    public void removePendingCardJoiner(UUID uuid) {
+        pendingCardJoiners.remove(uuid);
+        returningJoiners.remove(uuid);
     }
 
     public boolean isPendingCardJoiner(UUID uuid) {

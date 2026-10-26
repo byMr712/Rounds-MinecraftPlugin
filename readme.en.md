@@ -1,7 +1,7 @@
 # RoundsPlugin — The [ROUNDS](https://store.steampowered.com/app/1557740/ROUNDS/) Minigame in Minecraft
 
 > **Language:** [Русский](readme.md) · English  
-> Inspired by [**Rounds In Minecraft**](https://minecraft-inside.ru/maps/169501-rounds-in-minecraft.html) by **ifrit**.
+> Inspired by the [Rounds In Minecraft](https://minecraft-inside.ru/maps/169501-rounds-in-minecraft.html) mod by ifrit.
 
 **RoundsPlugin** brings the chaotic, competitive 2D/3D platformer shooter [**ROUNDS**](https://store.steampowered.com/app/1557740/ROUNDS/) directly to your Minecraft server! 4 teams, a deep card system with 116 unique upgrade cards and custom card support, up to 20+ rounds, physical interactive setup blocks, comeback card drafting for losing teams, auto-death for stalled rounds, freeplay mode, and full [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) / [**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi) integration.
 

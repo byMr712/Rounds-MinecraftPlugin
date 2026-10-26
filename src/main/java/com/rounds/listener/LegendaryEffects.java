@@ -29,7 +29,7 @@ public class LegendaryEffects implements Listener {
     private static final Map<UUID, Integer> secondWindUses = new HashMap<>();
     private static final Map<UUID, Double> fallPeakY = new HashMap<>();
     private static final Map<UUID, Long> skyfallCooldowns = new HashMap<>();
-    private static final long SKYFALL_COOLDOWN_MS = 500L;
+    private static final long SKYFALL_COOLDOWN_MS = 2000L;
 
     public LegendaryEffects(RoundsPlugin plugin) {
         this.plugin = plugin;

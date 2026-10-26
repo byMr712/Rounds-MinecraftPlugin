@@ -450,15 +450,17 @@ public class CardRegistry {
         List<Card> pool = getEnabledCards();
         List<Card> result = new ArrayList<>();
 
+        boolean weighted = (plugin == null || plugin.getRoundsConfig() == null) || plugin.getRoundsConfig().isWeightedRarity();
         int totalWeight = 0;
-        for (Card c : pool) totalWeight += c.getRarity().getWeight();
+        for (Card c : pool) totalWeight += (weighted ? c.getRarity().getWeight() : 1);
 
         for (int i = 0; i < count && !pool.isEmpty(); i++) {
+            if (totalWeight <= 0) break;
             int roll = random.nextInt(totalWeight);
             int cumulative = 0;
             Card chosen = pool.get(0);
             for (Card c : pool) {
-                cumulative += c.getRarity().getWeight();
+                cumulative += (weighted ? c.getRarity().getWeight() : 1);
                 if (roll < cumulative) {
                     chosen = c;
                     break;
@@ -468,7 +470,7 @@ public class CardRegistry {
             int family = chosen.getFamilyId();
             pool.removeIf(c -> c.getFamilyId() == family);
             totalWeight = 0;
-            for (Card c : pool) totalWeight += c.getRarity().getWeight();
+            for (Card c : pool) totalWeight += (weighted ? c.getRarity().getWeight() : 1);
         }
         return result;
     }

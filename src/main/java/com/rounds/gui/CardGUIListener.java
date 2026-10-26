@@ -33,7 +33,17 @@ public class CardGUIListener implements Listener {
     private final Map<UUID, List<Card>> openGUIs = new ConcurrentHashMap<>();
 
     private static final int SIZE = 27;
-    private static final int[] CARD_SLOTS = {11, 12, 13, 14, 15};
+
+    public static int[] getCardSlots(int count) {
+        if (count <= 0) return new int[0];
+        count = Math.min(count, 9);
+        int[] slots = new int[count];
+        int start = 13 - count / 2;
+        for (int i = 0; i < count; i++) {
+            slots[i] = start + i;
+        }
+        return slots;
+    }
 
     public CardGUIListener(RoundsPlugin plugin) {
         this.plugin = plugin;
@@ -47,8 +57,9 @@ public class CardGUIListener implements Listener {
         String title = "\u00A78[\u00A76Rounds\u00A78] " + Messages.get("card.gui-title");
         Inventory inv = Bukkit.createInventory(new CardGUIHolder(), SIZE, title);
 
-        for (int i = 0; i < cards.size() && i < CARD_SLOTS.length; i++) {
-            inv.setItem(CARD_SLOTS[i], cards.get(i).createItemStack());
+        int[] slots = getCardSlots(cards.size());
+        for (int i = 0; i < cards.size() && i < slots.length; i++) {
+            inv.setItem(slots[i], cards.get(i).createItemStack());
         }
 
         openGUIs.put(player.getUniqueId(), cards);
@@ -61,7 +72,10 @@ public class CardGUIListener implements Listener {
             if (java.util.concurrent.ThreadLocalRandom.current().nextDouble() < 0.20) {
                 delaySec += java.util.concurrent.ThreadLocalRandom.current().nextDouble() * 2.0;
             }
-            long delayTicks = Math.min(200L, Math.max(20L, (long) (delaySec * 20.0)));
+            long maxTicks = (plugin != null && plugin.getRoundsConfig() != null)
+                    ? plugin.getRoundsConfig().getCardSelectionTicks()
+                    : 200L;
+            long delayTicks = Math.min(maxTicks, Math.max(20L, (long) (delaySec * 20.0)));
 
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 if (player.isOnline() && !player.isDead()) {
@@ -70,7 +84,7 @@ public class CardGUIListener implements Listener {
                     if (bot != null && java.util.concurrent.ThreadLocalRandom.current().nextDouble() < bot.getSkillFactor()) {
                         slot = findBestCardSlot(cards);
                     } else {
-                        slot = java.util.concurrent.ThreadLocalRandom.current().nextInt(Math.min(5, cards.size()));
+                        slot = java.util.concurrent.ThreadLocalRandom.current().nextInt(Math.max(1, cards.size()));
                     }
                     plugin.getCardManager().selectCard(player, slot);
                     player.closeInventory();
@@ -83,7 +97,7 @@ public class CardGUIListener implements Listener {
         if (cards == null || cards.isEmpty()) return 0;
         int bestSlot = 0;
         int bestRarity = -1;
-        int limit = Math.min(5, cards.size());
+        int limit = cards.size();
         for (int i = 0; i < limit; i++) {
             Card c = cards.get(i);
             int r = (c != null && c.getRarity() != null) ? c.getRarity().ordinal() : 0;
@@ -250,13 +264,18 @@ public class CardGUIListener implements Listener {
             if (player == null || !player.isOnline()) continue;
             if (!(player.getOpenInventory().getTopInventory().getHolder() instanceof CardGUIHolder)) continue;
 
-            List<Card> newCards = plugin.getCardManager().getRegistry().getRandomCards(CARD_SLOTS.length);
+            int count = (plugin != null && plugin.getRoundsConfig() != null)
+                    ? plugin.getRoundsConfig().getCardSelectionCount()
+                    : 5;
+            List<Card> newCards = plugin.getCardManager().getRegistry().getRandomCards(count);
             entry.setValue(newCards);
             plugin.getCardManager().replacePendingCards(entry.getKey(), newCards);
 
             Inventory inv = player.getOpenInventory().getTopInventory();
-            for (int i = 0; i < newCards.size() && i < CARD_SLOTS.length; i++) {
-                inv.setItem(CARD_SLOTS[i], newCards.get(i).createItemStack());
+            inv.clear();
+            int[] slots = getCardSlots(newCards.size());
+            for (int i = 0; i < newCards.size() && i < slots.length; i++) {
+                inv.setItem(slots[i], newCards.get(i).createItemStack());
             }
         }
     }
@@ -338,23 +357,22 @@ public class CardGUIListener implements Listener {
         int rawSlot = event.getRawSlot();
         if (rawSlot < 0 || rawSlot >= SIZE) return;
 
-        boolean isCardSlot = false;
+        List<Card> cards = openGUIs.get(player.getUniqueId());
+        if (cards == null || cards.isEmpty()) return;
+
+        int[] slots = getCardSlots(cards.size());
         int cardIndex = -1;
-        for (int i = 0; i < CARD_SLOTS.length; i++) {
-            if (rawSlot == CARD_SLOTS[i]) {
-                isCardSlot = true;
+        for (int i = 0; i < slots.length; i++) {
+            if (rawSlot == slots[i]) {
                 cardIndex = i;
                 break;
             }
         }
-        if (!isCardSlot) return;
+        if (cardIndex < 0 || cardIndex >= cards.size()) return;
 
         ItemStack clicked = event.getCurrentItem();
         if (clicked == null || clicked.getType() == Material.BLACK_STAINED_GLASS_PANE
                 || clicked.getType() == Material.GRAY_STAINED_GLASS_PANE) return;
-
-        List<Card> cards = openGUIs.get(player.getUniqueId());
-        if (cards == null || cardIndex >= cards.size()) return;
 
         plugin.getCardManager().selectCard(player, cardIndex);
         openGUIs.remove(player.getUniqueId());

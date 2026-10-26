@@ -34,7 +34,8 @@ public class CardManager {
     }
 
     public void openCardSelection(Player player, GameTeam team) {
-        List<Card> cards = registry.getRandomCards(5);
+        int count = (plugin != null) ? plugin.getRoundsConfig().getCardSelectionCount() : 5;
+        List<Card> cards = registry.getRandomCards(count);
         pendingCards.put(player.getUniqueId(), cards);
         pendingPicks.add(player.getUniqueId());
         plugin.getCardGUI().open(player, cards);

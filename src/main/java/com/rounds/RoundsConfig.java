@@ -91,7 +91,9 @@ public final class RoundsConfig {
         cardSelectionTicks = c.getInt("game.card-selection-time", 200);
         respawnDelayTicks = c.getInt("game.respawn-delay", 5);
 
-        baseGunCooldown = c.getDouble("gun.base-cooldown", 20);
+        baseGunCooldown = c.contains("gun.base-cooldown")
+                ? c.getDouble("gun.base-cooldown")
+                : c.getDouble("defaults.attack-speed", 20);
         gunMaterial = c.getString("gun.material", "CROSSBOW");
 
         cardSelectionCount = c.getInt("cards.selection-count", 5);
@@ -149,7 +151,7 @@ public final class RoundsConfig {
 
         DefaultStats ds = new DefaultStats();
         ds.dmg = c.getDouble("defaults.damage", 3.0);
-        ds.atks = c.getDouble("defaults.attack-speed", 20);
+        ds.atks = c.getDouble("defaults.attack-speed", baseGunCooldown);
         ds.atkSpeed = c.getDouble("defaults.attack-speed-modifier", 0);
         ds.atkr = c.getDouble("defaults.attack-range", 0);
         ds.ammo = c.getDouble("defaults.ammo", 3);

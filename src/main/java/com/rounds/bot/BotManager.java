@@ -447,7 +447,10 @@ public class BotManager implements Listener {
         FakeBot bot = getBot(player.getName());
         if (bot == null) return;
 
-        // Auto respawn bot 10 ticks after death
+        // Auto respawn bot after configured delay ticks
+        long delayTicks = (plugin != null && plugin.getRoundsConfig() != null)
+                ? plugin.getRoundsConfig().getRespawnDelayTicks()
+                : 10L;
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (player.isOnline() && player.isDead()) {
                 player.spigot().respawn();
@@ -455,7 +458,7 @@ public class BotManager implements Listener {
                     plugin.getGameManager().giveGun(player);
                 }
             }
-        }, 10L);
+        }, Math.max(1L, delayTicks));
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

@@ -67,12 +67,14 @@ public class GunItem implements Listener {
     }
 
     public static ItemStack createGunItem() {
-        String materialName = plugin.getConfig().getString("gun.material", "STICK");
+        String materialName = (plugin != null && plugin.getRoundsConfig() != null)
+                ? plugin.getRoundsConfig().getGunMaterial()
+                : "CROSSBOW";
         Material mat;
         try {
             mat = Material.valueOf(materialName.toUpperCase());
         } catch (IllegalArgumentException e) {
-            mat = Material.STICK;
+            mat = Material.CROSSBOW;
         }
         ItemStack item = new ItemStack(mat);
         ItemMeta meta = item.getItemMeta();

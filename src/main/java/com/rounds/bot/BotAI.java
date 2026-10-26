@@ -555,13 +555,16 @@ public class BotAI extends BukkitRunnable {
         double distSq = botEye.distanceSquared(targetEye);
         if (distSq > (maxDist * maxDist)) return false;
 
-        // Field of View check (footstep hearing removed: vision cone strictly required)
-        Vector dirToTarget = targetEye.toVector().subtract(botEye.toVector()).normalize();
-        Vector lookDir = botEye.getDirection().normalize();
-        double angle = Math.toDegrees(dirToTarget.angle(lookDir));
-        double fovHalf = (bot.getPlugin() != null) ? (bot.getPlugin().getRoundsConfig().getBotVisionFov() / 2.0) : FOV_HALF_ANGLE_DEG;
-        if (angle > fovHalf) {
-            return false;
+        // Field of View check (bypassed if within footstep proximity hearing distance)
+        double hearingDist = (bot.getPlugin() != null) ? bot.getPlugin().getRoundsConfig().getBotProximityHearingDistance() : 2.5;
+        if (distSq > (hearingDist * hearingDist)) {
+            Vector dirToTarget = targetEye.toVector().subtract(botEye.toVector()).normalize();
+            Vector lookDir = botEye.getDirection().normalize();
+            double angle = Math.toDegrees(dirToTarget.angle(lookDir));
+            double fovHalf = (bot.getPlugin() != null) ? (bot.getPlugin().getRoundsConfig().getBotVisionFov() / 2.0) : FOV_HALF_ANGLE_DEG;
+            if (angle > fovHalf) {
+                return false;
+            }
         }
 
         return botPlayer.hasLineOfSight(target);

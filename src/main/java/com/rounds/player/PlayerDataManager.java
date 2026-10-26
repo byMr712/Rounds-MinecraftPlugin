@@ -182,13 +182,6 @@ public class PlayerDataManager implements Listener {
         flushStore();
     }
 
-    private void unused_saveAll(List<Integer> pendingCardIds) {
-        for (UUID uuid : activePlayers) {
-            GameTeam team = plugin.getTeamManager().getPlayerTeam(uuid);
-            savePlayerFullData(uuid, team, pendingCardIds);
-        }
-    }
-
     public SavedPlayerData loadPlayerFullData(UUID uuid) {
         YamlConfiguration yml = store();
         String path = "players." + uuid.toString();

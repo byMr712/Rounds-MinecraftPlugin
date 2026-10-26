@@ -5,6 +5,7 @@ import com.rounds.player.PlayerData;
 import com.rounds.teams.TeamManager.GameTeam;
 import com.rounds.util.Messages;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
@@ -296,8 +297,15 @@ public class CardManager {
                 } else if (remaining <= 0) {
                     cancel();
                     choiceTimers.remove(uuid);
-                    removePendingPick(uuid);
-                    p.kickPlayer(Messages.get("card.timeout-kick", totalSec));
+                    List<Card> pending = pendingCards.get(uuid);
+                    if (pending != null && !pending.isEmpty()) {
+                        int randomIndex = java.util.concurrent.ThreadLocalRandom.current().nextInt(pending.size());
+                        p.closeInventory();
+                        p.sendMessage(ChatColor.YELLOW + Messages.get("card.timeout-kick", totalSec));
+                        selectCard(p, randomIndex);
+                    } else {
+                        removePendingPick(uuid);
+                    }
                 }
             }
         }.runTaskTimer(plugin, 20L, 20L);

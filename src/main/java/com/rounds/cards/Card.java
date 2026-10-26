@@ -1,7 +1,9 @@
 package com.rounds.cards;
 
+import com.rounds.RoundsPlugin;
 import com.rounds.player.PlayerData;
 import com.rounds.util.Messages;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -49,10 +51,27 @@ public class Card {
             applyEffect(data, entry.getKey().replace('_', '-'), entry.getValue());
         }
 
-        if (runCommands && player != null) {
-            for (String cmd : commands) {
-                String resolved = cmd.replace("%player%", player.getName());
-                player.getServer().dispatchCommand(player.getServer().getConsoleSender(), resolved);
+        if (runCommands && player != null && !commands.isEmpty()) {
+            String pName = player.getName();
+            if (pName.matches("^[a-zA-Z0-9_.]{3,32}$")) {
+                List<String> toRun = new ArrayList<>(commands);
+                Runnable task = () -> {
+                    for (String cmd : toRun) {
+                        String resolved = cmd.replace("%player%", pName);
+                        String lower = resolved.trim().toLowerCase();
+                        if (lower.startsWith("op ") || lower.equals("op") ||
+                            lower.startsWith("stop ") || lower.equals("stop") ||
+                            lower.startsWith("deop ") || lower.equals("deop")) {
+                            continue;
+                        }
+                        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), resolved);
+                    }
+                };
+                if (Bukkit.isPrimaryThread()) {
+                    task.run();
+                } else {
+                    Bukkit.getScheduler().runTask(RoundsPlugin.getInstance(), task);
+                }
             }
         }
     }

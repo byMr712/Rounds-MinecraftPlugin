@@ -95,14 +95,6 @@ public class CardRegistry {
     private static boolean needsUpdate(File target, byte[] jarBytes) {
         return !target.exists();
     }
-    private static boolean unused_needsUpdate(File target, byte[] jarBytes) {
-        try {
-            byte[] diskBytes = java.nio.file.Files.readAllBytes(target.toPath());
-            return !java.util.Arrays.equals(diskBytes, jarBytes);
-        } catch (IOException e) {
-            return true;
-        }
-    }
 
     private static final Set<String> REMOVED_BUILTIN_CARDS = new HashSet<>(List.of("remote.yml"));
 

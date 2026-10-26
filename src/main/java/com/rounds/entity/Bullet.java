@@ -34,6 +34,7 @@ final class Bullet {
     // Транзиентные данные фазы полёта: заполняются в предшаге, читаются в резолве.
     double sX, sY, sZ, eX, eY, eZ;
     RayTraceResult wallHit;
+    final Vector rayDir = new Vector();
 
     Bullet(UUID ownerId, double damage, int maxBounce, double scale,
            double homing, double tgBounce, double drill, double sneaky,

@@ -18,7 +18,7 @@
   - 5 rarity tiers: `COMMON`, `UNCOMMON`, `RARE`, `EPIC`, `LEGENDARY` with configurable weights.
   - Support for variations (single card with scaling stats across rarities).
   - **Comeback Mechanics:** The losing team drafts a new card between rounds.
-  - Configurable card selection timer (`/rdebug cardchoicetime <sec>`) with warning sounds (XP sound on last 5 seconds, anvil on final second) and auto-kick for inactive players.
+  - Configurable card selection timer (`/rdebug cardchoicetime <sec>`) with warning sounds (XP sound on last 5 seconds, anvil on final second) and auto-selection of a random card upon timeout.
   - In-game deck inventory viewer (`/rdebug cards show`) and administrative card management.
   - Card rotation during draft (Wheel mode).
 - **Physical Block Setup:** Special interactive blocks for team selection, lobby, arena zones, spawns, jump pads, and elevator lifts.

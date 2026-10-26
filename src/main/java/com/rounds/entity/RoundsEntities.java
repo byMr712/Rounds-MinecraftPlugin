@@ -184,8 +184,8 @@ public class RoundsEntities implements Listener {
     // Рост крупной пули за стак карты (+70%): и визуальный размер, и радиус попадания.
     static final double BIG_BULLET_GROWTH = 1.7;
     private static final int BULLET_LIFETIME_TICKS = 200;
-    private static final double TRACER_STEP = 0.45;
-    private static final int TRACER_MAX_POINTS = 8;
+    private static final double TRACER_STEP = 0.9;
+    private static final int TRACER_MAX_POINTS = 4;
     // Переиспользуемый bbox для sweep'а и LOD трейсёра при массовом спавне пуль.
     private static final BoundingBox SWEEP_BOX = new BoundingBox(-1, -1, -1, 1, 1, 1);
     private static final int LOD_FULL_MAX_BULLETS = 250;
@@ -444,7 +444,10 @@ public class RoundsEntities implements Listener {
         if (b.drill <= 0) {
             double lenSq = vx * vx + vy * vy + vz * vz;
             if (lenSq > 1.0E-6) {
-                b.wallHit = world.rayTraceBlocks(b.loc, new Vector(vx, vy, vz), Math.sqrt(lenSq), FluidCollisionMode.NEVER, false);
+                b.rayDir.setX(vx);
+                b.rayDir.setY(vy);
+                b.rayDir.setZ(vz);
+                b.wallHit = world.rayTraceBlocks(b.loc, b.rayDir, Math.sqrt(lenSq), FluidCollisionMode.NEVER, false);
             }
         }
     }
@@ -476,7 +479,8 @@ public class RoundsEntities implements Listener {
                 double topY = cy + living.getHeight();
                 double qy = py < cy ? cy : Math.min(py, topY);
                 double ddx = px - cx, ddy = py - qy, ddz = pz - cz;
-                if (Math.sqrt(ddx * ddx + ddy * ddy + ddz * ddz) > hitRadius + 0.5) continue;
+                double maxHitDist = hitRadius + 0.5;
+                if ((ddx * ddx + ddy * ddy + ddz * ddz) > maxHitDist * maxHitDist) continue;
 
                 boolean shield = false;
                 if (living instanceof Player p) {
@@ -1081,20 +1085,17 @@ public class RoundsEntities implements Listener {
     // ==================== Find nearest enemy ====================
 
     private static LivingEntity findNearestEnemy(Location center, UUID ownerId) {
-        double closest = Double.MAX_VALUE;
+        if (center == null || center.getWorld() == null) return null;
+        double closest = 900.0; // 30 blocks maximum range squared (30 * 30)
         LivingEntity nearest = null;
-        for (Entity entity : center.getWorld().getNearbyEntities(center, 30, 30, 30)) {
-            if (!(entity instanceof LivingEntity living)) continue;
-            if (entity.getUniqueId().equals(ownerId)) continue;
-            if (entity instanceof ArmorStand) continue;
-            if (entity instanceof Player p) {
-                if (!plugin.getGameManager().isTargetable(p)) continue;
-                if (isTeammate(ownerId, p.getUniqueId())) continue;
-            }
-            double dist = living.getLocation().distanceSquared(center);
+        for (Player p : center.getWorld().getPlayers()) {
+            if (p.getUniqueId().equals(ownerId)) continue;
+            if (!plugin.getGameManager().isTargetable(p)) continue;
+            if (isTeammate(ownerId, p.getUniqueId())) continue;
+            double dist = p.getLocation().distanceSquared(center);
             if (dist < closest) {
                 closest = dist;
-                nearest = living;
+                nearest = p;
             }
         }
         return nearest;

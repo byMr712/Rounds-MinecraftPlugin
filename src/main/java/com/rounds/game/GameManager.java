@@ -950,9 +950,8 @@ public class GameManager implements Listener {
         GunItem.resetRoundState();
         com.rounds.listener.LegendaryEffects.clearRoundState();
         chameleonStillTicks.clear();
-        long delayMs = (plugin != null) ? plugin.getRoundsConfig().getAutoDeathDelaySeconds() * 1000L : AUTO_DEATH_DELAY_MS;
-        long intervalMs = (plugin != null) ? plugin.getRoundsConfig().getAutoDeathIntervalSeconds() * 1000L : AUTO_DEATH_INTERVAL_MS;
-        autoDeathPhaseDurationMs = Math.max(1000L, delayMs - intervalMs);
+        long roundTimeMs = (plugin != null) ? plugin.getRoundsConfig().getRoundTimeSeconds() * 1000L : 180_000L;
+        autoDeathPhaseDurationMs = Math.max(1000L, roundTimeMs);
         autoDeathNextEvent = System.currentTimeMillis() + autoDeathPhaseDurationMs;
         autoDeathNextIsKill = false;
         autoDeathInitialPhase = true;

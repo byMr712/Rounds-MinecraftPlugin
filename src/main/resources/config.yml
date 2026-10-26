@@ -43,6 +43,8 @@ game:
   max-rounds: 20
   # Countdown before a round officially starts in seconds
   countdown-seconds: 3
+  # Main round time in seconds for the boss bar timer before sudden death (default: 180s = 3 minutes)
+  round-time-seconds: 180
   # Time in seconds for players to choose an upgrade card (minimum 10 seconds)
   card-choice-time: 30
   # Inventory GUI display duration in ticks (200 ticks = 10 seconds)

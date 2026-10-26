@@ -49,6 +49,7 @@ public final class RoundsConfig {
     private double noPartyRadius;
 
     private int countdownSeconds;
+    private int roundTimeSeconds;
     private boolean autoDeathEnabled;
     private int autoDeathDelaySeconds;
     private int autoDeathIntervalSeconds;
@@ -127,6 +128,13 @@ public final class RoundsConfig {
         noPartyRadius = c.getDouble(sh + "no-party-radius", 5.0);
 
         countdownSeconds = c.getInt("game.countdown-seconds", 3);
+        if (c.contains("game.round-time-seconds")) {
+            roundTimeSeconds = c.getInt("game.round-time-seconds", 180);
+        } else {
+            int delay = c.getInt("game.auto-death.delay-seconds", 240);
+            int interval = c.getInt("game.auto-death.interval-seconds", 60);
+            roundTimeSeconds = Math.max(10, delay > interval ? (delay - interval) : delay);
+        }
         autoDeathEnabled = c.getBoolean("game.auto-death.enabled", true);
         autoDeathDelaySeconds = c.getInt("game.auto-death.delay-seconds", 240);
         autoDeathIntervalSeconds = c.getInt("game.auto-death.interval-seconds", 60);
@@ -188,6 +196,7 @@ public final class RoundsConfig {
     public double getNoPartyRadius() { return noPartyRadius; }
 
     public int getCountdownSeconds() { return countdownSeconds; }
+    public int getRoundTimeSeconds() { return roundTimeSeconds; }
     public boolean isAutoDeathEnabled() { return autoDeathEnabled; }
     public int getAutoDeathDelaySeconds() { return autoDeathDelaySeconds; }
     public int getAutoDeathIntervalSeconds() { return autoDeathIntervalSeconds; }

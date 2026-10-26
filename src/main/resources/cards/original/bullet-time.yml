@@ -3,8 +3,8 @@ name:
   ru: "&6«Погоди, шнурок развязался»"
   en: "&6Bullet Time"
 description:
-  ru: "Срабатывает 1 раз за раунд при падении здоровья ниже 20%. На 5 секунд накладывает замедление VI всем врагам, накладывает чёрно-белый фильтр на их экран, замедляет вражеские пули на 85%, а владельцу даёт +50% скорости передвижения."
-  en: "Triggers once per round when health drops below 20%. Inflicts Slowness VI on all enemies for 5 seconds, applies a black-and-white screen filter to them, slows enemy bullets by 85%, and grants the owner +50% movement speed."
+  ru: "Срабатывает 1 раз за раунд при падении здоровья ниже 20% или смертельном уроне: предотвращает смерть, даёт бессмертие на 1 сек, на 5 сек замедляет всех врагов (Slowness VI) и их пули на 85%, накладывая тёмный экран, а владельцу даёт +50% скорости бега."
+  en: "Triggers once per round when health drops below 20% or on fatal damage: prevents death, grants 1s invulnerability, slows all enemies (Slowness VI) and their bullets by 85% for 5s with dark screen, and gives owner +50% movement speed."
 material: NETHER_STAR
 rarity: LEGENDARY
 enabled: true

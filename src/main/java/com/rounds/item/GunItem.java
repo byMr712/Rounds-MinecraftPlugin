@@ -147,7 +147,7 @@ public class GunItem implements Listener {
             if (data.overheat > 0) {
                 overheated = true;
             } else if (data.bloodCartridge > 0) {
-                double hpCostPercent = data.bloodCartridgeHpCost > 0 ? data.bloodCartridgeHpCost : 0.15;
+                double hpCostPercent = data.bloodCartridgeHpCost > 0 ? data.bloodCartridgeHpCost : 0.07;
                 double cost = player.getHealth() * hpCostPercent;
                 double newHp = player.getHealth() - cost;
                 if (newHp > 0.5) {
@@ -489,12 +489,27 @@ public class GunItem implements Listener {
                 PotionEffectType.REGENERATION, 100, 2));
         }
 
+        boolean recallActivated = false;
+        long recallRemaining = 0;
         if (data.temporalRecall > 0) {
-            com.rounds.listener.LegendaryEffects.tryTemporalRecall(player, data);
+            long nowRecall = System.currentTimeMillis();
+            Long lastRecall = com.rounds.listener.LegendaryEffects.getRecallCooldown(uuid);
+            if (lastRecall != null && nowRecall - lastRecall < 15000L) {
+                recallRemaining = (15000L - (nowRecall - lastRecall)) / 1000 + 1;
+            } else {
+                recallActivated = com.rounds.listener.LegendaryEffects.tryTemporalRecall(player, data);
+            }
         }
 
         player.getWorld().playSound(blockLoc, Sound.BLOCK_ANVIL_PLACE, 0.8f, 1.5f);
-        player.sendActionBar(ChatColor.BLUE + Messages.get("gun.shield-activated"));
+        if (recallActivated) {
+            // Action bar and title already set by tryTemporalRecall
+        } else if (recallRemaining > 0) {
+            player.sendActionBar(ChatColor.YELLOW + Messages.get("card.recall-cooldown", recallRemaining)
+                    + ChatColor.DARK_GRAY + " | " + ChatColor.BLUE + Messages.get("gun.shield-activated"));
+        } else {
+            player.sendActionBar(ChatColor.BLUE + Messages.get("gun.shield-activated"));
+        }
     }
 
     @EventHandler

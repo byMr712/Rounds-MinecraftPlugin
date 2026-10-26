@@ -396,13 +396,18 @@ public class RoundsEntities implements Listener {
 
         // Физика стрелы 1:1: drag 0.99/тик + гравитация 0.05/тик.
         Vector vel = b.velocity;
-        if (com.rounds.listener.LegendaryEffects.isBulletTimeActiveFor(b.ownerId)) {
-            vel.multiply(0.15);
+        boolean slowMo = com.rounds.listener.LegendaryEffects.isBulletTimeActiveFor(b.ownerId);
+        double stepScale = slowMo ? 0.15 : 1.0;
+        if (slowMo) {
+            vel.multiply(0.9985);
+            vel.setY(vel.getY() - 0.05 * 0.15);
         } else {
             vel.multiply(0.99);
+            vel.setY(vel.getY() - 0.05);
         }
-        vel.setY(vel.getY() - 0.05);
-        double vx = vel.getX(), vy = vel.getY(), vz = vel.getZ();
+        double vx = vel.getX() * stepScale;
+        double vy = vel.getY() * stepScale;
+        double vz = vel.getZ() * stepScale;
         if (!Double.isFinite(vx) || !Double.isFinite(vy) || !Double.isFinite(vz)) {
             b.alive = false;
             return;
@@ -419,7 +424,7 @@ public class RoundsEntities implements Listener {
         if (b.drill <= 0) {
             double lenSq = vx * vx + vy * vy + vz * vz;
             if (lenSq > 1.0E-6) {
-                b.wallHit = world.rayTraceBlocks(b.loc, vel, Math.sqrt(lenSq), FluidCollisionMode.NEVER, false);
+                b.wallHit = world.rayTraceBlocks(b.loc, new Vector(vx, vy, vz), Math.sqrt(lenSq), FluidCollisionMode.NEVER, false);
             }
         }
     }
@@ -427,7 +432,7 @@ public class RoundsEntities implements Listener {
     private static void bulletResolve(Bullet b, World world) {
         double sx = b.sX, sy = b.sY, sz = b.sZ;
         Vector vel = b.velocity;
-        double vx = vel.getX(), vy = vel.getY(), vz = vel.getZ();
+        double vx = b.eX - b.sX, vy = b.eY - b.sY, vz = b.eZ - b.sZ;
         double segLenSq = vx * vx + vy * vy + vz * vz;
         double scale = b.scale;
 
@@ -503,6 +508,18 @@ public class RoundsEntities implements Listener {
             if (shouldExecute(shooterData, hitEnt)) {
                 executeTarget(hitEnt);
             } else {
+                if (hitEnt instanceof Player victim) {
+                    PlayerData victimData = plugin.getPlayerDataManager().getData(victim.getUniqueId());
+                    if (victimData != null && victimData.bulletTime > 0
+                            && !com.rounds.listener.LegendaryEffects.isBulletTimeUsedThisRound(victim.getUniqueId())
+                            && (hitEnt.getHealth() <= finalDmg || (hitEnt.getHealth() - finalDmg) <= victimData.getMaxHealth() * 0.20)) {
+                        victim.setHealth(Math.max(victimData.getMaxHealth() * 0.20, 2.0));
+                        com.rounds.listener.LegendaryEffects.triggerBulletTime(victim, victimData);
+                        impactParticles(world, hitPX, hitPY, hitPZ, scale);
+                        b.alive = false;
+                        return;
+                    }
+                }
                 Player shooter = Bukkit.getPlayer(b.ownerId);
                 double hpBefore = hitEnt.getHealth();
                 if (shooter != null && shooter.isOnline()) {
@@ -869,20 +886,23 @@ public class RoundsEntities implements Listener {
                                             double damageDealt, int stack) {
         if (target instanceof Player tp) {
             PlayerData td = plugin.getPlayerDataManager().getData(tp.getUniqueId());
-            if (td.spikes > 0) {
-                Player attacker = Bukkit.getPlayer(ownerId);
-                if (attacker != null && attacker.isOnline() && attacker.isValid()) {
-                    attacker.setNoDamageTicks(0);
-                    // damageDealt уже умножен на стек: шипы отражают пропорционально.
-                    attacker.damage(Math.max(damageDealt * td.spikes, 0.5));
+            if (td != null) {
+                if (td.spikes > 0) {
+                    Player attacker = Bukkit.getPlayer(ownerId);
+                    if (attacker != null && attacker.isOnline() && attacker.isValid()) {
+                        attacker.setNoDamageTicks(0);
+                        // damageDealt уже умножен на стек: шипы отражают пропорционально.
+                        attacker.damage(Math.max(damageDealt * td.spikes, 0.5));
+                    }
                 }
-            }
-            if (td.frostArmor > 0) {
-                Player attacker = Bukkit.getPlayer(ownerId);
-                if (attacker != null && attacker.isOnline() && attacker.isValid()) {
-                    attacker.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                        PotionEffectType.SLOW, (int) (60 * Math.max(td.frostArmor, 1.0)), 0));
+                if (td.frostArmor > 0) {
+                    Player attacker = Bukkit.getPlayer(ownerId);
+                    if (attacker != null && attacker.isOnline() && attacker.isValid()) {
+                        attacker.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                            PotionEffectType.SLOW, (int) (60 * Math.max(td.frostArmor, 1.0)), 0));
+                    }
                 }
+                com.rounds.listener.LegendaryEffects.onDirectDamage(tp, td, damageDealt, ownerId);
             }
         }
         if (shooter != null && shooter.stormCaller > 0 && Math.random() < shooter.stormCaller) {

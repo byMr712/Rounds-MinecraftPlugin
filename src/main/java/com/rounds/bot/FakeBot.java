@@ -555,6 +555,11 @@ public class FakeBot {
         ServerPlayer sp = getNmsPlayer();
         if (p.isDead() || !p.isOnline() || p.getGameMode() == GameMode.SPECTATOR) return;
         if (manager != null && manager.getPlugin() != null && manager.getPlugin().getGameManager().getState() == com.rounds.game.GameManager.GameState.CARDS) return;
+        if (com.rounds.listener.LegendaryEffects.isBulletTimeActiveFor(p.getUniqueId())
+                || p.hasPotionEffect(org.bukkit.potion.PotionEffectType.SLOW)) {
+            dx *= 0.15;
+            dz *= 0.15;
+        }
         BlockListener bl = (manager != null && manager.getPlugin() != null) ? manager.getPlugin().getBlockListener() : null;
 
         // Tick and expire active potion effects for FakeBot (e.g. GLOWING, SLOW)

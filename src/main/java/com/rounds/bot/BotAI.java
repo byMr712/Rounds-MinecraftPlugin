@@ -2164,6 +2164,10 @@ public class BotAI extends BukkitRunnable {
     }
 
     private void tickCooldowns() {
+        boolean bulletTimeSlow = com.rounds.listener.LegendaryEffects.isBulletTimeActiveFor(bot.getBukkitPlayer().getUniqueId());
+        if (bulletTimeSlow && (tickCount % 6 != 0)) {
+            return;
+        }
         if (reactionTicks > 0) {
             reactionTicks--;
         }

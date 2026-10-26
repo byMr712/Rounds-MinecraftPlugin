@@ -3,6 +3,7 @@ package com.rounds.listener;
 import com.rounds.RoundsPlugin;
 import com.rounds.player.PlayerData;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -41,6 +42,7 @@ public class LegendaryEffects implements Listener {
         }
     }
 
+    private static LegendaryEffects instance;
     private final RoundsPlugin plugin;
     private static final Map<UUID, Long> rageUntil = new HashMap<>();
     private static final Map<UUID, Integer> secondWindUses = new HashMap<>();
@@ -60,6 +62,7 @@ public class LegendaryEffects implements Listener {
 
     public LegendaryEffects(RoundsPlugin plugin) {
         this.plugin = plugin;
+        instance = this;
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             long now = System.currentTimeMillis();
             for (Player p : Bukkit.getOnlinePlayers()) {
@@ -114,27 +117,55 @@ public class LegendaryEffects implements Listener {
         lastRazorwire.remove(uuid);
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public static Long getRecallCooldown(UUID uuid) {
+        return recallCooldowns.get(uuid);
+    }
+
+    public static boolean isBulletTimeUsedThisRound(UUID uuid) {
+        return bulletTimeUsedThisRound.contains(uuid);
+    }
+
+    public static void resetBulletTime(UUID uuid) {
+        bulletTimeUsedThisRound.remove(uuid);
+    }
+
+    public static void onDirectDamage(Player victim, PlayerData victimData, double damageDealt, UUID attackerId) {
+        if (victim == null || victimData == null) return;
+        UUID uuid = victim.getUniqueId();
+        com.rounds.stats.MatchStatsManager.recordDamageReceived(uuid, damageDealt);
+
+        if (victimData.bloodFurry > 0) {
+            rageUntil.put(uuid, System.currentTimeMillis() + 3000L);
+        }
+
+        if (victimData.spiteRazorwire > 0) {
+            triggerRazorwire(victim, victimData);
+        }
+
+        if (victimData.bulletTime > 0
+                && !bulletTimeUsedThisRound.contains(uuid)
+                && (victim.getHealth() <= victimData.getMaxHealth() * 0.20 || victim.getHealth() <= 0.5)) {
+            victim.setHealth(Math.max(victimData.getMaxHealth() * 0.20, 2.0));
+            triggerBulletTime(victim, victimData);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onDamage(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Player player)) return;
 
-        // Record damage received for match stats
-        com.rounds.stats.MatchStatsManager.recordDamageReceived(player.getUniqueId(), event.getFinalDamage());
-
         PlayerData data = plugin.getPlayerDataManager().getData(player.getUniqueId());
+        if (data == null) return;
 
-        if (data.bloodFurry > 0) {
-            rageUntil.put(player.getUniqueId(), System.currentTimeMillis() + 3000L);
-        }
-
-        if (data.spiteRazorwire > 0 && event.getCause() != EntityDamageEvent.DamageCause.VOID) {
-            triggerRazorwire(player, data);
-        }
-
+        // Check fatal or low-health Bullet Time save
         if (data.bulletTime > 0
                 && !bulletTimeUsedThisRound.contains(player.getUniqueId())
-                && (player.getHealth() - event.getFinalDamage()) <= data.getMaxHealth() * 0.20) {
+                && (event.getFinalDamage() >= player.getHealth()
+                || (player.getHealth() - event.getFinalDamage()) <= data.getMaxHealth() * 0.20)) {
+            event.setCancelled(true);
+            player.setHealth(Math.max(data.getMaxHealth() * 0.20, 2.0));
             triggerBulletTime(player, data);
+            return;
         }
 
         int maxUses = (int) Math.round(data.secondWind);
@@ -155,6 +186,20 @@ public class LegendaryEffects implements Listener {
                     player.setInvulnerable(false);
                 }
             }, 40L);
+            return;
+        }
+
+        if (event.isCancelled()) return;
+
+        // Record damage received for match stats
+        com.rounds.stats.MatchStatsManager.recordDamageReceived(player.getUniqueId(), event.getFinalDamage());
+
+        if (data.bloodFurry > 0) {
+            rageUntil.put(player.getUniqueId(), System.currentTimeMillis() + 3000L);
+        }
+
+        if (data.spiteRazorwire > 0 && event.getCause() != EntityDamageEvent.DamageCause.VOID) {
+            triggerRazorwire(player, data);
         }
 
         if (data.skyfall > 0
@@ -297,33 +342,67 @@ public class LegendaryEffects implements Listener {
 
     // ==================== Bullet Time ====================
 
-    public static boolean isBulletTimeActiveFor(UUID bulletOwner) {
+    public static boolean isBulletTimeActiveFor(UUID entityId) {
         if (System.currentTimeMillis() >= bulletTimeUntil) return false;
         if (bulletTimeOwner == null) return false;
-        return !bulletTimeOwner.equals(bulletOwner);
+        if (bulletTimeOwner.equals(entityId)) return false;
+        if (instance != null && instance.plugin != null) {
+            com.rounds.teams.TeamManager.GameTeam myTeam = instance.plugin.getTeamManager().getPlayerTeam(bulletTimeOwner);
+            com.rounds.teams.TeamManager.GameTeam otherTeam = instance.plugin.getTeamManager().getPlayerTeam(entityId);
+            if (myTeam != null && otherTeam != null && myTeam == otherTeam) return false;
+        }
+        return true;
     }
 
-    private void triggerBulletTime(Player owner, PlayerData data) {
+    public static void triggerBulletTime(Player owner, PlayerData data) {
+        if (bulletTimeUsedThisRound.contains(owner.getUniqueId())) return;
         bulletTimeUsedThisRound.add(owner.getUniqueId());
         bulletTimeOwner = owner.getUniqueId();
         bulletTimeUntil = System.currentTimeMillis() + 5000L;
 
-        Location loc = owner.getLocation();
-        loc.getWorld().playSound(loc, Sound.BLOCK_BEACON_DEACTIVATE, 1.5f, 0.5f);
-        loc.getWorld().playSound(loc, Sound.BLOCK_BELL_RESONATE, 1.2f, 0.6f);
+        // Invulnerability for 1.0s (20 ticks)
+        owner.setInvulnerable(true);
+        owner.setNoDamageTicks(20);
+        if (instance != null && instance.plugin != null) {
+            Bukkit.getScheduler().scheduleSyncDelayedTask(instance.plugin, () -> {
+                if (owner.isOnline() && owner.isValid()) {
+                    owner.setInvulnerable(false);
+                }
+            }, 20L);
+        }
 
+        Location loc = owner.getLocation();
+        if (loc.getWorld() != null) {
+            loc.getWorld().playSound(loc, Sound.ITEM_TOTEM_USE, 1.0f, 1.2f);
+            loc.getWorld().playSound(loc, Sound.BLOCK_BEACON_DEACTIVATE, 1.5f, 0.5f);
+            loc.getWorld().playSound(loc, Sound.BLOCK_BELL_RESONATE, 1.2f, 0.6f);
+            loc.getWorld().spawnParticle(Particle.FLASH, loc.clone().add(0, 1.0, 0), 2);
+        }
+
+        // Owner: +50% movement speed (Speed II) for 5 seconds (100 ticks)
         owner.addPotionEffect(new org.bukkit.potion.PotionEffect(
                 org.bukkit.potion.PotionEffectType.SPEED, 100, 1, false, false, true));
-        owner.sendActionBar(org.bukkit.ChatColor.GOLD + com.rounds.util.Messages.get("card.bullet-time-active"));
+        owner.sendTitle(ChatColor.GOLD + "§lЗАМЕДЛЕНИЕ ВРЕМЕНИ",
+                ChatColor.YELLOW + "Бессмертие 1 сек! Враги и пули замедлены на 5 сек!", 5, 40, 10);
+        owner.sendActionBar(ChatColor.GOLD + com.rounds.util.Messages.get("card.bullet-time-active"));
+
+        com.rounds.teams.TeamManager.GameTeam myTeam = (instance != null && instance.plugin != null)
+                ? instance.plugin.getTeamManager().getPlayerTeam(owner.getUniqueId()) : null;
 
         for (Player p : Bukkit.getOnlinePlayers()) {
             if (p.getUniqueId().equals(owner.getUniqueId()) || !p.isValid() || p.isDead()) continue;
-            if (p.getGameMode() == GameMode.SPECTATOR) continue;
+            if (p.getGameMode() == GameMode.SPECTATOR || p.getGameMode() == GameMode.CREATIVE) continue;
+            if (myTeam != null && instance != null && instance.plugin != null) {
+                com.rounds.teams.TeamManager.GameTeam otherTeam = instance.plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+                if (otherTeam != null && myTeam == otherTeam) continue;
+            }
             p.addPotionEffect(new org.bukkit.potion.PotionEffect(
                     org.bukkit.potion.PotionEffectType.SLOW, 100, 5, false, false, true));
             p.addPotionEffect(new org.bukkit.potion.PotionEffect(
                     org.bukkit.potion.PotionEffectType.DARKNESS, 100, 0, false, false, false));
-            p.sendTitle(org.bukkit.ChatColor.DARK_GRAY + "[ " + org.bukkit.ChatColor.GRAY + com.rounds.util.Messages.get("card.bullet-time-slowed") + org.bukkit.ChatColor.DARK_GRAY + " ]", "", 5, 40, 10);
+            p.sendTitle(ChatColor.DARK_GRAY + "[ " + ChatColor.RED + "§lВРЕМЯ ЗАМЕДЛЕНО" + ChatColor.DARK_GRAY + " ]",
+                    ChatColor.GRAY + com.rounds.util.Messages.get("card.bullet-time-slowed"), 5, 40, 10);
+            p.playSound(p.getLocation(), Sound.BLOCK_CONDUIT_DEACTIVATE, 1.0f, 0.5f);
         }
     }
 
@@ -334,59 +413,88 @@ public class LegendaryEffects implements Listener {
         long now = System.currentTimeMillis();
         Long last = recallCooldowns.get(uuid);
         if (last != null && now - last < RECALL_COOLDOWN_MS) {
-            long remaining = (RECALL_COOLDOWN_MS - (now - last)) / 1000 + 1;
-            player.sendActionBar(org.bukkit.ChatColor.YELLOW + com.rounds.util.Messages.get("card.recall-cooldown", remaining));
             return false;
         }
 
         Deque<PlayerSnapshot> deque = playerHistory.get(uuid);
-        if (deque == null || deque.isEmpty()) return false;
-
-        long targetTime = now - 3000L;
+        Location from = player.getLocation();
         PlayerSnapshot best = null;
-        long minDiff = Long.MAX_VALUE;
-        for (PlayerSnapshot s : deque) {
-            long diff = Math.abs(s.time - targetTime);
-            if (diff < minDiff) {
-                minDiff = diff;
-                best = s;
+        if (deque != null && !deque.isEmpty()) {
+            long targetTime = now - 3000L;
+            long minDiff = Long.MAX_VALUE;
+            for (PlayerSnapshot s : deque) {
+                long diff = Math.abs(s.time - targetTime);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    best = s;
+                }
             }
         }
-        if (best == null) return false;
+        if (best == null) {
+            best = new PlayerSnapshot(now, from.clone(), player.getHealth());
+        }
 
         recallCooldowns.put(uuid, now);
-        Location from = player.getLocation();
+
         if (from.getWorld() != null) {
-            from.getWorld().spawnParticle(Particle.PORTAL, from, 40, 0.5, 1.0, 0.5, 0.5);
+            from.getWorld().spawnParticle(Particle.PORTAL, from, 50, 0.5, 1.0, 0.5, 0.5);
             from.getWorld().spawnParticle(Particle.FLASH, from, 1);
-            from.getWorld().playSound(from, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.4f);
+            from.getWorld().playSound(from, Sound.ENTITY_ENDERMAN_TELEPORT, 1.2f, 1.4f);
         }
 
         player.teleport(best.loc);
 
         if (best.loc.getWorld() != null) {
-            best.loc.getWorld().spawnParticle(Particle.PORTAL, best.loc, 40, 0.5, 1.0, 0.5, 0.5);
+            best.loc.getWorld().spawnParticle(Particle.PORTAL, best.loc, 50, 0.5, 1.0, 0.5, 0.5);
             best.loc.getWorld().spawnParticle(Particle.FLASH, best.loc, 1);
-            best.loc.getWorld().playSound(best.loc, Sound.ITEM_CHORUS_FRUIT_TELEPORT, 1.0f, 1.2f);
+            best.loc.getWorld().playSound(best.loc, Sound.ITEM_CHORUS_FRUIT_TELEPORT, 1.2f, 1.2f);
+            best.loc.getWorld().playSound(best.loc, Sound.BLOCK_BEACON_POWER_SELECT, 1.2f, 1.8f);
+
+            if (from.getWorld() != null && from.getWorld().equals(best.loc.getWorld())) {
+                org.bukkit.util.Vector line = best.loc.toVector().subtract(from.toVector());
+                double dist = line.length();
+                if (dist > 0.5) {
+                    line.normalize().multiply(0.4);
+                    Location cur = from.clone().add(0, 1.0, 0);
+                    for (double d = 0; d < dist; d += 0.4) {
+                        cur.add(line);
+                        best.loc.getWorld().spawnParticle(Particle.PORTAL, cur, 2, 0.1, 0.1, 0.1, 0.05);
+                    }
+                }
+            }
         }
 
+        double restoredHp = 0;
         if (best.hp > player.getHealth()) {
+            restoredHp = Math.min(best.hp, data.getMaxHealth()) - player.getHealth();
             player.setHealth(Math.min(best.hp, data.getMaxHealth()));
+            player.getWorld().spawnParticle(Particle.HEART, player.getEyeLocation(), 5, 0.3, 0.3, 0.3, 0.05);
         }
 
         data.ammo = data.maxAmmo;
         com.rounds.item.GunItem.cancelReload(uuid);
-        player.sendActionBar(org.bukkit.ChatColor.AQUA + com.rounds.util.Messages.get("card.recall-success"));
+
+        player.sendTitle(ChatColor.AQUA + "§l«ОТКАТ ВО ВРЕМЕНИ»",
+                ChatColor.WHITE + com.rounds.util.Messages.get("card.recall-success"), 5, 30, 10);
+
+        if (restoredHp > 0.05) {
+            player.sendActionBar(ChatColor.AQUA + com.rounds.util.Messages.get("card.recall-success")
+                    + " §a(+" + String.format(java.util.Locale.US, "%.1f", restoredHp) + " HP)");
+        } else {
+            player.sendActionBar(ChatColor.AQUA + com.rounds.util.Messages.get("card.recall-success")
+                    + " §e(" + (int) data.ammo + "/" + (int) data.maxAmmo + ")");
+        }
         return true;
     }
 
     // ==================== Spite Razorwire ====================
 
-    private void triggerRazorwire(Player player, PlayerData data) {
+    public static void triggerRazorwire(Player player, PlayerData data) {
+        if (player == null || data == null) return;
         UUID uuid = player.getUniqueId();
         long now = System.currentTimeMillis();
         Long last = lastRazorwire.get(uuid);
-        if (last != null && now - last < 250L) return;
+        if (last != null && now - last < 200L) return;
         lastRazorwire.put(uuid, now);
 
         int shards = (int) Math.max(data.razorwireShards, 4);
@@ -400,18 +508,22 @@ public class LegendaryEffects implements Listener {
         org.bukkit.World world = center.getWorld();
         if (world == null) return;
 
-        world.playSound(center, Sound.ENTITY_ARROW_SHOOT, 0.8f, 1.5f);
-        world.playSound(center, Sound.ITEM_TRIDENT_THROW, 0.7f, 1.8f);
+        world.playSound(center, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.0f, 1.2f);
+        world.playSound(center, Sound.ITEM_TRIDENT_THROW, 0.8f, 1.8f);
+        world.playSound(center, Sound.ENTITY_IRON_GOLEM_HURT, 0.7f, 1.5f);
 
         List<LivingEntity> enemies = new ArrayList<>();
-        com.rounds.teams.TeamManager.GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(uuid);
+        com.rounds.teams.TeamManager.GameTeam myTeam = (instance != null && instance.plugin != null)
+                ? instance.plugin.getTeamManager().getPlayerTeam(uuid) : null;
+
         for (org.bukkit.entity.Entity e : player.getNearbyEntities(radius, radius, radius)) {
             if (e instanceof LivingEntity living && !e.getUniqueId().equals(uuid) && !e.isDead() && e.isValid()) {
                 if (living instanceof Player other) {
                     if (other.getGameMode() == GameMode.SPECTATOR || other.getGameMode() == GameMode.CREATIVE) continue;
-                    if (!plugin.getGameManager().isTargetable(other)) continue;
-                    com.rounds.teams.TeamManager.GameTeam otherTeam = plugin.getTeamManager().getPlayerTeam(other.getUniqueId());
-                    if (myTeam != null && otherTeam != null && myTeam == otherTeam) continue;
+                    if (myTeam != null && instance != null && instance.plugin != null) {
+                        com.rounds.teams.TeamManager.GameTeam otherTeam = instance.plugin.getTeamManager().getPlayerTeam(other.getUniqueId());
+                        if (otherTeam != null && myTeam == otherTeam) continue;
+                    }
                 }
                 enemies.add(living);
             }
@@ -438,34 +550,38 @@ public class LegendaryEffects implements Listener {
                 if (target.getHealth() >= hpBefore && shardDamage > 0.0 && !target.isDead()) {
                     com.rounds.entity.RoundsEntities.safeSetHealth(target, hpBefore - shardDamage);
                 }
+                target.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, tEye, 3, 0.2, 0.2, 0.2, 0.05);
+                target.getWorld().playSound(target.getLocation(), Sound.ENTITY_PLAYER_HURT, 0.8f, 1.2f);
                 totalDealt += shardDamage;
                 com.rounds.stats.MatchStatsManager.recordDamageDealt(uuid, target.getUniqueId(), shardDamage);
             }
         } else {
+            // Burst around player when no enemies in range
             for (int i = 0; i < shards; i++) {
                 double angle = 2 * Math.PI * i / shards;
                 org.bukkit.util.Vector v = new org.bukkit.util.Vector(Math.cos(angle), 0.2, Math.sin(angle)).normalize().multiply(radius * 0.7);
                 world.spawnParticle(Particle.SWEEP_ATTACK, center.clone().add(v), 1);
-                world.spawnParticle(Particle.CRIT, center.clone().add(v), 2, 0.1, 0.1, 0.1, 0.05);
+                world.spawnParticle(Particle.CRIT, center.clone().add(v), 4, 0.15, 0.15, 0.15, 0.05);
             }
         }
 
         if (totalDealt > 0 && lifesteal > 0) {
             double heal = totalDealt * lifesteal;
             player.setHealth(Math.min(player.getHealth() + heal, data.getMaxHealth()));
-            world.spawnParticle(Particle.HEART, player.getEyeLocation(), 2, 0.3, 0.3, 0.3, 0.05);
+            world.spawnParticle(Particle.HEART, player.getEyeLocation(), 3, 0.3, 0.3, 0.3, 0.05);
         }
     }
 
-    private void spawnShardBeam(org.bukkit.World world, Location from, Location to) {
+    private static void spawnShardBeam(org.bukkit.World world, Location from, Location to) {
         org.bukkit.util.Vector step = to.toVector().subtract(from.toVector());
         double dist = step.length();
         if (dist <= 0) return;
-        step.normalize().multiply(0.5);
+        step.normalize().multiply(0.4);
         Location cur = from.clone();
-        for (double d = 0; d < dist; d += 0.5) {
+        for (double d = 0; d < dist; d += 0.4) {
             cur.add(step);
-            world.spawnParticle(Particle.CRIT, cur, 1, 0, 0, 0, 0);
+            world.spawnParticle(Particle.CRIT, cur, 2, 0.05, 0.05, 0.05, 0.02);
         }
+        world.spawnParticle(Particle.SWEEP_ATTACK, to, 1, 0, 0, 0, 0);
     }
 }

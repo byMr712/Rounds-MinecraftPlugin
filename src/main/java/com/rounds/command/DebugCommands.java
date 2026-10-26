@@ -169,7 +169,6 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "stats" -> handleStats(sender, args);
             case "statsend" -> handleStatsEnd(sender, args);
             case "givegun" -> handleGiveGun(sender, args);
-            case "setstat" -> handleSetStat(sender, args);
             case "setteam" -> handleSetTeam(sender, args);
             case "setlanguage" -> handleSetLanguage(sender, args);
             case "effect" -> handleEffect(sender, args);
@@ -220,7 +219,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxKv(sender, "/rdebug cards reload", Messages.get("debug.help-cards-reload"));
         boxKv(sender, "/rdebug cardchoicetime <sec>", Messages.get("debug.help-cardchoicetime"));
         boxKv(sender, "/rdebug cards show [player]", Messages.get("debug.help-cards-show"));
-        boxKv(sender, "/rdebug cards add <name>", Messages.get("debug.help-cards-add"));
+        boxKv(sender, "/rdebug cards add <player> <card> [rarity]", Messages.get("debug.help-cards-add"));
         boxKv(sender, "/rdebug wheel on|off", Messages.get("debug.help-wheel"));
 
         boxSection(sender, R, Messages.get("debug.help-section-scoreboard"));
@@ -234,10 +233,11 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxSection(sender, R, Messages.get("debug.help-section-debug"));
         boxKv(sender, "/rdebug bot <name> [team]", "Заспавнить бота в игру");
         boxKv(sender, "/rdebug draft [player]", "Открыть драфт карт игроку");
-        boxKv(sender, "/rdebug stats [player]", Messages.get("debug.help-stats"));
+        boxKv(sender, "/rdebug stats show <player>", Messages.get("debug.help-stats-show"));
+        if (sender.hasPermission("rounds.admin")) {
+            boxKv(sender, "/rdebug stats add <player> <stat> <value>", Messages.get("debug.help-stats-add"));
+        }
         boxKv(sender, "/rdebug statsend [player]", Messages.get("debug.help-statsend"));
-        boxKv(sender, "/rdebug stats <player> <stat> <value>", Messages.get("debug.help-stats-set"));
-        boxKv(sender, "/rdebug setstat <stat> <value> [player]", Messages.get("debug.help-setstat"));
         boxKv(sender, "/rdebug setteam <COLOR>", Messages.get("debug.help-setteam"));
         boxKv(sender, "/rdebug setlanguage <lang>", Messages.get("debug.help-setlanguage"));
         boxKv(sender, "/rdebug effect <type> <amp> <dur>", Messages.get("debug.help-effect"));
@@ -609,39 +609,63 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     }
 
     private void handleCardsAdd(CommandSender sender, String[] args) {
-        if (args.length < 3) {
-            sender.sendMessage(ChatColor.RED + "Usage: /rdebug cards add [player] <name|id>");
+        if (args.length < 4) {
+            sender.sendMessage(ChatColor.RED + "Usage: /rdebug cards add <player> <card> [rarity]");
             return;
         }
 
-        Player target = null;
-        String nameInput;
-
-        Player candidate = Bukkit.getPlayer(args[2]);
-        if (candidate != null && args.length >= 4) {
-            target = candidate;
-            nameInput = String.join(" ", Arrays.copyOfRange(args, 3, args.length));
-        } else if (sender instanceof Player p) {
-            target = p;
-            nameInput = String.join(" ", Arrays.copyOfRange(args, 2, args.length));
-        } else if (candidate != null) {
-            sender.sendMessage(ChatColor.RED + "Usage: /rdebug cards add <player> <name|id>");
+        Player target = Bukkit.getPlayer(args[2]);
+        if (target == null) {
+            sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[2]));
             return;
+        }
+
+        String lastToken = args[args.length - 1].toUpperCase();
+        com.rounds.cards.CardRegistry.Rarity explicitRarity = null;
+        try {
+            explicitRarity = com.rounds.cards.CardRegistry.Rarity.valueOf(lastToken);
+        } catch (IllegalArgumentException ignored) {}
+
+        com.rounds.cards.Card baseCard = null;
+        String cardQuery = null;
+
+        if (explicitRarity != null && args.length >= 5) {
+            cardQuery = String.join(" ", Arrays.copyOfRange(args, 3, args.length - 1));
+            baseCard = plugin.getCardManager().getRegistry().findCardByName(cardQuery);
+        }
+
+        if (baseCard == null) {
+            cardQuery = String.join(" ", Arrays.copyOfRange(args, 3, args.length));
+            baseCard = plugin.getCardManager().getRegistry().findCardByName(cardQuery);
+            explicitRarity = null;
+        }
+
+        if (baseCard == null) {
+            sender.sendMessage(ChatColor.RED + Messages.get("command.card-not-found", cardQuery));
+            return;
+        }
+
+        com.rounds.cards.Card finalCard;
+        if (explicitRarity != null) {
+            finalCard = plugin.getCardManager().getRegistry().getFamilyCardByRarity(baseCard, explicitRarity);
+            if (finalCard == null) {
+                List<com.rounds.cards.CardRegistry.Rarity> avail = plugin.getCardManager().getRegistry().getAvailableRarities(baseCard);
+                sender.sendMessage(ChatColor.RED + "Card '" + baseCard.getName("en") + "' has no rarity " + explicitRarity + ". Available: " + avail);
+                return;
+            }
         } else {
-            sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player"));
-            return;
+            finalCard = plugin.getCardManager().getRegistry().getRandomFamilyCard(baseCard);
         }
 
-        var card = plugin.getCardManager().getRegistry().findCardByName(nameInput);
-        if (card == null) {
-            sender.sendMessage(ChatColor.RED + Messages.get("command.card-not-found", nameInput));
-            return;
-        }
-
-        plugin.getCardManager().applyCardToPlayer(target, card);
+        boolean applied = plugin.getCardManager().applyCardToPlayer(target, finalCard);
         String lang = Messages.getLanguageCode();
-        sender.sendMessage(ChatColor.GREEN + Messages.get("command.applied-card", card.getColoredName(lang))
-                + (target != sender ? " -> " + target.getName() : ""));
+        if (applied) {
+            sender.sendMessage(ChatColor.GREEN + Messages.get("command.applied-card", finalCard.getColoredName(lang))
+                    + " (" + finalCard.getRarity().getColor() + finalCard.getRarity().name() + ChatColor.GREEN + ")"
+                    + (target != sender ? " -> " + target.getName() : ""));
+        } else {
+            sender.sendMessage(ChatColor.YELLOW + "Игрок " + target.getName() + " уже имеет эту карту равной или более высокой редкости!");
+        }
     }
 
     private static Double tryParseDouble(String str) {
@@ -656,84 +680,101 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     // === STATS ===
 
     private void handleStats(CommandSender sender, String[] args) {
-        boolean canModify = sender.hasPermission("rounds.admin");
-        if (!canModify && args.length >= 3) {
-            sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
+        boolean admin = sender.hasPermission("rounds.admin");
+        if (args.length < 2) {
+            if (admin) {
+                sender.sendMessage(ChatColor.RED + "Usage: /rdebug stats show <player> OR /rdebug stats add <player> <stat> <value>");
+            } else {
+                sender.sendMessage(ChatColor.RED + "Usage: /rdebug stats show <player>");
+            }
             return;
         }
 
-        Player target = null;
-        String stat = null;
-        Double value = null;
-
-        if (args.length == 1) {
-            if (sender instanceof Player p) {
-                target = p;
-            } else {
-                sender.sendMessage(ChatColor.RED + Messages.get("debug.specify-player"));
+        String sub = args[1].toLowerCase();
+        if (sub.equals("show")) {
+            if (args.length < 3) {
+                sender.sendMessage(ChatColor.RED + "Usage: /rdebug stats show <player>");
                 return;
             }
-        } else if (args.length == 2) {
-            target = Bukkit.getPlayer(args[1]);
+            Player target = Bukkit.getPlayer(args[2]);
             if (target == null) {
-                sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[1]));
+                sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[2]));
                 return;
             }
-        } else if (args.length == 3) {
-            Double parsedVal = tryParseDouble(args[2]);
-            if (parsedVal != null && sender instanceof Player p) {
-                target = p;
-                stat = args[1].toLowerCase();
-                value = parsedVal;
-            } else {
-                target = Bukkit.getPlayer(args[1]);
-                if (target == null) {
-                    sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[1]));
-                    return;
-                }
-                sender.sendMessage(ChatColor.RED + Messages.get("debug.usage-setstat"));
-                return;
+
+            PlayerData data = plugin.getPlayerDataManager().getData(target);
+            boxHeader(sender, Messages.get("debug.stats-title", target.getName()),
+                    Messages.get("debug.team-label", getTeamDisplay(target)) + " | " + Messages.get("debug.cards-label", countCards(data)));
+
+            boxSection(sender, Messages.get("debug.combat-section"));
+            boxKv(sender, Messages.get("debug.stat-hp"), String.format(Locale.US, "%.1f / %.1f HP", target.getHealth(), data.getMaxHealth()));
+            boxKv(sender, Messages.get("debug.stat-dmg"), String.format(Locale.US, "%.1f", data.getEffectiveDamage()));
+            boxKv(sender, Messages.get("debug.stat-atks"), formatSeconds(GunItem.getAttackCooldownSeconds(data)));
+            if (data.atkSpeed != 0.0) {
+                boxKv(sender, Messages.get("debug.stat-atk-speed"), String.format(Locale.US, "%+.0f%%", data.atkSpeed * 100.0));
             }
-        } else if (args.length == 4) {
-            Player p1 = Bukkit.getPlayer(args[1]);
-            Double val3 = tryParseDouble(args[3]);
-            if (p1 != null && val3 != null) {
-                target = p1;
-                stat = args[2].toLowerCase();
-                value = val3;
-            } else {
-                Double val2 = tryParseDouble(args[2]);
-                Player p3 = Bukkit.getPlayer(args[3]);
-                if (val2 != null && p3 != null) {
-                    target = p3;
-                    stat = args[1].toLowerCase();
-                    value = val2;
-                } else if (p1 != null) {
-                    sender.sendMessage(ChatColor.RED + Messages.get("command.invalid-number", args[3]));
-                    return;
-                } else {
-                    sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[1]));
-                    return;
-                }
-            }
-        } else {
-            Player p1 = Bukkit.getPlayer(args[1]);
-            Player p3 = Bukkit.getPlayer(args[3]);
-            Double valLast = tryParseDouble(args[args.length - 1]);
-            if ((p1 != null || p3 != null) && valLast != null) {
-                target = (p1 != null) ? p1 : p3;
-                stat = args[2].toLowerCase();
-                value = valLast;
-            } else if (p1 != null) {
-                sender.sendMessage(ChatColor.RED + Messages.get("command.invalid-number", args[args.length - 1]));
-                return;
-            } else {
-                sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[1]));
-                return;
-            }
+            boxStat(sender, "stat-atkr", data.atkr);
+            boxKv(sender, Messages.get("debug.stat-ammo"), (int) data.ammo + " / " + (int) data.maxAmmo);
+            boxKv(sender, Messages.get("debug.stat-bullets"), String.valueOf((int) Math.max(data.bullets, 1)));
+            boxStat(sender, "stat-bullet-speed", data.bulletSpeed);
+            boxKv(sender, Messages.get("debug.stat-reload-time"), formatSeconds(GunItem.getReloadDurationSeconds(data)));
+            boxStat(sender, "stat-bounce", data.bouncePl);
+            boxStat(sender, "stat-homing", data.homing);
+            boxStat(sender, "stat-big-bullet", data.bigBullet);
+
+            boxSection(sender, Messages.get("debug.effects-section"));
+            boxStat(sender, "stat-cold", data.cold);
+            boxStat(sender, "stat-cold-lvl", data.coldLvl);
+            boxStat(sender, "stat-poison", data.poison);
+            boxStat(sender, "stat-poison-lvl", data.poisonLvl);
+            boxStat(sender, "stat-parazit", data.parazit);
+            boxStat(sender, "stat-parazit-lvl", data.parazitLvl);
+            boxStat(sender, "stat-leech", data.leech);
+            boxStat(sender, "stat-truster", data.trusterLvl);
+            boxStat(sender, "stat-jump-height", data.jumpHeight);
+
+            boxSection(sender, Messages.get("debug.special-section"));
+            boxStat(sender, "stat-grow", data.grow);
+            boxStat(sender, "stat-empower", data.empower);
+            boxStat(sender, "stat-empower-charge", data.empowerCharge);
+            boxStat(sender, "stat-dark-strength", data.darkStrength);
+            boxStat(sender, "stat-dark", data.dark);
+            boxStat(sender, "stat-bomb-bullet", data.bombBullet);
+            boxStat(sender, "stat-bomb-on-block", data.bombOnBlock);
+
+            boxSection(sender, Messages.get("debug.shield-section"));
+            boxKv(sender, Messages.get("debug.stat-shield-active"), GunItem.isShieldActive(target.getUniqueId()) ? "ON" : "OFF");
+            boxKv(sender, Messages.get("debug.stat-shield-duration"), formatSeconds(GunItem.getShieldDurationSeconds(plugin, data)));
+            long actualBlockCdMs = GunItem.getActualShieldCooldownMs(plugin, data);
+            boxKv(sender, Messages.get("debug.stat-block-cd"), formatSeconds(actualBlockCdMs / 1000.0));
+            int extraCharges = (int) Math.max(data.shieldCharge + data.doubleBlock, 0);
+            int currentCharges = GunItem.getShieldCharges(target.getUniqueId());
+            boxKv(sender, Messages.get("debug.stat-shield-charges"), currentCharges + " / " + (1 + extraCharges));
+
+            boxFooter(sender);
+            return;
         }
 
-        if (stat != null && value != null) {
+        if (sub.equals("add") || sub.equals("set")) {
+            if (!admin) {
+                sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
+                return;
+            }
+            if (args.length < 5) {
+                sender.sendMessage(ChatColor.RED + "Usage: /rdebug stats add <player> <stat> <value>");
+                return;
+            }
+            Player target = Bukkit.getPlayer(args[2]);
+            if (target == null) {
+                sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[2]));
+                return;
+            }
+            String stat = args[3].toLowerCase();
+            Double value = tryParseDouble(args[4]);
+            if (value == null) {
+                sender.sendMessage(ChatColor.RED + Messages.get("command.invalid-number", args[4]));
+                return;
+            }
             PlayerData setData = plugin.getPlayerDataManager().getData(target);
             if (!applyStat(setData, target, stat, value)) {
                 sender.sendMessage(ChatColor.RED + Messages.get("debug.unknown-stat", stat));
@@ -743,55 +784,11 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             return;
         }
 
-        PlayerData data = plugin.getPlayerDataManager().getData(target);
-        boxHeader(sender, Messages.get("debug.stats-title", target.getName()), Messages.get("debug.team-label", getTeamDisplay(target)) + " | " + Messages.get("debug.cards-label", countCards(data)));
-
-        boxSection(sender, Messages.get("debug.combat-section"));
-        boxKv(sender, Messages.get("debug.stat-hp"), String.format(Locale.US, "%.1f / %.1f HP", target.getHealth(), data.getMaxHealth()));
-        boxKv(sender, Messages.get("debug.stat-dmg"), String.format(Locale.US, "%.1f", data.getEffectiveDamage()));
-        boxKv(sender, Messages.get("debug.stat-atks"), formatSeconds(GunItem.getAttackCooldownSeconds(data)));
-        if (data.atkSpeed != 0.0) {
-            boxKv(sender, Messages.get("debug.stat-atk-speed"), String.format(Locale.US, "%+.0f%%", data.atkSpeed * 100.0));
+        if (admin) {
+            sender.sendMessage(ChatColor.RED + "Usage: /rdebug stats show <player> OR /rdebug stats add <player> <stat> <value>");
+        } else {
+            sender.sendMessage(ChatColor.RED + "Usage: /rdebug stats show <player>");
         }
-        boxStat(sender, "stat-atkr", data.atkr);
-        boxKv(sender, Messages.get("debug.stat-ammo"), (int) data.ammo + " / " + (int) data.maxAmmo);
-        boxKv(sender, Messages.get("debug.stat-bullets"), String.valueOf((int) Math.max(data.bullets, 1)));
-        boxStat(sender, "stat-bullet-speed", data.bulletSpeed);
-        boxKv(sender, Messages.get("debug.stat-reload-time"), formatSeconds(GunItem.getReloadDurationSeconds(data)));
-        boxStat(sender, "stat-bounce", data.bouncePl);
-        boxStat(sender, "stat-homing", data.homing);
-        boxStat(sender, "stat-big-bullet", data.bigBullet);
-
-        boxSection(sender, Messages.get("debug.effects-section"));
-        boxStat(sender, "stat-cold", data.cold);
-        boxStat(sender, "stat-cold-lvl", data.coldLvl);
-        boxStat(sender, "stat-poison", data.poison);
-        boxStat(sender, "stat-poison-lvl", data.poisonLvl);
-        boxStat(sender, "stat-parazit", data.parazit);
-        boxStat(sender, "stat-parazit-lvl", data.parazitLvl);
-        boxStat(sender, "stat-leech", data.leech);
-        boxStat(sender, "stat-truster", data.trusterLvl);
-        boxStat(sender, "stat-jump-height", data.jumpHeight);
-
-        boxSection(sender, Messages.get("debug.special-section"));
-        boxStat(sender, "stat-grow", data.grow);
-        boxStat(sender, "stat-empower", data.empower);
-        boxStat(sender, "stat-empower-charge", data.empowerCharge);
-        boxStat(sender, "stat-dark-strength", data.darkStrength);
-        boxStat(sender, "stat-dark", data.dark);
-        boxStat(sender, "stat-bomb-bullet", data.bombBullet);
-        boxStat(sender, "stat-bomb-on-block", data.bombOnBlock);
-
-        boxSection(sender, Messages.get("debug.shield-section"));
-        boxKv(sender, Messages.get("debug.stat-shield-active"), GunItem.isShieldActive(target.getUniqueId()) ? "ON" : "OFF");
-        boxKv(sender, Messages.get("debug.stat-shield-duration"), formatSeconds(GunItem.getShieldDurationSeconds(plugin, data)));
-        long actualBlockCdMs = GunItem.getActualShieldCooldownMs(plugin, data);
-        boxKv(sender, Messages.get("debug.stat-block-cd"), formatSeconds(actualBlockCdMs / 1000.0));
-        int extraCharges = (int) Math.max(data.shieldCharge + data.doubleBlock, 0);
-        int currentCharges = GunItem.getShieldCharges(target.getUniqueId());
-        boxKv(sender, Messages.get("debug.stat-shield-charges"), currentCharges + " / " + (1 + extraCharges));
-
-        boxFooter(sender);
     }
 
     private void handleStatsEnd(CommandSender sender, String[] args) {
@@ -824,14 +821,6 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxKv(sender, Messages.get("debug.stat-damage-received"), String.format(Locale.US, "%.1f", stats.damageReceived));
         boxKv(sender, Messages.get("debug.stat-max-shot-dmg"), String.format(Locale.US, "%.1f", stats.maxShotDamage));
         boxFooter(sender);
-    }
-
-    private void handleSetStat(CommandSender sender, String[] args) {
-        if (args.length < 3) {
-            sender.sendMessage(ChatColor.RED + Messages.get("debug.usage-setstat"));
-            return;
-        }
-        handleStats(sender, args);
     }
 
     private boolean applyStat(PlayerData data, Player target, String stat, double value) {
@@ -1178,11 +1167,17 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     private static final List<String> SUBCOMMANDS = Arrays.asList(
         "help", "start", "stop", "status", "rounds", "info",
         "givegun", "cards", "giveblocks", "join", "freeplay", "autodeath",
-        "stats", "statsend", "setstat", "setteam", "setlanguage", "effect", "heal",
+        "stats", "statsend", "setteam", "setlanguage", "effect", "heal",
         "resetstats", "reload", "setlobby",
         "jumppos1", "jumppos2", "jumpset", "uppos1", "uppos2", "upset",
         "wheel", "tab", "bot", "draft", "cardchoicetime", "bossbar"
     );
+
+    private List<String> getOnlinePlayerNames() {
+        List<String> list = new ArrayList<>();
+        Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
+        return list;
+    }
     private static final List<String> FREEPLAY_COMMANDS = Arrays.asList(
         "start", "stop", "rounds", "givegun", "wheel", "bot", "bossbar"
     );
@@ -1469,26 +1464,29 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
                 yield filterStartsWith(list, input);
             }
-            case "stats", "setstat" -> {
+            case "stats" -> {
                 if (args.length == 2) {
-                    List<String> list = new ArrayList<>();
-                    Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
-                    list.addAll(STATS);
-                    yield filterStartsWith(list, input);
+                    if (admin) {
+                        yield filterStartsWith(Arrays.asList("show", "add"), input);
+                    } else {
+                        yield filterStartsWith(Collections.singletonList("show"), input);
+                    }
                 }
-                if (args.length == 3) {
-                    if (Bukkit.getPlayer(args[1]) != null) {
+                String sub = args[1].toLowerCase();
+                if (sub.equals("show")) {
+                    if (args.length == 3) {
+                        yield filterStartsWith(getOnlinePlayerNames(), input);
+                    }
+                } else if (sub.equals("add") && admin) {
+                    if (args.length == 3) {
+                        yield filterStartsWith(getOnlinePlayerNames(), input);
+                    }
+                    if (args.length == 4) {
                         yield filterStartsWith(STATS, input);
                     }
-                    yield filterStartsWith(Arrays.asList("1", "2", "3", "5", "10"), input);
-                }
-                if (args.length == 4) {
-                    if (Bukkit.getPlayer(args[1]) != null) {
-                        yield filterStartsWith(Arrays.asList("1", "2", "3", "5", "10"), input);
+                    if (args.length == 5) {
+                        yield filterStartsWith(Arrays.asList("1", "2", "3", "5", "10", "20"), input);
                     }
-                    List<String> list = new ArrayList<>();
-                    Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
-                    yield filterStartsWith(list, input);
                 }
                 yield Collections.emptyList();
             }
@@ -1515,22 +1513,45 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 if (!admin) {
                     yield args.length == 2
                             ? filterStartsWith(Collections.singletonList("show"), input)
-                            : Collections.emptyList();
+                            : (args.length == 3 && args[1].equalsIgnoreCase("show")
+                                ? filterStartsWith(getOnlinePlayerNames(), input)
+                                : Collections.emptyList());
                 }
                 if (args.length == 2) yield filterStartsWith(Arrays.asList("reload", "show", "add"), input);
-                if (args.length == 3 && args[1].equalsIgnoreCase("show")) {
-                    List<String> list = new ArrayList<>();
-                    Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
-                    yield filterStartsWith(list, input);
-                }
-                if (args.length == 3 && args[1].equalsIgnoreCase("add")) {
-                    List<String> suggestions = new ArrayList<>();
-                    Bukkit.getOnlinePlayers().forEach(p -> suggestions.add(p.getName()));
-                    suggestions.addAll(plugin.getCardManager().getRegistry().getCardNameSuggestions());
-                    yield filterStartsWith(suggestions, input);
-                }
-                if (args.length >= 4 && args[1].equalsIgnoreCase("add")) {
-                    yield filterStartsWith(plugin.getCardManager().getRegistry().getCardNameSuggestions(), input);
+                String sub = args[1].toLowerCase();
+                if (sub.equals("show")) {
+                    if (args.length == 3) {
+                        yield filterStartsWith(getOnlinePlayerNames(), input);
+                    }
+                } else if (sub.equals("add")) {
+                    if (args.length == 3) {
+                        yield filterStartsWith(getOnlinePlayerNames(), input);
+                    } else if (args.length == 4) {
+                        yield filterStartsWith(plugin.getCardManager().getRegistry().getCardNameSuggestions(), input);
+                    } else if (args.length == 5) {
+                        var reg = plugin.getCardManager().getRegistry();
+                        com.rounds.cards.Card c = reg.findCardByName(args[3]);
+                        if (c != null) {
+                            List<String> rarities = new ArrayList<>();
+                            for (com.rounds.cards.CardRegistry.Rarity r : reg.getAvailableRarities(c)) {
+                                rarities.add(r.name());
+                            }
+                            yield filterStartsWith(rarities, input);
+                        } else {
+                            yield filterStartsWith(reg.getCardNameSuggestions(), input);
+                        }
+                    } else if (args.length >= 6) {
+                        var reg = plugin.getCardManager().getRegistry();
+                        String joined = String.join(" ", Arrays.copyOfRange(args, 3, args.length - 1));
+                        com.rounds.cards.Card c = reg.findCardByName(joined);
+                        if (c != null) {
+                            List<String> rarities = new ArrayList<>();
+                            for (com.rounds.cards.CardRegistry.Rarity r : reg.getAvailableRarities(c)) {
+                                rarities.add(r.name());
+                            }
+                            yield filterStartsWith(rarities, input);
+                        }
+                    }
                 }
                 yield Collections.emptyList();
             }

@@ -416,18 +416,58 @@ public class CardRegistry {
         return ChatColor.stripColor(text.replaceAll("&[0-9a-fk-orA-FK-OR]", "")).trim();
     }
 
+    public List<Rarity> getAvailableRarities(Card card) {
+        if (card == null) return Collections.emptyList();
+        List<Rarity> list = new ArrayList<>();
+        for (Card c : cards.values()) {
+            if (c.getFamilyId() == card.getFamilyId()) {
+                if (!list.contains(c.getRarity())) {
+                    list.add(c.getRarity());
+                }
+            }
+        }
+        list.sort(Comparator.comparingInt(Enum::ordinal));
+        return list;
+    }
+
+    public Card getFamilyCardByRarity(Card card, Rarity rarity) {
+        if (card == null || rarity == null) return null;
+        for (Card c : cards.values()) {
+            if (c.getFamilyId() == card.getFamilyId() && c.getRarity() == rarity) {
+                return c;
+            }
+        }
+        return null;
+    }
+
+    public Card getRandomFamilyCard(Card card) {
+        if (card == null) return null;
+        List<Card> family = new ArrayList<>();
+        for (Card c : cards.values()) {
+            if (c.getFamilyId() == card.getFamilyId() && c.isEnabled()) {
+                family.add(c);
+            }
+        }
+        if (family.isEmpty()) return card;
+        return family.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(family.size()));
+    }
+
     public List<String> getCardNameSuggestions() {
-        List<String> list = new ArrayList<>();
+        Set<String> list = new LinkedHashSet<>();
+        for (String slug : cardsBySlug.keySet()) {
+            if (!slug.contains(" ") && !slug.contains("_")) {
+                list.add(slug);
+            }
+        }
         String lang = "en";
         try { lang = com.rounds.util.Messages.getLanguageCode(); } catch (Exception ignored) {}
         for (Card c : cards.values()) {
-            String name = c.getName(lang);
-            name = stripAllFormatting(name);
-            if (!list.contains(name)) {
+            String name = stripAllFormatting(c.getName(lang));
+            if (!name.isEmpty()) {
                 list.add(name);
             }
         }
-        return list;
+        return new ArrayList<>(list);
     }
 
     public Collection<Card> getAllCards() {

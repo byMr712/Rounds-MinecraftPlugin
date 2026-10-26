@@ -389,6 +389,10 @@ variations:
 | `bullet-rain` | Bullet Rain: rapid projectile spray and clip expansion |
 | `frost-armor` | Frost Armor: slows attacking enemies |
 | `no-party` | No Party: disables shields and reloads for nearby enemies |
+| `blood-cartridge` | Blood Cartridge: emergency shooting with empty ammo sacrificing % HP (7..15%), bonus damage and crits |
+| `spite-razorwire` | Spite Razorwire: release fan of spikes upon taking any damage (4..8 shards, on Epic: homing and 10% lifesteal) |
+| `temporal-recall` | Temporal Recall: rewind 3s back on shield block, restoring HP and ammo (15s cooldown, Legendary) |
+| `bullet-time` | Bullet Time: death save / on HP <= 20%, 1s invulnerability, 5s 85% slow on enemies and bullets (Legendary) |
 
 ### Rarity Weights
 
@@ -445,13 +449,14 @@ When freeplay is enabled (`/rdebug freeplay on`), non-admin players gain access 
 | `/rdebug upset` | | Fill selected cuboid with elevator blocks (`PURPLE_GLAZED_TERRACOTTA`) |
 | `/rdebug cards` | | Open test card draft menu (5 cards) |
 | `/rdebug cards reload` | | Reload all cards from `cards/original` and `cards/custom` |
-| `/rdebug cards add [player] <name\|id>` | `[player] <card>` | Grant specific card to player |
+| `/rdebug cards add <player> <name\|id> [rarity]` | `<player> <card> [rarity]` | Grant card to player (with dynamic rarity or random if omitted) |
 | `/rdebug wheel <on\|off>` | `on/off` | Toggle card draft wheel auto-rotation every 6s |
 | `/rdebug givegun [player\|@a]` | `[player\|@a]` | Give gun to self, player, or all players |
 | `/rdebug tab <on\|off>` | `on/off` | Toggle built-in scoreboard |
 | `/rdebug tab name <title>` | `<text>` | Change built-in scoreboard title |
-| `/rdebug stats <player> <stat> <value>` | `<player> <stat> <val>` | Modify player stat attribute |
-| `/rdebug setstat <stat> <val> [player]` | `<stat> <val> [player]` | Set stat value directly |
+| `/rdebug stats show <player>` | `<player>` | Show detailed player combat stats (available to all players) |
+| `/rdebug stats add <player> <stat> <value>` | `<player> <stat> <val>` | Set combat stat value in human units (admin only) |
+| `/rdebug statsend [player]` | `[player]` | Previous match combat statistics (available to all players) |
 | `/rdebug setteam <COLOR> [player]` | `<BLUE\|RED\|YELLOW\|GREEN>` | Force player into team |
 | `/rdebug setlanguage <lang>` | `<EN_en\|RU_ru...>` | Switch plugin language on the fly |
 | `/rdebug effect <type> <amp> <dur>` | `<type> <amp> <dur>` | Apply potion effect to self |

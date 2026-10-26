@@ -232,17 +232,16 @@ debug:
   unknown-command: "\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u0430\u044F \u043A\u043E\u043C\u0430\u043D\u0434\u0430: /rdebug {0}"
   none: "\u043D\u0435\u0442"
   # Help lines
-  help-stats: "\u0421\u0442\u0430\u0442\u044B [\u0438\u0433\u0440\u043E\u043A]"  # stats [player]
-  help-stats-set: "\u0412\u044B\u0434\u0430\u0442\u044C \u0441\u0442\u0430\u0442\u0443: /rdebug stats <\u0438\u0433\u0440\u043E\u043A> <\u0441\u0442\u0430\u0442\u0430> <\u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435>"  # stats give
-  help-givegun: "\u0412\u044B\u0434\u0430\u0442\u044C \u043F\u0443\u0448\u043A\u0443"  # givegun
-  help-setstat: "\u0423\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u0441\u0442\u0430\u0442\u0443"  # setstat
-  help-setteam: "\u0423\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u043A\u043E\u043C\u0430\u043D\u0434\u0443"  # setteam
+  help-stats-show: "Статы игрока: /rdebug stats show <игрок>"
+  help-stats-add: "Установить стат: /rdebug stats add <игрок> <стата> <значение>"
+  help-givegun: "Выдать пушку"
+  help-setteam: "Установить команду"
   help-setlanguage: "\u0421\u043C\u0435\u043D\u0438\u0442\u044C \u044F\u0437\u044B\u043A"  # setlanguage
   help-effect: "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u044D\u0444\u0444\u0435\u043A\u0442"  # effect
   help-heal: "\u041B\u0435\u0447\u0438\u0442\u044C"  # heal
   help-spawn: "\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0430"  # spawn entities
   help-cards: "\u0413\u042B\u0421\u0422 \u043A\u0430\u0440\u0442"  # cards
-  help-cards-add: "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043A\u0430\u0440\u0442\u0443 \u043F\u043E \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u044E"  # cards add
+  help-cards-add: "Выдать карту: /rdebug cards add <игрок> <карта> [редкость]"
   cardchoicetime-usage: "Использование: /rdebug cardchoicetime <сек> (текущее: {0}с)"
   cardchoicetime-min: "Время на выбор карточки не может быть меньше 10 секунд!"
   cardchoicetime-set: "Время на выбор карточки установлено на {0} сек."
@@ -294,7 +293,7 @@ debug:
   usage-setlanguage: "Использование: /rdebug setlanguage <язык>"
   setstat-done: "{0} = {1} -> {2}"
   help-wheel: "Включить авто-смену карточек при выборе"
-  help-public-note: "Открыто всем игрокам: /rdebug info, /rdebug status, /rdebug state, /rdebug stats, /rdebug cards show, /rdebug statsend"
+  help-public-note: "Открыто всем игрокам: /rdebug info, /rdebug status, /rdebug state, /rdebug stats show, /rdebug cards show, /rdebug statsend"
   wheel-set: "\u041F\u0440\u043E\u043A\u0440\u0443\u0442\u043A\u0430 \u043A\u0430\u0440\u0442\u043E\u0447\u0435\u043A {0}"
   wheel-on: "\u0412\u041A\u041B\u042E\u0427\u0415\u041D\u0410"
   wheel-off: "\u0412\u042B\u041A\u041B\u042E\u0427\u0415\u041D\u0410"

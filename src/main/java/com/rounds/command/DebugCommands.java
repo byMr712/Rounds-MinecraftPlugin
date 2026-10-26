@@ -1528,19 +1528,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                         yield filterStartsWith(getOnlinePlayerNames(), input);
                     } else if (args.length == 4) {
                         yield filterStartsWith(plugin.getCardManager().getRegistry().getCardNameSuggestions(), input);
-                    } else if (args.length == 5) {
-                        var reg = plugin.getCardManager().getRegistry();
-                        com.rounds.cards.Card c = reg.findCardByName(args[3]);
-                        if (c != null) {
-                            List<String> rarities = new ArrayList<>();
-                            for (com.rounds.cards.CardRegistry.Rarity r : reg.getAvailableRarities(c)) {
-                                rarities.add(r.name());
-                            }
-                            yield filterStartsWith(rarities, input);
-                        } else {
-                            yield filterStartsWith(reg.getCardNameSuggestions(), input);
-                        }
-                    } else if (args.length >= 6) {
+                    } else if (args.length >= 5) {
                         var reg = plugin.getCardManager().getRegistry();
                         String joined = String.join(" ", Arrays.copyOfRange(args, 3, args.length - 1));
                         com.rounds.cards.Card c = reg.findCardByName(joined);
@@ -1551,6 +1539,14 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                             }
                             yield filterStartsWith(rarities, input);
                         }
+                        String prefixSoFar = joined.toLowerCase() + " ";
+                        List<String> continuations = new ArrayList<>();
+                        for (String fullCard : reg.getCardNameSuggestions()) {
+                            if (fullCard.toLowerCase().startsWith(prefixSoFar)) {
+                                continuations.add(fullCard.substring(prefixSoFar.length()));
+                            }
+                        }
+                        yield filterStartsWith(continuations, input);
                     }
                 }
                 yield Collections.emptyList();

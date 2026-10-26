@@ -411,9 +411,13 @@ public class CardRegistry {
         return null;
     }
 
-    private static String stripAllFormatting(String text) {
+    public static String stripAllFormatting(String text) {
         if (text == null) return "";
-        return ChatColor.stripColor(text.replaceAll("&[0-9a-fk-orA-FK-OR]", "")).trim();
+        return ChatColor.stripColor(text.replaceAll("&[0-9a-fk-orA-FK-OR]", ""))
+                .replace("«", "")
+                .replace("»", "")
+                .replace("\"", "")
+                .trim();
     }
 
     public List<Rarity> getAvailableRarities(Card card) {
@@ -453,21 +457,23 @@ public class CardRegistry {
     }
 
     public List<String> getCardNameSuggestions() {
-        Set<String> list = new LinkedHashSet<>();
-        for (String slug : cardsBySlug.keySet()) {
-            if (!slug.contains(" ") && !slug.contains("_")) {
-                list.add(slug);
-            }
+        return getCardNameSuggestions(com.rounds.util.Messages.getLanguageCode());
+    }
+
+    public List<String> getCardNameSuggestions(String lang) {
+        if (lang == null || lang.isBlank()) {
+            lang = com.rounds.util.Messages.getLanguageCode();
         }
-        String lang = "en";
-        try { lang = com.rounds.util.Messages.getLanguageCode(); } catch (Exception ignored) {}
+        Set<String> list = new LinkedHashSet<>();
         for (Card c : cards.values()) {
             String name = stripAllFormatting(c.getName(lang));
             if (!name.isEmpty()) {
                 list.add(name);
             }
         }
-        return new ArrayList<>(list);
+        List<String> result = new ArrayList<>(list);
+        result.sort(String.CASE_INSENSITIVE_ORDER);
+        return result;
     }
 
     public Collection<Card> getAllCards() {

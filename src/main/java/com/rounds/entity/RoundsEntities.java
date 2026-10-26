@@ -53,6 +53,7 @@ public class RoundsEntities implements Listener {
 
     public static void safeSetHealth(LivingEntity entity, double health) {
         if (entity == null || entity.isDead()) return;
+        if (entity.isInvulnerable() && health < entity.getHealth()) return;
         if (entity instanceof org.bukkit.craftbukkit.entity.CraftPlayer cp) {
             net.minecraft.server.level.ServerPlayer sp = cp.getHandle();
             if (sp != null && sp.connection == null) {
@@ -343,19 +344,38 @@ public class RoundsEntities implements Listener {
                         b.alive = false;
                         return;
                     }
-                    nearest.setInvulnerable(false);
+                    if (nearest.isInvulnerable()) {
+                        impactParticles(world, b.loc.getX(), b.loc.getY(), b.loc.getZ(), b.scale);
+                        b.alive = false;
+                        return;
+                    }
                     nearest.setNoDamageTicks(0);
                     if (shouldExecute(shooterData, nearest)) {
                         executeTarget(nearest);
                     } else {
+                        if (nearest instanceof Player victim) {
+                            PlayerData victimData = plugin.getPlayerDataManager().getData(victim.getUniqueId());
+                            if (victimData != null && victimData.bulletTime > 0
+                                    && !com.rounds.listener.LegendaryEffects.isBulletTimeUsedThisRound(victim.getUniqueId())
+                                    && (nearest.getHealth() <= finalDamage || (nearest.getHealth() - finalDamage) <= victimData.getMaxHealth() * 0.20)) {
+                                victim.setHealth(Math.max(victimData.getMaxHealth() * 0.20, 2.0));
+                                com.rounds.listener.LegendaryEffects.triggerBulletTime(victim, victimData);
+                                impactParticles(world, b.loc.getX(), b.loc.getY(), b.loc.getZ(), b.scale);
+                                b.alive = false;
+                                return;
+                            }
+                        }
                         Player shooter = Bukkit.getPlayer(b.ownerId);
                         double hpBefore = nearest.getHealth();
                         if (shooter != null && shooter.isOnline()) {
                             nearest.damage(finalDamage, shooter);
+                            if (nearest instanceof Player victim) {
+                                com.rounds.stats.MatchStatsManager.recordDamageDealt(shooter.getUniqueId(), victim.getUniqueId(), finalDamage);
+                            }
                         } else {
                             nearest.damage(finalDamage);
                         }
-                        if (nearest.getHealth() >= hpBefore && finalDamage > 0.0 && !nearest.isDead()) {
+                        if (!nearest.isInvulnerable() && nearest.getHealth() >= hpBefore && finalDamage > 0.0 && !nearest.isDead()) {
                             safeSetHealth(nearest, hpBefore - finalDamage);
                         }
                     }
@@ -503,7 +523,11 @@ public class RoundsEntities implements Listener {
                 b.alive = false;
                 return;
             }
-            hitEnt.setInvulnerable(false);
+            if (hitEnt.isInvulnerable()) {
+                impactParticles(world, hitPX, hitPY, hitPZ, scale);
+                b.alive = false;
+                return;
+            }
             hitEnt.setNoDamageTicks(0);
             if (shouldExecute(shooterData, hitEnt)) {
                 executeTarget(hitEnt);
@@ -530,7 +554,7 @@ public class RoundsEntities implements Listener {
                 } else {
                     hitEnt.damage(finalDmg);
                 }
-                if (hitEnt.getHealth() >= hpBefore && finalDmg > 0.0 && !hitEnt.isDead()) {
+                if (!hitEnt.isInvulnerable() && hitEnt.getHealth() >= hpBefore && finalDmg > 0.0 && !hitEnt.isDead()) {
                     safeSetHealth(hitEnt, hpBefore - finalDmg);
                 }
             }

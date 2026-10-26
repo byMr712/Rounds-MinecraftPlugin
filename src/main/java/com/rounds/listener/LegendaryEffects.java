@@ -130,7 +130,7 @@ public class LegendaryEffects implements Listener {
     }
 
     public static void onDirectDamage(Player victim, PlayerData victimData, double damageDealt, UUID attackerId) {
-        if (victim == null || victimData == null) return;
+        if (victim == null || victimData == null || victim.isDead()) return;
         UUID uuid = victim.getUniqueId();
         com.rounds.stats.MatchStatsManager.recordDamageReceived(uuid, damageDealt);
 
@@ -154,6 +154,11 @@ public class LegendaryEffects implements Listener {
     public void onDamage(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Player player)) return;
 
+        if (player.isInvulnerable()) {
+            event.setCancelled(true);
+            return;
+        }
+
         PlayerData data = plugin.getPlayerDataManager().getData(player.getUniqueId());
         if (data == null) return;
 
@@ -161,7 +166,9 @@ public class LegendaryEffects implements Listener {
         if (data.bulletTime > 0
                 && !bulletTimeUsedThisRound.contains(player.getUniqueId())
                 && (event.getFinalDamage() >= player.getHealth()
-                || (player.getHealth() - event.getFinalDamage()) <= data.getMaxHealth() * 0.20)) {
+                || event.getDamage() >= player.getHealth()
+                || (player.getHealth() - event.getFinalDamage()) <= data.getMaxHealth() * 0.20
+                || (player.getHealth() - event.getDamage()) <= data.getMaxHealth() * 0.20)) {
             event.setCancelled(true);
             player.setHealth(Math.max(data.getMaxHealth() * 0.20, 2.0));
             triggerBulletTime(player, data);
@@ -324,7 +331,7 @@ public class LegendaryEffects implements Listener {
                     double hpBefore = entity.getHealth();
                     entity.setNoDamageTicks(0);
                     entity.damage(maxDmg);
-                    if (entity.getHealth() >= hpBefore && maxDmg > 0.0 && !entity.isDead()) {
+                    if (!entity.isInvulnerable() && entity.getHealth() >= hpBefore && maxDmg > 0.0 && !entity.isDead()) {
                         com.rounds.entity.RoundsEntities.safeSetHealth(entity, hpBefore - maxDmg);
                     }
                     if (entity instanceof Player victim) {
@@ -355,6 +362,7 @@ public class LegendaryEffects implements Listener {
     }
 
     public static void triggerBulletTime(Player owner, PlayerData data) {
+        if (owner == null || !owner.isOnline() || owner.isDead()) return;
         if (bulletTimeUsedThisRound.contains(owner.getUniqueId())) return;
         bulletTimeUsedThisRound.add(owner.getUniqueId());
         bulletTimeOwner = owner.getUniqueId();
@@ -376,7 +384,10 @@ public class LegendaryEffects implements Listener {
             loc.getWorld().playSound(loc, Sound.ITEM_TOTEM_USE, 1.0f, 1.2f);
             loc.getWorld().playSound(loc, Sound.BLOCK_BEACON_DEACTIVATE, 1.5f, 0.5f);
             loc.getWorld().playSound(loc, Sound.BLOCK_BELL_RESONATE, 1.2f, 0.6f);
-            loc.getWorld().spawnParticle(Particle.FLASH, loc.clone().add(0, 1.0, 0), 2);
+            try {
+                loc.getWorld().spawnParticle(Particle.FIREWORKS_SPARK, loc.clone().add(0, 1.0, 0), 25, 0.3, 0.5, 0.3, 0.15);
+                loc.getWorld().spawnParticle(Particle.TOTEM, loc.clone().add(0, 1.0, 0), 20, 0.3, 0.5, 0.3, 0.2);
+            } catch (Throwable ignored) {}
         }
 
         // Owner: +50% movement speed (Speed II) for 5 seconds (100 ticks)
@@ -437,16 +448,20 @@ public class LegendaryEffects implements Listener {
         recallCooldowns.put(uuid, now);
 
         if (from.getWorld() != null) {
-            from.getWorld().spawnParticle(Particle.PORTAL, from, 50, 0.5, 1.0, 0.5, 0.5);
-            from.getWorld().spawnParticle(Particle.FLASH, from, 1);
+            try {
+                from.getWorld().spawnParticle(Particle.PORTAL, from, 50, 0.5, 1.0, 0.5, 0.5);
+                from.getWorld().spawnParticle(Particle.FIREWORKS_SPARK, from.clone().add(0, 1.0, 0), 15, 0.2, 0.4, 0.2, 0.1);
+            } catch (Throwable ignored) {}
             from.getWorld().playSound(from, Sound.ENTITY_ENDERMAN_TELEPORT, 1.2f, 1.4f);
         }
 
         player.teleport(best.loc);
 
         if (best.loc.getWorld() != null) {
-            best.loc.getWorld().spawnParticle(Particle.PORTAL, best.loc, 50, 0.5, 1.0, 0.5, 0.5);
-            best.loc.getWorld().spawnParticle(Particle.FLASH, best.loc, 1);
+            try {
+                best.loc.getWorld().spawnParticle(Particle.PORTAL, best.loc, 50, 0.5, 1.0, 0.5, 0.5);
+                best.loc.getWorld().spawnParticle(Particle.FIREWORKS_SPARK, best.loc.clone().add(0, 1.0, 0), 15, 0.2, 0.4, 0.2, 0.1);
+            } catch (Throwable ignored) {}
             best.loc.getWorld().playSound(best.loc, Sound.ITEM_CHORUS_FRUIT_TELEPORT, 1.2f, 1.2f);
             best.loc.getWorld().playSound(best.loc, Sound.BLOCK_BEACON_POWER_SELECT, 1.2f, 1.8f);
 
@@ -547,7 +562,7 @@ public class LegendaryEffects implements Listener {
                 double hpBefore = target.getHealth();
                 target.setNoDamageTicks(0);
                 target.damage(shardDamage, player);
-                if (target.getHealth() >= hpBefore && shardDamage > 0.0 && !target.isDead()) {
+                if (!target.isInvulnerable() && target.getHealth() >= hpBefore && shardDamage > 0.0 && !target.isDead()) {
                     com.rounds.entity.RoundsEntities.safeSetHealth(target, hpBefore - shardDamage);
                 }
                 target.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, tEye, 3, 0.2, 0.2, 0.2, 0.05);

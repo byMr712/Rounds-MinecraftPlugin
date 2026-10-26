@@ -54,7 +54,7 @@
 ## System Requirements
 
 - **Server:** Paper / Purpur 1.20.4+ (compatible with 1.20.x — 1.21.x / 26.2+)
-- **Java:** Java 17 bytecode (major version 61)
+- **Java:** 17
 - [**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi) and [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) (Optional; the plugin itself can also display core data, should you wish to customize things further)
 
 
@@ -246,9 +246,7 @@ builtin-scoreboard:
   stats-title: "&b&lМои статы"
 
 # Allow non-admin players to execute safe commands for practice and matches
-# Open to all: /rdebug join, info, status, state, stats show, cards show, statsend
-# Unlocked with freeplay: true: /rdebug start, stop, rounds, givegun, wheel, bossbar, bot, /rbot
-# Strictly admin-only (rounds.admin / OP): cards add/reload, stats add, freeplay, autodeath, cardchoicetime, setlobby, giveblocks, jump/up zones, setlanguage
+# Unlocks keys for /rdebug command: (namely: start, stop, rounds, givegun, wheel, bossbar, bot), and enables the /rbot command
 freeplay:
   enabled: false
 ```

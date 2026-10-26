@@ -54,7 +54,7 @@ Minecraft плагин соревновательной мини-игры [**ROU
 ## Системные требования
 
 - **Сервер:** Paper / Purpur 1.20.4+ (совместимо с 1.20.x — 1.21.x / 26.2+)
-- **Java:** Байткод Java 17 (major version 61)
+- **Java:** 17
 - [**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi) и [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) (необязательно; плагин и сам по себе способен отображать основные данные, если вы захотите выполнить более детальную настройку)
 
 
@@ -242,9 +242,7 @@ builtin-scoreboard:
   stats-title: "&b&lМои статы"
 
 # Разрешить игрокам без прав OP/admin запускать безопасные команды тренировки и матча
-# Доступно всем: /rdebug join, info, status, state, stats show, cards show, statsend
-# Разблокируется при freeplay: true: /rdebug start, stop, rounds, givegun, wheel, bossbar, bot, /rbot
-# Строго только для OP/admin: cards add/reload, stats add, freeplay, autodeath, cardchoicetime, setlobby, giveblocks, зоны прыжка/подъёма, setlanguage
+# Разблокируются ключи для команды: /rdebug (а именно: start, stop, rounds, givegun, wheel, bossbar, bot), а также доступна становится команда /rbot
 freeplay:
   enabled: false
 ```

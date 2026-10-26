@@ -33,9 +33,9 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     private static final List<String> STATS = Arrays.asList(
         "dmg", "atks", "atk_speed", "atkr", "bounce", "ammo", "bullets", "cold", "poison",
         "toxic_cloud", "leech", "homing", "poison_lvl", "cold_lvl", "parazit", "hp",
-        "bomb_bullet", "bomb_on_block", "explode_bullets", "bullet_speed", "empower",
-        "empower_charge", "dark_strength", "barage", "big_bullet", "grow",
-        "truster_lvl", "jump_height", "dark", "atks_reload", "block_cd", "shield_cooldown"
+        "bomb_bullet", "bomb_on_block", "bullet_speed", "empower",
+        "empower_charge", "dark_strength", "big_bullet", "grow",
+        "truster_lvl", "jump_height", "dark", "reload_time", "block_cd", "shield_duration", "shield_charges"
     );
     private static final List<String> EFFECTS = Arrays.asList(
         "SPEED", "SLOW", "FAST_DIGGING", "SLOW_DIGGING", "INCREASE_DAMAGE",
@@ -644,6 +644,15 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 + (target != sender ? " -> " + target.getName() : ""));
     }
 
+    private static Double tryParseDouble(String str) {
+        if (str == null) return null;
+        try {
+            return Double.parseDouble(str.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     // === STATS ===
 
     private void handleStats(CommandSender sender, String[] args) {
@@ -653,24 +662,78 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             return;
         }
 
-        Player target;
-        if (args.length >= 2) {
+        Player target = null;
+        String stat = null;
+        Double value = null;
+
+        if (args.length == 1) {
+            if (sender instanceof Player p) {
+                target = p;
+            } else {
+                sender.sendMessage(ChatColor.RED + Messages.get("debug.specify-player"));
+                return;
+            }
+        } else if (args.length == 2) {
             target = Bukkit.getPlayer(args[1]);
-            if (target == null) { sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[1])); return; }
-        } else if (sender instanceof Player p) {
-            target = p;
+            if (target == null) {
+                sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[1]));
+                return;
+            }
+        } else if (args.length == 3) {
+            Double parsedVal = tryParseDouble(args[2]);
+            if (parsedVal != null && sender instanceof Player p) {
+                target = p;
+                stat = args[1].toLowerCase();
+                value = parsedVal;
+            } else {
+                target = Bukkit.getPlayer(args[1]);
+                if (target == null) {
+                    sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[1]));
+                    return;
+                }
+                sender.sendMessage(ChatColor.RED + Messages.get("debug.usage-setstat"));
+                return;
+            }
+        } else if (args.length == 4) {
+            Player p1 = Bukkit.getPlayer(args[1]);
+            Double val3 = tryParseDouble(args[3]);
+            if (p1 != null && val3 != null) {
+                target = p1;
+                stat = args[2].toLowerCase();
+                value = val3;
+            } else {
+                Double val2 = tryParseDouble(args[2]);
+                Player p3 = Bukkit.getPlayer(args[3]);
+                if (val2 != null && p3 != null) {
+                    target = p3;
+                    stat = args[1].toLowerCase();
+                    value = val2;
+                } else if (p1 != null) {
+                    sender.sendMessage(ChatColor.RED + Messages.get("command.invalid-number", args[3]));
+                    return;
+                } else {
+                    sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[1]));
+                    return;
+                }
+            }
         } else {
-            sender.sendMessage(ChatColor.RED + Messages.get("debug.specify-player")); return;
+            Player p1 = Bukkit.getPlayer(args[1]);
+            Player p3 = Bukkit.getPlayer(args[3]);
+            Double valLast = tryParseDouble(args[args.length - 1]);
+            if ((p1 != null || p3 != null) && valLast != null) {
+                target = (p1 != null) ? p1 : p3;
+                stat = args[2].toLowerCase();
+                value = valLast;
+            } else if (p1 != null) {
+                sender.sendMessage(ChatColor.RED + Messages.get("command.invalid-number", args[args.length - 1]));
+                return;
+            } else {
+                sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[1]));
+                return;
+            }
         }
 
-        if (args.length >= 4) {
-            String stat = args[2].toLowerCase();
-            double value;
-            try {
-                value = Double.parseDouble(args[3]);
-            } catch (NumberFormatException e) {
-                sender.sendMessage(ChatColor.RED + Messages.get("command.invalid-number", args[3])); return;
-            }
+        if (stat != null && value != null) {
             PlayerData setData = plugin.getPlayerDataManager().getData(target);
             if (!applyStat(setData, target, stat, value)) {
                 sender.sendMessage(ChatColor.RED + Messages.get("debug.unknown-stat", stat));
@@ -764,42 +827,30 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     }
 
     private void handleSetStat(CommandSender sender, String[] args) {
-        if (args.length < 3) { sender.sendMessage(ChatColor.RED + Messages.get("debug.usage-setstat")); return; }
-
-        String stat = args[1].toLowerCase();
-        double value;
-        try {
-            value = Double.parseDouble(args[2]);
-        } catch (NumberFormatException e) {
-            sender.sendMessage(ChatColor.RED + Messages.get("command.invalid-number", args[2])); return;
-        }
-
-        Player target;
-        if (args.length >= 4) {
-            target = Bukkit.getPlayer(args[3]);
-            if (target == null) { sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[3])); return; }
-        } else if (sender instanceof Player p) {
-            target = p;
-        } else {
-            sender.sendMessage(ChatColor.RED + Messages.get("debug.specify-player")); return;
-        }
-
-        PlayerData data = plugin.getPlayerDataManager().getData(target);
-        if (!applyStat(data, target, stat, value)) {
-            sender.sendMessage(ChatColor.RED + Messages.get("debug.unknown-stat", stat));
+        if (args.length < 3) {
+            sender.sendMessage(ChatColor.RED + Messages.get("debug.usage-setstat"));
             return;
         }
-        sender.sendMessage(ChatColor.GREEN + Messages.get("debug.setstat-done", stat, PlayerData.round2(value), target.getName()));
+        handleStats(sender, args);
     }
 
     private boolean applyStat(PlayerData data, Player target, String stat, double value) {
         switch (stat) {
-            case "dmg" -> data.dmg = Math.max(value, 0.5);
-            case "atks" -> data.atks = Math.max(value, 1.0);
-            case "atk_speed", "atk-speed" -> data.atkSpeed = Math.max(value, -0.5);
-            case "atkr", "atk-range" -> data.atkr = Math.max(value, 0);
+            case "dmg", "damage" -> data.dmg = Math.max(value, 0.5);
+            case "atks", "atk_cooldown", "atk-cooldown" -> {
+                double ticks = (value <= 5.0) ? value * 20.0 : value;
+                data.atks = Math.max(ticks, 1.0);
+            }
+            case "atk_speed", "atk-speed" -> {
+                double bonus = (Math.abs(value) > 1.0) ? value / 100.0 : value;
+                data.atkSpeed = Math.max(bonus, -0.5);
+            }
+            case "atkr", "atk-range", "range" -> data.atkr = Math.max(value, 0);
             case "bounce" -> data.bouncePl = Math.max(value, 0);
-            case "ammo" -> data.ammo = Math.max(value, 1);
+            case "ammo", "max_ammo", "max-ammo" -> {
+                data.maxAmmo = Math.max((int) value, 1);
+                data.ammo = data.maxAmmo;
+            }
             case "bullets" -> data.bullets = Math.max(value, 1);
             case "cold" -> data.cold = Math.max(value, 0);
             case "poison" -> data.poison = Math.max(value, 0);
@@ -811,7 +862,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "cold_lvl", "cold-lvl" -> data.coldLvl = Math.max(value, 0);
             case "parazit" -> data.parazit = Math.max(value, 0);
             case "parazit_lvl", "parazit-lvl" -> data.parazitLvl = Math.max(value, 0);
-            case "hp" -> {
+            case "hp", "health" -> {
                 double clamped = PlayerData.clampMaxHealth(value);
                 data.hp = clamped;
                 var attr = target.getAttribute(Attribute.GENERIC_MAX_HEALTH);
@@ -830,17 +881,31 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "jump_height", "jump-height" -> data.jumpHeight = Math.max(value, 0);
             case "dark" -> data.dark = Math.max(value, 0);
             case "atks_reload", "atks-reload" -> data.atksReload = Math.max(value, 0);
-            case "block_cd", "block-cd" -> {
-                data.blockCd = value;
-                if (value <= 0) {
-                    data.blockCdMult = Math.max(0.05, 1.0 + value);
-                } else if (value < 1.0) {
-                    data.blockCdMult = Math.max(0.05, 1.0 + value);
+            case "reload", "reload_time", "reload-time" -> {
+                double baseReloadSec = 5.0;
+                double targetSec = Math.max(0.2, value);
+                data.reloadSpeed = Math.max(-1.0, Math.min(0.95, 1.0 - (targetSec / baseReloadSec)));
+            }
+            case "block_cd", "block-cd", "shield_cooldown", "shield-cooldown", "shield_cd", "shield-cd" -> {
+                long baseMs = GunItem.getActualShieldCooldownMs(plugin, (PlayerData) null);
+                double baseSec = baseMs / 1000.0;
+                if (value >= 0) {
+                    double targetSec = Math.max(0.05, value);
+                    data.blockCdMult = targetSec / baseSec;
+                    data.blockCd = (targetSec / baseSec) - 1.0;
+                    data.shieldCooldown = 0;
                 } else {
-                    data.blockCdMult = Math.max(0.05, value);
+                    data.blockCd = value;
+                    data.blockCdMult = Math.max(0.05, 1.0 + value);
+                    data.shieldCooldown = 0;
                 }
             }
-            case "shield_cooldown", "shield-cooldown" -> data.shieldCooldown = Math.max(value, 0);
+            case "shield_duration", "shield-duration" -> {
+                data.shieldsUp = Math.max(0, value - 2.0);
+            }
+            case "shield_charges", "shield-charges" -> {
+                data.shieldCharge = Math.max(0, (int) value - 1);
+            }
             default -> { return false; }
         }
         return true;
@@ -1022,11 +1087,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     }
 
     private int countCards(PlayerData data) {
-        int count = 0;
-        for (com.rounds.cards.Card card : plugin.getCardManager().getRegistry().getAllCards()) {
-            if (data.getCard(card.getId())) count++;
-        }
-        return count;
+        return (data != null && data.getOwnedCards() != null) ? data.getOwnedCards().size() : 0;
     }
 
     private String formatLoc(Location loc) {
@@ -1408,18 +1469,23 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
                 yield filterStartsWith(list, input);
             }
-            case "stats" -> {
-                if (args.length == 2 || args.length == 4) {
+            case "stats", "setstat" -> {
+                if (args.length == 2) {
                     List<String> list = new ArrayList<>();
                     Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
+                    list.addAll(STATS);
                     yield filterStartsWith(list, input);
                 }
-                if (args.length == 3) yield filterStartsWith(STATS, input);
-                yield Collections.emptyList();
-            }
-            case "setstat" -> {
-                if (args.length == 2) yield filterStartsWith(STATS, input);
+                if (args.length == 3) {
+                    if (Bukkit.getPlayer(args[1]) != null) {
+                        yield filterStartsWith(STATS, input);
+                    }
+                    yield filterStartsWith(Arrays.asList("1", "2", "3", "5", "10"), input);
+                }
                 if (args.length == 4) {
+                    if (Bukkit.getPlayer(args[1]) != null) {
+                        yield filterStartsWith(Arrays.asList("1", "2", "3", "5", "10"), input);
+                    }
                     List<String> list = new ArrayList<>();
                     Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
                     yield filterStartsWith(list, input);

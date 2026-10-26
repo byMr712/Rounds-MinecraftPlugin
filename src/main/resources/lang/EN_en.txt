@@ -299,7 +299,7 @@ debug:
   usage-setlanguage: "Usage: /rdebug setlanguage <lang>"
   setstat-done: "{0} = {1} -> {2}"
   help-wheel: "Toggle auto card rotation on selection"
-  help-public-note: "Available to everyone: /rdebug info, /rdebug status, /rdebug stats, /rdebug cards show, /rdebug statsend"
+  help-public-note: "Available to everyone: /rdebug info, /rdebug status, /rdebug state, /rdebug stats, /rdebug cards show, /rdebug statsend"
   wheel-set: "Card wheel {0}"
   wheel-on: "ENABLED"
   wheel-off: "DISABLED"

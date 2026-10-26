@@ -294,7 +294,7 @@ debug:
   usage-setlanguage: "Использование: /rdebug setlanguage <язык>"
   setstat-done: "{0} = {1} -> {2}"
   help-wheel: "Включить авто-смену карточек при выборе"
-  help-public-note: "Открыто всем игрокам: /rdebug info, /rdebug status, /rdebug stats, /rdebug cards show, /rdebug statsend"
+  help-public-note: "Открыто всем игрокам: /rdebug info, /rdebug status, /rdebug state, /rdebug stats, /rdebug cards show, /rdebug statsend"
   wheel-set: "\u041F\u0440\u043E\u043A\u0440\u0443\u0442\u043A\u0430 \u043A\u0430\u0440\u0442\u043E\u0447\u0435\u043A {0}"
   wheel-on: "\u0412\u041A\u041B\u042E\u0427\u0415\u041D\u0410"
   wheel-off: "\u0412\u042B\u041A\u041B\u042E\u0427\u0415\u041D\u0410"

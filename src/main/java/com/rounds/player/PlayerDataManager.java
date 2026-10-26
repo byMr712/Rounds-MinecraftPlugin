@@ -785,8 +785,9 @@ public class PlayerDataManager implements Listener {
 
         for (int id : getRegisteredCardIds()) {
             NamespacedKey cardKey = new NamespacedKey("rounds", "card_" + id);
-            if (data.getCard(id)) {
-                pdc.set(cardKey, PersistentDataType.DOUBLE, 1.0);
+            int count = data.getCardCount(id);
+            if (count > 0) {
+                pdc.set(cardKey, PersistentDataType.DOUBLE, (double) count);
             } else if (pdc.has(cardKey, PersistentDataType.DOUBLE)) {
                 pdc.remove(cardKey);
             }
@@ -848,7 +849,12 @@ public class PlayerDataManager implements Listener {
         for (int id : getRegisteredCardIds()) {
             NamespacedKey cardKey = new NamespacedKey("rounds", "card_" + id);
             Double cardVal = pdc.get(cardKey, PersistentDataType.DOUBLE);
-            data.setCard(id, cardVal != null && cardVal > 0);
+            if (cardVal != null && cardVal > 0) {
+                int count = (int) Math.round(cardVal);
+                for (int i = 0; i < count; i++) {
+                    data.addCard(id);
+                }
+            }
         }
 
         return data;

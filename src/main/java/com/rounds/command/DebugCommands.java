@@ -510,7 +510,15 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     private void handleCards(CommandSender sender, String[] args) {
         if (!sender.hasPermission("rounds.admin")) {
             if (!(sender instanceof Player viewer)) { sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player")); return; }
-            plugin.getCardGUI().openShow(viewer, viewer);
+            if (args.length < 2) {
+                plugin.getCardGUI().openShow(viewer, viewer);
+                return;
+            }
+            if (args[1].equalsIgnoreCase("show")) {
+                handleCardsShow(sender, args);
+                return;
+            }
+            sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
             return;
         }
         if (args.length < 2) {
@@ -601,7 +609,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
     private void handleStats(CommandSender sender, String[] args) {
         boolean canModify = sender.hasPermission("rounds.admin");
-        if (!canModify && args.length >= 2) {
+        if (!canModify && args.length >= 3) {
             sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
             return;
         }
@@ -769,7 +777,15 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 sender.sendMessage(ChatColor.RED + Messages.get("debug.specify-player")); return;
             }
             plugin.getTeamManager().leaveTeam(target.getUniqueId());
+            if (plugin.getBotManager() != null) {
+                var bot = plugin.getBotManager().getBot(target.getName());
+                if (bot != null) {
+                    bot.setAssignedTeam(null);
+                    if (bot.getAi() != null) bot.getAi().clearTarget();
+                }
+            }
             plugin.getGameManager().applyTeamColor(target);
+            plugin.getGameManager().showNameTagsInGame();
             sender.sendMessage(ChatColor.GREEN + Messages.get("debug.team-set", target.getName(), Messages.get("team.none")));
             return;
         }
@@ -793,7 +809,15 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
 
         plugin.getTeamManager().joinTeam(target.getUniqueId(), team);
+        if (plugin.getBotManager() != null) {
+            var bot = plugin.getBotManager().getBot(target.getName());
+            if (bot != null) {
+                bot.setAssignedTeam(team);
+                if (bot.getAi() != null) bot.getAi().clearTarget();
+            }
+        }
         plugin.getGameManager().applyTeamColor(target);
+        plugin.getGameManager().showNameTagsInGame();
         sender.sendMessage(ChatColor.GREEN + Messages.get("debug.team-set", target.getName(), team.getColor() + team.getName()));
     }
 
@@ -1018,7 +1042,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         "start", "stop", "rounds", "givegun", "wheel", "bot"
     );
     private static final List<String> PUBLIC_COMMANDS = Arrays.asList(
-        "info", "stats", "cards"
+        "info", "status", "state", "stats", "cards"
     );
     private static final List<String> TEAM_COLORS = Arrays.asList("BLUE", "RED", "YELLOW", "GREEN", "NONE");
 
@@ -1205,8 +1229,6 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         boolean admin = sender.hasPermission("rounds.admin");
         boolean freeplay = plugin.getRoundsConfig().isFreeplay();
-        if (!admin && !freeplay) return Collections.emptyList();
-
         String input = args[args.length - 1].toLowerCase();
 
         if (!admin) {
@@ -1217,7 +1239,23 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             boolean rootAllowed = PUBLIC_COMMANDS.contains(root)
                     || (freeplay && FREEPLAY_COMMANDS.contains(root));
             if (!rootAllowed) return Collections.emptyList();
-            if (root.equals("stats")) return Collections.emptyList();
+            if (root.equals("stats")) {
+                if (args.length == 2) {
+                    List<String> list = new ArrayList<>();
+                    Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
+                    return filterStartsWith(list, input);
+                }
+                return Collections.emptyList();
+            }
+            if (root.equals("cards")) {
+                if (args.length == 2) return filterStartsWith(Collections.singletonList("show"), input);
+                if (args.length == 3 && args[1].equalsIgnoreCase("show")) {
+                    List<String> list = new ArrayList<>();
+                    Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
+                    return filterStartsWith(list, input);
+                }
+                return Collections.emptyList();
+            }
         } else {
             if (args.length == 1) return filterStartsWith(SUBCOMMANDS, input);
         }

@@ -2248,6 +2248,15 @@ public class BotAI extends BukkitRunnable {
         return closest;
     }
 
+    public void clearTarget() {
+        this.currentTarget = null;
+        this.lastKnownTargetLoc = null;
+        this.isPursuing = false;
+        this.isAmbushing = false;
+        this.ambushTicks = 0;
+        this.coverLoc = null;
+    }
+
     public void cleanup() {
         this.currentTarget = null;
         this.lastKnownTargetLoc = null;

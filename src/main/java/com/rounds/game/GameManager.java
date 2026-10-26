@@ -818,7 +818,7 @@ public class GameManager implements Listener {
         Player victim = alive.get(RANDOM.nextInt(alive.size()));
         Bukkit.broadcastMessage(ChatColor.DARK_RED + Messages.get("game.auto-death-killed", victim.getName()));
         victim.getWorld().playSound(victim.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.7f, 1.2f);
-        victim.setHealth(0.0);
+        com.rounds.entity.RoundsEntities.safeSetHealth(victim, 0.0);
     }
 
     private void cardTick() {

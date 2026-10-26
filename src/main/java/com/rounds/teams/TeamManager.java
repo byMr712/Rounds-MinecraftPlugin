@@ -34,6 +34,7 @@ public class TeamManager {
     }
 
     private static final String TEAM_PREFIX = "rounds_";
+    private final RoundsPlugin plugin;
     private final Scoreboard scoreboard;
     private final Map<GameTeam, Team> teams = new EnumMap<>(GameTeam.class);
     private final Map<UUID, GameTeam> playerTeams = new HashMap<>();
@@ -41,6 +42,7 @@ public class TeamManager {
     private final Map<GameTeam, Integer> playerCounts = new EnumMap<>(GameTeam.class);
 
     public TeamManager(RoundsPlugin plugin) {
+        this.plugin = plugin;
         ScoreboardManager sm = Bukkit.getScoreboardManager();
         scoreboard = sm.getMainScoreboard();
 
@@ -93,6 +95,13 @@ public class TeamManager {
             t.addEntry(name);
         }
         recalculateCounts();
+        if (plugin.getBotManager() != null) {
+            com.rounds.bot.FakeBot bot = plugin.getBotManager().getBot(uuid);
+            if (bot != null) {
+                bot.setAssignedTeam(team);
+                if (bot.getAi() != null) bot.getAi().clearTarget();
+            }
+        }
         return true;
     }
 
@@ -107,6 +116,13 @@ public class TeamManager {
             }
         }
         recalculateCounts();
+        if (plugin.getBotManager() != null) {
+            com.rounds.bot.FakeBot bot = plugin.getBotManager().getBot(uuid);
+            if (bot != null) {
+                bot.setAssignedTeam(null);
+                if (bot.getAi() != null) bot.getAi().clearTarget();
+            }
+        }
     }
 
     public void recalculateCounts() {

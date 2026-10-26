@@ -51,6 +51,19 @@ public class RoundsEntities implements Listener {
             new Particle.DustOptions(Color.fromRGB(255, 190, 60), 0.95f);
     private static final Map<UUID, org.bukkit.scheduler.BukkitTask> vignetteTasks = new ConcurrentHashMap<>();
 
+    public static void safeSetHealth(LivingEntity entity, double health) {
+        if (entity == null || entity.isDead()) return;
+        if (entity instanceof org.bukkit.craftbukkit.entity.CraftPlayer cp) {
+            net.minecraft.server.level.ServerPlayer sp = cp.getHandle();
+            if (sp != null && sp.connection == null) {
+                com.rounds.bot.FakeBot.ensureConnection(sp);
+            }
+        }
+        try {
+            entity.setHealth(Math.min(Math.max(0.0, health), entity.getMaxHealth()));
+        } catch (Throwable ignored) {}
+    }
+
     public static void clearPlayer(UUID uuid) {
         if (uuid == null) return;
         hpBoostPending.remove(uuid);
@@ -343,7 +356,7 @@ public class RoundsEntities implements Listener {
                             nearest.damage(finalDamage);
                         }
                         if (nearest.getHealth() >= hpBefore && finalDamage > 0.0 && !nearest.isDead()) {
-                            nearest.setHealth(Math.min(Math.max(0.0, hpBefore - finalDamage), nearest.getMaxHealth()));
+                            safeSetHealth(nearest, hpBefore - finalDamage);
                         }
                     }
                     if (nearest instanceof Player victim && plugin.getBotManager() != null) {
@@ -494,7 +507,7 @@ public class RoundsEntities implements Listener {
                     hitEnt.damage(finalDmg);
                 }
                 if (hitEnt.getHealth() >= hpBefore && finalDmg > 0.0 && !hitEnt.isDead()) {
-                    hitEnt.setHealth(Math.min(Math.max(0.0, hpBefore - finalDmg), hitEnt.getMaxHealth()));
+                    safeSetHealth(hitEnt, hpBefore - finalDmg);
                 }
             }
             if (hitEnt instanceof Player victim && plugin.getBotManager() != null) {

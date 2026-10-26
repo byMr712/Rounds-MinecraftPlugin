@@ -3,9 +3,13 @@ package com.rounds.bot;
 import com.rounds.RoundsPlugin;
 import com.rounds.blocks.BlockListener;
 import com.rounds.item.GunItem;
+import com.rounds.nms.FakeConnection;
+import com.rounds.nms.NoopConnection;
 import com.rounds.player.PlayerData;
+import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.CommonListenerCookie;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.phys.Vec3;
 import org.bukkit.Bukkit;
@@ -95,9 +99,21 @@ public class FakeBot {
             ServerPlayer sp = nmsServer.getPlayerList().getPlayer(bukkitPlayer.getUniqueId());
             if (sp != null) {
                 this.nmsPlayer = sp;
+                ensureConnection(sp);
             }
         } catch (Throwable ignored) {}
         return nmsPlayer;
+    }
+
+    public static void ensureConnection(ServerPlayer sp) {
+        if (sp != null && sp.connection == null) {
+            try {
+                MinecraftServer nmsServer = ((CraftServer) Bukkit.getServer()).getServer();
+                NoopConnection noopConn = new NoopConnection(PacketFlow.SERVERBOUND);
+                CommonListenerCookie cookie = CommonListenerCookie.createInitial(sp.getGameProfile(), false);
+                sp.connection = new FakeConnection(nmsServer, noopConn, sp, cookie);
+            } catch (Throwable ignored) {}
+        }
     }
 
     public void updatePlayer(Player player) {
@@ -216,11 +232,17 @@ public class FakeBot {
     }
 
     public com.rounds.teams.TeamManager.GameTeam getAssignedTeam() {
-        if (assignedTeam != null) return assignedTeam;
         if (manager != null && manager.getPlugin() != null && manager.getPlugin().getTeamManager() != null) {
-            return manager.getPlugin().getTeamManager().getPlayerTeam(getBukkitPlayer().getUniqueId());
+            Player bp = getBukkitPlayer();
+            if (bp != null) {
+                var tmTeam = manager.getPlugin().getTeamManager().getPlayerTeam(bp.getUniqueId());
+                if (tmTeam != null) {
+                    this.assignedTeam = tmTeam;
+                    return tmTeam;
+                }
+            }
         }
-        return null;
+        return assignedTeam;
     }
 
     public void setAssignedTeam(com.rounds.teams.TeamManager.GameTeam assignedTeam) {

@@ -548,6 +548,7 @@ public class PlayerDataManager implements Listener {
                         }
                     } else if (curState == GameManager.GameState.CARDS) {
                         if (team != null) {
+                            currentGm.removeDeadPlayer(uuid);
                             player.setGameMode(GameMode.ADVENTURE);
                             player.setAllowFlight(false);
                             player.setFlying(false);

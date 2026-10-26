@@ -54,6 +54,17 @@ public class BotManager implements Listener {
         return bots.get(name.toLowerCase());
     }
 
+    public FakeBot getBot(UUID uuid) {
+        if (uuid == null) return null;
+        for (FakeBot bot : bots.values()) {
+            Player p = bot.getBukkitPlayer();
+            if (p != null && uuid.equals(p.getUniqueId())) {
+                return bot;
+            }
+        }
+        return null;
+    }
+
     public boolean isBot(Player player) {
         return player != null && bots.containsKey(player.getName().toLowerCase());
     }
@@ -252,7 +263,6 @@ public class BotManager implements Listener {
                 try {
                     nmsPlayer.connection.disconnect(net.minecraft.network.chat.Component.literal("Despawned"));
                 } catch (Throwable ignored) {}
-                nmsPlayer.connection = null;
             }
         }
 

@@ -202,15 +202,27 @@ public class LegendaryEffects implements Listener {
         for (LivingEntity entity : loc.getNearbyLivingEntities(4.0)) {
             if (entity.getUniqueId().equals(player.getUniqueId())) continue;
             if (entity instanceof Player tp) {
-                if (tp.getGameMode() == GameMode.SPECTATOR) continue;
+                if (tp.getGameMode() == GameMode.SPECTATOR || tp.getGameMode() == GameMode.CREATIVE) continue;
+                if (!plugin.getGameManager().isTargetable(tp)) continue;
                 com.rounds.teams.TeamManager.GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(tp.getUniqueId());
                 if (myTeam != null && targetTeam != null && myTeam == targetTeam) continue;
             }
             try {
-                double dist = entity.getLocation().distance(loc);
+                double dist = Math.min(entity.getLocation().distance(loc), entity.getLocation().clone().add(0, 0.9, 0).distance(loc));
                 if (dist <= 4.0 && maxDmg > 0) {
+                    double hpBefore = entity.getHealth();
                     entity.setNoDamageTicks(0);
-                    entity.damage(maxDmg, player);
+                    entity.damage(maxDmg);
+                    if (entity.getHealth() >= hpBefore && maxDmg > 0.0 && !entity.isDead()) {
+                        com.rounds.entity.RoundsEntities.safeSetHealth(entity, hpBefore - maxDmg);
+                    }
+                    if (entity instanceof Player victim) {
+                        com.rounds.entity.RoundsEntities.applyHitRedEffects(victim, loc, victim.getLocation());
+                        if (plugin.getBotManager() != null) {
+                            var victimBot = plugin.getBotManager().getBot(victim.getName());
+                            if (victimBot != null) victimBot.onAttacked(loc, player.getUniqueId());
+                        }
+                    }
                 }
             } catch (IllegalArgumentException ignored) {}
         }

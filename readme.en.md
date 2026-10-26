@@ -1,9 +1,9 @@
-# RoundsPlugin — The ROUNDS Minigame in Minecraft
+# RoundsPlugin — The [ROUNDS](https://store.steampowered.com/app/1557740/ROUNDS/) Minigame in Minecraft
 
 > **Language:** [Русский](readme.md) · English  
 > Inspired by [**Rounds In Minecraft**](https://minecraft-inside.ru/maps/169501-rounds-in-minecraft.html) by **ifrit**.
 
-**RoundsPlugin** brings the chaotic, competitive 2D/3D platformer shooter **ROUNDS** directly to your Minecraft server! 4 teams, a deep card system with 112 unique upgrade cards and custom card support, up to 20+ rounds, physical interactive setup blocks, comeback card drafting for losing teams, auto-death for stalled rounds, freeplay mode, and full [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) / [**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi) integration.
+**RoundsPlugin** brings the chaotic, competitive 2D/3D platformer shooter [**ROUNDS**](https://store.steampowered.com/app/1557740/ROUNDS/) directly to your Minecraft server! 4 teams, a deep card system with 116 unique upgrade cards and custom card support, up to 20+ rounds, physical interactive setup blocks, comeback card drafting for losing teams, auto-death for stalled rounds, freeplay mode, and full [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) / [**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi) integration.
 
 
 ## Key Features
@@ -13,7 +13,7 @@
   - **Left Click:** Fires physics-driven bullets with ricochets, bullet speed, and card effects.
   - **Right Click:** Raises shield to deflect bullets and trigger explosive counter-abilities.
   - **Q (Drop Key):** Manually reload your magazine with a live Action Bar progress bar.
-- **112 Unique Upgrade Cards:**
+- **116 Unique Upgrade Cards:**
   - Massive ability catalog: homing bullets, poison clouds, frost slow, wall drills, executions, close-range saw shredding, and second-wind revives.
   - 5 rarity tiers: `COMMON`, `UNCOMMON`, `RARE`, `EPIC`, `LEGENDARY` with configurable weights.
   - Support for variations (single card with scaling stats across rarities).
@@ -257,7 +257,7 @@ freeplay:
 ## Card System
 
 Cards are stored as individual YAML files:
-- `plugins/Rounds/cards/original/` — Built-in cards (112 files).
+- `plugins/Rounds/cards/original/` — Built-in cards (116 files).
 - `plugins/Rounds/cards/custom/` — Custom cards.
 
 ### Example Standard Card (`burst.yml`)
@@ -743,7 +743,7 @@ Language files are located in `plugins/Rounds/lang/`:
 |-----------|-------------|
 | `plugins/Rounds/config.yml` | Main plugin configuration |
 | `plugins/Rounds/lang/*.txt` | Localization packs |
-| `plugins/Rounds/cards/original/*.yml` | Built-in card catalog (112 cards) |
+| `plugins/Rounds/cards/original/*.yml` | Built-in card catalog (116 cards) |
 | `plugins/Rounds/cards/custom/*.yml` | Custom cards |
 | `plugins/Rounds/playerdata/` | Persistent player records |
 | `plugins/Rounds/game-state.yml` | Ongoing match state for crash recovery |

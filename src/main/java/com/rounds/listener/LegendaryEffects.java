@@ -415,6 +415,17 @@ public class LegendaryEffects implements Listener {
                     ChatColor.GRAY + com.rounds.util.Messages.get("card.bullet-time-slowed"), 5, 40, 10);
             p.playSound(p.getLocation(), Sound.BLOCK_CONDUIT_DEACTIVATE, 1.0f, 0.5f);
         }
+
+        if (instance != null && instance.plugin != null) {
+            Bukkit.getScheduler().scheduleSyncDelayedTask(instance.plugin, () -> {
+                for (Player p : Bukkit.getOnlinePlayers()) {
+                    if (p.isOnline() && p.isValid()) {
+                        p.removePotionEffect(org.bukkit.potion.PotionEffectType.SLOW);
+                        p.removePotionEffect(org.bukkit.potion.PotionEffectType.DARKNESS);
+                    }
+                }
+            }, 100L);
+        }
     }
 
     // ==================== Temporal Recall ====================

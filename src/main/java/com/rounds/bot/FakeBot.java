@@ -565,9 +565,8 @@ public class FakeBot {
         // Tick and expire active potion effects for FakeBot (e.g. GLOWING, SLOW)
         if (!p.getActivePotionEffects().isEmpty()) {
             for (org.bukkit.potion.PotionEffect eff : new java.util.ArrayList<>(p.getActivePotionEffects())) {
-                if (eff.getDuration() <= 1) {
-                    p.removePotionEffect(eff.getType());
-                } else {
+                p.removePotionEffect(eff.getType());
+                if (eff.getDuration() > 1) {
                     p.addPotionEffect(new org.bukkit.potion.PotionEffect(eff.getType(), eff.getDuration() - 1, eff.getAmplifier(), eff.isAmbient(), eff.hasParticles(), eff.hasIcon()), true);
                 }
             }

@@ -127,6 +127,7 @@ public class CardManager {
             }
             data.removeOneCard(existingSameFamily.getId());
             data.addCard(card.getId());
+            com.rounds.stats.MatchStatsManager.setCardsCount(player.getUniqueId(), data.getOwnedCards().size());
             recalculatePlayerStats(player);
             grantChainedCards(player, data, card);
             return true;
@@ -134,6 +135,7 @@ public class CardManager {
 
         card.apply(player, data);
         data.addCard(card.getId());
+        com.rounds.stats.MatchStatsManager.setCardsCount(player.getUniqueId(), data.getOwnedCards().size());
         syncPlayerHP(player, data);
         GameTeam team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
         plugin.getPlayerDataManager().savePlayerFullData(player.getUniqueId(), team, null);
@@ -146,6 +148,7 @@ public class CardManager {
         PlayerData data = plugin.getPlayerDataManager().getData(player);
         if (!data.removeCardAtIndex(cardIndex)) return false;
 
+        com.rounds.stats.MatchStatsManager.setCardsCount(player.getUniqueId(), data.getOwnedCards().size());
         recalculatePlayerStats(player);
         return true;
     }

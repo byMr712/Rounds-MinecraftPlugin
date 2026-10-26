@@ -468,6 +468,16 @@ public class PlayerDataManager implements Listener {
         return cache.computeIfAbsent(uuid, u -> new PlayerData());
     }
 
+    public PlayerData getPlayerDataIfPresent(UUID uuid) {
+        if (uuid == null) return null;
+        return cache.get(uuid);
+    }
+
+    public List<String> getSavedCards(UUID uuid) {
+        if (uuid == null) return Collections.emptyList();
+        return store().getStringList("players." + uuid.toString() + ".cards");
+    }
+
     public void clearPDC(Player player) {
         if (player == null) return;
         PersistentDataContainer pdc = player.getPersistentDataContainer();
@@ -710,6 +720,9 @@ public class PlayerDataManager implements Listener {
                 }
             }
             if (alive < 2) {
+                if (com.rounds.stats.MatchStatsManager.hasActiveMatchData()) {
+                    com.rounds.stats.MatchStatsManager.onGameEnd(this);
+                }
                 for (Player p : plugin.getServer().getOnlinePlayers()) {
                     if (p.getUniqueId().equals(uuid)) continue;
                     if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) != null) {

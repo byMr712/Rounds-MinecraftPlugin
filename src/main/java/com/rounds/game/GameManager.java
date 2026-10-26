@@ -744,6 +744,9 @@ public class GameManager implements Listener {
     }
 
     private void autoStopInsufficientPlayers() {
+        if (com.rounds.stats.MatchStatsManager.hasActiveMatchData()) {
+            com.rounds.stats.MatchStatsManager.onGameEnd(plugin.getPlayerDataManager());
+        }
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) != null) {
                 p.sendTitle(Messages.get("title.game-won"), "", 10, 100, 20);
@@ -2006,6 +2009,9 @@ public class GameManager implements Listener {
             plugin.getBotManager().despawnAll();
         }
         if (state == GameState.WAITING) return;
+        if (com.rounds.stats.MatchStatsManager.hasActiveMatchData()) {
+            com.rounds.stats.MatchStatsManager.onGameEnd(plugin.getPlayerDataManager());
+        }
         gameActive = false;
         gameGeneration++;
         stopGameTick();

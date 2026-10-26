@@ -79,6 +79,10 @@ public class MatchStatsManager {
         if (s != null) s.cardsCount = cardsCount;
     }
 
+    public static boolean hasActiveMatchData() {
+        return !activeStats.isEmpty();
+    }
+
     public static void onGameStart() {
         activeStats.clear();
     }
@@ -88,12 +92,19 @@ public class MatchStatsManager {
         for (Map.Entry<UUID, PlayerMatchStats> entry : activeStats.entrySet()) {
             PlayerMatchStats s = entry.getValue();
             PlayerMatchStats copy = new PlayerMatchStats(s.uuid, s.playerName);
+            int count = s.cardsCount;
             if (pdm != null) {
-                com.rounds.player.PlayerData data = pdm.getData(s.uuid);
-                copy.cardsCount = (data != null && data.getOwnedCards() != null) ? data.getOwnedCards().size() : s.cardsCount;
-            } else {
-                copy.cardsCount = s.cardsCount;
+                com.rounds.player.PlayerData data = pdm.getPlayerDataIfPresent(s.uuid);
+                if (data != null && data.getOwnedCards() != null && !data.getOwnedCards().isEmpty()) {
+                    count = Math.max(count, data.getOwnedCards().size());
+                } else {
+                    List<String> saved = pdm.getSavedCards(s.uuid);
+                    if (saved != null && !saved.isEmpty()) {
+                        count = Math.max(count, saved.size());
+                    }
+                }
             }
+            copy.cardsCount = count;
             copy.kills = s.kills;
             copy.deaths = s.deaths;
             copy.shots = s.shots;

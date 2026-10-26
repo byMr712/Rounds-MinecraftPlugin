@@ -172,7 +172,6 @@ defaults:
 # Match and round settings
 game:
   default-rounds: 5      # Default rounds required to win the match
-  max-rounds: 20         # Upper limit for round count
   countdown-seconds: 3   # Round start countdown in seconds
   round-time-seconds: 180 # Main round time in seconds before sudden death (default: 180s = 3 min)
   card-choice-time: 30   # Card selection timer in seconds (min 10)

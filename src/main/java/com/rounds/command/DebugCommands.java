@@ -439,9 +439,8 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         if (args.length < 2) { sender.sendMessage(ChatColor.RED + Messages.get("command.usage-rounds")); return; }
         try {
             double amount = Double.parseDouble(args[1]);
-            int max = (plugin.getRoundsConfig() != null) ? plugin.getRoundsConfig().getMaxRounds() : 20;
-            if (amount < 1 || amount > max) {
-                sender.sendMessage(ChatColor.RED + Messages.get("command.amount-between", max));
+            if (amount < 1) {
+                sender.sendMessage(ChatColor.RED + Messages.get("command.amount-between", Integer.MAX_VALUE));
                 return;
             }
             plugin.getGameManager().setRounds((int) amount);

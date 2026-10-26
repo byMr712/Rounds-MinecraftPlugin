@@ -39,8 +39,6 @@ defaults:
 game:
   # Default number of rounds required to win the match
   default-rounds: 5
-  # Upper limit for the rounds setting
-  max-rounds: 20
   # Countdown before a round officially starts in seconds
   countdown-seconds: 3
   # Main round time in seconds for the boss bar timer before sudden death (default: 180s = 3 minutes)
@@ -189,7 +187,7 @@ builtin-scoreboard:
 # 2. Команды фриплея (открываются игрокам без OP только при freeplay.enabled: true или /rdebug freeplay on):
 #    - /rdebug start                     - запуск матча
 #    - /rdebug stop                      - остановка и сброс матча
-#    - /rdebug rounds <1..20>            - выбор количества побед для выигрыша
+#    - /rdebug rounds <N>                - выбор количества побед для выигрыша
 #    - /rdebug givegun                   - получение оружия
 #    - /rdebug wheel <on|off>            - переключение ротации карт выбора
 #    - /rdebug bossbar <on|off>          - переключение боссбара матча

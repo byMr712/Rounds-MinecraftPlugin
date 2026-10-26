@@ -743,11 +743,72 @@ Language files are located in `plugins/Rounds/lang/`:
 | `plugins/Rounds/lang/*.txt` | Localization packs |
 | `plugins/Rounds/cards/original/*.yml` | Built-in card catalog (116 cards) |
 | `plugins/Rounds/cards/custom/*.yml` | Custom cards |
+| `plugins/Rounds/cards/id_registry.yml` | Custom card ID mapping registry |
 | `plugins/Rounds/playerdata/` | Persistent player records |
 | `plugins/Rounds/game-state.yml` | Ongoing match state for crash recovery |
 | `plugins/Rounds/active-players.yml` | Active participant roster |
 | `<World>/rounds-blocks.yml` | Stored team, start, stop, jump, and lift blocks |
 | `<World>/rounds-map-blocks.yml` | Stored lobby, map zone, and spawn blocks |
+
+
+## Public API (Rounds Public API v1.0.0)
+
+The plugin provides a public `rounds-api` module isolated from NMS, designed for building custom third-party addons and cards.
+
+### Adding Dependency
+
+```kotlin
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly("com.rounds:rounds-api:1.0.0")
+}
+```
+
+### Registering Custom Cards via Code
+
+```java
+CardBuilder.create(myPlugin, "lightning_strike")
+    .name("ru", "&eГромовержец")
+    .name("en", "&eLightning Strike")
+    .description("en", "Every 3rd shot is electrified.")
+    .rarity(CardRarity.EPIC)
+    .material(Material.LIGHTNING_ROD)
+    .role(CardRole.OFFENSIVE)
+    .onShoot(event -> {
+        // Shooting logic
+    })
+    .onBulletHit(event -> {
+        // Bullet hit logic
+    })
+    .register();
+```
+
+### Declarative No-Code Cards
+
+Files in `plugins/Rounds/cards/custom/*.yml` are loaded automatically:
+
+```yaml
+id: "pyrotechnic"
+name:
+  ru: "&6Пиротехник"
+  en: "&6Pyrotechnic"
+description:
+  ru: "Выстрелы поджигают цель и вызывают взрывную волну"
+  en: "Shots ignite target and create a shockwave"
+material: FIRE_CHARGE
+rarity: RARE
+role: OFFENSIVE
+effects:
+  bullet-speed: 0.15
+  damage: 2.0
+triggers:
+  on-hit:
+    ignite-ticks: 80
+    knockback-strength: 0.7
+```
 
 
 ## Building from Source
@@ -758,5 +819,6 @@ Requires **Java 17** (or higher) and **Gradle 8.9+**:
 ./gradlew build
 ```
 
-The resulting JAR will be located at:
-`build/libs/RoundsPlugin-v1.5-byMr712.jar`
+Generated artifacts:
+- API module: `rounds-api/build/libs/rounds-api-1.0.0.jar`
+- Core plugin: `rounds-core/build/libs/RoundsPlugin-v1.6-byMr712.jar`

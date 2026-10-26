@@ -739,11 +739,71 @@ playerlist-objective:
 | `plugins/Rounds/lang/*.txt` | Языковые пакеты интерфейса |
 | `plugins/Rounds/cards/original/*.yml` | Встроенные стандартные карты (116 файлов) |
 | `plugins/Rounds/cards/custom/*.yml` | Пользовательские карты |
+| `plugins/Rounds/cards/id_registry.yml` | Реестр идентификаторов пользовательских карт |
 | `plugins/Rounds/playerdata/` | Сохранённые данные игроков (статы, карты) |
 | `plugins/Rounds/game-state.yml` | Сохранённое состояние текущего матча (восстановление при перезагрузке) |
 | `plugins/Rounds/active-players.yml` | Список активных участников текущей игровой сессии |
 | `<Мир>/rounds-blocks.yml` | Сохранённые позиции блоков входа в команды, старта, стопа, прыжка и лифта |
 | `<Мир>/rounds-map-blocks.yml` | Сохранённые позиции блоков лобби, зон карт и точек спавна |
+
+
+## Публичный API (Rounds Public API v1.0.0)
+
+Плагин предоставляет публичный модуль `rounds-api`, изолированный от NMS и предназначенный для разработки сторонних аддонов и карт.
+
+### Подключение зависимости
+
+```kotlin
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly("com.rounds:rounds-api:1.0.0")
+}
+```
+
+### Регистрация кастомной карты через код
+
+```java
+CardBuilder.create(myPlugin, "lightning_strike")
+    .name("ru", "&eГромовержец")
+    .name("en", "&eLightning Strike")
+    .description("ru", "Каждый 3-й выстрел заряжается электричеством.")
+    .rarity(CardRarity.EPIC)
+    .material(Material.LIGHTNING_ROD)
+    .role(CardRole.OFFENSIVE)
+    .onShoot(event -> {
+        // Логика выстрела
+    })
+    .onBulletHit(event -> {
+        // Логика попадания
+    })
+    .register();
+```
+
+### Декларативные No-Code карты
+
+Файлы `.yml` в каталоге `plugins/Rounds/cards/custom/` загружаются автоматически:
+
+```yaml
+id: "pyrotechnic"
+name:
+  ru: "&6Пиротехник"
+  en: "&6Pyrotechnic"
+description:
+  ru: "Выстрелы поджигают цель и отбрасывают ее"
+material: FIRE_CHARGE
+rarity: RARE
+role: OFFENSIVE
+effects:
+  bullet-speed: 0.15
+  damage: 2.0
+triggers:
+  on-hit:
+    ignite-ticks: 80
+    knockback-strength: 0.7
+```
 
 
 ## Сборка проекта
@@ -754,5 +814,6 @@ playerlist-objective:
 ./gradlew build
 ```
 
-Готовый JAR-файл плагина будет сгенерирован по пути:
-`build/libs/RoundsPlugin-v1.5-byMr712.jar`
+Готовые JAR-файлы:
+- Модуль API: `rounds-api/build/libs/rounds-api-1.0.0.jar`
+- Финальный плагин: `rounds-core/build/libs/RoundsPlugin-v1.6-byMr712.jar`

@@ -66,6 +66,7 @@ public class PlayerData {
     public double speedBoost = 0;
     public double stun = 0;
     public double blockCd = 0;
+    public double blockCdMult = 1.0;
     public double reloadSpeed;
     public double heal = 0;
     public double damagePerBounce = 0;
@@ -224,6 +225,7 @@ public class PlayerData {
         speedBoost = 0;
         stun = 0;
         blockCd = 0;
+        blockCdMult = 1.0;
         reloadSpeed = d.reloadSpeed;
         atksReload = 0;
         heal = 0;

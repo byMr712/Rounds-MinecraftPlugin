@@ -118,6 +118,17 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxKv(sender, Messages.get("debug." + key), String.valueOf(PlayerData.round2(value)));
     }
 
+    private String formatSeconds(double seconds) {
+        String unit = Messages.get("debug.unit-sec");
+        if (unit == null || unit.equals("debug.unit-sec")) {
+            unit = "ru".equalsIgnoreCase(Messages.getLanguageCode()) ? "сек" : "sec";
+        }
+        if (Math.abs(seconds - Math.round(seconds)) < 0.001) {
+            return String.format(Locale.US, "%d %s", Math.round(seconds), unit);
+        }
+        return String.format(Locale.US, "%.1f %s", seconds, unit);
+    }
+
     public static void register(RoundsPlugin plugin) {
         DebugCommands handler = new DebugCommands(plugin);
         plugin.getCommand("rdebug").setExecutor(handler);
@@ -671,16 +682,17 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxHeader(sender, Messages.get("debug.stats-title", target.getName()), Messages.get("debug.team-label", getTeamDisplay(target)) + " | " + Messages.get("debug.cards-label", countCards(data)));
 
         boxSection(sender, Messages.get("debug.combat-section"));
-        boxStat(sender, "stat-dmg", data.dmg);
-        boxStat(sender, "stat-atks", data.hp);
-        boxStat(sender, "stat-atk-speed", data.atkSpeed);
+        boxKv(sender, Messages.get("debug.stat-hp"), String.format(Locale.US, "%.1f / %.1f HP", target.getHealth(), data.getMaxHealth()));
+        boxKv(sender, Messages.get("debug.stat-dmg"), String.format(Locale.US, "%.1f", data.getEffectiveDamage()));
+        boxKv(sender, Messages.get("debug.stat-atks"), formatSeconds(GunItem.getAttackCooldownSeconds(data)));
+        if (data.atkSpeed != 0.0) {
+            boxKv(sender, Messages.get("debug.stat-atk-speed"), String.format(Locale.US, "%+.0f%%", data.atkSpeed * 100.0));
+        }
         boxStat(sender, "stat-atkr", data.atkr);
-        boxStat(sender, "stat-ammo", data.ammo);
-        boxStat(sender, "stat-bullets", data.bullets);
+        boxKv(sender, Messages.get("debug.stat-ammo"), (int) data.ammo + " / " + (int) data.maxAmmo);
+        boxKv(sender, Messages.get("debug.stat-bullets"), String.valueOf((int) Math.max(data.bullets, 1)));
         boxStat(sender, "stat-bullet-speed", data.bulletSpeed);
-        double bigPenalty = data.bigBullet > 0 ? 1.0 + 0.3 * data.bigBullet : 1.0;
-        boxStat(sender, "stat-reload-time", Math.max(
-                100 * (1.0 - Math.min(data.reloadSpeed, 0.95)) * (1.0 + data.atksReload * 0.1) * bigPenalty, 4) / 20.0);
+        boxKv(sender, Messages.get("debug.stat-reload-time"), formatSeconds(GunItem.getReloadDurationSeconds(data)));
         boxStat(sender, "stat-bounce", data.bouncePl);
         boxStat(sender, "stat-homing", data.homing);
         boxStat(sender, "stat-big-bullet", data.bigBullet);
@@ -706,10 +718,13 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxStat(sender, "stat-bomb-on-block", data.bombOnBlock);
 
         boxSection(sender, Messages.get("debug.shield-section"));
-        boxKv(sender, Messages.get("debug.stat-shield-active"), data.shieldActive ? "ON" : "OFF");
-        boxKv(sender, Messages.get("debug.stat-shield-cd"),
-                String.format("%.1fs", data.shieldCooldown / 20.0));
-        boxStat(sender, "stat-block-cd", data.blockCd);
+        boxKv(sender, Messages.get("debug.stat-shield-active"), GunItem.isShieldActive(target.getUniqueId()) ? "ON" : "OFF");
+        boxKv(sender, Messages.get("debug.stat-shield-duration"), formatSeconds(GunItem.getShieldDurationSeconds(plugin, data)));
+        long actualBlockCdMs = GunItem.getActualShieldCooldownMs(plugin, data);
+        boxKv(sender, Messages.get("debug.stat-block-cd"), formatSeconds(actualBlockCdMs / 1000.0));
+        int extraCharges = (int) Math.max(data.shieldCharge + data.doubleBlock, 0);
+        int currentCharges = GunItem.getShieldCharges(target.getUniqueId());
+        boxKv(sender, Messages.get("debug.stat-shield-charges"), currentCharges + " / " + (1 + extraCharges));
 
         boxFooter(sender);
     }
@@ -781,7 +796,16 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "jump_height", "jump-height" -> data.jumpHeight = Math.max(value, 0);
             case "dark" -> data.dark = Math.max(value, 0);
             case "atks_reload", "atks-reload" -> data.atksReload = Math.max(value, 0);
-            case "block_cd", "block-cd" -> data.blockCd = value;
+            case "block_cd", "block-cd" -> {
+                data.blockCd = value;
+                if (value <= 0) {
+                    data.blockCdMult = Math.max(0.05, 1.0 + value);
+                } else if (value < 1.0) {
+                    data.blockCdMult = Math.max(0.05, 1.0 + value);
+                } else {
+                    data.blockCdMult = Math.max(0.05, value);
+                }
+            }
             case "shield_cooldown", "shield-cooldown" -> data.shieldCooldown = Math.max(value, 0);
             default -> { return false; }
         }

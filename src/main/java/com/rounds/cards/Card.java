@@ -93,7 +93,10 @@ public class Card {
             case "speed": data.speed = PlayerData.round2(Math.max(data.speed + value, 0)); break;
             case "speed-boost": data.speedBoost = PlayerData.round2(Math.max(data.speedBoost + value, 0)); break;
             case "stun": data.stun = PlayerData.round2(Math.max(data.stun + value, 0)); break;
-            case "block-cd", "block_cd", "block-cooldown", "block_cooldown", "shield-cooldown", "shield_cooldown", "shield-cd", "shield_cd": data.blockCd = PlayerData.round2(data.blockCd + value); break;
+            case "block-cd", "block_cd", "block-cooldown", "block_cooldown", "shield-cooldown", "shield_cooldown", "shield-cd", "shield_cd":
+                data.blockCd = PlayerData.round2(data.blockCd + value);
+                data.blockCdMult = PlayerData.round2(Math.max(0.05, data.blockCdMult * (1.0 + value)));
+                break;
             case "reload-speed": data.reloadSpeed = PlayerData.round2(Math.max(Math.min(data.reloadSpeed + value, 0.95), 0)); break;
             case "heal": data.heal = PlayerData.round2(Math.max(data.heal + value, 0)); break;
             case "damage-per-bounce": data.damagePerBounce = PlayerData.round2(data.damagePerBounce + value); break;

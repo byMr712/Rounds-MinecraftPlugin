@@ -48,7 +48,7 @@ public class PlayerDataManager implements Listener {
             "barage", "big_bullet", "grow", "truster_lvl", "jump_height", "dark",
             "card_select_1", "card_select_2", "card_select_3",
             "card_select_4", "card_select_5", "card_uses", "rare_card",
-            "player_use", "atks_reload", "pristine_perseverance"
+            "player_use", "atks_reload", "pristine_perseverance", "block_cd", "block_cd_mult"
         };
         for (String s : stats) {
             STAT_KEYS.put(s, new NamespacedKey("rounds", s));
@@ -165,6 +165,8 @@ public class PlayerDataManager implements Listener {
         yml.set(path + ".stats.dark", data.dark);
         yml.set(path + ".stats.atks-reload", data.atksReload);
         yml.set(path + ".stats.pristine-perseverance", data.pristinePerseverance);
+        yml.set(path + ".stats.block-cd", data.blockCd);
+        yml.set(path + ".stats.block-cd-mult", data.blockCdMult);
 
         yml.set(path + ".cards", new ArrayList<>(data.getOwnedCards())); if (!flush) return;
 
@@ -269,6 +271,8 @@ public class PlayerDataManager implements Listener {
             data.dark = saved.stats.getOrDefault("dark", 0.0);
             data.atksReload = saved.stats.getOrDefault("atks_reload", 0.0);
             data.pristinePerseverance = saved.stats.getOrDefault("pristine_perseverance", 0.0);
+            data.blockCd = saved.stats.getOrDefault("block_cd", 0.0);
+            data.blockCdMult = saved.stats.getOrDefault("block_cd_mult", 1.0);
         }
 
         if (player != null && player.isOnline()) {
@@ -333,6 +337,8 @@ public class PlayerDataManager implements Listener {
         yml.set(path + ".stats.dark", data.dark);
         yml.set(path + ".stats.atks-reload", data.atksReload);
         yml.set(path + ".stats.pristine-perseverance", data.pristinePerseverance);
+        yml.set(path + ".stats.block-cd", data.blockCd);
+        yml.set(path + ".stats.block-cd-mult", data.blockCdMult);
 
         yml.set(path + ".cards", new ArrayList<>(data.getOwnedCards())); if (!flush) return;
 
@@ -773,6 +779,8 @@ public class PlayerDataManager implements Listener {
         setStat(pdc, "rare_card", data.rareCard);
         setStat(pdc, "player_use", data.playerUse);
         setStat(pdc, "atks_reload", data.atksReload);
+        setStat(pdc, "block_cd", data.blockCd);
+        setStat(pdc, "block_cd_mult", data.blockCdMult);
 
         for (int id : getRegisteredCardIds()) {
             NamespacedKey cardKey = new NamespacedKey("rounds", "card_" + id);
@@ -833,6 +841,8 @@ public class PlayerDataManager implements Listener {
         data.rareCard = getStat(pdc, "rare_card", 0);
         data.playerUse = getStat(pdc, "player_use", 0);
         data.atksReload = getStat(pdc, "atks_reload", 0);
+        data.blockCd = getStat(pdc, "block_cd", 0);
+        data.blockCdMult = getStat(pdc, "block_cd_mult", 1.0);
 
         for (int id : getRegisteredCardIds()) {
             NamespacedKey cardKey = new NamespacedKey("rounds", "card_" + id);

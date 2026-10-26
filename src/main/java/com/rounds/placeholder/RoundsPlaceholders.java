@@ -283,7 +283,7 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
             case "bomb_on_block"  -> d.bombOnBlock;
             case "shield_active"  -> d.shieldActive ? 1.0 : 0.0;
             case "shield_hp"      -> d.shieldHp;
-            case "shield_cd"      -> d.shieldCooldown;
+            case "shield_cd", "block_cd" -> com.rounds.item.GunItem.getActualShieldCooldownMs(d) / 1000.0;
             case "speed"          -> d.speed;
             case "stun"           -> d.stun;
             case "saw"            -> d.saw;

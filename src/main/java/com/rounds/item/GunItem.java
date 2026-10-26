@@ -228,13 +228,7 @@ public class GunItem implements Listener {
         }
 
         PlayerData data = plugin.getPlayerDataManager().getData(uuid);
-        double cooldownMultiplier = 1.0 + data.blockCd;
-        if (data.shieldCooldown > 0) {
-            cooldownMultiplier -= data.shieldCooldown * 0.1;
-        }
-        cooldownMultiplier = Math.max(0.5, cooldownMultiplier);
-        long baseCd = (plugin != null) ? plugin.getRoundsConfig().getShieldCooldownMs() : SHIELD_COOLDOWN_MS;
-        long actualCooldown = (long) (baseCd * cooldownMultiplier);
+        long actualCooldown = getActualShieldCooldownMs(plugin, data);
 
         Long lastUse = shieldCooldowns.get(uuid);
         long now = System.currentTimeMillis();
@@ -546,14 +540,58 @@ public class GunItem implements Listener {
         return activeSawTasks.containsKey(uuid);
     }
 
+    public static long getActualShieldCooldownMs(PlayerData data) {
+        return getActualShieldCooldownMs(plugin, data);
+    }
+
+    public static long getActualShieldCooldownMs(RoundsPlugin plugin, PlayerData data) {
+        long baseCd = (plugin != null && plugin.getRoundsConfig() != null)
+                ? plugin.getRoundsConfig().getShieldCooldownMs()
+                : SHIELD_COOLDOWN_MS;
+        if (data == null) return baseCd;
+        double mult = data.blockCdMult > 0 ? data.blockCdMult : Math.max(0.05, 1.0 + data.blockCd);
+        if (data.shieldCooldown > 0) {
+            mult = Math.max(0.05, mult - data.shieldCooldown * 0.1);
+        }
+        return Math.max(500L, (long) (baseCd * mult));
+    }
+
+    public static double getShieldDurationSeconds(PlayerData data) {
+        return getShieldDurationSeconds(plugin, data);
+    }
+
+    public static double getShieldDurationSeconds(RoundsPlugin plugin, PlayerData data) {
+        long durationTicks = (plugin != null && plugin.getRoundsConfig() != null)
+                ? plugin.getRoundsConfig().getShieldDurationTicks()
+                : (long) SHIELD_DURATION_TICKS;
+        if (data != null && data.shieldsUp > 0) {
+            durationTicks += (long) (data.shieldsUp * 20);
+        }
+        return durationTicks / 20.0;
+    }
+
+    public static int getShieldCharges(UUID uuid) {
+        return shieldCharges.getOrDefault(uuid, 0);
+    }
+
+    public static double getAttackCooldownSeconds(PlayerData data) {
+        if (data == null) return 1.0;
+        double effectiveAtkSpeed = Math.max(1.0 + data.atkSpeed, 0.5);
+        double cooldownTicks = Math.max(data.atks / effectiveAtkSpeed + data.atksReload, 1);
+        return cooldownTicks / 20.0;
+    }
+
+    public static double getReloadDurationSeconds(PlayerData data) {
+        if (data == null) return 5.0;
+        double bigPenalty = data.bigBullet > 0 ? 1.0 + 0.3 * data.bigBullet : 1.0;
+        double reloadDurationTicks = Math.max(
+                100 * (1.0 - Math.min(data.reloadSpeed, 0.95)) * (1.0 + data.atksReload * 0.1) * bigPenalty, 4);
+        return reloadDurationTicks / 20.0;
+    }
+
     public static boolean canBlock(UUID uuid, com.rounds.player.PlayerData data) {
         if (silencedPlayers.contains(uuid) || activeShields.contains(uuid)) return false;
-        double cooldownMultiplier = 1.0 + (data != null ? data.blockCd : 0.0);
-        if (data != null && data.shieldCooldown > 0) {
-            cooldownMultiplier -= data.shieldCooldown * 0.1;
-        }
-        long baseCd = (plugin != null) ? plugin.getRoundsConfig().getShieldCooldownMs() : SHIELD_COOLDOWN_MS;
-        long actualCooldown = (long) (baseCd * cooldownMultiplier);
+        long actualCooldown = getActualShieldCooldownMs(plugin, data);
         Long lastUse = shieldCooldowns.get(uuid);
         int currentCharges = shieldCharges.getOrDefault(uuid, 0);
         return currentCharges > 0 || lastUse == null || (System.currentTimeMillis() - lastUse >= actualCooldown);

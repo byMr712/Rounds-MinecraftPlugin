@@ -66,7 +66,6 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
             new PlaceholderEntry("card_choice_time",   "ph-desc.card-choice-time"),
             new PlaceholderEntry("bots_count",         "ph-desc.bots-count"),
             new PlaceholderEntry("alive_players",      "ph-desc.alive-players"),
-            new PlaceholderEntry("autodeath_timer",    "ph-desc.autodeath-timer"),
             new PlaceholderEntry("ping",               "ph-desc.ping"),
             new PlaceholderEntry("ping_raw",           "ph-desc.ping-raw")
         );
@@ -199,9 +198,6 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
                 }
             }
             return String.valueOf(alive);
-        }
-        if (params.equalsIgnoreCase("autodeath_timer")) {
-            return gm.getAutoDeathTimerFormatted();
         }
 
         // 2. Player-specific placeholders (require player/UUID)

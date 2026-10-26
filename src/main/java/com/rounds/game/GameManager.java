@@ -26,6 +26,9 @@ import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
 import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.GameRule;
@@ -119,6 +122,9 @@ public class GameManager implements Listener {
     private boolean autoDeathEnabled = true;
     private long autoDeathNextEvent = 0;
     private boolean autoDeathNextIsKill = false;
+    private boolean autoDeathInitialPhase = true;
+    private long autoDeathPhaseDurationMs = 180000L;
+    private BossBar autoDeathBossBar = null;
     private static final long AUTO_DEATH_DELAY_MS = 240_000L;
     private static final long AUTO_DEATH_INTERVAL_MS = 60_000L;
 
@@ -787,7 +793,10 @@ public class GameManager implements Listener {
     }
 
     private void checkAutoDeath() {
-        if (!autoDeathEnabled || (plugin != null && !plugin.getRoundsConfig().isAutoDeathEnabled())) return;
+        if (!autoDeathEnabled || (plugin != null && !plugin.getRoundsConfig().isAutoDeathEnabled())) {
+            hideAutoDeathBossBar();
+            return;
+        }
         long now = System.currentTimeMillis();
         long intervalMs = (plugin != null) ? plugin.getRoundsConfig().getAutoDeathIntervalSeconds() * 1000L : AUTO_DEATH_INTERVAL_MS;
         int guard = 0;
@@ -799,9 +808,64 @@ public class GameManager implements Listener {
                 Bukkit.broadcastMessage(ChatColor.DARK_RED + Messages.get("game.auto-death-warning"));
                 autoDeathNextIsKill = true;
             }
+            autoDeathInitialPhase = false;
+            autoDeathPhaseDurationMs = intervalMs;
             autoDeathNextEvent += intervalMs;
+            if (autoDeathBossBar != null) {
+                autoDeathBossBar.setColor(BarColor.RED);
+                autoDeathBossBar.setTitle(Messages.get("game.bossbar-auto-death"));
+                autoDeathBossBar.setProgress(1.0);
+            }
         }
         if (now - autoDeathNextEvent > intervalMs * 10) autoDeathNextEvent = now;
+        updateAutoDeathBossBar(now);
+    }
+
+    private void updateAutoDeathBossBar(long now) {
+        if (plugin == null || !plugin.getRoundsConfig().isAutoDeathBossBarEnabled()) {
+            hideAutoDeathBossBar();
+            return;
+        }
+        if (state != GameState.PLAYING) {
+            hideAutoDeathBossBar();
+            return;
+        }
+        String title = autoDeathInitialPhase
+                ? Messages.get("game.round-start", currentRound)
+                : Messages.get("game.bossbar-auto-death");
+        BarColor color = autoDeathInitialPhase ? BarColor.YELLOW : BarColor.RED;
+
+        if (autoDeathBossBar == null) {
+            autoDeathBossBar = Bukkit.createBossBar(title, color, BarStyle.SOLID);
+        } else {
+            autoDeathBossBar.setTitle(title);
+            autoDeathBossBar.setColor(color);
+        }
+
+        double remainingMs = Math.max(0, autoDeathNextEvent - now);
+        double durationMs = Math.max(1000L, autoDeathPhaseDurationMs);
+        double progress = Math.max(0.0, Math.min(1.0, remainingMs / durationMs));
+        autoDeathBossBar.setProgress(progress);
+        autoDeathBossBar.setVisible(true);
+
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (plugin.getBotManager() != null && plugin.getBotManager().isBot(p)) continue;
+            if (!autoDeathBossBar.getPlayers().contains(p)) {
+                autoDeathBossBar.addPlayer(p);
+            }
+        }
+        for (Player p : autoDeathBossBar.getPlayers()) {
+            if (!p.isOnline()) {
+                autoDeathBossBar.removePlayer(p);
+            }
+        }
+    }
+
+    public void hideAutoDeathBossBar() {
+        if (autoDeathBossBar != null) {
+            autoDeathBossBar.setVisible(false);
+            autoDeathBossBar.removeAll();
+        }
     }
 
     private void killRandomPlayer() {
@@ -888,8 +952,15 @@ public class GameManager implements Listener {
         chameleonStillTicks.clear();
         long delayMs = (plugin != null) ? plugin.getRoundsConfig().getAutoDeathDelaySeconds() * 1000L : AUTO_DEATH_DELAY_MS;
         long intervalMs = (plugin != null) ? plugin.getRoundsConfig().getAutoDeathIntervalSeconds() * 1000L : AUTO_DEATH_INTERVAL_MS;
-        autoDeathNextEvent = System.currentTimeMillis() + delayMs - intervalMs;
+        autoDeathPhaseDurationMs = Math.max(1000L, delayMs - intervalMs);
+        autoDeathNextEvent = System.currentTimeMillis() + autoDeathPhaseDurationMs;
         autoDeathNextIsKill = false;
+        autoDeathInitialPhase = true;
+        if (autoDeathBossBar != null) {
+            autoDeathBossBar.setColor(BarColor.YELLOW);
+            autoDeathBossBar.setTitle(Messages.get("game.round-start", currentRound));
+            autoDeathBossBar.setProgress(1.0);
+        }
 
         plugin.getServer().broadcastMessage(ChatColor.YELLOW + Messages.get("game.round-start", currentRound));
 
@@ -1091,6 +1162,7 @@ public class GameManager implements Listener {
         GunItem.resetRoundState();
         com.rounds.listener.LegendaryEffects.clearRoundState();
         highlightGlowUntil.clear();
+        hideAutoDeathBossBar();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             clearCardEffects(p);
             p.setNoDamageTicks(0);
@@ -1995,21 +2067,6 @@ public class GameManager implements Listener {
     public Set<UUID> getDeadPlayers() { return Collections.unmodifiableSet(deadPlayers); }
     public GameStateManager getStateManager() { return stateManager; }
 
-    public String getAutoDeathTimerFormatted() {
-        if (!autoDeathEnabled || (plugin != null && !plugin.getRoundsConfig().isAutoDeathEnabled())) {
-            return "";
-        }
-        if (state != GameState.PLAYING) {
-            long delaySec = (plugin != null) ? plugin.getRoundsConfig().getAutoDeathDelaySeconds() : 240;
-            long intervalSec = (plugin != null) ? plugin.getRoundsConfig().getAutoDeathIntervalSeconds() : 60;
-            long initialSec = Math.max(0, delaySec - intervalSec);
-            return String.format(Locale.US, "%02d:%02d", initialSec / 60, initialSec % 60);
-        }
-        long remainingMs = Math.max(0, autoDeathNextEvent - System.currentTimeMillis());
-        long totalSec = (remainingMs + 999) / 1000;
-        return String.format(Locale.US, "%02d:%02d", totalSec / 60, totalSec % 60);
-    }
-
     public boolean isParticipant(UUID uuid) {
         return plugin.getPlayerDataManager().isActive(uuid);
     }
@@ -2572,10 +2629,6 @@ public class GameManager implements Listener {
                     ? myTeam.getColor() + Messages.raw("team." + myTeam.name().toLowerCase())
                     : Messages.raw("team.none");
             lines.add(" \u00A7f" + Messages.raw("scoreboard.you") + ": " + teamPart);
-            String timer = getAutoDeathTimerFormatted();
-            if (!timer.isEmpty()) {
-                lines.add(" \u00A7e" + timer);
-            }
             lines.add(" ");
             lines.add("     \u00A7f" + Messages.raw("scoreboard.wins") + "  ");
             lines.add(" \u00A7b" + Messages.raw("team.blue") + ": \u00A7b" + (int) plugin.getTeamManager().getWins(GameTeam.BLUE));
@@ -2685,6 +2738,10 @@ public class GameManager implements Listener {
         chameleonStillTicks.remove(uuid);
         pendingCardJoiners.remove(uuid);
         returningJoiners.remove(uuid);
+        if (autoDeathBossBar != null) {
+            Player qp = Bukkit.getPlayer(uuid);
+            if (qp != null) autoDeathBossBar.removePlayer(qp);
+        }
     }
 
     public void removeScoreboard() {

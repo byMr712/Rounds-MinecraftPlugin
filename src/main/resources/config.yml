@@ -57,6 +57,8 @@ game:
     delay-seconds: 240
     # Interval in seconds between subsequent warning / death events
     interval-seconds: 60
+    # Boss bar countdown at the top of the screen
+    bossbar: true
 
 # ==============================================================================
 # TEAM SETUP

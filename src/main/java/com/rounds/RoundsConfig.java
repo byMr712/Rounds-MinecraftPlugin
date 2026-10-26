@@ -52,6 +52,7 @@ public final class RoundsConfig {
     private boolean autoDeathEnabled;
     private int autoDeathDelaySeconds;
     private int autoDeathIntervalSeconds;
+    private boolean autoDeathBossBar;
 
     private int botBulkLimit;
     private double botVisionFov;
@@ -129,6 +130,7 @@ public final class RoundsConfig {
         autoDeathEnabled = c.getBoolean("game.auto-death.enabled", true);
         autoDeathDelaySeconds = c.getInt("game.auto-death.delay-seconds", 240);
         autoDeathIntervalSeconds = c.getInt("game.auto-death.interval-seconds", 60);
+        autoDeathBossBar = c.getBoolean("game.auto-death.bossbar", true);
 
         botBulkLimit = c.getInt("bots.bulk-limit", 500);
         botVisionFov = c.getDouble("bots.vision.fov-degrees", 140.0);
@@ -189,6 +191,12 @@ public final class RoundsConfig {
     public boolean isAutoDeathEnabled() { return autoDeathEnabled; }
     public int getAutoDeathDelaySeconds() { return autoDeathDelaySeconds; }
     public int getAutoDeathIntervalSeconds() { return autoDeathIntervalSeconds; }
+    public boolean isAutoDeathBossBarEnabled() { return autoDeathBossBar; }
+    public void setAutoDeathBossBarEnabled(boolean enabled) {
+        this.autoDeathBossBar = enabled;
+        plugin.getConfig().set("game.auto-death.bossbar", enabled);
+        plugin.saveConfig();
+    }
 
     public int getBotBulkLimit() { return botBulkLimit; }
     public double getBotVisionFov() { return botVisionFov; }

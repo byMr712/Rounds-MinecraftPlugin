@@ -180,6 +180,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "bot" -> handleBot(sender, args);
             case "draft" -> handleDraft(sender, args);
             case "cardchoicetime" -> handleCardChoiceTime(sender, args);
+            case "bossbar" -> handleBossBar(sender, args);
             default -> sender.sendMessage(ChatColor.RED + Messages.get("debug.unknown-command", args[0]));
         }
         return true;
@@ -213,6 +214,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxSection(sender, R, Messages.get("debug.help-section-scoreboard"));
         boxKv(sender, "/rdebug tab on|off", Messages.get("debug.help-tab"));
         boxKv(sender, "/rdebug tab name <title>", Messages.get("debug.help-tab-name"));
+        boxKv(sender, "/rdebug bossbar on|off", Messages.get("debug.help-bossbar"));
 
         boxSection(sender, R, Messages.get("debug.help-section-items"));
         boxKv(sender, "/rdebug givegun [player|@a]", Messages.get("debug.help-givegun"));
@@ -451,6 +453,26 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage(ChatColor.GREEN + Messages.get("debug.autodeath-off"));
         } else {
             sender.sendMessage(ChatColor.RED + "/rdebug autodeath <on|off>");
+        }
+    }
+
+    private void handleBossBar(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage(ChatColor.RED + Messages.get("debug.usage-bossbar"));
+            return;
+        }
+        String arg = args[1].toLowerCase();
+        if (arg.equals("on") || arg.equals("вкл")) {
+            plugin.getRoundsConfig().setAutoDeathBossBarEnabled(true);
+            sender.sendMessage(ChatColor.GREEN + Messages.get("debug.bossbar-on"));
+        } else if (arg.equals("off") || arg.equals("выкл")) {
+            plugin.getRoundsConfig().setAutoDeathBossBarEnabled(false);
+            if (plugin.getGameManager() != null) {
+                plugin.getGameManager().hideAutoDeathBossBar();
+            }
+            sender.sendMessage(ChatColor.GREEN + Messages.get("debug.bossbar-off"));
+        } else {
+            sender.sendMessage(ChatColor.RED + Messages.get("debug.usage-bossbar"));
         }
     }
 
@@ -1036,10 +1058,10 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         "stats", "setstat", "setteam", "setlanguage", "effect", "heal",
         "resetstats", "reload", "setlobby",
         "jumppos1", "jumppos2", "jumpset", "uppos1", "uppos2", "upset",
-        "wheel", "tab", "bot", "draft", "cardchoicetime"
+        "wheel", "tab", "bot", "draft", "cardchoicetime", "bossbar"
     );
     private static final List<String> FREEPLAY_COMMANDS = Arrays.asList(
-        "start", "stop", "rounds", "givegun", "wheel", "bot"
+        "start", "stop", "rounds", "givegun", "wheel", "bot", "bossbar"
     );
     private static final List<String> PUBLIC_COMMANDS = Arrays.asList(
         "info", "status", "state", "stats", "cards"
@@ -1377,6 +1399,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 yield Collections.emptyList();
             }
             case "autodeath" -> filterStartsWith(Arrays.asList("on", "off"), input);
+            case "bossbar" -> filterStartsWith(Arrays.asList("on", "off"), input);
             case "freeplay" -> filterStartsWith(Arrays.asList("on", "off"), input);
             case "wheel" -> filterStartsWith(Arrays.asList("on", "off"), input);
             case "tab" -> {

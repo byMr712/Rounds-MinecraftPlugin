@@ -396,7 +396,11 @@ public class RoundsEntities implements Listener {
 
         // Физика стрелы 1:1: drag 0.99/тик + гравитация 0.05/тик.
         Vector vel = b.velocity;
-        vel.multiply(0.99);
+        if (com.rounds.listener.LegendaryEffects.isBulletTimeActiveFor(b.ownerId)) {
+            vel.multiply(0.15);
+        } else {
+            vel.multiply(0.99);
+        }
         vel.setY(vel.getY() - 0.05);
         double vx = vel.getX(), vy = vel.getY(), vz = vel.getZ();
         if (!Double.isFinite(vx) || !Double.isFinite(vy) || !Double.isFinite(vz)) {
@@ -503,6 +507,9 @@ public class RoundsEntities implements Listener {
                 double hpBefore = hitEnt.getHealth();
                 if (shooter != null && shooter.isOnline()) {
                     hitEnt.damage(finalDmg, shooter);
+                    if (hitEnt instanceof Player victim) {
+                        com.rounds.stats.MatchStatsManager.recordDamageDealt(shooter.getUniqueId(), victim.getUniqueId(), finalDmg);
+                    }
                 } else {
                     hitEnt.damage(finalDmg);
                 }
@@ -944,12 +951,17 @@ public class RoundsEntities implements Listener {
 
     public static void spawnBullet(Player shooter, Location loc, Vector velocity, PlayerData data,
                                    long cohortId, int stack) {
+        spawnBullet(shooter, loc, velocity, data, cohortId, stack, 1.0);
+    }
+
+    public static void spawnBullet(Player shooter, Location loc, Vector velocity, PlayerData data,
+                                   long cohortId, int stack, double damageMultiplier) {
         // Крупная пуля не статична: база ×2.0, каждая выбранная карта
         // увеличивает размер ещё на 50% (2.0 → 3.0 → 4.5 ...).
         double scale = data.bigBullet > 0 ? 2.0 * Math.pow(BIG_BULLET_GROWTH, data.bigBullet - 1) : 1.0;
         Bullet bullet = new Bullet(
             shooter.getUniqueId(),
-            data.getEffectiveDamage(),
+            data.getEffectiveDamage() * Math.max(damageMultiplier, 0.1),
             (int) data.bouncePl,
             scale,
             Math.max(data.homing, GunItem.getBonusHoming(shooter.getUniqueId())),

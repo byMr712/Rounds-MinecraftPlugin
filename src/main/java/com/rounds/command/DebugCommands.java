@@ -167,6 +167,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "autodeath" -> handleAutoDeath(sender, args);
             case "info" -> handleInfo(sender);
             case "stats" -> handleStats(sender, args);
+            case "statsend" -> handleStatsEnd(sender, args);
             case "givegun" -> handleGiveGun(sender, args);
             case "setstat" -> handleSetStat(sender, args);
             case "setteam" -> handleSetTeam(sender, args);
@@ -234,6 +235,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxKv(sender, "/rdebug bot <name> [team]", "Заспавнить бота в игру");
         boxKv(sender, "/rdebug draft [player]", "Открыть драфт карт игроку");
         boxKv(sender, "/rdebug stats [player]", Messages.get("debug.help-stats"));
+        boxKv(sender, "/rdebug statsend [player]", Messages.get("debug.help-statsend"));
         boxKv(sender, "/rdebug stats <player> <stat> <value>", Messages.get("debug.help-stats-set"));
         boxKv(sender, "/rdebug setstat <stat> <value> [player]", Messages.get("debug.help-setstat"));
         boxKv(sender, "/rdebug setteam <COLOR>", Messages.get("debug.help-setteam"));
@@ -729,6 +731,38 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxFooter(sender);
     }
 
+    private void handleStatsEnd(CommandSender sender, String[] args) {
+        String targetName;
+        if (args.length >= 2) {
+            targetName = args[1].trim();
+        } else if (sender instanceof Player p) {
+            targetName = p.getName();
+        } else {
+            sender.sendMessage(ChatColor.RED + Messages.get("debug.specify-player"));
+            return;
+        }
+
+        com.rounds.stats.MatchStatsManager.PlayerMatchStats stats = com.rounds.stats.MatchStatsManager.getLastMatchStatsByName(targetName);
+        if (stats == null) {
+            if (!com.rounds.stats.MatchStatsManager.hasFinishedGameData()) {
+                sender.sendMessage(ChatColor.RED + Messages.get("debug.statsend-no-game"));
+            } else {
+                sender.sendMessage(ChatColor.RED + Messages.get("debug.statsend-player-not-found", targetName));
+            }
+            return;
+        }
+
+        boxHeader(sender, Messages.get("debug.statsend-title", stats.playerName));
+        boxKv(sender, Messages.get("debug.stat-cards-count"), String.valueOf(stats.cardsCount));
+        boxKv(sender, Messages.get("debug.stat-kills"), String.valueOf(stats.kills));
+        boxKv(sender, Messages.get("debug.stat-deaths"), String.valueOf(stats.deaths));
+        boxKv(sender, Messages.get("debug.stat-shots"), String.valueOf(stats.shots));
+        boxKv(sender, Messages.get("debug.stat-damage-dealt"), String.format(Locale.US, "%.1f", stats.damageDealt));
+        boxKv(sender, Messages.get("debug.stat-damage-received"), String.format(Locale.US, "%.1f", stats.damageReceived));
+        boxKv(sender, Messages.get("debug.stat-max-shot-dmg"), String.format(Locale.US, "%.1f", stats.maxShotDamage));
+        boxFooter(sender);
+    }
+
     private void handleSetStat(CommandSender sender, String[] args) {
         if (args.length < 3) { sender.sendMessage(ChatColor.RED + Messages.get("debug.usage-setstat")); return; }
 
@@ -1083,7 +1117,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     private static final List<String> SUBCOMMANDS = Arrays.asList(
         "help", "start", "stop", "status", "rounds", "info",
         "givegun", "cards", "giveblocks", "join", "freeplay", "autodeath",
-        "stats", "setstat", "setteam", "setlanguage", "effect", "heal",
+        "stats", "statsend", "setstat", "setteam", "setlanguage", "effect", "heal",
         "resetstats", "reload", "setlobby",
         "jumppos1", "jumppos2", "jumpset", "uppos1", "uppos2", "upset",
         "wheel", "tab", "bot", "draft", "cardchoicetime", "bossbar"
@@ -1092,7 +1126,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         "start", "stop", "rounds", "givegun", "wheel", "bot", "bossbar"
     );
     private static final List<String> PUBLIC_COMMANDS = Arrays.asList(
-        "info", "status", "state", "stats", "cards"
+        "info", "status", "state", "stats", "cards", "statsend"
     );
     private static final List<String> TEAM_COLORS = Arrays.asList("BLUE", "RED", "YELLOW", "GREEN", "NONE");
 
@@ -1297,6 +1331,19 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 }
                 return Collections.emptyList();
             }
+            if (root.equals("statsend")) {
+                if (args.length == 2) {
+                    List<String> list = new ArrayList<>();
+                    for (com.rounds.stats.MatchStatsManager.PlayerMatchStats s : com.rounds.stats.MatchStatsManager.getAllLastMatchStats()) {
+                        list.add(s.playerName);
+                    }
+                    if (list.isEmpty()) {
+                        Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
+                    }
+                    return filterStartsWith(list, input);
+                }
+                return Collections.emptyList();
+            }
             if (root.equals("cards")) {
                 if (args.length == 2) return filterStartsWith(Collections.singletonList("show"), input);
                 if (args.length == 3 && args[1].equalsIgnoreCase("show")) {
@@ -1418,6 +1465,19 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 }
                 if (args.length >= 4 && args[1].equalsIgnoreCase("add")) {
                     yield filterStartsWith(plugin.getCardManager().getRegistry().getCardNameSuggestions(), input);
+                }
+                yield Collections.emptyList();
+            }
+            case "statsend" -> {
+                if (args.length == 2) {
+                    List<String> list = new ArrayList<>();
+                    for (com.rounds.stats.MatchStatsManager.PlayerMatchStats s : com.rounds.stats.MatchStatsManager.getAllLastMatchStats()) {
+                        list.add(s.playerName);
+                    }
+                    if (list.isEmpty()) {
+                        Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
+                    }
+                    yield filterStartsWith(list, input);
                 }
                 yield Collections.emptyList();
             }

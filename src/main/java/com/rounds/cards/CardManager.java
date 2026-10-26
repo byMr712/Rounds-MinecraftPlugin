@@ -35,7 +35,7 @@ public class CardManager {
 
     public void openCardSelection(Player player, GameTeam team) {
         int count = (plugin != null) ? plugin.getRoundsConfig().getCardSelectionCount() : 5;
-        List<Card> cards = registry.getRandomCards(count);
+        List<Card> cards = registry.getRandomCards(count, player);
         pendingCards.put(player.getUniqueId(), cards);
         pendingPicks.add(player.getUniqueId());
         plugin.getCardGUI().open(player, cards);
@@ -59,9 +59,28 @@ public class CardManager {
 
         Card card = cards.get(slotIndex);
         PlayerData data = plugin.getPlayerDataManager().getData(player);
-        card.apply(player, data);
-        data.setCard(card.getId(), true);
-        syncPlayerHP(player, data);
+
+        Card existingSameFamily = null;
+        for (int ownedId : data.getOwnedCards()) {
+            Card owned = registry.getCard(ownedId);
+            if (owned != null && owned.getFamilyId() == card.getFamilyId()) {
+                existingSameFamily = owned;
+                break;
+            }
+        }
+
+        if (existingSameFamily != null) {
+            if (card.getRarity().ordinal() > existingSameFamily.getRarity().ordinal()) {
+                data.removeOneCard(existingSameFamily.getId());
+                data.addCard(card.getId());
+                recalculatePlayerStats(player);
+            }
+        } else {
+            card.apply(player, data);
+            data.addCard(card.getId());
+            syncPlayerHP(player, data);
+        }
+
         pendingPicks.remove(player.getUniqueId());
         plugin.getGameManager().removePendingCardJoiner(player.getUniqueId());
 
@@ -92,8 +111,29 @@ public class CardManager {
     public boolean applyCardToPlayer(Player player, Card card) {
         if (player == null || card == null) return false;
         PlayerData data = plugin.getPlayerDataManager().getData(player);
+
+        Card existingSameFamily = null;
+        for (int ownedId : data.getOwnedCards()) {
+            Card owned = registry.getCard(ownedId);
+            if (owned != null && owned.getFamilyId() == card.getFamilyId()) {
+                existingSameFamily = owned;
+                break;
+            }
+        }
+
+        if (existingSameFamily != null) {
+            if (card.getRarity().ordinal() <= existingSameFamily.getRarity().ordinal()) {
+                return false;
+            }
+            data.removeOneCard(existingSameFamily.getId());
+            data.addCard(card.getId());
+            recalculatePlayerStats(player);
+            grantChainedCards(player, data, card);
+            return true;
+        }
+
         card.apply(player, data);
-        data.setCard(card.getId(), true);
+        data.addCard(card.getId());
         syncPlayerHP(player, data);
         GameTeam team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
         plugin.getPlayerDataManager().savePlayerFullData(player.getUniqueId(), team, null);

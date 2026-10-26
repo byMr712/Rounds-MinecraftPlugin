@@ -142,9 +142,25 @@ public class GunItem implements Listener {
         PlayerData data = plugin.getPlayerDataManager().getData(player);
 
         boolean overheated = false;
+        boolean bloodShot = false;
         if (data.ammo <= 0) {
             if (data.overheat > 0) {
                 overheated = true;
+            } else if (data.bloodCartridge > 0) {
+                double hpCostPercent = data.bloodCartridgeHpCost > 0 ? data.bloodCartridgeHpCost : 0.15;
+                double cost = player.getHealth() * hpCostPercent;
+                double newHp = player.getHealth() - cost;
+                if (newHp > 0.5) {
+                    player.setHealth(Math.max(0.5, newHp));
+                    player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_HURT, 0.6f, 1.4f);
+                    player.getWorld().spawnParticle(Particle.CRIT, player.getEyeLocation(), 6, 0.2, 0.2, 0.2, 0.05);
+                    bloodShot = true;
+                } else {
+                    if (!isReloading(uuid) && !reloadingPlayers.contains(uuid)) {
+                        startReload(player, data);
+                    }
+                    return;
+                }
             } else {
                 if (!isReloading(uuid) && !reloadingPlayers.contains(uuid)) {
                     startReload(player, data);
@@ -159,6 +175,7 @@ public class GunItem implements Listener {
             return;
         }
         GunCooldowns.recordShot(uuid);
+        com.rounds.stats.MatchStatsManager.recordShot(uuid);
 
         cancelReload(uuid);
 
@@ -172,6 +189,7 @@ public class GunItem implements Listener {
         Vector direction = player.getLocation().getDirection();
         final Location bulletOrigin = player.getEyeLocation();
 
+        double dmgMult = bloodShot ? (1.0 + data.bloodCartridgeDmgBonus) : 1.0;
         for (int i = 0; i < reps; i++) {
             Vector vel = direction.clone();
             double spread = 0.05;
@@ -183,11 +201,11 @@ public class GunItem implements Listener {
             vel = vel.normalize().multiply(speed);
 
             RoundsEntities.spawnBullet(player, bulletOrigin, vel, data,
-                cohortId, baseStack + (i < remainder ? 1 : 0));
+                cohortId, baseStack + (i < remainder ? 1 : 0), dmgMult);
         }
         data.consumeEmpowerCharge();
 
-        if (!overheated) {
+        if (!overheated && !bloodShot) {
             data.ammo -= 1;
         }
         if (data.hpCost > 0 && player.isOnline() && player.isValid()) {
@@ -469,6 +487,10 @@ public class GunItem implements Listener {
         if (data.heal > 0) {
             player.addPotionEffect(new org.bukkit.potion.PotionEffect(
                 PotionEffectType.REGENERATION, 100, 2));
+        }
+
+        if (data.temporalRecall > 0) {
+            com.rounds.listener.LegendaryEffects.tryTemporalRecall(player, data);
         }
 
         player.getWorld().playSound(blockLoc, Sound.BLOCK_ANVIL_PLACE, 0.8f, 1.5f);

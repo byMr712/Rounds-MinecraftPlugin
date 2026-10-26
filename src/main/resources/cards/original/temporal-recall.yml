@@ -1,0 +1,12 @@
+id: 125
+name:
+  ru: "&6«Бро, я записал откат»"
+  en: "&6Temporal Recall"
+description:
+  ru: "При блокировании щитом перемещает вас на координаты 3 секунды назад, восстанавливает потерянное за это время здоровье и мгновенно перезаряжает обойму. Перезарядка: 15 секунд."
+  en: "Blocking with your shield teleports you to your location from 3 seconds ago, restores health lost during that time, and instantly refills ammo. Cooldown: 15 seconds."
+material: CLOCK
+rarity: LEGENDARY
+enabled: true
+effects:
+  temporal_recall: 1

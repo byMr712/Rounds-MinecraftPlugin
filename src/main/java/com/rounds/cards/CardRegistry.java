@@ -447,7 +447,28 @@ public class CardRegistry {
     }
 
     public List<Card> getRandomCards(int count) {
+        return getRandomCards(count, null);
+    }
+
+    public List<Card> getRandomCards(int count, org.bukkit.entity.Player player) {
         List<Card> pool = getEnabledCards();
+        if (player != null && plugin != null && plugin.getPlayerDataManager() != null) {
+            com.rounds.player.PlayerData data = plugin.getPlayerDataManager().getData(player.getUniqueId());
+            if (data != null) {
+                Map<Integer, Rarity> highestOwned = new HashMap<>();
+                for (int ownedId : data.getOwnedCards()) {
+                    Card owned = getCard(ownedId);
+                    if (owned != null) {
+                        highestOwned.merge(owned.getFamilyId(), owned.getRarity(),
+                                (r1, r2) -> r1.ordinal() >= r2.ordinal() ? r1 : r2);
+                    }
+                }
+                pool.removeIf(c -> {
+                    Rarity ownedRarity = highestOwned.get(c.getFamilyId());
+                    return ownedRarity != null && c.getRarity().ordinal() <= ownedRarity.ordinal();
+                });
+            }
+        }
         List<Card> result = new ArrayList<>();
 
         boolean weighted = (plugin == null || plugin.getRoundsConfig() == null) || plugin.getRoundsConfig().isWeightedRarity();

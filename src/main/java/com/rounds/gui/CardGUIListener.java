@@ -267,7 +267,7 @@ public class CardGUIListener implements Listener {
             int count = (plugin != null && plugin.getRoundsConfig() != null)
                     ? plugin.getRoundsConfig().getCardSelectionCount()
                     : 5;
-            List<Card> newCards = plugin.getCardManager().getRegistry().getRandomCards(count);
+            List<Card> newCards = plugin.getCardManager().getRegistry().getRandomCards(count, player);
             entry.setValue(newCards);
             plugin.getCardManager().replacePendingCards(entry.getKey(), newCards);
 

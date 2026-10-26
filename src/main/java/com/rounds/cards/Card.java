@@ -144,6 +144,17 @@ public class Card {
             case "bullet-rain", "bullet_rain": data.bulletRain = PlayerData.round2(Math.max(data.bulletRain + value, 0)); data.ammo = Math.max(data.ammo + value, 1); data.maxAmmo = Math.max(data.maxAmmo + value, 1); break;
             case "frost-armor", "frost_armor": data.frostArmor = PlayerData.round2(Math.max(data.frostArmor + value, 0)); break;
             case "no-party", "no_party": data.noParty = PlayerData.round2(Math.max(data.noParty + value, 0)); break;
+            case "blood-cartridge", "blood_cartridge": data.bloodCartridge = PlayerData.round2(Math.max(data.bloodCartridge + value, 0)); break;
+            case "blood-cartridge-hp-cost", "blood_cartridge_hp_cost": data.bloodCartridgeHpCost = PlayerData.round2(Math.max(value, 0)); break;
+            case "blood-cartridge-dmg-bonus", "blood_cartridge_dmg_bonus": data.bloodCartridgeDmgBonus = PlayerData.round2(Math.max(value, 0)); break;
+            case "spite-razorwire", "spite_razorwire": data.spiteRazorwire = PlayerData.round2(Math.max(data.spiteRazorwire + value, 0)); break;
+            case "razorwire-shards", "razorwire_shards": data.razorwireShards = PlayerData.round2(Math.max(value, 0)); break;
+            case "razorwire-radius", "razorwire_radius": data.razorwireRadius = PlayerData.round2(Math.max(value, 0)); break;
+            case "razorwire-damage", "razorwire_damage": data.razorwireDamage = PlayerData.round2(Math.max(value, 0)); break;
+            case "razorwire-homing", "razorwire_homing": data.razorwireHoming = PlayerData.round2(Math.max(value, 0)); break;
+            case "razorwire-lifesteal", "razorwire_lifesteal": data.razorwireLifesteal = PlayerData.round2(Math.max(value, 0)); break;
+            case "temporal-recall", "temporal_recall": data.temporalRecall = PlayerData.round2(Math.max(data.temporalRecall + value, 0)); break;
+            case "bullet-time", "bullet_time": data.bulletTime = PlayerData.round2(Math.max(data.bulletTime + value, 0)); break;
         }
     }
 

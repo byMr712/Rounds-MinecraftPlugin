@@ -208,6 +208,7 @@ public class GameManager implements Listener {
         chameleonLastLoc.clear();
         chameleonStillTicks.clear();
         com.rounds.listener.LegendaryEffects.resetAll();
+        com.rounds.stats.MatchStatsManager.onGameStart();
 
         saveState();
         updateScoreboard();
@@ -218,6 +219,7 @@ public class GameManager implements Listener {
         applyGameRules();
 
         for (Player p : readyPlayers) {
+            com.rounds.stats.MatchStatsManager.registerParticipant(p.getUniqueId(), p.getName());
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             plugin.getPlayerDataManager().trackPlayer(p.getUniqueId());
             plugin.getPlayerDataManager().savePlayerFullData(p.getUniqueId(), team, null);
@@ -1314,6 +1316,8 @@ public class GameManager implements Listener {
         stopGameTick();
         cleanupRoundCombatState();
 
+        com.rounds.stats.MatchStatsManager.onGameEnd(plugin.getPlayerDataManager());
+
         if (plugin.getBotManager() != null) {
             plugin.getBotManager().despawnAll();
         }
@@ -1322,6 +1326,13 @@ public class GameManager implements Listener {
         plugin.getServer().broadcastMessage(ChatColor.GREEN + Messages.get("game.game-over"));
         plugin.getServer().broadcastMessage(ChatColor.GREEN + winner.getColor().toString() + teamName + " " + Messages.get("game.game-won"));
         plugin.getServer().broadcastMessage(ChatColor.GOLD + Messages.get("game.final-score", getScoreDisplay()));
+
+        scheduleDelayed(() -> {
+            String notice = Messages.get("debug.statsend-notice");
+            if (notice != null && !notice.isEmpty()) {
+                plugin.getServer().broadcastMessage(ChatColor.GOLD + notice);
+            }
+        }, 60L);
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam pTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
@@ -1639,6 +1650,7 @@ public class GameManager implements Listener {
         }
 
         deadPlayers.add(dead.getUniqueId());
+        com.rounds.stats.MatchStatsManager.recordDeath(dead.getUniqueId());
         highlightGlowUntil.remove(dead.getUniqueId());
         updateTeamNametagVisibility();
         refreshTeamScoreboards();
@@ -1648,6 +1660,7 @@ public class GameManager implements Listener {
             GameTeam killerTeam = plugin.getTeamManager().getPlayerTeam(killer.getUniqueId());
             PlayerData killerData = plugin.getPlayerDataManager().getData(killer);
             if (killerTeam != null && killerTeam != deadTeam) {
+                com.rounds.stats.MatchStatsManager.recordKill(killer.getUniqueId());
                 killer.sendMessage(ChatColor.GREEN + Messages.get("game.eliminated", dead.getName()));
                 if (killerData.refresh > 0) {
                     killerData.ammo = killerData.maxAmmo;

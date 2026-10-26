@@ -115,6 +115,17 @@ public class PlayerData {
     public double bulletRain = 0;
     public double frostArmor = 0;
     public double noParty = 0;
+    public double bloodCartridge = 0;
+    public double bloodCartridgeHpCost = 0;
+    public double bloodCartridgeDmgBonus = 0;
+    public double spiteRazorwire = 0;
+    public double razorwireShards = 0;
+    public double razorwireRadius = 0;
+    public double razorwireDamage = 0;
+    public double razorwireHoming = 0;
+    public double razorwireLifesteal = 0;
+    public double temporalRecall = 0;
+    public double bulletTime = 0;
 
     public double x = 0;
     public double y = 0;
@@ -275,6 +286,17 @@ public class PlayerData {
         bulletRain = 0;
         frostArmor = 0;
         noParty = 0;
+        bloodCartridge = 0;
+        bloodCartridgeHpCost = 0;
+        bloodCartridgeDmgBonus = 0;
+        spiteRazorwire = 0;
+        razorwireShards = 0;
+        razorwireRadius = 0;
+        razorwireDamage = 0;
+        razorwireHoming = 0;
+        razorwireLifesteal = 0;
+        temporalRecall = 0;
+        bulletTime = 0;
         x = 0;
         y = 0;
         z = 0;

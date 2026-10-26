@@ -484,6 +484,7 @@ public class PlayerDataManager implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
+        com.rounds.stats.MatchStatsManager.registerParticipant(uuid, player.getName());
 
         try {
             boolean isCurrentGameActive = plugin.getGameManager().isGameStarted();

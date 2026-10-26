@@ -195,6 +195,7 @@ public class BotManager implements Listener {
             bot.setLevel(level);
         }
         bots.put(name.toLowerCase(), bot);
+        com.rounds.stats.MatchStatsManager.registerParticipant(bukkitPlayer.getUniqueId(), name);
         if (plugin.getGameManager() != null) {
             plugin.getGameManager().showNameTagsInGame();
         }

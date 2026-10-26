@@ -1,0 +1,39 @@
+id: 123
+name:
+  ru: "&c«Почки продам, но выстрелю»"
+  en: "&cBlood Cartridge"
+material: REDSTONE
+enabled: true
+variations:
+  - rarity: COMMON
+    description:
+      ru: "При пустой обойме позволяет продолжать стрельбу, тратя 15% текущего здоровья за каждый аварийный выстрел. Скорость перезарядки оружия снижается на 15%."
+      en: "When ammo is empty, allows you to continue shooting by sacrificing 15% of your current health per emergency shot. Decreases reload speed by 15%."
+    effects:
+      blood_cartridge: 1
+      blood_cartridge_hp_cost: 0.15
+      reload_speed: -0.15
+  - rarity: UNCOMMON
+    description:
+      ru: "При пустой обойме позволяет продолжать стрельбу, тратя 12% текущего здоровья за каждый выстрел. Аварийные пули наносят на 15% больше урона."
+      en: "When ammo is empty, allows you to continue shooting by sacrificing 12% of your current health per emergency shot. Emergency bullets deal +15% damage."
+    effects:
+      blood_cartridge: 2
+      blood_cartridge_hp_cost: 0.12
+      blood_cartridge_dmg_bonus: 0.15
+  - rarity: RARE
+    description:
+      ru: "При пустой обойме позволяет продолжать стрельбу, тратя 10% текущего здоровья за каждый выстрел. Аварийные пули наносят на 30% больше урона."
+      en: "When ammo is empty, allows you to continue shooting by sacrificing 10% of your current health per emergency shot. Emergency bullets deal +30% damage."
+    effects:
+      blood_cartridge: 3
+      blood_cartridge_hp_cost: 0.10
+      blood_cartridge_dmg_bonus: 0.30
+  - rarity: EPIC
+    description:
+      ru: "При пустой обойме позволяет продолжать стрельбу, тратя 7% текущего здоровья за каждый выстрел. Аварийные пули гарантированно наносят критический урон (+60% урона)."
+      en: "When ammo is empty, allows you to continue shooting by sacrificing 7% of your current health per emergency shot. Emergency bullets deal guaranteed critical damage (+60% damage)."
+    effects:
+      blood_cartridge: 4
+      blood_cartridge_hp_cost: 0.07
+      blood_cartridge_dmg_bonus: 0.60

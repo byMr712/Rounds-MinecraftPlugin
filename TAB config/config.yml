@@ -42,6 +42,7 @@ scoreboard:
       lines:
         - "&7&m════════"
         - " &fВы: &e%rounds_team%"
+        - " &e%rounds_autodeath_timer%"
         - " "
         - "     Победы  "
         - " &bСиние: ||&b%rounds_blue_wins%"

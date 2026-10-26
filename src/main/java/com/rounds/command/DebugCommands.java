@@ -299,8 +299,11 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         gm.buildScoreboard(player);
 
         if (gm.getState() == GameManager.GameState.CARDS) {
+            gm.removeDeadPlayer(uuid);
             plugin.getCardManager().openCardSelection(player, finalTeam);
             player.setGameMode(GameMode.ADVENTURE);
+            player.setAllowFlight(false);
+            player.setFlying(false);
             player.setInvulnerable(true);
         } else if (gm.getState() == GameManager.GameState.PLAYING) {
             player.setGameMode(GameMode.SPECTATOR);

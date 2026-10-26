@@ -511,6 +511,7 @@ variations:
 | `%rounds_card_choice_time%` | Время на выбор карт в секундах |
 | `%rounds_bots_count%` | Количество активных ботов на сервере |
 | `%rounds_alive_players%` | Количество живых бойцов в текущем раунде |
+| `%rounds_autodeath_timer%` | Обратный отсчет до предупреждения / автосмерти (ММ:СС) |
 
 ### Характеристики игрока
 
@@ -642,6 +643,7 @@ scoreboard:
       lines:
         - "&7&m════════"
         - " &fВы: &e%rounds_team%"
+        - " &e%rounds_autodeath_timer%"
         - " "
         - "     Победы  "
         - " &bСиние: ||&b%rounds_blue_wins%"

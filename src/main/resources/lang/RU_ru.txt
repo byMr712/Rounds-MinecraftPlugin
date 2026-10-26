@@ -393,6 +393,7 @@ debug:
   ph-desc.card-choice-time: "Время выбора карты в секундах"
   ph-desc.bots-count: "Количество активных ботов"
   ph-desc.alive-players: "Количество живых бойцов"
+  ph-desc.autodeath-timer: "Обратный отсчет автосмерти (ММ:СС)"
   ph-desc.ping: "Пинг игрока в цвете его команды"
   ph-desc.ping-raw: "Пинг игрока числовым значением"
   ph-desc.stat-drill: "Буровые пули"

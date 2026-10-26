@@ -1038,6 +1038,7 @@ public class GameManager implements Listener {
     }
 
     private void checkRoundEnd() {
+        if (state != GameState.PLAYING) return;
         Set<GameTeam> aliveTeams = new HashSet<>();
         int totalAlive = 0;
         for (GameTeam team : GameTeam.values()) {
@@ -1045,7 +1046,7 @@ public class GameManager implements Listener {
             for (UUID uuid : plugin.getTeamManager().getTeamPlayers(team)) {
                 Player p = Bukkit.getPlayer(uuid);
                 if (p != null && p.isOnline() && p.isValid()
-                        && p.getGameMode() != GameMode.SPECTATOR
+                        && (p.getGameMode() != GameMode.SPECTATOR || plugin.getCardManager().isPendingPick(uuid) || isPendingCardJoiner(uuid))
                         && p.getHealth() > 0
                         && !p.isDead()
                         && !deadPlayers.contains(uuid)) {
@@ -1989,9 +1990,25 @@ public class GameManager implements Listener {
     public boolean isGameStarted() { return state != GameState.WAITING; }
     public Location getCurrentZoneCenter() { return currentZoneCenter != null ? currentZoneCenter.clone() : null; }
     public void addDeadPlayer(UUID uuid) { deadPlayers.add(uuid); }
+    public void removeDeadPlayer(UUID uuid) { deadPlayers.remove(uuid); }
     public Set<GameTeam> getLosingTeams() { return Collections.unmodifiableSet(losingTeams); }
     public Set<UUID> getDeadPlayers() { return Collections.unmodifiableSet(deadPlayers); }
     public GameStateManager getStateManager() { return stateManager; }
+
+    public String getAutoDeathTimerFormatted() {
+        if (!autoDeathEnabled || (plugin != null && !plugin.getRoundsConfig().isAutoDeathEnabled())) {
+            return "";
+        }
+        if (state != GameState.PLAYING) {
+            long delaySec = (plugin != null) ? plugin.getRoundsConfig().getAutoDeathDelaySeconds() : 240;
+            long intervalSec = (plugin != null) ? plugin.getRoundsConfig().getAutoDeathIntervalSeconds() : 60;
+            long initialSec = Math.max(0, delaySec - intervalSec);
+            return String.format(Locale.US, "%02d:%02d", initialSec / 60, initialSec % 60);
+        }
+        long remainingMs = Math.max(0, autoDeathNextEvent - System.currentTimeMillis());
+        long totalSec = (remainingMs + 999) / 1000;
+        return String.format(Locale.US, "%02d:%02d", totalSec / 60, totalSec % 60);
+    }
 
     public boolean isParticipant(UUID uuid) {
         return plugin.getPlayerDataManager().isActive(uuid);
@@ -2555,6 +2572,10 @@ public class GameManager implements Listener {
                     ? myTeam.getColor() + Messages.raw("team." + myTeam.name().toLowerCase())
                     : Messages.raw("team.none");
             lines.add(" \u00A7f" + Messages.raw("scoreboard.you") + ": " + teamPart);
+            String timer = getAutoDeathTimerFormatted();
+            if (!timer.isEmpty()) {
+                lines.add(" \u00A7e" + timer);
+            }
             lines.add(" ");
             lines.add("     \u00A7f" + Messages.raw("scoreboard.wins") + "  ");
             lines.add(" \u00A7b" + Messages.raw("team.blue") + ": \u00A7b" + (int) plugin.getTeamManager().getWins(GameTeam.BLUE));

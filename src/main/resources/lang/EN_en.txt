@@ -398,6 +398,7 @@ debug:
   ph-desc.card-choice-time: "Card choice timer in seconds"
   ph-desc.bots-count: "Active bots count"
   ph-desc.alive-players: "Alive players count"
+  ph-desc.autodeath-timer: "Auto-death countdown timer (MM:SS)"
   ph-desc.ping: "Player ping colored with team color"
   ph-desc.ping-raw: "Player ping as numeric value"
   ph-desc.stat-drill: "Drill"

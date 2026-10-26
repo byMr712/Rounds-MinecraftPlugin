@@ -515,6 +515,7 @@ Identifier: `%rounds_...%`
 | `%rounds_card_choice_time%` | Card selection timer duration in seconds |
 | `%rounds_bots_count%` | Number of active bots on the server |
 | `%rounds_alive_players%` | Number of currently alive survival players |
+| `%rounds_autodeath_timer%` | Auto-death countdown timer to next warning/kill (MM:SS) |
 
 ### Player Attributes
 
@@ -646,6 +647,7 @@ scoreboard:
       lines:
         - "&7&m════════"
         - " &fYou: &e%rounds_team%"
+        - " &e%rounds_autodeath_timer%"
         - " "
         - "      Wins   "
         - " &bBlue:   ||&b%rounds_blue_wins%"

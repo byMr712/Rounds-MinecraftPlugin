@@ -509,19 +509,30 @@ public class PlayerDataManager implements Listener {
                     currentGm.updateScoreboard();
 
                     GameManager.GameState curState = currentGm.getState();
+                    GameTeam team = plugin.getTeamManager().getPlayerTeam(uuid);
                     if (curState == GameManager.GameState.PLAYING) {
-                        currentGm.addDeadPlayer(uuid);
-                        player.setGameMode(GameMode.SPECTATOR);
-                        player.setAllowFlight(true);
-                        player.setFlying(true);
-                        player.setInvulnerable(true);
-                        GameTeam team = plugin.getTeamManager().getPlayerTeam(uuid);
-                        if (team != null) {
+                        if (gameState == GameManager.GameState.CARDS && team != null) {
+                            currentGm.removeDeadPlayer(uuid);
+                            player.setGameMode(GameMode.ADVENTURE);
+                            player.setAllowFlight(false);
+                            player.setFlying(false);
+                            player.setInvulnerable(false);
+                            currentGm.giveGun(player);
+                            currentGm.applyPlayerHP(player);
                             Location spawn = currentGm.getTeamSpawns().get(team);
                             if (spawn != null) player.teleport(spawn);
+                        } else {
+                            currentGm.addDeadPlayer(uuid);
+                            player.setGameMode(GameMode.SPECTATOR);
+                            player.setAllowFlight(true);
+                            player.setFlying(true);
+                            player.setInvulnerable(true);
+                            if (team != null) {
+                                Location spawn = currentGm.getTeamSpawns().get(team);
+                                if (spawn != null) player.teleport(spawn);
+                            }
                         }
                     } else if (curState == GameManager.GameState.ROUND_END) {
-                        GameTeam team = plugin.getTeamManager().getPlayerTeam(uuid);
                         if (team != null) {
                             player.setGameMode(GameMode.ADVENTURE);
                             player.setAllowFlight(false);
@@ -536,7 +547,6 @@ public class PlayerDataManager implements Listener {
                             player.setInvulnerable(true);
                         }
                     } else if (curState == GameManager.GameState.CARDS) {
-                        GameTeam team = plugin.getTeamManager().getPlayerTeam(uuid);
                         if (team != null) {
                             player.setGameMode(GameMode.ADVENTURE);
                             player.setAllowFlight(false);
@@ -545,7 +555,9 @@ public class PlayerDataManager implements Listener {
                             Location spawn = currentGm.getTeamSpawns().get(team);
                             if (spawn == null) spawn = currentGm.getCurrentZoneCenter();
                             if (spawn != null) player.teleport(spawn);
-                            if (plugin.getCardManager().isPendingPick(uuid)) {
+                            if (plugin.getCardManager().isPendingPick(uuid)
+                                    || currentGm.getLosingTeams().contains(team)
+                                    || currentGm.isPendingCardJoiner(uuid)) {
                                 plugin.getCardManager().openCardSelection(player, team);
                             }
                         } else {
@@ -576,6 +588,7 @@ public class PlayerDataManager implements Listener {
                             resetPlayerToLobby(player);
                             return;
                         }
+                        if (plugin.getTeamManager().getPlayerTeam(uuid) != null) return;
                         player.setGameMode(GameMode.SPECTATOR);
                         player.setAllowFlight(true);
                         player.setFlying(true);

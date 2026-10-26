@@ -481,13 +481,18 @@ public class BlockListener implements Listener {
         double launchHeight = plugin.getRoundsConfig().getJumpBlockLaunchHeight();
         float velocityY = (float) (launchHeight * 0.2);
 
+        player.setFallDistance(0f);
+        org.bukkit.util.Vector initV = player.getVelocity();
+        initV.setY(Math.max(initV.getY(), velocityY));
+        player.setVelocity(initV);
+
         com.rounds.bot.FakeBot bot = (plugin.getBotManager() != null) ? plugin.getBotManager().getBot(player.getName()) : null;
         if (bot != null) {
             bot.applyJumpPad(launchHeight);
         }
 
         new org.bukkit.scheduler.BukkitRunnable() {
-            int ticks = 0;
+            int ticks = 1;
             @Override
             public void run() {
                 if (ticks >= 3 || !player.isOnline() || player.isDead()) {

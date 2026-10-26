@@ -29,7 +29,7 @@ public class LegendaryEffects implements Listener {
     private static final Map<UUID, Integer> secondWindUses = new HashMap<>();
     private static final Map<UUID, Double> fallPeakY = new HashMap<>();
     private static final Map<UUID, Long> skyfallCooldowns = new HashMap<>();
-    private static final long SKYFALL_COOLDOWN_MS = 2500L;
+    private static final long SKYFALL_COOLDOWN_MS = 500L;
 
     public LegendaryEffects(RoundsPlugin plugin) {
         this.plugin = plugin;
@@ -43,6 +43,7 @@ public class LegendaryEffects implements Listener {
     public static void clearRoundState() {
         secondWindUses.clear();
         skyfallCooldowns.clear();
+        fallPeakY.clear();
     }
 
     public static void resetAll() {
@@ -94,7 +95,7 @@ public class LegendaryEffects implements Listener {
                 && event.getCause() == EntityDamageEvent.DamageCause.FALL) {
             event.setCancelled(true);
             player.setFallDistance(0);
-            fallPeakY.remove(player.getUniqueId());
+            fallPeakY.put(player.getUniqueId(), player.getLocation().getY());
             checkAndTriggerSkyfall(player, data);
         }
     }
@@ -116,15 +117,67 @@ public class LegendaryEffects implements Listener {
             fallPeakY.remove(uuid);
             return;
         }
+
         double y = to.getY();
-        if (player.isOnGround()) {
-            Double peak = fallPeakY.remove(uuid);
-            if (peak != null && peak - y >= 3.0) {
+        double fromY = event.getFrom().getY();
+
+        Double peak = fallPeakY.get(uuid);
+        if (peak == null || y > peak) {
+            fallPeakY.put(uuid, y);
+            peak = y;
+        }
+
+        double fallDist = peak - y;
+        boolean onSolid = isLandingOnSolid(to);
+        boolean onEntity = isLandingOnEntity(player, to);
+        boolean downwardStopped = (fromY > y && player.getVelocity().getY() >= -0.05);
+
+        if (fallDist >= 2.5) {
+            boolean landed = player.isOnGround() || onSolid || onEntity || downwardStopped;
+            if (landed) {
+                fallPeakY.put(uuid, y);
+                player.setFallDistance(0f);
                 checkAndTriggerSkyfall(player, data);
             }
-            return;
+        } else if (player.isOnGround() || onSolid || onEntity) {
+            fallPeakY.put(uuid, y);
         }
-        fallPeakY.merge(uuid, y, Math::max);
+    }
+
+    private boolean isLandingOnSolid(Location to) {
+        if (to == null || to.getWorld() == null) return false;
+        double x = to.getX();
+        double y = to.getY();
+        double z = to.getZ();
+        double[] dx = {0, -0.28, 0.28, 0, 0};
+        double[] dz = {0, 0, 0, -0.28, 0.28};
+        for (int i = 0; i < 5; i++) {
+            Location check = new Location(to.getWorld(), x + dx[i], y - 0.1, z + dz[i]);
+            org.bukkit.block.Block b = check.getBlock();
+            if (b.getType().isSolid()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isLandingOnEntity(Player player, Location to) {
+        if (to == null || to.getWorld() == null) return false;
+        double px = to.getX();
+        double py = to.getY();
+        double pz = to.getZ();
+        for (LivingEntity e : to.getWorld().getNearbyLivingEntities(to, 1.2, 2.2, 1.2)) {
+            if (e.getUniqueId().equals(player.getUniqueId())) continue;
+            if (e instanceof Player tp && tp.getGameMode() == GameMode.SPECTATOR) continue;
+            double ey = e.getLocation().getY();
+            if (py >= ey && py - ey <= 2.2) {
+                double distXZ = Math.hypot(px - e.getLocation().getX(), pz - e.getLocation().getZ());
+                if (distXZ <= 1.0) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private void checkAndTriggerSkyfall(Player player, PlayerData data) {
@@ -157,7 +210,7 @@ public class LegendaryEffects implements Listener {
                 double dist = entity.getLocation().distance(loc);
                 if (dist <= 4.0 && maxDmg > 0) {
                     entity.setNoDamageTicks(0);
-                    entity.damage(maxDmg);
+                    entity.damage(maxDmg, player);
                 }
             } catch (IllegalArgumentException ignored) {}
         }

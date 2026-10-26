@@ -174,6 +174,7 @@ game:
   default-rounds: 5      # Default rounds required to win the match
   max-rounds: 20         # Upper limit for round count
   countdown-seconds: 3   # Round start countdown in seconds
+  round-time-seconds: 180 # Main round time in seconds before sudden death (default: 180s = 3 min)
   card-choice-time: 30   # Card selection timer in seconds (min 10)
   card-selection-time: 200 # Inventory GUI display duration in ticks
   respawn-delay: 5       # Respawn delay in ticks
@@ -181,6 +182,7 @@ game:
     enabled: true        # Sudden death for stalled rounds
     delay-seconds: 240   # Delay before first death event (240s = 4 min)
     interval-seconds: 60 # Interval between subsequent warnings and deaths
+    bossbar: true        # Boss bar countdown at the top of the screen
 
 # Participating teams
 teams:
@@ -244,7 +246,10 @@ builtin-scoreboard:
   title: "&6&lROUNDS"
   stats-title: "&b&lМои статы"
 
-# Freeplay mode (allows non-admins to start/stop games)
+# Allow non-admin players to execute safe commands for practice and matches
+# Open to all: /rdebug join, info, status, state, stats show, cards show, statsend
+# Unlocked with freeplay: true: /rdebug start, stop, rounds, givegun, wheel, bossbar, bot, /rbot
+# Strictly admin-only (rounds.admin / OP): cards add/reload, stats add, freeplay, autodeath, cardchoicetime, setlobby, giveblocks, jump/up zones, setlanguage
 freeplay:
   enabled: false
 ```
@@ -415,19 +420,45 @@ Primary command: `/rdebug` (aliases `/rounds` and `/rbot`).
 |---------|-------------|
 | `/rdebug join` | Join ongoing match (assigned to smallest team or restores session) |
 | `/rdebug info` | Display plugin version, match status, teams, and card catalog |
-| `/rdebug stats [player]` | View your own or another player's current attributes |
+| `/rdebug status` / `/rdebug state` | Show current round, match state, and team scores |
+| `/rdebug stats show <player>` | View detailed combat attributes of a player |
 | `/rdebug cards show [player] [page]` | View equipped upgrade cards |
+| `/rdebug statsend [player]` | Summary stats from the last finished match: damage, shots, kills, deaths |
 
 ### Freeplay Mode (`freeplay: true`)
 
-When freeplay is enabled (`/rdebug freeplay on`), non-admin players gain access to safe commands for practice and matches:
-- `/rdebug start` — Start match
-- `/rdebug stop` — Stop match
-- `/rdebug rounds <n>` — Set round win limit
-- `/rdebug givegun` — Receive weapon
-- `/rdebug wheel on|off` — Toggle draft card rotation
-- `/rdebug bot` — Spawn, configure, and despawn practice bots
-- `/rbot` — Complete bot management suite (`spawn`, `despawn`, `list`, `level`, `strategy`)
+The `freeplay.enabled` setting in `config.yml` or the `/rdebug freeplay on|off` command toggles freeplay mode. By default, players without administrative permissions (`rounds.admin` / OP) only have access to safe informational commands. Enabling freeplay grants regular players access to match management and practice bot commands for self-guided practice.
+
+1. **Public Commands (Always available to all players without OP):**
+   - `/rdebug join` — Join ongoing match
+   - `/rdebug info` — General plugin, match, and card catalog information
+   - `/rdebug status` / `/rdebug state` — Match status, current round, and scores
+   - `/rdebug stats show <player>` — View player attributes
+   - `/rdebug cards show [player] [page]` — View acquired upgrade cards
+   - `/rdebug statsend [player]` — View stats from the last completed match
+
+2. **Freeplay Commands (Unlocked for regular players only when `freeplay: true`):**
+   - `/rdebug start` — Start match
+   - `/rdebug stop` — Stop match
+   - `/rdebug rounds <n>` — Set required wins for match victory
+   - `/rdebug givegun` — Receive weapon
+   - `/rdebug wheel <on|off>` — Toggle draft card auto-rotation
+   - `/rdebug bossbar <on|off>` — Toggle match boss bar
+   - `/rdebug bot` — Spawn, configure, and despawn practice bots
+   - `/rbot` — Complete bot management suite (`spawn`, `despawn`, `list`, `level`, `strategy`, `shoot`, `block`, `aim`, `query`, etc.)
+
+3. **Admin Commands (Strictly require `rounds.admin` / OP even in freeplay mode):**
+   - `/rdebug cards add <player> <card> [rarity]` — Grant cards to players
+   - `/rdebug cards reload` — Reload card configuration files
+   - `/rdebug stats add <player> <stat> <value>` — Manually adjust player attributes
+   - `/rdebug freeplay <on\|off>` — Toggle freeplay mode
+   - `/rdebug autodeath <on\|off>` — Toggle sudden death auto-elimination
+   - `/rdebug cardchoicetime <sec>` — Configure card draft selection duration
+   - `/rdebug setlobby` — Set lobby anchor position
+   - `/rdebug giveblocks [player]` — Give special arena setup blocks
+   - `/rdebug jumppos1` / `jumppos2` / `jumpset` / `jumpposreset` — Setup jump pad blocks
+   - `/rdebug uppos1` / `uppos2` / `upset` / `upposreset` — Setup elevator lift blocks
+   - `/rdebug setlanguage <lang>` — Change plugin language on the fly
 
 ### Admin Commands (`rounds.admin`)
 

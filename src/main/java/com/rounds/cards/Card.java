@@ -182,7 +182,7 @@ public class Card {
         lore.add(rarity.getColor() + Messages.get("rarity." + rarity.name().toLowerCase()));
         String desc = getDescription(lang);
         if (!desc.isEmpty()) {
-            lore.add(ChatColor.GRAY + desc);
+            lore.addAll(wrapText(desc, 38));
         }
         if (withSelectHint) {
             lore.add("");
@@ -192,6 +192,59 @@ public class Card {
         meta.setLore(lore);
         item.setItemMeta(meta);
         return item;
+    }
+
+    public static List<String> wrapText(String text, int maxLineLength) {
+        List<String> lines = new ArrayList<>();
+        if (text == null || text.trim().isEmpty()) {
+            return lines;
+        }
+        String colorized = colorize(text);
+        String[] paragraphs = colorized.split("\r?\n");
+        String activeColor = ChatColor.GRAY.toString();
+
+        for (String paragraph : paragraphs) {
+            if (paragraph.trim().isEmpty()) {
+                lines.add("");
+                continue;
+            }
+            String[] words = paragraph.split(" ");
+            StringBuilder currentLine = new StringBuilder();
+
+            for (String word : words) {
+                if (word.isEmpty()) continue;
+
+                int currentLen = ChatColor.stripColor(currentLine.toString()).length();
+                int wordLen = ChatColor.stripColor(word).length();
+
+                if (currentLine.length() > 0 && currentLen + 1 + wordLen > maxLineLength) {
+                    lines.add(activeColor + currentLine.toString());
+                    String lastColors = ChatColor.getLastColors(activeColor + currentLine.toString());
+                    if (lastColors != null && !lastColors.isEmpty() && !lastColors.equals(ChatColor.RESET.toString())) {
+                        activeColor = lastColors;
+                    } else {
+                        activeColor = ChatColor.GRAY.toString();
+                    }
+                    currentLine.setLength(0);
+                }
+
+                if (currentLine.length() > 0) {
+                    currentLine.append(" ");
+                }
+                currentLine.append(word);
+            }
+
+            if (currentLine.length() > 0) {
+                lines.add(activeColor + currentLine.toString());
+                String lastColors = ChatColor.getLastColors(activeColor + currentLine.toString());
+                if (lastColors != null && !lastColors.isEmpty() && !lastColors.equals(ChatColor.RESET.toString())) {
+                    activeColor = lastColors;
+                } else {
+                    activeColor = ChatColor.GRAY.toString();
+                }
+            }
+        }
+        return lines;
     }
 
     public static String colorize(String text) {

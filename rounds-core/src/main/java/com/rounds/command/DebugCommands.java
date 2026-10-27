@@ -160,15 +160,21 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
         switch (sub) {
             case "help" -> sendHelp(sender);
-            case "start" -> {
-                if (plugin.getGameManager().isGameStarted()) {
-                    sender.sendMessage(ChatColor.RED + Messages.get("debug.game-already-started"));
-                } else {
-                    plugin.getGameManager().startGame();
+            case "start" -> handleDebugStart(sender, args);
+            case "status" -> {
+                if (args.length >= 2 && args[1].equalsIgnoreCase("debug")) {
+                    handleDebugStatus(sender);
+                    return true;
                 }
+                handleStatus(sender);
             }
-            case "status" -> handleStatus(sender);
-            case "stop" -> handleStop(sender);
+            case "stop" -> {
+                if (args.length >= 2 && args[1].equalsIgnoreCase("debug")) {
+                    handleDebugStop(sender, args);
+                    return true;
+                }
+                handleStop(sender);
+            }
             case "rounds" -> handleRounds(sender, args);
             case "autodeath" -> handleAutoDeath(sender, args);
             case "info" -> handleInfo(sender);
@@ -362,6 +368,151 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage(B + "\u2551 " + Messages.get("command.team-info", team.getColor() + teamName, (int) tm.getWins(team), tm.getPlayerCount(team)));
         }
         sender.sendMessage(B + "\u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
+    }
+
+    private void handleDebugStart(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("rounds.admin")) {
+            sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
+            return;
+        }
+        if (args.length == 1) {
+            if (com.rounds.debug.DebugSession.active) {
+                sender.sendMessage(ChatColor.RED + "Дебаг уже запущен.");
+                return;
+            }
+            com.rounds.debug.DebugSession.active = true;
+            com.rounds.debug.DebugSession.startAt = -1;
+            com.rounds.debug.DebugSession.stopAt = -1;
+            com.rounds.debug.DebugSession.triggered = true;
+            com.rounds.debug.DebugLog.initSession();
+            com.rounds.debug.DebugLog.log("DEBUG", "DEBUG SESSION STARTED (IMMEDIATE)");
+            sender.sendMessage(ChatColor.GREEN + "RoundsDebug: дебаг включён. Файл: " + (com.rounds.debug.DebugSession.logFile == null ? "?" : com.rounds.debug.DebugSession.logFile.getAbsolutePath()));
+            sender.sendMessage(ChatColor.GRAY + "Автостоп не запланирован. По окончанию каждого раунда будут дописываться CARDS/STATS/SNAP.");
+            return;
+        }
+        if (args.length == 2) {
+            int from;
+            try {
+                from = Integer.parseInt(args[1]);
+            } catch (NumberFormatException e) {
+                sender.sendMessage(ChatColor.RED + "Неверный номер раунда");
+                return;
+            }
+            if (from < 1) {
+                sender.sendMessage(ChatColor.RED + "Номер раунда должен быть >= 1");
+                return;
+            }
+            int cur = (int) plugin.getGameManager().getCurrentRound();
+            if (from < cur) {
+                sender.sendMessage(ChatColor.RED + "Нельзя включить дебаг задним числом. Текущий раунд: " + cur);
+                return;
+            }
+            com.rounds.debug.DebugSession.active = false;
+            com.rounds.debug.DebugSession.startAt = from;
+            com.rounds.debug.DebugSession.stopAt = -1;
+            com.rounds.debug.DebugSession.triggered = false;
+            sender.sendMessage(ChatColor.GREEN + "RoundsDebug: дебаг будет включён автоматически при старте раунда " + from);
+            sender.sendMessage(ChatColor.GRAY + "Автостоп не запланирован.");
+            return;
+        }
+        if (args.length == 4 && args[2].equalsIgnoreCase("stop")) {
+            int from;
+            int to;
+            try {
+                from = Integer.parseInt(args[1]);
+                to = Integer.parseInt(args[3]);
+            } catch (NumberFormatException e) {
+                sender.sendMessage(ChatColor.RED + "Неверный номер раунда");
+                return;
+            }
+            if (from < 1 || to < 1) {
+                sender.sendMessage(ChatColor.RED + "Номер раунда должен быть >= 1");
+                return;
+            }
+            if (to < from) {
+                sender.sendMessage(ChatColor.RED + "Значение stop не может быть меньше start");
+                return;
+            }
+            int cur = (int) plugin.getGameManager().getCurrentRound();
+            if (from < cur) {
+                sender.sendMessage(ChatColor.RED + "Нельзя включить дебаг задним числом. Текущий раунд: " + cur);
+                return;
+            }
+            com.rounds.debug.DebugSession.active = false;
+            com.rounds.debug.DebugSession.startAt = from;
+            com.rounds.debug.DebugSession.stopAt = to;
+            com.rounds.debug.DebugSession.triggered = false;
+            sender.sendMessage(ChatColor.GREEN + "RoundsDebug: дебаг будет включён автоматически при старте раунда " + from + ". Автостоп в конце раунда " + to + " с дампом.");
+            return;
+        }
+        sender.sendMessage(ChatColor.RED + "Использование: /rdebug debug start | /rdebug debug start <from> | /rdebug debug start <from> stop <to>");
+    }
+
+    private void handleDebugStop(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("rounds.admin")) {
+            sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
+            return;
+        }
+        if (args.length == 2) {
+            if (!com.rounds.debug.DebugSession.active) {
+                sender.sendMessage(ChatColor.RED + "Дебаг не запущен. Сначала используй /rdebug debug start");
+                return;
+            }
+            int cur = (int) plugin.getGameManager().getCurrentRound();
+            com.rounds.debug.DebugLog.flushFinal("MANUAL-STOP by command");
+            com.rounds.debug.DebugSession.clear();
+            sender.sendMessage(ChatColor.GREEN + "RoundsDebug: остановка дебага...");
+            sender.sendMessage(ChatColor.GRAY + "Финальный блок дописан. Файл закрыт.");
+            if (com.rounds.debug.DebugSession.logFile != null) {
+                // logFile nulled after clear but we can’t show; message generic
+            }
+            sender.sendMessage(ChatColor.GRAY + "Дамп сохранён.");
+            return;
+        }
+        if (args.length == 3) {
+            if (!com.rounds.debug.DebugSession.active) {
+                sender.sendMessage(ChatColor.RED + "Дебаг не запущен. Сначала используй /rdebug debug start");
+                return;
+            }
+            int to;
+            try {
+                to = Integer.parseInt(args[2]);
+            } catch (NumberFormatException e) {
+                sender.sendMessage(ChatColor.RED + "Неверный номер раунда");
+                return;
+            }
+            if (to < 1) {
+                sender.sendMessage(ChatColor.RED + "Номер раунда должен быть >= 1");
+                return;
+            }
+            int cur = (int) plugin.getGameManager().getCurrentRound();
+            if (to <= cur) {
+                sender.sendMessage(ChatColor.RED + "Нельзя поставить автостоп на уже прошедший или текущий завершённый раунд. Текущий раунд: " + cur);
+                return;
+            }
+            com.rounds.debug.DebugSession.stopAt = to;
+            sender.sendMessage(ChatColor.GREEN + "RoundsDebug: автостоп запланирован. Дамп будет сделан в конце раунда " + to + ".");
+            return;
+        }
+        sender.sendMessage(ChatColor.RED + "Использование: /rdebug debug stop | /rdebug debug stop <to>");
+    }
+
+    private void handleDebugStatus(CommandSender sender) {
+        if (!sender.hasPermission("rounds.admin")) {
+            sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
+            return;
+        }
+        com.rounds.debug.DebugSession ds = null;
+        sender.sendMessage(ChatColor.GOLD + "RoundsDebug status:");
+        sender.sendMessage(ChatColor.GRAY + "активен: " + com.rounds.debug.DebugSession.active);
+        sender.sendMessage(ChatColor.GRAY + "старт: " + (com.rounds.debug.DebugSession.startAt == -1 ? "сейчас" : "R#" + com.rounds.debug.DebugSession.startAt));
+        sender.sendMessage(ChatColor.GRAY + "автостоп: " + (com.rounds.debug.DebugSession.stopAt == -1 ? "нет" : "конец R#" + com.rounds.debug.DebugSession.stopAt));
+        sender.sendMessage(ChatColor.GRAY + "triggered: " + com.rounds.debug.DebugSession.triggered);
+        sender.sendMessage(ChatColor.GRAY + "последний залогированный раунд: R#" + com.rounds.debug.DebugSession.lastLoggedRound);
+        sender.sendMessage(ChatColor.GRAY + "строк в буфере: " + com.rounds.debug.DebugLog.bufferSize());
+        if (com.rounds.debug.DebugSession.logFile != null) {
+            sender.sendMessage(ChatColor.GRAY + "файл: " + com.rounds.debug.DebugSession.logFile.getAbsolutePath());
+        }
     }
 
     private void handleStop(CommandSender sender) {
@@ -1208,7 +1359,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         "stats", "statsend", "setteam", "setlanguage", "effect", "heal",
         "resetstats", "reload", "setlobby",
         "jumppos1", "jumppos2", "jumpset", "uppos1", "uppos2", "upset",
-        "wheel", "tab", "bot", "draft", "cardchoicetime", "bossbar"
+        "wheel", "tab", "bot", "draft", "cardchoicetime", "bossbar", "debug"
     );
 
     private List<String> getOnlinePlayerNames() {
@@ -1452,6 +1603,27 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
 
         return switch (args[0].toLowerCase()) {
+            case "debug" -> {
+                if (args.length == 1) {
+                    yield filterStartsWith(Arrays.asList("start", "stop", "status"), input);
+                }
+                if (args.length == 2) {
+                    if (args[1].equalsIgnoreCase("start")) {
+                        yield filterStartsWith(Arrays.asList("1", "10", "20", "30", "40", "50"), input);
+                    }
+                    if (args[1].equalsIgnoreCase("stop")) {
+                        yield filterStartsWith(Arrays.asList("50", "55", "60"), input);
+                    }
+                    yield Collections.emptyList();
+                }
+                if (args.length == 3 && args[1].equalsIgnoreCase("start")) {
+                    yield filterStartsWith(Collections.singletonList("stop"), input);
+                }
+                if (args.length == 4 && args[1].equalsIgnoreCase("start") && args[2].equalsIgnoreCase("stop")) {
+                    yield filterStartsWith(Arrays.asList("50", "55", "60"), input);
+                }
+                yield Collections.emptyList();
+            }
             case "bot" -> {
                 if (args.length == 2) {
                     List<String> list = new ArrayList<>(Arrays.asList("spawn", "despawn", "level", "list"));

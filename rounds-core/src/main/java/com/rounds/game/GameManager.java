@@ -177,6 +177,18 @@ public class GameManager implements Listener {
     }
 
     public void startGame() {
+        try {
+            int cur = (int) getCurrentRound();
+            if (!com.rounds.debug.DebugSession.active && !com.rounds.debug.DebugSession.triggered && com.rounds.debug.DebugSession.startAt == cur) {
+                com.rounds.debug.DebugSession.triggered = true;
+                com.rounds.debug.DebugSession.active = true;
+                com.rounds.debug.DebugLog.initSession();
+                com.rounds.debug.DebugLog.log("DEBUG", "AUTO-START triggered at round start of R#" + cur);
+            }
+            if (com.rounds.debug.DebugSession.active) {
+                com.rounds.debug.DebugLog.log("GAME", "START round=" + cur);
+            }
+        } catch (Throwable ignored) {}
         List<Player> readyPlayers = getReadyPlayers();
         if (readyPlayers.size() < 2) {
             plugin.getServer().broadcastMessage(ChatColor.RED + Messages.get("game.not-enough-players"));
@@ -1197,6 +1209,19 @@ public class GameManager implements Listener {
     }
 
     private void endRound(GameTeam winner) {
+        try {
+            int cur = (int) getCurrentRound();
+            if (com.rounds.debug.DebugSession.active) {
+                com.rounds.debug.DebugLog.log("GAME", "END round=" + cur + " winner=" + (winner == null ? "NONE" : winner.name()));
+                com.rounds.debug.DebugLog.flushRoundEnd(cur);
+                com.rounds.debug.DebugLog.log("CLEAN", "Beginning cleanup for R#" + cur + " ...");
+            }
+            if (com.rounds.debug.DebugSession.active && com.rounds.debug.DebugSession.stopAt != -1 && com.rounds.debug.DebugSession.stopAt == cur) {
+                com.rounds.debug.DebugLog.flushFinal("AUTO-STOP at end of R#" + cur);
+                com.rounds.debug.DebugSession.clear();
+                // will continue cleanup but debug stopped
+            }
+        } catch (Throwable ignored) {}
         plugin.getTeamManager().addWin(winner);
         state = GameState.ROUND_END;
         losingTeams.clear();

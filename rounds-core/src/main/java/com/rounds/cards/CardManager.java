@@ -414,6 +414,20 @@ public class CardManager {
         return registry;
     }
 
+    public int getPendingCardsCount() {
+        return pendingCards == null ? 0 : pendingCards.size();
+    }
+
+    public int getChoosingCount() {
+        try {
+            java.lang.reflect.Field f = CardManager.class.getDeclaredField("choosingPlayers");
+            f.setAccessible(true);
+            Object o = f.get(this);
+            if (o instanceof java.util.Collection<?> c) return c.size();
+        } catch (Throwable ignored) {}
+        return 0;
+    }
+
     private void syncPlayerHP(Player player, PlayerData data) {
         double maxHP = data.getMaxHealth();
         var attr = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);

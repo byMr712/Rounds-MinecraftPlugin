@@ -65,6 +65,10 @@ public class RoundsEntities implements Listener {
         } catch (Throwable ignored) {}
     }
 
+    public static int getBulletCount() {
+        return activeBullets.size();
+    }
+
     public static void clearPlayer(UUID uuid) {
         if (uuid == null) return;
         hpBoostPending.remove(uuid);

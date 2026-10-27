@@ -390,9 +390,9 @@ public class LegendaryEffects implements Listener {
             } catch (Throwable ignored) {}
         }
 
-        // Owner: +50% movement speed (Speed II) for 5 seconds (100 ticks)
+        // Owner: +50% movement speed (Speed III) for 5 seconds (100 ticks)
         owner.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                org.bukkit.potion.PotionEffectType.SPEED, 100, 1, false, false, true));
+                org.bukkit.potion.PotionEffectType.SPEED, 100, 2, false, false, true));
         owner.sendTitle(ChatColor.GOLD + "§lЗАМЕДЛЕНИЕ ВРЕМЕНИ",
                 ChatColor.YELLOW + "Бессмертие 1 сек! Враги и пули замедлены на 5 сек!", 5, 40, 10);
         owner.sendActionBar(ChatColor.GOLD + com.rounds.util.Messages.get("card.bullet-time-active"));
@@ -407,8 +407,9 @@ public class LegendaryEffects implements Listener {
                 com.rounds.teams.TeamManager.GameTeam otherTeam = instance.plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
                 if (otherTeam != null && myTeam == otherTeam) continue;
             }
+            // SLOW VII (amplifier 6) вместо SLOW VI
             p.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                    org.bukkit.potion.PotionEffectType.SLOW, 100, 5, false, false, true));
+                    org.bukkit.potion.PotionEffectType.SLOW, 100, 6, false, false, true));
             p.addPotionEffect(new org.bukkit.potion.PotionEffect(
                     org.bukkit.potion.PotionEffectType.DARKNESS, 100, 0, false, false, false));
             p.sendTitle(ChatColor.DARK_GRAY + "[ " + ChatColor.RED + "§lВРЕМЯ ЗАМЕДЛЕНО" + ChatColor.DARK_GRAY + " ]",

@@ -241,8 +241,7 @@ debug:
   none: "нет"
   yes: "Да"
   no: "Нет"
-  hp-unit: "ХП"
-  # Help lines
+
   help-stats-show: "Статы игрока: /rdebug stats show <игрок>"
   help-stats-add: "Установить стат: /rdebug stats add <игрок> <стата> <значение>"
   help-givegun: "Выдать пушку"

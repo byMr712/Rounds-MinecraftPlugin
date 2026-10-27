@@ -593,11 +593,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     }
 
     private void handleCardsShow(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player viewer)) {
-            sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player"));
-            return;
-        }
-        Player target = viewer;
+        Player target = (sender instanceof Player p) ? p : null;
         int page = 1;
 
         if (args.length >= 3) {
@@ -605,18 +601,36 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 page = Integer.parseInt(args[2]);
             } catch (NumberFormatException notANumber) {
                 target = Bukkit.getPlayer(args[2]);
-                if (target == null) {
-                    sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[2]));
-                    return;
-                }
-                if (args.length >= 4) {
+                if (target != null && args.length >= 4) {
                     try {
                         page = Integer.parseInt(args[3]);
                     } catch (NumberFormatException ignored) {}
                 }
             }
         }
-        plugin.getCardGUI().openShow(viewer, target, page);
+
+        if (target == null) {
+            if (args.length >= 3) {
+                sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[2]));
+            } else {
+                sender.sendMessage(ChatColor.RED + "Usage: /rdebug cards show <nickname>");
+            }
+            return;
+        }
+
+        if (sender instanceof Player viewer) {
+            plugin.getCardGUI().openShow(viewer, target, page);
+        } else {
+            List<Integer> ownedCardIds = plugin.getPlayerDataManager().getData(target).getOwnedCards();
+            sender.sendMessage(ChatColor.GOLD + "Cards for " + target.getName() + ":");
+            String lang = Messages.getLanguageCode();
+            for (int id : ownedCardIds) {
+                com.rounds.cards.Card card = plugin.getCardManager().getRegistry().getCard(id);
+                if (card != null) {
+                    sender.sendMessage("- " + card.getName(lang));
+                }
+            }
+        }
     }
 
     private void handleCardsAdd(CommandSender sender, String[] args) {

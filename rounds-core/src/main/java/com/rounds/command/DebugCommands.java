@@ -118,6 +118,12 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxKv(sender, Messages.get("debug." + key), String.valueOf(PlayerData.round2(value)));
     }
 
+    private void boxStatBool(CommandSender sender, String key, double value) {
+        String val = (value > 0.5) ? Messages.get("debug.val-yes") : Messages.get("debug.val-no");
+        boxKv(sender, Messages.get("debug." + key), val, (value > 0.5) ? ChatColor.GREEN : ChatColor.RED);
+    }
+
+
     private String formatSeconds(double seconds) {
         String unit = Messages.get("debug.unit-sec");
         if (unit == null || unit.equals("debug.unit-sec")) {
@@ -161,7 +167,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                     plugin.getGameManager().startGame();
                 }
             }
-            case "status", "state" -> handleState(sender);
+            case "status" -> handleStatus(sender);
             case "stop" -> handleStop(sender);
             case "rounds" -> handleRounds(sender, args);
             case "autodeath" -> handleAutoDeath(sender, args);
@@ -337,19 +343,25 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
     // === GAME MANAGEMENT ===
 
-    private void handleState(CommandSender sender) {
+    private void handleStatus(CommandSender sender) {
         GameManager gm = plugin.getGameManager();
         TeamManager tm = plugin.getTeamManager();
-        boxHeader(sender, Messages.get("debug.state-title"));
-        boxKv(sender, Messages.get("command.state", gm.getState()));
-        boxKv(sender, Messages.get("command.rounds-to-win-cmd", (int) gm.getRounds()));
-        boxKv(sender, Messages.get("command.current-round", (int) gm.getCurrentRound()));
-        boxSection(sender, Messages.get("debug.section-teams"));
+        String state = Messages.get("game-state." + gm.getState().name().toLowerCase());
+        
+        sender.sendMessage(B + "\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
+        sender.sendMessage(B + "\u2551 " + W + "\u2502 " + B + Messages.get("debug.state-title"));
+        sender.sendMessage(B + "\u2560\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
+        sender.sendMessage(B + "\u2551 " + W + Messages.get("command.state", state));
+        sender.sendMessage(B + "\u2551 " + W + Messages.get("command.rounds-to-win-cmd", (int) gm.getRounds()));
+        sender.sendMessage(B + "\u2551 " + W + Messages.get("command.current-round", (int) gm.getCurrentRound()));
+        sender.sendMessage(B + "\u2560\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
+        sender.sendMessage(B + "\u2551 " + W + "\u2502 " + B + Messages.get("debug.section-teams"));
+        sender.sendMessage(B + "\u2560\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
         for (GameTeam team : GameTeam.values()) {
             String teamName = Messages.get("team." + team.name().toLowerCase());
-            boxLine(sender, team.getColor(), Messages.get("command.team-info", teamName, (int) tm.getWins(team), tm.getPlayerCount(team)));
+            sender.sendMessage(B + "\u2551 " + Messages.get("command.team-info", team.getColor() + teamName, (int) tm.getWins(team), tm.getPlayerCount(team)));
         }
-        boxFooter(sender);
+        sender.sendMessage(B + "\u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
     }
 
     private void handleStop(CommandSender sender) {
@@ -691,46 +703,60 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
         String sub = args[1].toLowerCase();
         if (sub.equals("show")) {
+            Player target = null;
             if (args.length < 3) {
-                sender.sendMessage(ChatColor.RED + "Usage: /rdebug stats show <player>");
-                return;
+                if (sender instanceof Player p) target = p;
+                else {
+                    sender.sendMessage(ChatColor.RED + "Usage: /rdebug stats show <player>");
+                    return;
+                }
+            } else {
+                target = Bukkit.getPlayer(args[2]);
             }
-            Player target = Bukkit.getPlayer(args[2]);
             if (target == null) {
-                sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args[2]));
+                sender.sendMessage(ChatColor.RED + Messages.get("debug.player-not-found", args.length < 3 ? "you" : args[2]));
                 return;
             }
 
             PlayerData data = plugin.getPlayerDataManager().getData(target);
-            boxHeader(sender, Messages.get("debug.stats-title", target.getName()),
-                    Messages.get("debug.team-label", getTeamDisplay(target)) + " | " + Messages.get("debug.cards-label", countCards(data)));
+            
+            // Header design
+            sender.sendMessage(B + "\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
+            sender.sendMessage(B + "\u2551 " + W + "\u2502 " + B + "Статы " + target.getName());
+            sender.sendMessage(B + "\u2551 " + W + "\u2502 " + B + "Команда: " + getTeamDisplay(target));
+            sender.sendMessage(B + "\u2551 " + W + "\u2502 " + B + "Карты: " + countCards(data));
+            sender.sendMessage(B + "\u2560\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
 
+            // Combat section
+            com.rounds.DefaultStats def = com.rounds.DefaultStats.get();
+            String hpLabel = "HP";
+            
             boxSection(sender, Messages.get("debug.combat-section"));
-            boxKv(sender, Messages.get("debug.stat-hp"), String.format(Locale.US, "%.1f / %.1f HP", target.getHealth(), data.getMaxHealth()));
-            boxKv(sender, Messages.get("debug.stat-dmg"), String.format(Locale.US, "%.1f", data.getEffectiveDamage()));
-            boxKv(sender, Messages.get("debug.stat-atks"), formatSeconds(GunItem.getAttackCooldownSeconds(data)));
+            boxKv(sender, Messages.get("debug.stat-hp"), String.format(Locale.US, "%.1f " + hpLabel, target.getHealth()));
+            boxKv(sender, Messages.get("debug.stat-dmg"), String.format(Locale.US, "%.1f", def.dmg + data.dmg));
+            boxKv(sender, Messages.get("debug.stat-atks"), formatSeconds((def.atks + data.atks) / 20.0));
             if (data.atkSpeed != 0.0) {
                 boxKv(sender, Messages.get("debug.stat-atk-speed"), String.format(Locale.US, "%+.0f%%", data.atkSpeed * 100.0));
             }
-            boxStat(sender, "stat-atkr", data.atkr);
-            boxKv(sender, Messages.get("debug.stat-ammo"), (int) data.ammo + " / " + (int) data.maxAmmo);
-            boxKv(sender, Messages.get("debug.stat-bullets"), String.valueOf((int) Math.max(data.bullets, 1)));
-            boxStat(sender, "stat-bullet-speed", data.bulletSpeed);
+            boxKv(sender, Messages.get("debug.stat-atkr"), String.format(Locale.US, "%.1f", def.atkr + data.atkr));
+            boxKv(sender, Messages.get("debug.stat-ammo"), String.format(Locale.US, "%.0f / %.0f", data.ammo, def.maxAmmo + data.maxAmmo));
+            boxKv(sender, Messages.get("debug.stat-bullets"), String.valueOf((int) (def.bullets + data.bullets)));
+            boxKv(sender, Messages.get("debug.stat-bullet-speed"), String.format(Locale.US, "%.1f", def.bulletSpeed + data.bulletSpeed));
             boxKv(sender, Messages.get("debug.stat-reload-time"), formatSeconds(GunItem.getReloadDurationSeconds(data)));
-            boxStat(sender, "stat-bounce", data.bouncePl);
-            boxStat(sender, "stat-homing", data.homing);
-            boxStat(sender, "stat-big-bullet", data.bigBullet);
+            boxKv(sender, Messages.get("debug.stat-bounce"), String.format(Locale.US, "%.0f", data.bouncePl));
+            boxKv(sender, Messages.get("debug.stat-homing"), String.format(Locale.US, "%.1f", data.homing));
+            boxKv(sender, Messages.get("debug.stat-big-bullet"), String.format(Locale.US, "%.1f", data.bigBullet));
 
             boxSection(sender, Messages.get("debug.effects-section"));
-            boxStat(sender, "stat-cold", data.cold);
+            boxStatBool(sender, "stat-cold", data.cold);
             boxStat(sender, "stat-cold-lvl", data.coldLvl);
-            boxStat(sender, "stat-poison", data.poison);
+            boxStatBool(sender, "stat-poison", data.poison);
             boxStat(sender, "stat-poison-lvl", data.poisonLvl);
-            boxStat(sender, "stat-parazit", data.parazit);
+            boxStatBool(sender, "stat-parazit", data.parazit);
             boxStat(sender, "stat-parazit-lvl", data.parazitLvl);
-            boxStat(sender, "stat-leech", data.leech);
+            boxStatBool(sender, "stat-leech", data.leech);
             boxStat(sender, "stat-truster", data.trusterLvl);
-            boxStat(sender, "stat-jump-height", data.jumpHeight);
+            boxKv(sender, Messages.get("debug.stat-jump-height"), String.format(Locale.US, "%.1f", 2.0 + data.jumpHeight));
 
             boxSection(sender, Messages.get("debug.special-section"));
             boxStat(sender, "stat-grow", data.grow);
@@ -742,7 +768,6 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             boxStat(sender, "stat-bomb-on-block", data.bombOnBlock);
 
             boxSection(sender, Messages.get("debug.shield-section"));
-            boxKv(sender, Messages.get("debug.stat-shield-active"), GunItem.isShieldActive(target.getUniqueId()) ? "ON" : "OFF");
             boxKv(sender, Messages.get("debug.stat-shield-duration"), formatSeconds(GunItem.getShieldDurationSeconds(plugin, data)));
             long actualBlockCdMs = GunItem.getActualShieldCooldownMs(plugin, data);
             boxKv(sender, Messages.get("debug.stat-block-cd"), formatSeconds(actualBlockCdMs / 1000.0));
@@ -1181,7 +1206,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         "start", "stop", "rounds", "givegun", "wheel", "bot", "bossbar"
     );
     private static final List<String> PUBLIC_COMMANDS = Arrays.asList(
-        "info", "status", "state", "stats", "cards", "statsend"
+        "info", "status", "stats", "cards", "statsend"
     );
     private static final List<String> TEAM_COLORS = Arrays.asList("BLUE", "RED", "YELLOW", "GREEN", "NONE");
 

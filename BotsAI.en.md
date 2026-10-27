@@ -334,7 +334,7 @@ Bots inspect active card modifiers in `PlayerData` to adjust combat behavior:
 ## 16. Combat Hit Visuals, Highlights, and Nametag Formatting
 
 1. **Nametag Formatting and Bot Level Tag:**
-   - Display in Tab list and overhead: `<hearts>♥ <Name>` for players and `<hearts>♥ <Name> [L<level>]` for bots.
+   - Display in Tab list and overhead: `<hp> HP <Name>` for players and `<hp> HP <Name> [L<level>]` for bots.
    - The bot level tag is located after the bot name, styled in bold team color (`§l[L1]`).
    - Heart count represents proportional health rounded up.
 2. **Team-Only Nametags:**

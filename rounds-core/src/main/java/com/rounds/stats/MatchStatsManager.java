@@ -43,18 +43,30 @@ public class MatchStatsManager {
     public static void recordKill(UUID uuid) {
         if (uuid == null) return;
         PlayerMatchStats s = activeStats.get(uuid);
+        if (s == null) {
+            registerParticipant(uuid, null);
+            s = activeStats.get(uuid);
+        }
         if (s != null) s.kills++;
     }
 
     public static void recordDeath(UUID uuid) {
         if (uuid == null) return;
         PlayerMatchStats s = activeStats.get(uuid);
+        if (s == null) {
+            registerParticipant(uuid, null);
+            s = activeStats.get(uuid);
+        }
         if (s != null) s.deaths++;
     }
 
     public static void recordDamageDealt(UUID attackerUuid, UUID victimUuid, double damage) {
         if (attackerUuid != null && damage > 0) {
             PlayerMatchStats s = activeStats.get(attackerUuid);
+            if (s == null) {
+                registerParticipant(attackerUuid, null);
+                s = activeStats.get(attackerUuid);
+            }
             if (s != null) {
                 s.damageDealt += damage;
                 if (damage > s.maxShotDamage) {

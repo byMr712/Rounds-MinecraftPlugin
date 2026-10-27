@@ -40,7 +40,7 @@
   - Hitting an enemy flashes their 3D model bright red with a hurt animation (`playHurtAnimation`) and directional tilt away from the damage vector.
   - Taking damage tilts the player camera toward the attack origin and triggers a smooth red screen border vignette (`WorldBorder` warning).
 - **Team-Only Nametags & Heart Count Display:**
-  - Nametag and TAB format: `<hearts>♥ <Name>` for players and `<hearts>♥ <Name> [L<level>]` for bots.
+  - Nametag and TAB format: `<hearts> HP <Name>` for players and `<hearts> HP <Name> [L<level>]` for bots.
   - Enemy nametags are completely hidden during active rounds (only teammates can see each other's nametags). Spectators can see everyone's nametags.
   - Player ping in TAB is colored according to their team color (`%rounds_ping%` for fancy formatted text, `%rounds_ping_raw%` for numeric slots). Objective values in TAB remain protected from color code parsing errors.
 - **Integration & Built-in Scoreboard:**
@@ -417,8 +417,8 @@ Primary command: `/rdebug` (aliases `/rounds` and `/rbot`).
 |---------|-------------|
 | `/rdebug join` | Join ongoing match (assigned to smallest team or restores session) |
 | `/rdebug info` | Display plugin version, match status, teams, and card catalog |
-| `/rdebug status` / `/rdebug state` | Show current round, match state, and team scores |
-| `/rdebug stats show <player>` | View detailed combat attributes of a player |
+| `/rdebug status` | Show current round, match state, and team scores |
+| `/rdebug stats show [player]` | View detailed combat attributes of a player (if no nickname is provided, shows your own) |
 | `/rdebug cards show [player] [page]` | View equipped upgrade cards |
 | `/rdebug statsend [player]` | Summary stats from the last finished match: damage, shots, kills, deaths |
 
@@ -429,8 +429,8 @@ The `freeplay.enabled` setting in `config.yml` or the `/rdebug freeplay on|off` 
 1. **Public Commands (Always available to all players without OP):**
    - `/rdebug join` — Join ongoing match
    - `/rdebug info` — General plugin, match, and card catalog information
-   - `/rdebug status` / `/rdebug state` — Match status, current round, and scores
-   - `/rdebug stats show <player>` — View player attributes
+   - `/rdebug status` — Match status, current round, and scores
+   - `/rdebug stats show [player]` — View player attributes (if no nickname is provided, shows your own)
    - `/rdebug cards show [player] [page]` — View acquired upgrade cards
    - `/rdebug statsend [player]` — View stats from the last completed match
 
@@ -482,7 +482,7 @@ The `freeplay.enabled` setting in `config.yml` or the `/rdebug freeplay on|off` 
 | `/rdebug givegun [player\|@a]` | `[player\|@a]` | Give gun to self, player, or all players |
 | `/rdebug tab <on\|off>` | `on/off` | Toggle built-in scoreboard |
 | `/rdebug tab name <title>` | `<text>` | Change built-in scoreboard title |
-| `/rdebug stats show <player>` | `<player>` | Show detailed player combat stats (available to all players) |
+| `/rdebug stats show [player]` | `<player>` | Show detailed player combat stats (if no nickname is provided, shows your own) |
 | `/rdebug stats add <player> <stat> <value>` | `<player> <stat> <val>` | Set combat stat value in human units (admin only) |
 | `/rdebug statsend [player]` | `[player]` | Previous match combat statistics (available to all players) |
 | `/rdebug setteam <COLOR> [player]` | `<BLUE\|RED\|YELLOW\|GREEN>` | Force player into team |

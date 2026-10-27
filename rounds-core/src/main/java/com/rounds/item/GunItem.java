@@ -352,7 +352,7 @@ public class GunItem implements Listener {
             }
         }
 
-        if (data.teleport > 0) {
+        if (data.teleport > 0 && plugin.getGameManager().getState() != com.rounds.game.GameManager.GameState.ROUND_END && plugin.getGameManager().getState() != com.rounds.game.GameManager.GameState.GAME_END) {
             Location from = player.getLocation();
             Vector dir = from.getDirection().multiply(5.0);
             Location target = from.clone().add(dir);

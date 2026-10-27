@@ -32,6 +32,10 @@ public class MatchStatsManager {
             nameToUuid.put(name.toLowerCase(Locale.ROOT), uuid);
         }
         activeStats.computeIfAbsent(uuid, u -> new PlayerMatchStats(u, name));
+        if (name != null) {
+            PlayerMatchStats s = activeStats.get(uuid);
+            if (s != null) s.playerName = name;
+        }
     }
 
     public static void recordShot(UUID uuid) {

@@ -31,3 +31,22 @@ out/
 logs/
 *.log
 build_result.txt
+build-info.log
+hs_err_pid*
+replay_pid*
+
+# Local test infrastructure (downloaded runtimes, extracted servers, smoke-test dirs)
+libs/
+test-servers/
+test-*/
+test-*.ps1
+
+# Accidental extraction junk from local runs
+/com/
+/META-INF/
+com/google/protobuf/
+
+# Local tool caches and configs
+.aider*
+TAB config/
+.notion/

@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.rounds"
-version = "1.6"
+version = "1.7"
 
 java {
     toolchain {
@@ -22,13 +22,11 @@ repositories {
 
 dependencies {
     implementation(project(":rounds-api"))
+    // Только Paper API (и PlaceholderAPI для офлайн-таб-комплита placeholders).
+    // Любой net.minecraft.* / org.bukkit.craftbukkit.* доступ запрещён: он
+    // изолирован в версионных модулях rounds-nms1204 / rounds-nms262 за NmsBridge.
     compileOnly("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
     compileOnly("me.clip:placeholderapi:2.11.6")
-    compileOnly(files("C:/Users/Mr712/AppData/Roaming/ATLauncher/servers/Minecraft262withPurpur/purpur-26.2-2633.jar"))
-    compileOnly(files("C:/Users/Mr712/AppData/Roaming/ATLauncher/servers/Minecraft262withPurpur/versions/26.2/purpur-26.2.jar"))
-    compileOnly(fileTree("C:/Users/Mr712/AppData/Roaming/ATLauncher/servers/Minecraft262withPurpur/libraries") {
-        include("**/*.jar")
-    })
     testImplementation("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
     testImplementation("org.mockito:mockito-core:5.11.0")
@@ -46,17 +44,13 @@ tasks.processResources {
 }
 
 tasks.jar {
-    archiveFileName.set("RoundsPlugin-v${project.version}-byMr712.jar")
-    from(project(":rounds-api").the<SourceSetContainer>()["main"].output)
+    // Промежуточный модульный jar. Финальные артефакты собирают rounds-nms1204 / rounds-nms262.
+    archiveFileName.set("rounds-core-v${project.version}.jar")
 }
 
 tasks.named<JavaCompile>("compileJava") {
     options.encoding = "UTF-8"
     options.release.set(17)
-    classpath = files(
-        configurations.compileClasspath.get().filter { it.name.startsWith("paper-api") || it.name.startsWith("placeholderapi") },
-        configurations.compileClasspath.get().filter { !it.name.startsWith("paper-api") && !it.name.startsWith("placeholderapi") }
-    )
 }
 
 tasks.named<JavaCompile>("compileTestJava") {
@@ -66,7 +60,7 @@ tasks.named<JavaCompile>("compileTestJava") {
 
 publishing {
     publications {
-        create<MavenPublication>("plugin") {
+        create<MavenPublication>("core") {
             from(components["java"])
         }
     }

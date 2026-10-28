@@ -3,22 +3,15 @@ package com.rounds.bot;
 import com.rounds.RoundsPlugin;
 import com.rounds.blocks.BlockListener;
 import com.rounds.item.GunItem;
-import com.rounds.nms.FakeConnection;
-import com.rounds.nms.NoopConnection;
+import com.rounds.nms.NmsBridge;
+import com.rounds.nms.NmsPlayerHandle;
 import com.rounds.player.PlayerData;
-import net.minecraft.network.protocol.PacketFlow;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.network.CommonListenerCookie;
-import net.minecraft.world.entity.MoverType;
-import net.minecraft.world.phys.Vec3;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
@@ -31,7 +24,7 @@ public class FakeBot {
 
     private final BotManager manager;
     private Player bukkitPlayer;
-    private ServerPlayer nmsPlayer;
+    private NmsPlayerHandle handle;
     private final BotAI ai;
     private BotStrategy strategy = BotStrategy.BALANCED;
     private int level;
@@ -71,10 +64,10 @@ public class FakeBot {
         return padLaunchTicks > 0;
     }
 
-    public FakeBot(BotManager manager, Player bukkitPlayer, ServerPlayer nmsPlayer) {
+    public FakeBot(BotManager manager, NmsPlayerHandle handle) {
         this.manager = manager;
-        this.bukkitPlayer = bukkitPlayer;
-        this.nmsPlayer = nmsPlayer;
+        this.handle = handle;
+        this.bukkitPlayer = (handle != null) ? handle.getBukkitEntity() : null;
         this.level = ThreadLocalRandom.current().nextInt(1, 11); // Random difficulty level 1..10
         resetAttemptDecision();
         this.ai = new BotAI(this);
@@ -93,27 +86,19 @@ public class FakeBot {
         return bukkitPlayer;
     }
 
-    public ServerPlayer getNmsPlayer() {
-        try {
-            MinecraftServer nmsServer = ((CraftServer) Bukkit.getServer()).getServer();
-            ServerPlayer sp = nmsServer.getPlayerList().getPlayer(bukkitPlayer.getUniqueId());
-            if (sp != null) {
-                this.nmsPlayer = sp;
-                ensureConnection(sp);
+    public NmsPlayerHandle getHandle() {
+        NmsBridge bridge = (manager != null && manager.getPlugin() != null) ? manager.getPlugin().getNmsBridge() : null;
+        if (bridge != null && bukkitPlayer != null) {
+            Player p = Bukkit.getPlayer(bukkitPlayer.getUniqueId());
+            if (p != null) {
+                this.bukkitPlayer = p;
+                NmsPlayerHandle fresh = bridge.getHandle(p);
+                if (fresh != null) {
+                    this.handle = fresh;
+                }
             }
-        } catch (Throwable ignored) {}
-        return nmsPlayer;
-    }
-
-    public static void ensureConnection(ServerPlayer sp) {
-        if (sp != null && sp.connection == null) {
-            try {
-                MinecraftServer nmsServer = ((CraftServer) Bukkit.getServer()).getServer();
-                NoopConnection noopConn = new NoopConnection(PacketFlow.SERVERBOUND);
-                CommonListenerCookie cookie = CommonListenerCookie.createInitial(sp.getGameProfile(), false);
-                sp.connection = new FakeConnection(nmsServer, noopConn, sp, cookie);
-            } catch (Throwable ignored) {}
         }
+        return this.handle;
     }
 
     public void updatePlayer(Player player) {
@@ -121,7 +106,7 @@ public class FakeBot {
             this.bukkitPlayer = player;
             player.setInvulnerable(false);
             player.setNoDamageTicks(0);
-            getNmsPlayer();
+            getHandle();
         }
     }
 
@@ -282,9 +267,9 @@ public class FakeBot {
     }
 
     public boolean isOnGround() {
-        ServerPlayer sp = getNmsPlayer();
+        NmsPlayerHandle sp = getHandle();
         if (sp == null) return false;
-        if (sp.onGround() || sp.verticalCollisionBelow) return true;
+        if (sp.isOnGround() || sp.isVerticalCollisionBelow()) return true;
         // Strict fallback only when entity is stationary (not falling or leaping)
         if (Math.abs(velY) > 0.08) {
             return false;
@@ -349,7 +334,7 @@ public class FakeBot {
     }
 
     public void setRotation(float yaw, float pitch) {
-        ServerPlayer sp = getNmsPlayer();
+        NmsPlayerHandle sp = getHandle();
         if (sp != null) {
             sp.setRot(yaw, pitch);
             sp.setYHeadRot(yaw);
@@ -368,9 +353,9 @@ public class FakeBot {
         this.jumpStuckCooldown = 0;
         this.jumpAscentTicks = 0;
         this.lastJumpAttemptLoc = null;
-        ServerPlayer sp = getNmsPlayer();
+        NmsPlayerHandle sp = getHandle();
         if (sp != null) {
-            sp.setDeltaMovement(Vec3.ZERO);
+            sp.clearDeltaMovement();
         }
         Player p = getBukkitPlayer();
         if (p != null) {
@@ -480,8 +465,8 @@ public class FakeBot {
 
     public void aimAt(Location targetLoc, float maxTurnDeg, float inaccuracyDeg) {
         Player p = getBukkitPlayer();
-        ServerPlayer sp = getNmsPlayer();
-        if (p.isDead() || !p.isOnline()) return;
+        NmsPlayerHandle sp = getHandle();
+        if (p.isDead() || !p.isOnline() || sp == null) return;
 
         Location myLoc = p.getLocation();
         double dx = targetLoc.getX() - myLoc.getX();
@@ -541,7 +526,7 @@ public class FakeBot {
         sp.setYHeadRot(newYaw);
 
         // Natural player body rotation: lags behind head rotation unless turning sharply
-        float bodyYaw = sp.yBodyRot;
+        float bodyYaw = sp.getYBodyRot();
         float bodyDiff = newYaw - bodyYaw;
         while (bodyDiff < -180.0f) bodyDiff += 360.0f;
         while (bodyDiff > 180.0f) bodyDiff -= 360.0f;
@@ -552,8 +537,8 @@ public class FakeBot {
 
     public void moveRel(double dx, double dy, double dz) {
         Player p = getBukkitPlayer();
-        ServerPlayer sp = getNmsPlayer();
-        if (p.isDead() || !p.isOnline() || p.getGameMode() == GameMode.SPECTATOR) return;
+        NmsPlayerHandle sp = getHandle();
+        if (sp == null || p.isDead() || !p.isOnline() || p.getGameMode() == GameMode.SPECTATOR) return;
         if (manager != null && manager.getPlugin() != null && manager.getPlugin().getGameManager().getState() == com.rounds.game.GameManager.GameState.CARDS) return;
         if (com.rounds.listener.LegendaryEffects.isBulletTimeActiveFor(p.getUniqueId())
                 || p.hasPotionEffect(org.bukkit.potion.PotionEffectType.SLOW)) {
@@ -574,14 +559,16 @@ public class FakeBot {
 
         // 1. Pick up external vertical impulses (jump pads, up blocks, explosions)
         boolean onGround = isOnGround();
-        Vec3 delta = sp.getDeltaMovement();
-        if (Math.abs(delta.y) > 0.20) {
-            velY = delta.y;
+        double extDeltaX = sp.getDeltaX();
+        double extDeltaY = sp.getDeltaY();
+        double extDeltaZ = sp.getDeltaZ();
+        if (Math.abs(extDeltaY) > 0.20) {
+            velY = extDeltaY;
         }
-        double deltaHorizSq = delta.x * delta.x + delta.z * delta.z;
+        double deltaHorizSq = extDeltaX * extDeltaX + extDeltaZ * extDeltaZ;
         if (deltaHorizSq > 0.04) {
-            impulseX += delta.x;
-            impulseZ += delta.z;
+            impulseX += extDeltaX;
+            impulseZ += extDeltaZ;
         }
 
         if (padLaunchTicks > 0) {
@@ -698,12 +685,12 @@ public class FakeBot {
             while (obstacleHeight < 4 && aheadFeet.clone().add(0, obstacleHeight, 0).getBlock().getType().isSolid() && !hazardAhead) {
                 obstacleHeight++;
             }
-            if (obstacleHeight == 0 && sp.horizontalCollision && !hazardAhead && !wallAtEye) {
+            if (obstacleHeight == 0 && sp.isHorizontalCollision() && !hazardAhead && !wallAtEye) {
                 obstacleHeight = 1;
             }
 
             boolean solidBlockAhead = (obstacleHeight > 0) && !hazardAhead && !wallAtEye;
-            boolean stepAhead = solidBlockAhead || (sp.horizontalCollision && !entityAhead && !hazardAhead && !wallAtEye);
+            boolean stepAhead = solidBlockAhead || (sp.isHorizontalCollision() && !entityAhead && !hazardAhead && !wallAtEye);
 
             boolean willAttempt = (obstacleHeight > 0) && considersObstacleClimbable(obstacleHeight) && !wallAtEye;
             boolean landingClear = (obstacleHeight > 0)
@@ -792,18 +779,18 @@ public class FakeBot {
         if (Math.abs(impulseZ) < 0.01) impulseZ = 0.0;
 
         Location from = p.getLocation().clone();
-        sp.move(MoverType.SELF, new Vec3(moveX, finalVelY, moveZ));
+        sp.move(moveX, finalVelY, moveZ);
         Location to = p.getLocation().clone();
 
         // Check if ceiling was hit
-        if (sp.verticalCollision && !sp.verticalCollisionBelow && velY > 0.0) {
+        if (sp.isVerticalCollision() && !sp.isVerticalCollisionBelow() && velY > 0.0) {
             velY = 0.0;
         }
-        if (sp.verticalCollisionBelow && velY < 0.0) {
+        if (sp.isVerticalCollisionBelow() && velY < 0.0) {
             velY = 0.0;
         }
         // Clear deltaMovement so move's residual vector doesn't pollute next tick
-        sp.setDeltaMovement(Vec3.ZERO);
+        sp.clearDeltaMovement();
 
         // Turn body towards movement direction when running
         if (Math.abs(moveX) > 0.04 || Math.abs(moveZ) > 0.04) {
@@ -949,6 +936,6 @@ public class FakeBot {
             ai.cleanup();
         }
         this.bukkitPlayer = null;
-        this.nmsPlayer = null;
+        this.handle = null;
     }
 }

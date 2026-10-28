@@ -350,7 +350,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     private void handleStatus(CommandSender sender) {
         GameManager gm = plugin.getGameManager();
         TeamManager tm = plugin.getTeamManager();
-        String state = Messages.get("game-state." + gm.getState().name().toLowerCase());
+        String state = Messages.get("command.game-state-" + gm.getState().name().toLowerCase());
         
         sender.sendMessage(B + "\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
         sender.sendMessage(B + "\u2551 " + W + "\u2502 " + B + Messages.get("debug.state-title"));
@@ -439,10 +439,21 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 sender.sendMessage(ChatColor.RED + "Нельзя включить дебаг задним числом. Текущий раунд: " + cur);
                 return;
             }
+            boolean immediate = (from == cur)
+                    && plugin.getGameManager().getState() == GameManager.GameState.PLAYING;
             com.rounds.debug.DebugSession.active = false;
             com.rounds.debug.DebugSession.startAt = from;
             com.rounds.debug.DebugSession.stopAt = -1;
             com.rounds.debug.DebugSession.triggered = false;
+            if (immediate) {
+                com.rounds.debug.DebugSession.triggered = true;
+                com.rounds.debug.DebugSession.active = true;
+                com.rounds.debug.DebugLog.initSession();
+                com.rounds.debug.DebugLog.log("DEBUG", "DEBUG SESSION STARTED (IMMEDIATE in round R#" + cur + ")");
+                sender.sendMessage(ChatColor.GREEN + "RoundsDebug: дебаг включён немедленно в текущем раунде " + cur);
+                sender.sendMessage(ChatColor.GRAY + "Автостоп не запланирован.");
+                return;
+            }
             sender.sendMessage(ChatColor.GREEN + "RoundsDebug: дебаг будет включён автоматически при старте раунда " + from);
             sender.sendMessage(ChatColor.GRAY + "Автостоп не запланирован.");
             return;
@@ -470,10 +481,22 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 sender.sendMessage(ChatColor.RED + "Нельзя включить дебаг задним числом. Текущий раунд: " + cur);
                 return;
             }
+            boolean immediate = (from == cur)
+                    && plugin.getGameManager().getState() == GameManager.GameState.PLAYING;
             com.rounds.debug.DebugSession.active = false;
             com.rounds.debug.DebugSession.startAt = from;
             com.rounds.debug.DebugSession.stopAt = to;
             com.rounds.debug.DebugSession.triggered = false;
+            if (immediate) {
+                com.rounds.debug.DebugSession.triggered = true;
+                com.rounds.debug.DebugSession.active = true;
+                com.rounds.debug.DebugLog.initSession();
+                com.rounds.debug.DebugLog.log("DEBUG", "DEBUG SESSION STARTED (IMMEDIATE in round R#" + cur + ")");
+                com.rounds.debug.DebugLog.log("DEBUG", "AUTO-STOP planned at end of R#" + to);
+                sender.sendMessage(ChatColor.GREEN + "RoundsDebug: дебаг включён немедленно в текущем раунде " + cur
+                        + ". Автостоп в конце раунда " + to + " с дампом.");
+                return;
+            }
             sender.sendMessage(ChatColor.GREEN + "RoundsDebug: дебаг будет включён автоматически при старте раунда " + from + ". Автостоп в конце раунда " + to + " с дампом.");
             return;
         }
@@ -701,7 +724,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         TeamManager tm = plugin.getTeamManager();
         boxHeader(sender, Messages.get("command.info-title"));
         boxKv(sender, Messages.get("command.version", plugin.getDescription().getVersion()));
-        boxKv(sender, Messages.get("command.state", gm.getState()));
+        boxKv(sender, Messages.get("command.state", Messages.get("command.game-state-" + gm.getState().name().toLowerCase())));
         boxKv(sender, Messages.get("command.rounds-to-win-cmd", (int) gm.getRounds()));
         boxKv(sender, Messages.get("command.players-online", Bukkit.getOnlinePlayers().size()));
         String onOff = plugin.getRoundsConfig().isFreeplay()
@@ -726,7 +749,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         if (args.length >= 2 && args[1].equalsIgnoreCase("@a")) {
             int count = 0;
             for (Player p : Bukkit.getOnlinePlayers()) {
-                p.getInventory().addItem(GunItem.createGunItem());
+                plugin.getGameManager().giveGun(p);
                 count++;
             }
             sender.sendMessage(ChatColor.GREEN + Messages.get("debug.gun-given") + " -> @a (" + count + ")");
@@ -742,8 +765,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player"));
             return;
         }
-        ItemStack gun = GunItem.createGunItem();
-        target.getInventory().addItem(gun);
+        plugin.getGameManager().giveGun(target);
         sender.sendMessage(ChatColor.GREEN + Messages.get("debug.gun-given") + (args.length >= 2 ? " -> " + target.getName() : ""));
     }
 

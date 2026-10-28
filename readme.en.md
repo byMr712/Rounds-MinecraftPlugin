@@ -1,9 +1,15 @@
-# RoundsPlugin — The [ROUNDS](https://store.steampowered.com/app/1557740/ROUNDS/) Minigame in Minecraft
+> Language: [Russian](readme.md) · English
+<div align="center">
 
-> **Language:** [Русский](readme.md) · English  
+  <img width="440" alt="RoundsPlugin logo" src="/images/logo.jpg">
+
+  <h3>RoundsPlugin</h3>
+
+</div>
+
 > Inspired by the [Rounds In Minecraft](https://minecraft-inside.ru/maps/169501-rounds-in-minecraft.html) mod by ifrit.
 
-**RoundsPlugin** brings the chaotic, competitive 2D/3D platformer shooter [**ROUNDS**](https://store.steampowered.com/app/1557740/ROUNDS/) directly to your Minecraft server! 4 teams, a deep card system with 116 unique upgrade cards and custom card support, up to 20+ rounds, physical interactive setup blocks, comeback card drafting for losing teams, auto-death for stalled rounds, freeplay mode, and full [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) / [**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi) integration.
+A Minecraft plugin for the competitive mini-game [**ROUNDS**](https://store.steampowered.com/app/1557740/ROUNDS/), designed for Paper/Purpur servers. Features include support for 2–4 teams, an in-depth card system with a wide variety of upgrade cards (plus the ability to create your own), a configurable number of rounds, an interactive physics-based block system for rapid map setup, a card-selection mechanic for the losing team, an auto-kill feature for prolonged rounds, a "freeplay" mode, and full support for [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) and [**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi).
 
 
 ## Key Features
@@ -13,7 +19,7 @@
   - **Left Click:** Fires physics-driven bullets with ricochets, bullet speed, and card effects.
   - **Right Click:** Raises shield to deflect bullets and trigger explosive counter-abilities.
   - **Q (Drop Key):** Manually reload your magazine with a live Action Bar progress bar.
-- **116 Unique Upgrade Cards:**
+- **Unique Upgrade Cards:**
   - Massive ability catalog: homing bullets, poison clouds, frost slow, wall drills, executions, close-range saw shredding, and second-wind revives.
   - 5 rarity tiers: `COMMON`, `UNCOMMON`, `RARE`, `EPIC`, `LEGENDARY` with configurable weights.
   - Support for variations (single card with scaling stats across rarities).
@@ -53,14 +59,13 @@
 
 ## System Requirements
 
-- **Server:** Paper / Purpur 1.20.4+ (compatible with 1.20.x — 1.21.x / 26.2+)
-- **Java:** 17
+- **Server: paper/purpur with Minecraft version 1.20.4 - 26.3**
+- **Java:** 17+
 - [**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi) and [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) (Optional; the plugin itself can also display core data, should you wish to customize things further)
-
 
 ## Installation
 
-1. Place `RoundsPlugin.jar` into your server's `plugins/` directory.
+1. Take the jar for your server version and place it in the server's "plugins/" folder.
 2. Restart the server to generate configuration files.
 3. Configure `plugins/Rounds/config.yml` if needed.
 4. Add custom cards to `plugins/Rounds/cards/custom/` (optional).
@@ -255,7 +260,7 @@ freeplay:
 ## Card System
 
 Cards are stored as individual YAML files:
-- `plugins/Rounds/cards/original/` — Built-in cards (116 files).
+- `plugins/Rounds/cards/original/` — Built-in cards.
 - `plugins/Rounds/cards/custom/` — Custom cards.
 
 ### Example Standard Card (`burst.yml`)
@@ -424,38 +429,18 @@ Primary command: `/rdebug` (aliases `/rounds` and `/rbot`).
 
 ### Freeplay Mode (`freeplay: true`)
 
-The `freeplay.enabled` setting in `config.yml` or the `/rdebug freeplay on|off` command toggles freeplay mode. By default, players without administrative permissions (`rounds.admin` / OP) only have access to safe informational commands. Enabling freeplay grants regular players access to match management and practice bot commands for self-guided practice.
+The `freeplay.enabled` setting in `config.yml` or the `/rdebug freeplay on|off` command toggles freeplay mode. Enabling freeplay grants regular players access to match management and bot commands for self-guided games.
 
-1. **Public Commands (Always available to all players without OP):**
-   - `/rdebug join` — Join ongoing match
-   - `/rdebug info` — General plugin, match, and card catalog information
-   - `/rdebug status` — Match status, current round, and scores
-   - `/rdebug stats show [player]` — View player attributes (if no nickname is provided, shows your own)
-   - `/rdebug cards show [player] [page]` — View acquired upgrade cards
-   - `/rdebug statsend [player]` — View stats from the last completed match
-
-2. **Freeplay Commands (Unlocked for regular players only when `freeplay: true`):**
-   - `/rdebug start` — Start match
-   - `/rdebug stop` — Stop match
-   - `/rdebug rounds <n>` — Set required wins for match victory
-   - `/rdebug givegun` — Receive weapon
-   - `/rdebug wheel <on|off>` — Toggle draft card auto-rotation
-   - `/rdebug bossbar <on|off>` — Toggle match boss bar
-   - `/rdebug bot` — Spawn, configure, and despawn practice bots
-   - `/rbot` — Complete bot management suite (`spawn`, `despawn`, `list`, `level`, `strategy`, `shoot`, `block`, `aim`, `query`, etc.)
-
-3. **Admin Commands (Strictly require `rounds.admin` / OP even in freeplay mode):**
-   - `/rdebug cards add <player> <card> [rarity]` — Grant cards to players
-   - `/rdebug cards reload` — Reload card configuration files
-   - `/rdebug stats add <player> <stat> <value>` — Manually adjust player attributes
-   - `/rdebug freeplay <on\|off>` — Toggle freeplay mode
-   - `/rdebug autodeath <on\|off>` — Toggle sudden death auto-elimination
-   - `/rdebug cardchoicetime <sec>` — Configure card draft selection duration
-   - `/rdebug setlobby` — Set lobby anchor position
-   - `/rdebug giveblocks [player]` — Give special arena setup blocks
-   - `/rdebug jumppos1` / `jumppos2` / `jumpset` / `jumpposreset` — Setup jump pad blocks
-   - `/rdebug uppos1` / `uppos2` / `upset` / `upposreset` — Setup elevator lift blocks
-   - `/rdebug setlanguage <lang>` — Change plugin language on the fly
+| Command | Parameters | Description |
+|---------|------------|-------------|
+| `/rdebug start` | | Start match |
+| `/rdebug stop` | | Stop match |
+| `/rdebug rounds <n>` | `<number>` | Set required wins for match victory |
+| `/rdebug givegun` | | Receive weapon |
+| `/rdebug wheel <on\|off>` | `on/off` | Toggle draft card auto-rotation |
+| `/rdebug bossbar <on\|off>` | `on/off` | Toggle match boss bar |
+| `/rdebug bot` | | Spawn, configure, and despawn practice bots |
+| `/rbot` | | Complete bot management suite (`spawn`, `despawn`, `list`, `level`, `strategy`, etc.) |
 
 ### Admin Commands (`rounds.admin`)
 
@@ -493,6 +478,10 @@ The `freeplay.enabled` setting in `config.yml` or the `/rdebug freeplay on|off` 
 | `/rdebug draft [player]` | `[player]` | Open test draft menu for player or bot |
 | `/rdebug placeholders` | | Print all available placeholders to chat |
 | `/rdebug reload` | | Reload `config.yml` |
+| `/rdebug debug start` | | Start the debug session immediately |
+| `/rdebug debug start <round>` | `<1..N>` | Schedule automatic logging start at the beginning of the given round (if it is the current round and the match is running, it starts immediately) |
+| `/rdebug debug start <round> stop <round>` | `<1..N> stop <1..N>` | Schedule start with auto-stop: the dump is produced at the end of the given logging round, the match keeps running |
+| `/rdebug debug stop [round]` | `[1..N]` | Stop the session (dump) and close the file; only logging stops, the game continues |
 
 ### Combat Bot Management (`/rbot` and `/rdebug bot`)
 
@@ -640,8 +629,6 @@ The plugin repository includes pre-configured and tested configuration files ins
    ```
 4. Done! The sidebar scoreboard will immediately display your active team, win counters for all 4 teams, and switch every 5 seconds to show your current combat statistics.
 
----
-
 ### Detailed Breakdown of [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) Configuration Files
 
 If you wish to customize the design or configure the files manually:
@@ -741,7 +728,7 @@ Language files are located in `plugins/Rounds/lang/`:
 |-----------|-------------|
 | `plugins/Rounds/config.yml` | Main plugin configuration |
 | `plugins/Rounds/lang/*.txt` | Localization packs |
-| `plugins/Rounds/cards/original/*.yml` | Built-in card catalog (116 cards) |
+| `plugins/Rounds/cards/original/*.yml` | Built-in card catalog |
 | `plugins/Rounds/cards/custom/*.yml` | Custom cards |
 | `plugins/Rounds/cards/id_registry.yml` | Custom card ID mapping registry |
 | `plugins/Rounds/playerdata/` | Persistent player records |
@@ -751,74 +738,24 @@ Language files are located in `plugins/Rounds/lang/`:
 | `<World>/rounds-map-blocks.yml` | Stored lobby, map zone, and spawn blocks |
 
 
-## Public API (Rounds Public API v1.0.0)
+## Public API for Developers (Rounds Public API)
 
-The plugin provides a public `rounds-api` module isolated from NMS, designed for building custom third-party addons and cards.
-
-### Adding Dependency
-
-```kotlin
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    compileOnly("com.rounds:rounds-api:1.0.0")
-}
-```
-
-### Registering Custom Cards via Code
-
-```java
-CardBuilder.create(myPlugin, "lightning_strike")
-    .name("ru", "&eГромовержец")
-    .name("en", "&eLightning Strike")
-    .description("en", "Every 3rd shot is electrified.")
-    .rarity(CardRarity.EPIC)
-    .material(Material.LIGHTNING_ROD)
-    .role(CardRole.OFFENSIVE)
-    .onShoot(event -> {
-        // Shooting logic
-    })
-    .onBulletHit(event -> {
-        // Bullet hit logic
-    })
-    .register();
-```
-
-### Declarative No-Code Cards
-
-Files in `plugins/Rounds/cards/custom/*.yml` are loaded automatically:
-
-```yaml
-id: "pyrotechnic"
-name:
-  ru: "&6Пиротехник"
-  en: "&6Pyrotechnic"
-description:
-  ru: "Выстрелы поджигают цель и вызывают взрывную волну"
-  en: "Shots ignite target and create a shockwave"
-material: FIRE_CHARGE
-rarity: RARE
-role: OFFENSIVE
-effects:
-  bullet-speed: 0.15
-  damage: 2.0
-triggers:
-  on-hit:
-    ignite-ticks: 80
-    knockback-strength: 0.7
-```
-
+The plugin provides a public `rounds-api` module isolated from NMS for building third-party addons and cards. Full documentation: dependency setup, code-based card registration, declarative no-code cards - see [API.en.md](API.en.md).
 
 ## Building from Source
 
-Requires **Java 17** (or higher) and **Gradle 8.9+**:
+Requires **JDK 17+**; Gradle **8.9+** is bundled via the wrapper.
 
 ```bash
-./gradlew build
+gradlew clean build
 ```
 
-Generated artifacts:
-- API module: `rounds-api/build/libs/rounds-api-1.0.0.jar`
-- Core plugin: `rounds-core/build/libs/RoundsPlugin-v1.6-byMr712.jar`
+Ready plugins - one per server version - are placed in `rounds-nms*/build/libs/`:
+
+```
+RoundsPlugin-<server-version>-v1.7-byMr712.jar
+```
+
+- Range: every stable release **1.20.4 - 26.3**.
+- Each jar works on both Paper and Purpur of the matching Minecraft version.
+- `rounds-api` builds separately into `rounds-api/build/libs/`, the core into `rounds-core/build/libs/`; `rounds-nms1204/build/libs/intermediate/` holds intermediate build artifacts of the 1.20.4 adapter (paperweight), not meant for use.

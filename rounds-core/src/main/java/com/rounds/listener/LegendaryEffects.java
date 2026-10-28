@@ -139,7 +139,11 @@ public class LegendaryEffects implements Listener {
         }
 
         if (victimData.spiteRazorwire > 0) {
-            triggerRazorwire(victim, victimData);
+            try {
+                triggerRazorwire(victim, victimData);
+            } catch (Throwable razorError) {
+                // Must never abort the surrounding damage pipeline
+            }
         }
 
         if (victimData.bulletTime > 0
@@ -206,7 +210,12 @@ public class LegendaryEffects implements Listener {
         }
 
         if (data.spiteRazorwire > 0 && event.getCause() != EntityDamageEvent.DamageCause.VOID) {
-            triggerRazorwire(player, data);
+            try {
+                triggerRazorwire(player, data);
+            } catch (Throwable razorError) {
+                // Throwing inside a damage listener aborts the event for all remaining listeners
+                // and kills the whole hurt() call -> victims appear invulnerable. Never propagate.
+            }
         }
 
         if (data.skyfall > 0
@@ -334,6 +343,8 @@ public class LegendaryEffects implements Listener {
                     if (!entity.isInvulnerable() && entity.getHealth() >= hpBefore && maxDmg > 0.0 && !entity.isDead()) {
                         com.rounds.entity.RoundsEntities.safeSetHealth(entity, hpBefore - maxDmg);
                     }
+                    com.rounds.stats.MatchStatsManager.recordDamageDealt(player.getUniqueId(), entity.getUniqueId(), maxDmg);
+                    com.rounds.stats.MatchStatsManager.recordLastDamager(entity.getUniqueId(), player.getUniqueId());
                     if (entity instanceof Player victim) {
                         com.rounds.entity.RoundsEntities.applyHitRedEffects(victim, loc, victim.getLocation());
                         if (plugin.getBotManager() != null) {
@@ -373,7 +384,9 @@ public class LegendaryEffects implements Listener {
         owner.setNoDamageTicks(20);
         if (instance != null && instance.plugin != null) {
             Bukkit.getScheduler().scheduleSyncDelayedTask(instance.plugin, () -> {
-                if (owner.isOnline() && owner.isValid()) {
+                // Reset unconditionally while online (even mid-death/respawn): a lingering
+                // invulnerable flag would let the 1-second blessing "stack" indefinitely.
+                if (owner.isOnline()) {
                     owner.setInvulnerable(false);
                 }
             }, 20L);
@@ -533,7 +546,7 @@ public class LegendaryEffects implements Listener {
 
         Location center = player.getEyeLocation();
         org.bukkit.World world = center.getWorld();
-        if (world == null) return;
+        if (world == null || !isFiniteLocation(center)) return;
 
         world.playSound(center, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.0f, 1.2f);
         world.playSound(center, Sound.ITEM_TRIDENT_THROW, 0.8f, 1.8f);
@@ -560,27 +573,39 @@ public class LegendaryEffects implements Listener {
         if (!enemies.isEmpty()) {
             int targetsCount = enemies.size();
             for (int i = 0; i < shards; i++) {
-                LivingEntity target = enemies.get(i % targetsCount);
-                Location tEye = target.getEyeLocation();
-                org.bukkit.util.Vector dir = tEye.toVector().subtract(center.toVector()).normalize();
+                try {
+                    LivingEntity target = enemies.get(i % targetsCount);
+                    Location tEye = target.getEyeLocation();
+                    // Non-finite entity positions (dead/despawned targets at the moment of the hit,
+                    // transient respawn states) previously produced "x not finite" rayTraceBlocks
+                    // exceptions that ABORTED the whole damage pipeline mid-event.
+                    if (!isFiniteLocation(tEye)) continue;
+                    org.bukkit.util.Vector delta = tEye.toVector().subtract(center.toVector());
+                    double len = delta.length();
+                    if (!Double.isFinite(len) || len < 1e-6) continue;
+                    org.bukkit.util.Vector dir = delta.multiply(1.0 / len);
 
-                if (!homing) {
-                    var ray = world.rayTraceBlocks(center, dir, center.distance(tEye));
-                    if (ray != null && ray.getHitBlock() != null) continue;
+                    if (!homing) {
+                        var ray = world.rayTraceBlocks(center, dir, len);
+                        if (ray != null && ray.getHitBlock() != null) continue;
+                    }
+
+                    spawnShardBeam(world, center, tEye);
+
+                    double hpBefore = target.getHealth();
+                    target.setNoDamageTicks(0);
+                    target.damage(shardDamage, player);
+                    if (!target.isInvulnerable() && target.getHealth() >= hpBefore && shardDamage > 0.0 && !target.isDead()) {
+                        com.rounds.entity.RoundsEntities.safeSetHealth(target, hpBefore - shardDamage);
+                    }
+                    target.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, tEye, 3, 0.2, 0.2, 0.2, 0.05);
+                    target.getWorld().playSound(target.getLocation(), Sound.ENTITY_PLAYER_HURT, 0.8f, 1.2f);
+                    totalDealt += shardDamage;
+                    com.rounds.stats.MatchStatsManager.recordDamageDealt(uuid, target.getUniqueId(), shardDamage);
+                    com.rounds.stats.MatchStatsManager.recordLastDamager(target.getUniqueId(), uuid);
+                } catch (Throwable shardError) {
+                    // A single broken shard must never abort the razor volley or the surrounding damage event
                 }
-
-                spawnShardBeam(world, center, tEye);
-
-                double hpBefore = target.getHealth();
-                target.setNoDamageTicks(0);
-                target.damage(shardDamage, player);
-                if (!target.isInvulnerable() && target.getHealth() >= hpBefore && shardDamage > 0.0 && !target.isDead()) {
-                    com.rounds.entity.RoundsEntities.safeSetHealth(target, hpBefore - shardDamage);
-                }
-                target.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, tEye, 3, 0.2, 0.2, 0.2, 0.05);
-                target.getWorld().playSound(target.getLocation(), Sound.ENTITY_PLAYER_HURT, 0.8f, 1.2f);
-                totalDealt += shardDamage;
-                com.rounds.stats.MatchStatsManager.recordDamageDealt(uuid, target.getUniqueId(), shardDamage);
             }
         } else {
             // Burst around player when no enemies in range
@@ -610,5 +635,11 @@ public class LegendaryEffects implements Listener {
             world.spawnParticle(Particle.CRIT, cur, 2, 0.05, 0.05, 0.05, 0.02);
         }
         world.spawnParticle(Particle.SWEEP_ATTACK, to, 1, 0, 0, 0, 0);
+    }
+
+    /** Rejects NaN/Infinity positions and missing worlds so raytraces can never throw "not finite". */
+    private static boolean isFiniteLocation(Location l) {
+        return l != null && l.getWorld() != null
+                && Double.isFinite(l.getX()) && Double.isFinite(l.getY()) && Double.isFinite(l.getZ());
     }
 }

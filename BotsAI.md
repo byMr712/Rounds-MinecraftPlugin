@@ -346,3 +346,15 @@ this.ai.runTaskTimer(manager.getPlugin(), 1L, 1L);
 4. **Ограничение подсветки и тиканье эффектов FakeBot:**
    - Карта «Марк был хороший» подсвечивает врагов максимум на 10 секунд (200 тиков) после отдаления.
    - У `FakeBot` реализовано тиканье эффектов зелий, благодаря чему подсветка и замедления корректно истекают по таймеру.
+
+---
+
+## Мультиверсионная архитектура NMS (NmsBridge) для ботов
+
+Все прямые обращения к `net.minecraft.*` и `org.bukkit.craftbukkit.*` вынесены из ядра за стабильный интерфейс `com.rounds.nms.NmsBridge` и фасад `com.rounds.nms.NmsPlayerHandle`:
+
+- `NmsBridge.createFakePlayer(...)` - спавн бота с фиктивным профилем и сетевыми заглушками (`NoopConnection`, `FakeConnection`), включая корректную инициализацию протокол-атрибутов канала для рантайма 1.20.4 (иначе `placeNewPlayer` падает с `x not finite`).
+- `NmsPlayerHandle` - фасад над `ServerPlayer`: движение (`move`), вращения (`setRot`, `setYHeadRot`, `setYBodyRot`), коллизии (`isHorizontalCollision`, `isVerticalCollision*`), delta-импульсы (`getDeltaX/Y/Z`, `clearDeltaMovement`) - тиковый цикл бота использует только этот фасад.
+- Respawn-безопасность: после смерти и респавна фасад заново резолвится из `PlayerList` (`getHandle`), кешированных NMS-ссылок нет.
+- Версионные модули: `rounds-nms1204` (paperweight-userdev: компиляция в Mojang-маппингах + авто-reobf в рантайм-маппинги v1_20_R3), а также `1205`, `1206`, `121`, `1211`, `1213`, `1214`, `1215`, `1216`, `1217`, `1218`, `1219`, `12110`, `12111`, `2611`, `2612`, `262`, `263` (компиляция против Mojang-mapped рантайма своей версии). Отличия версий локализованы внутри модулей: тип листенеров пакетов (`PacketSendListener` до 1.21.5 включительно против `ChannelFutureListener` с 1.21.6+), сигнатуры disconnect (`DisconnectionReason`/`DisconnectionDetails` в 26.x), механизм `setListener`/протокол-атрибутов `Connection`. Версия 1.21.2 недоступна upstream (PaperMC не хостит её артефакты), поэтому её модуль отсутствует.
+- Каждый модуль собирает финальный артефакт `RoundsPlugin-<версия>-v1.7-byMr712.jar` (Paper и Purpur одной версии используют один jar); весь ИИ ботов (`BotAI`, стратегии, `CombatProfile`, NavMesh) принадлежит общему ядру `rounds-core` и компилируется один раз.

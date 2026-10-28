@@ -715,7 +715,7 @@ public class BotAI extends BukkitRunnable {
         if (!isCombatAllowed()) {
             if (tickCount % 40 == 0) {
                 float rndYaw = player.getLocation().getYaw() + (ThreadLocalRandom.current().nextFloat() * 40f - 20f);
-                bot.getNmsPlayer().setRot(rndYaw, 0f);
+                bot.getHandle().setRot(rndYaw, 0f);
             }
             bot.moveRel(0.0, 0.0, 0.0);
             tickCount++;
@@ -726,9 +726,9 @@ public class BotAI extends BukkitRunnable {
         if (roundWarmupTicks > 0) {
             roundWarmupTicks--;
             float wobbleYaw = player.getLocation().getYaw() + (float) Math.sin(tickCount * 0.2) * 5.0f;
-            bot.getNmsPlayer().setRot(wobbleYaw, 0f);
-            bot.getNmsPlayer().setYHeadRot(wobbleYaw);
-            bot.getNmsPlayer().setYBodyRot(wobbleYaw);
+            bot.getHandle().setRot(wobbleYaw, 0f);
+            bot.getHandle().setYHeadRot(wobbleYaw);
+            bot.getHandle().setYBodyRot(wobbleYaw);
             bot.moveRel(0.0, 0.0, 0.0);
             tickCooldowns();
             return;
@@ -786,9 +786,9 @@ public class BotAI extends BukkitRunnable {
             // While airborne/pad launched: orient body and head strictly towards safe landing direction!
             if (Math.abs(steerX) > 0.01 || Math.abs(steerZ) > 0.01) {
                 float flightYaw = (float) Math.toDegrees(Math.atan2(-steerX, steerZ));
-                bot.getNmsPlayer().setRot(flightYaw, 5f);
-                bot.getNmsPlayer().setYHeadRot(flightYaw);
-                bot.getNmsPlayer().setYBodyRot(flightYaw);
+                bot.getHandle().setRot(flightYaw, 5f);
+                bot.getHandle().setYHeadRot(flightYaw);
+                bot.getHandle().setYBodyRot(flightYaw);
                 patrolHeading = flightYaw; // Preserve forward flight heading so bot moves away from edge upon landing
             }
 
@@ -845,9 +845,9 @@ public class BotAI extends BukkitRunnable {
                 coverSearchCooldown = 120;
             } else {
                 // Hold position behind cover, pre-aim steadily down the open corridor
-                bot.getNmsPlayer().setRot(ambushAimYaw, 0f);
-                bot.getNmsPlayer().setYHeadRot(ambushAimYaw);
-                bot.getNmsPlayer().setYBodyRot(ambushAimYaw);
+                bot.getHandle().setRot(ambushAimYaw, 0f);
+                bot.getHandle().setYHeadRot(ambushAimYaw);
+                bot.getHandle().setYBodyRot(ambushAimYaw);
 
                 // If bot has Empower or Homing on block, pre-charge shield!
                 if (data != null && bot.canBlock()) {
@@ -885,9 +885,9 @@ public class BotAI extends BukkitRunnable {
 
             if (cdist > 0.8 && coverSeekTicks < 50) {
                 float moveYaw = (float) Math.toDegrees(Math.atan2(-cdx, cdz));
-                bot.getNmsPlayer().setRot(moveYaw, 0f);
-                bot.getNmsPlayer().setYHeadRot(moveYaw);
-                bot.getNmsPlayer().setYBodyRot(moveYaw);
+                bot.getHandle().setRot(moveYaw, 0f);
+                bot.getHandle().setYHeadRot(moveYaw);
+                bot.getHandle().setYBodyRot(moveYaw);
                 double coverSpd = 0.26 * bot.getSpeedMultiplier();
                 moveCombatRel((cdx / cdist) * coverSpd, (cdz / cdist) * coverSpd);
                 tickCooldowns();
@@ -1384,7 +1384,7 @@ public class BotAI extends BukkitRunnable {
 
         if (distXZ > 1.2) {
             // Abort pursuit immediately if stuck running into a wall on ground (not while in mid-air jumping up steps)
-            if (bot.isOnGround() && bot.getNmsPlayer().horizontalCollision) {
+            if (bot.isOnGround() && bot.getHandle().isHorizontalCollision()) {
                 pursuitStuckTicks++;
                 if (pursuitStuckTicks > 12) {
                     pursuitStuckTicks = 0;
@@ -1435,9 +1435,9 @@ public class BotAI extends BukkitRunnable {
             double mx = Math.sin(rad);
             double mz = Math.cos(rad);
 
-            bot.getNmsPlayer().setRot(moveYaw, 0f);
-            bot.getNmsPlayer().setYHeadRot(moveYaw);
-            bot.getNmsPlayer().setYBodyRot(moveYaw);
+            bot.getHandle().setRot(moveYaw, 0f);
+            bot.getHandle().setYHeadRot(moveYaw);
+            bot.getHandle().setYBodyRot(moveYaw);
 
             double pursuitSpd = profile.pursuitSpeed * bot.getSpeedMultiplier();
             lastMoveX = mx * pursuitSpd;
@@ -1464,9 +1464,9 @@ public class BotAI extends BukkitRunnable {
             if (!isDirectionClear(myLoc, yaw, 1.8)) {
                 yaw = findClearDirection(myLoc, yaw);
             }
-            bot.getNmsPlayer().setRot(yaw, 0f);
-            bot.getNmsPlayer().setYHeadRot(yaw);
-            bot.getNmsPlayer().setYBodyRot(yaw);
+            bot.getHandle().setRot(yaw, 0f);
+            bot.getHandle().setYHeadRot(yaw);
+            bot.getHandle().setYBodyRot(yaw);
             bot.moveRel(0.0, 0.0, 0.0);
             if (searchTicks > 25) {
                 // Done searching this spot, resume patrol exploration
@@ -1494,9 +1494,9 @@ public class BotAI extends BukkitRunnable {
             currentHuntTarget = null;
             currentCorridorWaypoint = null;
             // Instant snap rotation towards open side: never stare into corner/wall!
-            bot.getNmsPlayer().setRot(pocketExit, 0f);
-            bot.getNmsPlayer().setYHeadRot(pocketExit);
-            bot.getNmsPlayer().setYBodyRot(pocketExit);
+            bot.getHandle().setRot(pocketExit, 0f);
+            bot.getHandle().setYHeadRot(pocketExit);
+            bot.getHandle().setYBodyRot(pocketExit);
         }
 
         // High ground vantage hold: survey high ground for 3s instead of immediately jumping back down
@@ -1544,7 +1544,7 @@ public class BotAI extends BukkitRunnable {
         }
 
         // 3. Track stuck status (detect getting blocked by walls/corners on ground)
-        boolean physicallyBlocked = bot.isOnGround() && bot.getNmsPlayer().horizontalCollision;
+        boolean physicallyBlocked = bot.isOnGround() && bot.getHandle().isHorizontalCollision();
         if (physicallyBlocked || (lastHuntPos != null && myLoc.getWorld().equals(lastHuntPos.getWorld()) && myLoc.distanceSquared(lastHuntPos) < 0.005)) {
             huntStuckTicks++;
         } else {
@@ -1682,13 +1682,13 @@ public class BotAI extends BukkitRunnable {
         float curPitch = player.getLocation().getPitch();
         float newPitch = curPitch + (0f - curPitch) * 0.12f;
 
-        bot.getNmsPlayer().setRot(newYaw, newPitch);
-        bot.getNmsPlayer().setYHeadRot(newYaw);
+        bot.getHandle().setRot(newYaw, newPitch);
+        bot.getHandle().setYHeadRot(newYaw);
 
-        float bodyYaw = bot.getNmsPlayer().yBodyRot;
+        float bodyYaw = bot.getHandle().getYBodyRot();
         float bodyDiff = ((newYaw - bodyYaw + 540f) % 360f) - 180f;
         if (Math.abs(bodyDiff) > 30.0f) {
-            bot.getNmsPlayer().setYBodyRot(bodyYaw + (bodyDiff > 0 ? bodyDiff - 30.0f : bodyDiff + 30.0f));
+            bot.getHandle().setYBodyRot(bodyYaw + (bodyDiff > 0 ? bodyDiff - 30.0f : bodyDiff + 30.0f));
         }
 
         // 7. Exploration movement: pause forward thrust while facing an obstacle to avoid faceplanting into walls

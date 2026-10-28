@@ -1,8 +1,7 @@
-package com.rounds.nms;
+package com.rounds.nms.impl;
 
-import io.netty.channel.ChannelFutureListener;
-import net.kyori.adventure.text.Component;
 import net.minecraft.network.Connection;
+import net.minecraft.network.PacketSendListener;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -10,6 +9,10 @@ import net.minecraft.server.network.CommonListenerCookie;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import org.bukkit.event.player.PlayerKickEvent;
 
+/**
+ * MC 1.20.4 fake game connection: swallows keepalives/timeout kicks instead of disconnecting the bot.
+ * 1.20.4 listener type is net.minecraft.network.PacketSendListener (ChannelFutureListener came later).
+ */
 public class FakeConnection extends ServerGamePacketListenerImpl {
 
     public FakeConnection(MinecraftServer server, Connection connection, ServerPlayer player, CommonListenerCookie cookie) {
@@ -28,21 +31,16 @@ public class FakeConnection extends ServerGamePacketListenerImpl {
     }
 
     @Override
-    public void send(Packet<?> packet, ChannelFutureListener listener) {
+    public void send(Packet<?> packet, PacketSendListener listener) {
         if (listener != null) {
             try {
-                listener.operationComplete(null);
-            } catch (Exception ignored) {}
+                listener.onSuccess();
+            } catch (Throwable ignored) {}
         }
     }
 
     @Override
-    public void disconnect(Component message) {
-        // Prevent spurious disconnects
-    }
-
-    @Override
-    public void disconnect(Component message, PlayerKickEvent.Cause cause) {
+    public void disconnect(net.kyori.adventure.text.Component message, PlayerKickEvent.Cause cause) {
         // Prevent spurious disconnects
     }
 
@@ -53,6 +51,11 @@ public class FakeConnection extends ServerGamePacketListenerImpl {
 
     @Override
     public void disconnect(net.minecraft.network.chat.Component message, PlayerKickEvent.Cause cause) {
+        // Prevent spurious disconnects
+    }
+
+    @Override
+    public void disconnect(String message, PlayerKickEvent.Cause cause) {
         // Prevent spurious disconnects
     }
 }

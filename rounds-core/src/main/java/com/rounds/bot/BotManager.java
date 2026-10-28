@@ -1,24 +1,13 @@
 package com.rounds.bot;
 
-import com.mojang.authlib.GameProfile;
 import com.rounds.RoundsPlugin;
-import com.rounds.nms.FakeConnection;
-import com.rounds.nms.NoopConnection;
+import com.rounds.nms.NmsPlayerHandle;
 import com.rounds.teams.TeamManager.GameTeam;
-import net.minecraft.network.protocol.PacketFlow;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ClientInformation;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.network.CommonListenerCookie;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.craftbukkit.CraftServer;
-import org.bukkit.craftbukkit.CraftWorld;
-import org.bukkit.entity.Player;
-import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.entity.Player;import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -131,29 +120,19 @@ public class BotManager implements Listener {
             loc.setWorld(world);
         }
 
-        MinecraftServer nmsServer = ((CraftServer) Bukkit.getServer()).getServer();
-        ServerLevel nmsLevel = ((CraftWorld) world).getHandle();
+        com.rounds.nms.NmsBridge bridge = plugin.getNmsBridge();
+        if (bridge == null) {
+            plugin.getLogger().warning("NMS bridge not available on this server version - bot spawn skipped (" + name + ")");
+            return null;
+        }
 
-        // 1. Profile and ServerPlayer
         UUID botUuid = UUID.randomUUID();
-        GameProfile profile = new GameProfile(botUuid, name);
-        ClientInformation clientInfo = ClientInformation.createDefault();
-
-        ServerPlayer nmsPlayer = new ServerPlayer(nmsServer, nmsLevel, profile, clientInfo);
-        nmsPlayer.setPos(loc.getX(), loc.getY(), loc.getZ());
-        nmsPlayer.setRot(loc.getYaw(), loc.getPitch());
-
-        // 2. Setup NoopConnection & place into server PlayerList
-        NoopConnection noopConn = new NoopConnection(PacketFlow.SERVERBOUND);
-        CommonListenerCookie cookie = CommonListenerCookie.createInitial(profile, false);
-
-        nmsServer.getPlayerList().placeNewPlayer(noopConn, nmsPlayer, cookie);
-
-        // 3. Swap with FakeConnection to prevent timeout disconnects
-        nmsPlayer.connection = new FakeConnection(nmsServer, noopConn, nmsPlayer, cookie);
-
-        Player bukkitPlayer = nmsPlayer.getBukkitEntity();
-        bukkitPlayer.setGameMode(GameMode.SURVIVAL);
+        NmsPlayerHandle handle = bridge.createFakePlayer(world, name, botUuid, loc);
+        if (handle == null) {
+            plugin.getLogger().warning("Failed to create fake player " + name + " (NMS adapter error)");
+            return null;
+        }
+        Player bukkitPlayer = handle.getBukkitEntity();        bukkitPlayer.setGameMode(GameMode.SURVIVAL);
         bukkitPlayer.setAllowFlight(false);
         bukkitPlayer.setFlying(false);
         bukkitPlayer.setInvulnerable(false);
@@ -186,7 +165,7 @@ public class BotManager implements Listener {
         // Give gun directly
         plugin.getGameManager().giveGun(bukkitPlayer);
 
-        FakeBot bot = new FakeBot(this, bukkitPlayer, nmsPlayer);
+        FakeBot bot = new FakeBot(this, handle);
         bot.resetPhysics();
         try {
             bot.setAssignedTeam(GameTeam.valueOf(targetTeam.toUpperCase()));
@@ -235,36 +214,17 @@ public class BotManager implements Listener {
         if (bot == null) return false;
 
         Player bukkitPlayer = bot.getBukkitPlayer();
-        ServerPlayer nmsPlayer = bot.getNmsPlayer();
         UUID botUuid = (bukkitPlayer != null) ? bukkitPlayer.getUniqueId() : null;
+
+        com.rounds.nms.NmsBridge bridge = plugin.getNmsBridge();
+        NmsPlayerHandle handle = (bridge != null) ? bot.getHandle() : null;
 
         // 1. Cleanup bot AI and internal state
         bot.cleanup();
 
         // 2. Disconnect and remove NMS player cleanly from level and connection
-        if (nmsPlayer != null) {
-            try {
-                nmsPlayer.unRide();
-                nmsPlayer.closeContainer();
-                nmsPlayer.discard();
-                if (bukkitPlayer != null && bukkitPlayer.getWorld() != null) {
-                    ServerLevel level = ((CraftWorld) bukkitPlayer.getWorld()).getHandle();
-                    if (level != null) {
-                        level.removePlayerImmediately(nmsPlayer, net.minecraft.world.entity.Entity.RemovalReason.DISCARDED);
-                    }
-                }
-            } catch (Throwable ignored) {}
-
-            MinecraftServer nmsServer = ((CraftServer) Bukkit.getServer()).getServer();
-            if (nmsServer != null && nmsServer.getPlayerList() != null) {
-                nmsServer.getPlayerList().remove(nmsPlayer);
-            }
-
-            if (nmsPlayer.connection != null) {
-                try {
-                    nmsPlayer.connection.disconnect(net.minecraft.network.chat.Component.literal("Despawned"));
-                } catch (Throwable ignored) {}
-            }
+        if (bridge != null && handle != null) {
+            bridge.despawnFakePlayer(handle);
         }
 
         // 3. Clear all plugin registrations and memory caches across managers

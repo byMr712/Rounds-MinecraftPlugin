@@ -14,12 +14,14 @@ import com.rounds.placeholder.RoundsPlaceholders;
 import com.rounds.player.PlayerDataManager;
 import com.rounds.teams.TeamManager;
 import com.rounds.util.Messages;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class RoundsPlugin extends JavaPlugin {
 
     private static RoundsPlugin instance;
     private RoundsConfig roundsConfig;
+    private com.rounds.nms.NmsBridge nmsBridge;
     private GameManager gameManager;
     private TeamManager teamManager;
     private PlayerDataManager playerDataManager;
@@ -36,6 +38,12 @@ public class RoundsPlugin extends JavaPlugin {
         saveDefaultConfig();
         Messages.init(this);
         roundsConfig = new RoundsConfig(this);
+
+        nmsBridge = com.rounds.nms.NmsBridgeLoader.load();
+        if (nmsBridge == null) {
+            getLogger().warning("No NMS bridge found on classpath (server: " + Bukkit.getMinecraftVersion()
+                    + ") - bots, fake players and spectator glow will be disabled on this server");
+        }
 
         customDataManager = new com.rounds.api.impl.CustomDataManager();
         roundsService = new com.rounds.api.impl.RoundsServiceImpl(this);
@@ -121,6 +129,7 @@ public class RoundsPlugin extends JavaPlugin {
 
     public static RoundsPlugin getInstance() { return instance; }
     public RoundsConfig getRoundsConfig() { return roundsConfig; }
+    public com.rounds.nms.NmsBridge getNmsBridge() { return nmsBridge; }
     public GameManager getGameManager() { return gameManager; }
     public TeamManager getTeamManager() { return teamManager; }
     public PlayerDataManager getPlayerDataManager() { return playerDataManager; }

@@ -54,11 +54,8 @@ public class RoundsEntities implements Listener {
     public static void safeSetHealth(LivingEntity entity, double health) {
         if (entity == null || entity.isDead()) return;
         if (entity.isInvulnerable() && health < entity.getHealth()) return;
-        if (entity instanceof org.bukkit.craftbukkit.entity.CraftPlayer cp) {
-            net.minecraft.server.level.ServerPlayer sp = cp.getHandle();
-            if (sp != null && sp.connection == null) {
-                com.rounds.bot.FakeBot.ensureConnection(sp);
-            }
+        if (entity instanceof Player p && plugin.getNmsBridge() != null) {
+            plugin.getNmsBridge().ensureConnection(p);
         }
         try {
             entity.setHealth(Math.min(Math.max(0.0, health), entity.getMaxHealth()));
@@ -396,6 +393,7 @@ public class RoundsEntities implements Listener {
                             nearest.damage(finalDamage, shooter);
                             if (nearest instanceof Player victim) {
                                 com.rounds.stats.MatchStatsManager.recordDamageDealt(shooter.getUniqueId(), victim.getUniqueId(), finalDamage);
+                                com.rounds.stats.MatchStatsManager.recordLastDamager(victim.getUniqueId(), shooter.getUniqueId());
                             }
                         } else {
                             nearest.damage(finalDamage);
@@ -628,6 +626,7 @@ public class RoundsEntities implements Listener {
                     hitEnt.damage(finalDmg, shooter);
                     if (hitEnt instanceof Player victim) {
                         com.rounds.stats.MatchStatsManager.recordDamageDealt(shooter.getUniqueId(), victim.getUniqueId(), finalDmg);
+                        com.rounds.stats.MatchStatsManager.recordLastDamager(victim.getUniqueId(), shooter.getUniqueId());
                     }
                 } else {
                     hitEnt.damage(finalDmg);

@@ -493,3 +493,35 @@ public void onRoundStart(RoundsRoundStartEvent event) {
 - **Availability first.** Always check `RoundsAPI.isAvailable()` before calling API methods.
 - **API boundary.** Only use public types from `rounds-api`. Classes from `rounds-core` are internal and not part of the API contract; they may change without backward compatibility guarantees.
 - **Events.** Some events are cancellable. Always check `isCancelled()` when dealing with cancellable events.
+
+---
+
+## Server Version Compatibility and the NmsBridge
+
+The public API (`rounds-api`) is server-version independent: it holds no `net.minecraft.*` references and is compiled against the stable Paper API. Engine internals that touch NMS (fake player spawning, bot movement and rotation, entity physics, spectator glow packets) are isolated behind the `com.rounds.nms.NmsBridge` interface and shipped by version-specific adapter modules.
+
+| Artifact | Server |
+|---|---|
+| `RoundsPlugin-1.20.4-v1.7-byMr712.jar` | Paper / Purpur 1.20.4 |
+| `RoundsPlugin-1.20.5-v1.7-byMr712.jar` | Paper / Purpur 1.20.5 |
+| `RoundsPlugin-1.20.6-v1.7-byMr712.jar` | Paper / Purpur 1.20.6 |
+| `RoundsPlugin-1.21-v1.7-byMr712.jar` | Paper / Purpur 1.21 |
+| `RoundsPlugin-1.21.1-v1.7-byMr712.jar` | Paper / Purpur 1.21.1 |
+| `RoundsPlugin-1.21.10-v1.7-byMr712.jar` | Paper / Purpur 1.21.10 |
+| `RoundsPlugin-1.21.11-v1.7-byMr712.jar` | Paper / Purpur 1.21.11 |
+| `RoundsPlugin-1.21.3-v1.7-byMr712.jar` | Paper / Purpur 1.21.3 |
+| `RoundsPlugin-1.21.4-v1.7-byMr712.jar` | Paper / Purpur 1.21.4 |
+| `RoundsPlugin-1.21.5-v1.7-byMr712.jar` | Paper / Purpur 1.21.5 |
+| `RoundsPlugin-1.21.6-v1.7-byMr712.jar` | Paper / Purpur 1.21.6 |
+| `RoundsPlugin-1.21.7-v1.7-byMr712.jar` | Paper / Purpur 1.21.7 |
+| `RoundsPlugin-1.21.8-v1.7-byMr712.jar` | Paper / Purpur 1.21.8 |
+| `RoundsPlugin-1.21.9-v1.7-byMr712.jar` | Paper / Purpur 1.21.9 |
+| `RoundsPlugin-26.1.1-v1.7-byMr712.jar` | Paper / Purpur 26.1.1 |
+| `RoundsPlugin-26.1.2-v1.7-byMr712.jar` | Paper / Purpur 26.1.2 |
+| `RoundsPlugin-26.2-v1.7-byMr712.jar` | Paper / Purpur 26.2 |
+| `RoundsPlugin-26.3-v1.7-byMr712.jar` | Paper / Purpur 26.3 |
+
+- Paper and Purpur of the same Minecraft version use the same jar (Purpur is a Paper fork; the NMS layer matches).
+- Version 1.21.2 is not available from PaperMC upstream (the Fill API and maven repositories no longer serve its artifacts), so the 1.21.2 jar cannot be built.
+- Loading a jar of a different version degrades gracefully: bots, fake player spawning and spectator glow are disabled with a log warning, while cards, commands and scoreboards keep working.
+- Plugins consuming `rounds-api` work on every version: the API contract does not depend on the NMS adapter.

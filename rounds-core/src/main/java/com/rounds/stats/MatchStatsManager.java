@@ -25,6 +25,40 @@ public class MatchStatsManager {
     private static final Map<UUID, PlayerMatchStats> activeStats = new ConcurrentHashMap<>();
     private static final Map<UUID, PlayerMatchStats> lastMatchStats = new ConcurrentHashMap<>();
     private static final Map<String, UUID> nameToUuid = new ConcurrentHashMap<>();
+    // Kills attribution: many damage sources bypass vanilla hurt() (protective shield cancels,
+    // safeSetHealth fallbacks, TNT/shard damage and so on), and it is a killer who loses
+    // getKiller() on death. These keep the last attacker per victim for a short window.
+    private static final Map<UUID, UUID> lastDamagers = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> lastDamagerAt = new ConcurrentHashMap<>();
+    private static final long LAST_DAMAGER_WINDOW_MS = 30_000L;
+
+    public static void recordLastDamager(UUID victim, UUID attacker) {
+        if (victim == null || attacker == null || victim.equals(attacker)) return;
+        lastDamagers.put(victim, attacker);
+        lastDamagerAt.put(victim, System.currentTimeMillis());
+    }
+
+    public static UUID getLastDamager(UUID victim) {
+        if (victim == null) return null;
+        Long at = lastDamagerAt.get(victim);
+        if (at == null || System.currentTimeMillis() - at > LAST_DAMAGER_WINDOW_MS) {
+            lastDamagers.remove(victim);
+            lastDamagerAt.remove(victim);
+            return null;
+        }
+        return lastDamagers.get(victim);
+    }
+
+    public static void consumeLastDamager(UUID victim) {
+        if (victim == null) return;
+        lastDamagers.remove(victim);
+        lastDamagerAt.remove(victim);
+    }
+
+    public static void clearAllLastDamagers() {
+        lastDamagers.clear();
+        lastDamagerAt.clear();
+    }
 
     public static void registerParticipant(UUID uuid, String name) {
         if (uuid == null) return;
@@ -101,6 +135,7 @@ public class MatchStatsManager {
 
     public static void onGameStart() {
         activeStats.clear();
+        clearAllLastDamagers();
     }
 
     public static void onGameEnd(com.rounds.player.PlayerDataManager pdm) {
@@ -130,6 +165,7 @@ public class MatchStatsManager {
             lastMatchStats.put(entry.getKey(), copy);
         }
         activeStats.clear();
+        clearAllLastDamagers();
     }
 
     public static PlayerMatchStats getLastMatchStats(UUID uuid) {

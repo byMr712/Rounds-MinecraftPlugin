@@ -21,15 +21,10 @@ import com.rounds.teams.TeamManager;
 import com.rounds.game.GameStateManager.SavedState;
 import com.rounds.teams.TeamManager.GameTeam;
 import com.rounds.util.Messages;
-import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
-import net.minecraft.network.syncher.EntityDataSerializers;
-import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
+import com.rounds.nms.NmsBridge;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
-import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.GameRule;
 import org.bukkit.World;
@@ -76,6 +71,7 @@ public class GameManager implements Listener {
     private double musicTick = 0;
     private int tickTaskId = -1;
     private final Set<UUID> deadPlayers = new HashSet<>();
+    private final Set<UUID> pendingAutoDeaths = new HashSet<>();
     private final Map<UUID, Location> abyssalLastLocations = new HashMap<>();
     private final Map<UUID, Long> lastSilenceAuraTime = new HashMap<>();
     private final Map<UUID, Integer> syncedHearts = new HashMap<>();
@@ -213,6 +209,7 @@ public class GameManager implements Listener {
         musicTick = 0;
         currentRound = 0;
         deadPlayers.clear();
+        pendingAutoDeaths.clear();
         abyssalLastLocations.clear();
         lastSilenceAuraTime.clear();
         syncedHearts.clear();
@@ -392,7 +389,11 @@ public class GameManager implements Listener {
 
     public void giveGun(Player player) {
         ItemStack gun = GunItem.createGunItem();
-        player.getInventory().setItemInMainHand(gun);
+        // Оружие всегда выдается во ВСЕ 9 слотов быстрого доступа,
+        // чтобы пушка была под рукой независимо от выбранного слота.
+        for (int slot = 0; slot < 9; slot++) {
+            player.getInventory().setItem(slot, gun.clone());
+        }
     }
 
     public void applyPlayerHP(Player player) {
@@ -902,7 +903,46 @@ public class GameManager implements Listener {
         Player victim = alive.get(RANDOM.nextInt(alive.size()));
         Bukkit.broadcastMessage(ChatColor.DARK_RED + Messages.get("game.auto-death-killed", victim.getName()));
         victim.getWorld().playSound(victim.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.7f, 1.2f);
-        com.rounds.entity.RoundsEntities.safeSetHealth(victim, 0.0);
+
+        // The reaper applies LETHAL DAMAGE through the normal pipeline, never a direct
+        // health write: card saves (Bullet Time, Second Wind, Phoenix) must be able to
+        // rescue the victim, each consuming its own single-use charge (no stacking).
+        // The reaper simply cannot miss: setNoDamageTicks(0) per combat rules.
+        victim.setNoDamageTicks(0);
+        victim.damage(1_000_000.0);
+
+        // Kill-credit marker; if a card save rescued the victim, drop it.
+        pendingAutoDeaths.add(victim.getUniqueId());
+        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+            if (!victim.isDead()) {
+                pendingAutoDeaths.remove(victim.getUniqueId());
+            }
+        }, 10L);
+
+        // Auto-death is the game itself reaping a victim: no vanilla killer exists.
+        // Mark it so onPlayerDeath credits the kill to the best candidate instead
+        // of counting it as an unattributed death (single counting point avoids doubles).
+        pendingAutoDeaths.add(victim.getUniqueId());
+    }
+
+    /**
+     * Who gets credited for an auto-death kill. The reaper is the game itself, so the kill
+     * is always credited to a RANDOM surviving enemy-team participant, independent of
+     * who hit the victim last (deliberate design choice, see user requirement).
+     */
+    private Player findAutoDeathExecutioner(Player victim) {
+        GameTeam victimTeam = plugin.getTeamManager().getPlayerTeam(victim.getUniqueId());
+        List<Player> enemies = new ArrayList<>();
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (p.equals(victim) || p.isDead() || !p.isValid()) continue;
+            if (p.getGameMode() == GameMode.SPECTATOR) continue;
+            if (deadPlayers.contains(p.getUniqueId()) || pendingCardJoiners.contains(p.getUniqueId())) continue;
+            GameTeam pt = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
+            if (pt == null) continue;
+            if (victimTeam != null && pt == victimTeam) continue;
+            enemies.add(p);
+        }
+        return enemies.isEmpty() ? null : enemies.get(RANDOM.nextInt(enemies.size()));
     }
 
     private void cardTick() {
@@ -967,6 +1007,23 @@ public class GameManager implements Listener {
         pendingCardJoiners.clear();
         returningJoiners.clear();
         saveState();
+
+        // /rdebug debug start <round>: the auth-check must live here, NOT in startGame().
+        // startGame() runs once per game (round counter reset to 0 there), every new round
+        // begins via startRound(), so a planned session can only trigger from here.
+        try {
+            int cur = (int) getCurrentRound();
+            if (!com.rounds.debug.DebugSession.active && !com.rounds.debug.DebugSession.triggered
+                    && com.rounds.debug.DebugSession.startAt != -1 && com.rounds.debug.DebugSession.startAt <= cur) {
+                com.rounds.debug.DebugSession.triggered = true;
+                com.rounds.debug.DebugSession.active = true;
+                com.rounds.debug.DebugLog.initSession();
+                com.rounds.debug.DebugLog.log("DEBUG", "AUTO-START triggered at round start of R#" + cur);
+            }
+            if (com.rounds.debug.DebugSession.active) {
+                com.rounds.debug.DebugLog.log("GAME", "ROUND-START round=" + cur);
+            }
+        } catch (Throwable ignored) {}
 
         // Fire RoundsRoundStartEvent
         com.rounds.api.event.RoundsRoundStartEvent startEvent =
@@ -1741,6 +1798,25 @@ public class GameManager implements Listener {
         refreshTeamScoreboards();
 
         Player killer = dead.getKiller();
+        boolean autoDeath = pendingAutoDeaths.remove(dead.getUniqueId());
+        if (killer != null) {
+            com.rounds.stats.MatchStatsManager.consumeLastDamager(dead.getUniqueId());
+        } else if (autoDeath) {
+            // The game itself reaped this victim: credit the reaper's kill to the best
+            // candidate (last damager regardless of age, else random surviving enemy).
+            Player executioner = findAutoDeathExecutioner(dead);
+            if (executioner != null) killer = executioner;
+        } else {
+            // Vanilla getKiller() is lost when the killing blow bypasses hurt()
+            // (shield-canceled damage reapplied via direct health set, TNT/shard damage and so on).
+            UUID lastAttacker = com.rounds.stats.MatchStatsManager.getLastDamager(dead.getUniqueId());
+            if (lastAttacker != null && !lastAttacker.equals(dead.getUniqueId())) {
+                Player attributed = Bukkit.getPlayer(lastAttacker);
+                if (attributed != null && attributed.isOnline()) {
+                    killer = attributed;
+                }
+            }
+        }
         if (killer != null) {
             GameTeam killerTeam = plugin.getTeamManager().getPlayerTeam(killer.getUniqueId());
             PlayerData killerData = plugin.getPlayerDataManager().getData(killer);
@@ -2543,38 +2619,30 @@ public class GameManager implements Listener {
 
         if (spectators.isEmpty() || livingPlayers.isEmpty()) return;
 
-        MinecraftServer nmsServer = ((CraftServer) Bukkit.getServer()).getServer();
+        NmsBridge bridge = plugin.getNmsBridge();
+        if (bridge == null) return;
 
         for (Player target : livingPlayers) {
             byte flags = getEntitySharedFlags(target, true);
 
-            SynchedEntityData.DataValue<Byte> dataValue = new SynchedEntityData.DataValue<>(0, EntityDataSerializers.BYTE, flags);
-            ClientboundSetEntityDataPacket packet = new ClientboundSetEntityDataPacket(target.getEntityId(), List.of(dataValue));
-
             for (Player spectator : spectators) {
-                ServerPlayer sp = nmsServer.getPlayerList().getPlayer(spectator.getUniqueId());
-                if (sp != null && sp.connection != null) {
-                    sp.connection.send(packet);
-                    playersWithSpectatorGlow.add(spectator.getUniqueId());
-                }
+                bridge.sendEntityFlags(spectator, target, flags);
+                playersWithSpectatorGlow.add(spectator.getUniqueId());
             }
         }
     }
 
     public void clearSpectatorGlow(Player formerSpectator) {
         if (formerSpectator == null) return;
-        MinecraftServer nmsServer = ((CraftServer) Bukkit.getServer()).getServer();
-        ServerPlayer sp = nmsServer.getPlayerList().getPlayer(formerSpectator.getUniqueId());
-        if (sp == null || sp.connection == null) return;
+
+        NmsBridge bridge = plugin.getNmsBridge();
+        if (bridge == null) return;
 
         for (Player target : Bukkit.getOnlinePlayers()) {
             if (target.equals(formerSpectator)) continue;
             boolean hasCardGlow = target.hasPotionEffect(PotionEffectType.GLOWING);
             byte flags = getEntitySharedFlags(target, hasCardGlow);
-
-            SynchedEntityData.DataValue<Byte> dataValue = new SynchedEntityData.DataValue<>(0, EntityDataSerializers.BYTE, flags);
-            ClientboundSetEntityDataPacket packet = new ClientboundSetEntityDataPacket(target.getEntityId(), List.of(dataValue));
-            sp.connection.send(packet);
+            bridge.sendEntityFlags(formerSpectator, target, flags);
         }
     }
 

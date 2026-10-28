@@ -256,11 +256,21 @@ public class GunItem implements Listener {
         }
         if (data.hpCost > 0 && player.isOnline() && player.isValid()) {
             player.setNoDamageTicks(0);
-            player.damage(player.getMaxHealth() * data.hpCost, player);
+            double cost = player.getMaxHealth() * data.hpCost;
+            player.setHealth(Math.max(1.0, player.getHealth() - cost));
+            try { player.playHurtAnimation(0.0f); } catch (Throwable ignored) {}
+            player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_HURT, 0.7f, 1.2f);
         }
         if (overheated && player.isOnline() && player.isValid()) {
             player.setNoDamageTicks(0);
-            player.damage(player.getMaxHealth() * data.overheat, player);
+            double cost = player.getMaxHealth() * data.overheat;
+            player.setHealth(Math.max(1.0, player.getHealth() - cost));
+            try { player.playHurtAnimation(0.0f); } catch (Throwable ignored) {}
+            player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_HURT, 0.7f, 1.2f);
+        }
+        if (data.trusterLvl > 0 && player.isOnline() && player.isValid()) {
+            Vector recoil = direction.clone().multiply(-0.6 * data.trusterLvl);
+            player.setVelocity(player.getVelocity().add(recoil));
         }
         player.sendActionBar(ChatColor.GRAY + Messages.get("gun.ammo-display", (int) data.ammo, (int) data.maxAmmo));
         player.getWorld().playSound(bulletOrigin, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 0.5f, 1.5f);

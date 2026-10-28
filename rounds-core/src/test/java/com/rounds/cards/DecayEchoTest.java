@@ -76,4 +76,30 @@ class DecayEchoTest {
         assertNotNull(effects);
         assertEquals(1, ((Number) effects.get("echo")).intValue());
     }
+
+    @Test
+    void testDemonicPactYaml() {
+        InputStream is = getClass().getResourceAsStream("/cards/original/demonic-pact.yml");
+        assertNotNull(is);
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(new InputStreamReader(is, StandardCharsets.UTF_8));
+        assertEquals(17, yaml.getInt("id"));
+        List<Map<?, ?>> variations = yaml.getMapList("variations");
+        assertEquals(1, variations.size());
+        Map<?, ?> effects = (Map<?, ?>) variations.get(0).get("effects");
+        assertNotNull(effects);
+        assertEquals(9, ((Number) effects.get("bullets")).intValue());
+        assertEquals(0.1, ((Number) effects.get("hp-cost")).doubleValue(), 0.001);
+    }
+
+    @Test
+    void testThrusterYaml() {
+        InputStream is = getClass().getResourceAsStream("/cards/original/thruster.yml");
+        assertNotNull(is);
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(new InputStreamReader(is, StandardCharsets.UTF_8));
+        assertEquals(63, yaml.getInt("id"));
+        List<Map<?, ?>> variations = yaml.getMapList("variations");
+        Map<?, ?> effects = (Map<?, ?>) variations.get(0).get("effects");
+        assertNotNull(effects);
+        assertEquals(1, ((Number) effects.get("truster")).intValue());
+    }
 }

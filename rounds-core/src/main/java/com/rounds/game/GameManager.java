@@ -416,6 +416,7 @@ public class GameManager implements Listener {
             attr.setBaseValue(maxHP);
             player.setHealth(Math.min(maxHP, attr.getValue()));
         }
+        com.rounds.player.PlayerDataManager.syncPlayerScale(player, data);
     }
 
     private void applyRoundEffects(Player player) {

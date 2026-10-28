@@ -81,7 +81,7 @@ public class CardRegistry {
                 try (java.io.InputStream in = jar.getInputStream(entry)) {
                     jarBytes = in.readAllBytes();
                 }
-                if (target.exists()) continue;
+                if (!needsUpdate(target, name, jarBytes)) continue;
                 target.getParentFile().mkdirs();
                 try (java.io.OutputStream out = new java.io.FileOutputStream(target)) {
                     out.write(jarBytes);
@@ -92,8 +92,12 @@ public class CardRegistry {
         }
     }
 
-    private static boolean needsUpdate(File target, byte[] jarBytes) {
-        return !target.exists();
+    private static boolean needsUpdate(File target, String name, byte[] jarBytes) {
+        if (!target.exists()) return true;
+        if (name.startsWith("cards/original/")) {
+            return target.length() != jarBytes.length;
+        }
+        return false;
     }
 
     private static final Set<String> REMOVED_BUILTIN_CARDS = new HashSet<>(List.of("remote.yml"));

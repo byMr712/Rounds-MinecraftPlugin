@@ -145,14 +145,18 @@ public class CardManager {
 
         PlayerData data = plugin.getPlayerDataManager().getData(player);
 
+        boolean canStack = card.getEffects().containsKey("decay") || card.getEffects().containsKey("echo");
         Card existingSameFamily = null;
-        for (int ownedId : data.getOwnedCards()) {
-            Card owned = registry.getCard(ownedId);
-            if (owned != null && owned.getFamilyId() == card.getFamilyId()) {
-                existingSameFamily = owned;
-                break;
+        if (!canStack) {
+            for (int ownedId : data.getOwnedCards()) {
+                Card owned = registry.getCard(ownedId);
+                if (owned != null && owned.getFamilyId() == card.getFamilyId()) {
+                    existingSameFamily = owned;
+                    break;
+                }
             }
         }
+
 
         if (existingSameFamily != null) {
             if (card.getRarity().ordinal() > existingSameFamily.getRarity().ordinal()) {
@@ -198,14 +202,18 @@ public class CardManager {
         if (player == null || card == null) return false;
         PlayerData data = plugin.getPlayerDataManager().getData(player);
 
+        boolean canStack = card.getEffects().containsKey("decay") || card.getEffects().containsKey("echo");
         Card existingSameFamily = null;
-        for (int ownedId : data.getOwnedCards()) {
-            Card owned = registry.getCard(ownedId);
-            if (owned != null && owned.getFamilyId() == card.getFamilyId()) {
-                existingSameFamily = owned;
-                break;
+        if (!canStack) {
+            for (int ownedId : data.getOwnedCards()) {
+                Card owned = registry.getCard(ownedId);
+                if (owned != null && owned.getFamilyId() == card.getFamilyId()) {
+                    existingSameFamily = owned;
+                    break;
+                }
             }
         }
+
 
         if (existingSameFamily != null) {
             if (card.getRarity().ordinal() <= existingSameFamily.getRarity().ordinal()) {
@@ -447,6 +455,7 @@ public class CardManager {
             attr.setBaseValue(maxHP);
             player.setHealth(Math.min(player.getHealth(), attr.getValue()));
         }
+        com.rounds.player.PlayerDataManager.syncPlayerScale(player, data);
     }
 
     public void reload() {

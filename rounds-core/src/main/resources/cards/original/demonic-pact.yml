@@ -1,15 +1,17 @@
 id: 17
 name:
   ru: "&4Кровавый договор"
-  en: "&4Blood Pact"
+  en: "&4Demonic Pact"
 description:
-  ru: "+5 пуль, -10% ХП за выстрел"
-  en: "+5 Bullets, -10% HP per shot"
+  ru: "+9 пуль, убирает задержку между выстрелами, -10% ХП за выстрел"
+  en: "+9 Bullets, removes attack delay, -10% HP per shot"
 material: WITHER_SKELETON_SKULL
 enabled: true
 variations:
   - rarity: LEGENDARY
     effects:
-      bullets: 5
-      ammo: 5
+      bullets: 9
+      ammo: 9
+      atks: -20
+      attack_speed: 1.0
       hp-cost: 0.1

@@ -35,7 +35,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         "toxic_cloud", "leech", "homing", "poison_lvl", "cold_lvl", "parazit", "hp",
         "bomb_bullet", "bomb_on_block", "bullet_speed", "empower",
         "empower_charge", "dark_strength", "big_bullet", "grow",
-        "truster_lvl", "jump_height", "dark", "reload_time", "block_cd", "shield_duration", "shield_charges"
+        "truster_lvl", "jump_height", "dark", "reload_time", "block_cd", "shield_duration", "shield_charges", "decay", "echo"
     );
     private static final List<String> EFFECTS = Arrays.asList(
         "SPEED", "SLOW", "FAST_DIGGING", "SLOW_DIGGING", "INCREASE_DAMAGE",
@@ -1041,6 +1041,12 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             boxStat(sender, "stat-dark", data.dark);
             boxStat(sender, "stat-bomb-bullet", data.bombBullet);
             boxStat(sender, "stat-bomb-on-block", data.bombOnBlock);
+            if (data.decay > 0) {
+                boxKv(sender, Messages.get("debug.stat-decay"), formatSeconds(data.decay));
+            }
+            if (data.echo > 0) {
+                boxStat(sender, "stat-echo", data.echo);
+            }
 
             boxSection(sender, Messages.get("debug.shield-section"));
             boxKv(sender, Messages.get("debug.stat-shield-duration"), formatSeconds(GunItem.getShieldDurationSeconds(plugin, data)));
@@ -1194,6 +1200,8 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "shield_charges", "shield-charges" -> {
                 data.shieldCharge = Math.max(0, (int) value - 1);
             }
+            case "decay" -> data.decay = Math.max(value, 0);
+            case "echo" -> data.echo = Math.max(value, 0);
             default -> { return false; }
         }
         return true;

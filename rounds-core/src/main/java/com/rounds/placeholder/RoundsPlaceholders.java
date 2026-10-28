@@ -138,6 +138,8 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
             new PlaceholderEntry("stat_toxic_cloud",   "ph-desc.stat-toxic-cloud"),
             new PlaceholderEntry("stat_snowball",      "ph-desc.stat-snowball"),
             new PlaceholderEntry("stat_skyfall",       "ph-desc.stat-skyfall"),
+            new PlaceholderEntry("stat_decay",         "ph-desc.stat-decay"),
+            new PlaceholderEntry("stat_echo",          "ph-desc.stat-echo"),
             new PlaceholderEntry("stat_storm_caller",  "ph-desc.stat-storm-caller"),
             new PlaceholderEntry("stat_executioner",   "ph-desc.stat-executioner"),
             new PlaceholderEntry("stat_blood_furry",   "ph-desc.stat-blood-furry"),
@@ -326,6 +328,8 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
             case "hp_cost"               -> d.hpCost;
             case "hp_boost_on_hit"       -> d.hpBoostOnHit;
             case "ammo_per_hit"          -> d.ammoPerHit;
+            case "decay"                 -> d.decay;
+            case "echo"                  -> d.echo;
             default               -> 0.0;
         };
     }

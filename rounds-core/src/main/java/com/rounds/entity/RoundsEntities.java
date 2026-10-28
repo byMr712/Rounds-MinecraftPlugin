@@ -5,6 +5,8 @@ import com.rounds.RoundsPlugin;
 import com.rounds.item.GunItem;
 import com.rounds.player.PlayerData;
 import com.rounds.teams.TeamManager.GameTeam;
+import com.rounds.util.Messages;
+import org.bukkit.ChatColor;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
@@ -965,7 +967,15 @@ public class RoundsEntities implements Listener {
         }
         if (data.ammoPerHit > 0) {
             // Стек репрезентатива: каждая «виртуальная» пуля залпа возвращает патроны.
+            double before = data.ammo;
             data.ammo = Math.min(data.ammo + data.ammoPerHit * b.stack, data.maxAmmo);
+            if (data.ammo > before && shooterPlayer != null && shooterPlayer.isOnline()) {
+                if (GunItem.isReloading(ownerId)) {
+                    GunItem.cancelReload(ownerId);
+                }
+                shooterPlayer.sendActionBar(ChatColor.GRAY + Messages.get("gun.ammo-display", (int) data.ammo, (int) data.maxAmmo));
+                shooterPlayer.playSound(shooterPlayer.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.7f, 1.5f);
+            }
         }
         if (data.refresh > 0 && shooterPlayer != null && shooterPlayer.isOnline()) {
             GunItem.resetBlockCooldown(shooterPlayer.getUniqueId());

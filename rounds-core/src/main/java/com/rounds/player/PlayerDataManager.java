@@ -654,6 +654,7 @@ public class PlayerDataManager implements Listener {
             player.getInventory().clear();
             var attr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
             if (attr != null) attr.setBaseValue(20);
+            syncPlayerScale(player, null);
             player.setHealth(20);
             player.setFoodLevel(20);
             player.setGameMode(GameMode.ADVENTURE);
@@ -914,6 +915,45 @@ public class PlayerDataManager implements Listener {
             LAST_SHOT.remove(uuid);
             LAST_RELOAD.remove(uuid);
         }
+    }
+
+    public static void syncPlayerScale(Player player, PlayerData data) {
+        if (player == null) return;
+        try {
+            org.bukkit.attribute.Attribute scaleAttr = null;
+            try {
+                scaleAttr = org.bukkit.attribute.Attribute.valueOf("GENERIC_SCALE");
+            } catch (Throwable t) {
+                try {
+                    scaleAttr = org.bukkit.Registry.ATTRIBUTE.get(org.bukkit.NamespacedKey.minecraft("generic.scale"));
+                } catch (Throwable ignored) {}
+            }
+            if (scaleAttr == null) return;
+
+            var inst = player.getAttribute(scaleAttr);
+            if (inst == null) return;
+
+            if (data == null) {
+                inst.setBaseValue(1.0);
+                return;
+            }
+
+            double scale = 1.0;
+            if (data.hp > 0) {
+                scale += data.hp * 0.25;
+            }
+            if (data.grow > 0) {
+                scale += data.grow * 0.15;
+            }
+            if (data.evasion > 0) {
+                scale -= data.evasion * 0.15;
+            }
+            if (data.sneaky > 0) {
+                scale -= data.sneaky * 0.10;
+            }
+            scale = Math.max(0.70, Math.min(1.80, PlayerData.round2(scale)));
+            inst.setBaseValue(scale);
+        } catch (Throwable ignored) {}
     }
 
     public static class SavedPlayerData {

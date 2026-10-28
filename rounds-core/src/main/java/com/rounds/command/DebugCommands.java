@@ -202,6 +202,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "draft" -> handleDraft(sender, args);
             case "cardchoicetime" -> handleCardChoiceTime(sender, args);
             case "bossbar" -> handleBossBar(sender, args);
+            case "music" -> handleMusic(sender, args);
             default -> sender.sendMessage(ChatColor.RED + Messages.get("debug.unknown-command", args[0]));
         }
         return true;
@@ -716,6 +717,52 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage(ChatColor.GREEN + Messages.get("debug.bossbar-off"));
         } else {
             sender.sendMessage(ChatColor.RED + Messages.get("debug.usage-bossbar"));
+        }
+    }
+
+    private void handleMusic(CommandSender sender, String[] args) {
+        if (plugin.getRoundMusicManager() == null) {
+            sender.sendMessage(ChatColor.RED + "Music manager not loaded");
+            return;
+        }
+        var mm = plugin.getRoundMusicManager();
+        if (args.length == 1) {
+            var current = mm.getCurrentTrack();
+            sender.sendMessage(ChatColor.GOLD + "[Rounds] " + ChatColor.YELLOW + "Music status: "
+                    + (mm.isEnabled() ? ChatColor.GREEN + "ENABLED" : ChatColor.RED + "DISABLED")
+                    + ChatColor.GRAY + " (volume: " + mm.getVolume() + ")");
+            sender.sendMessage(ChatColor.GOLD + "[Rounds] " + ChatColor.YELLOW + "Current track: "
+                    + (current != null ? ChatColor.AQUA + current.getName() : ChatColor.GRAY + "None")
+                    + ChatColor.GRAY + " (next index: " + mm.getCurrentIndex() + "/" + mm.getPlaylist().size() + ")");
+            return;
+        }
+        String arg = args[1].toLowerCase();
+        if (arg.equals("on") || arg.equals("вкл")) {
+            plugin.getRoundsConfig().setMusicEnabled(true);
+            sender.sendMessage(ChatColor.GREEN + "[Rounds] Round music enabled");
+        } else if (arg.equals("off") || arg.equals("выкл")) {
+            plugin.getRoundsConfig().setMusicEnabled(false);
+            mm.stop();
+            sender.sendMessage(ChatColor.YELLOW + "[Rounds] Round music disabled");
+        } else if (arg.equals("next") || arg.equals("след")) {
+            var next = mm.nextTrack();
+            sender.sendMessage(ChatColor.GREEN + "[Rounds] Switched to next track: "
+                    + (next != null ? next.getName() : "None"));
+        } else if (arg.equals("stop") || arg.equals("стоп")) {
+            mm.stop();
+            sender.sendMessage(ChatColor.YELLOW + "[Rounds] Round music stopped");
+        } else if (arg.equals("play") || arg.equals("старт")) {
+            mm.playCurrentTrack();
+            sender.sendMessage(ChatColor.GREEN + "[Rounds] Playing current track: "
+                    + (mm.getCurrentTrack() != null ? mm.getCurrentTrack().getName() : "None"));
+        } else {
+            try {
+                double vol = Double.parseDouble(args[1]);
+                plugin.getRoundsConfig().setMusicVolume(vol);
+                sender.sendMessage(ChatColor.GREEN + "[Rounds] Music volume set to: " + plugin.getRoundsConfig().getMusicVolume());
+            } catch (NumberFormatException e) {
+                sender.sendMessage(ChatColor.RED + "Usage: /rdebug music [on|off|next|stop|play|<volume 0.0..1.0>]");
+            }
         }
     }
 
@@ -1422,7 +1469,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         "stats", "statsend", "setteam", "setlanguage", "effect", "heal",
         "resetstats", "reload", "setlobby",
         "jumppos1", "jumppos2", "jumpset", "uppos1", "uppos2", "upset",
-        "wheel", "tab", "bot", "draft", "cardchoicetime", "bossbar", "debug"
+        "wheel", "tab", "bot", "draft", "cardchoicetime", "bossbar", "debug", "music"
     );
 
     private List<String> getOnlinePlayerNames() {
@@ -1844,6 +1891,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             }
             case "autodeath" -> filterStartsWith(Arrays.asList("on", "off"), input);
             case "bossbar" -> filterStartsWith(Arrays.asList("on", "off"), input);
+            case "music" -> filterStartsWith(Arrays.asList("on", "off", "next", "stop", "play"), input);
             case "freeplay" -> filterStartsWith(Arrays.asList("on", "off"), input);
             case "wheel" -> filterStartsWith(Arrays.asList("on", "off"), input);
             case "tab" -> {

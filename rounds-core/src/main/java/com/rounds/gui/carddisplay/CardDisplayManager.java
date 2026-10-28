@@ -76,6 +76,12 @@ public class CardDisplayManager implements Listener {
         showOtherPlayers(player);
     }
 
+    public boolean isWithinSelectionBounds(Player player, Location to) {
+        if (player == null || to == null) return false;
+        Scene scene = scenes.get(player.getUniqueId());
+        return scene != null && scene.isWithinBounds(to);
+    }
+
     public void closeAll() {
         for (UUID uuid : new ArrayList<>(scenes.keySet())) {
             Player p = Bukkit.getPlayer(uuid);
@@ -158,6 +164,9 @@ public class CardDisplayManager implements Listener {
         final Player player;
         List<Card> cards;
         final UUID playerId;
+        final Location origin;
+        final double fx, fz;
+        final double rx, rz;
 
         TextDisplay[] displays = new TextDisplay[SLOT_COUNT];
         Location[] targets = new Location[SLOT_COUNT];
@@ -171,6 +180,30 @@ public class CardDisplayManager implements Listener {
             this.player = player;
             this.playerId = player.getUniqueId();
             this.cards = new ArrayList<>(cards);
+            this.origin = player.getLocation().clone();
+            float yaw = origin.getYaw();
+            double rad = Math.toRadians(yaw);
+            this.fx = -Math.sin(rad);
+            this.fz = Math.cos(rad);
+            this.rx = -fz;
+            this.rz = fx;
+        }
+
+        boolean isWithinBounds(Location loc) {
+            if (loc == null || loc.getWorld() == null || origin.getWorld() == null) return false;
+            if (!loc.getWorld().equals(origin.getWorld())) return false;
+            if (Math.abs(loc.getY() - origin.getY()) > 0.85) return false;
+
+            double dx = loc.getX() - origin.getX();
+            double dz = loc.getZ() - origin.getZ();
+            double fwd = dx * fx + dz * fz;
+            double side = dx * rx + dz * rz;
+
+            // Allow approaching cards closer (up to 1.50m forward, cards are at 2.2m),
+            // but not past them. Backward limit 0.40m, lateral strafe limit 1.50m.
+            if (fwd < -0.40 || fwd > 1.50) return false;
+            if (Math.abs(side) > 1.50) return false;
+            return true;
         }
 
         void begin() {
@@ -293,8 +326,8 @@ public class CardDisplayManager implements Listener {
 
         Location descriptionPos(Location eye, float yaw) {
             double rad = Math.toRadians(yaw);
-            double x = eye.getX() - Math.sin(rad) * 1.8;
-            double z = eye.getZ() + Math.cos(rad) * 1.8;
+            double x = eye.getX() - Math.sin(rad) * 1.3;
+            double z = eye.getZ() + Math.cos(rad) * 1.3;
             // Ground is at eye - 1.62 for a standing player; keep the block above it.
             return new Location(eye.getWorld(), x, eye.getY() - 1.45, z);
         }

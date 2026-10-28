@@ -50,3 +50,5 @@ com/google/protobuf/
 .aider*
 TAB config/
 .notion/
+launch-262.ps1
+build-cardpack.ps1

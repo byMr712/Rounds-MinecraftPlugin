@@ -39,6 +39,7 @@ public class GunItem implements Listener {
     private static final Map<UUID, ReloadTask> reloadTasks = new HashMap<>();
     private static final Map<UUID, Long> shieldCooldowns = new HashMap<>();
     private static final Set<UUID> activeShields = new HashSet<>();
+    private static final Map<UUID, Integer> activeShieldTokens = new HashMap<>();
     private static final Map<UUID, Integer> shieldCharges = new HashMap<>();
     private static final Set<UUID> silencedPlayers = new HashSet<>();
     private static final Set<UUID> reloadingPlayers = new HashSet<>();
@@ -310,17 +311,39 @@ public class GunItem implements Listener {
             shieldCooldowns.put(uuid, now);
             shieldCharges.put(uuid, extraCharges);
         }
+
+        executeBlockPulse(player, data, false);
+
+        if (data.echo > 0) {
+            int echoCount = (int) Math.max(1, Math.round(data.echo));
+            for (int i = 1; i <= echoCount; i++) {
+                long delayTicks = 10L * i;
+                Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                    if (!player.isOnline() || player.isDead()) return;
+                    if (plugin.getGameManager().getState() != com.rounds.game.GameManager.GameState.PLAYING) return;
+                    if (silencedPlayers.contains(uuid) || partyLocked.contains(uuid)) return;
+                    executeBlockPulse(player, data, true);
+                }, delayTicks);
+            }
+        }
+    }
+
+    public void executeBlockPulse(Player player, PlayerData data, boolean isEcho) {
+        UUID uuid = player.getUniqueId();
         activeShields.add(uuid);
+        int token = activeShieldTokens.merge(uuid, 1, Integer::sum);
 
         long shieldDuration = (plugin != null) ? plugin.getRoundsConfig().getShieldDurationTicks() : (long) SHIELD_DURATION_TICKS;
         if (data.shieldsUp > 0) {
             shieldDuration += (long) (data.shieldsUp * 20);
         }
         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-            activeShields.remove(uuid);
+            if (activeShieldTokens.getOrDefault(uuid, 0) == token) {
+                activeShields.remove(uuid);
+            }
         }, shieldDuration);
 
-        if (data.noParty > 0) {
+        if (!isEcho && data.noParty > 0) {
             long lastParty = noPartyCooldowns.getOrDefault(uuid, 0L);
             long nowMs = System.currentTimeMillis();
             long noPartyCd = (plugin != null) ? plugin.getRoundsConfig().getNoPartyCooldownMs() : NO_PARTY_COOLDOWN_MS;
@@ -380,16 +403,34 @@ public class GunItem implements Listener {
         Location blockLoc = player.getLocation();
 
         if (data.saw > 0 && !activeSawTasks.containsKey(uuid)) {
-            player.getWorld().playSound(blockLoc, Sound.ENTITY_IRON_GOLEM_ATTACK, 1.0f, 0.5f);
+            try {
+                player.getWorld().playSound(player, "rounds:saw", SoundCategory.PLAYERS, 1.0f, 1.0f);
+            } catch (Throwable t) {
+                try {
+                    player.getWorld().playSound(blockLoc, "rounds:saw", SoundCategory.PLAYERS, 1.0f, 1.0f);
+                } catch (Throwable ignored) {
+                    player.getWorld().playSound(blockLoc, Sound.ENTITY_IRON_GOLEM_ATTACK, 1.0f, 0.5f);
+                }
+            }
             BukkitRunnable sawTask = new BukkitRunnable() {
                 int ticks = 0;
                 @Override
                 public void run() {
                     Player p = plugin.getServer().getPlayer(uuid);
-                    if (p == null || !p.isOnline() || ticks >= 60) {
+                    if (p == null || !p.isOnline() || p.isDead() || ticks >= 60) {
                         activeSawTasks.remove(uuid);
                         cancel();
+                        stopSawSound();
                         return;
+                    }
+                    if (ticks > 0 && ticks % 52 == 0) {
+                        try {
+                            p.getWorld().playSound(p, "rounds:saw", SoundCategory.PLAYERS, 1.0f, 1.0f);
+                        } catch (Throwable t) {
+                            try {
+                                p.getWorld().playSound(p.getLocation(), "rounds:saw", SoundCategory.PLAYERS, 1.0f, 1.0f);
+                            } catch (Throwable ignored) {}
+                        }
                     }
                     Location sawLoc = p.getLocation();
                     if (ticks % 5 == 0) {
@@ -536,7 +577,7 @@ public class GunItem implements Listener {
 
         boolean recallActivated = false;
         long recallRemaining = 0;
-        if (data.temporalRecall > 0) {
+        if (!isEcho && data.temporalRecall > 0) {
             long nowRecall = System.currentTimeMillis();
             Long lastRecall = com.rounds.listener.LegendaryEffects.getRecallCooldown(uuid);
             if (lastRecall != null && nowRecall - lastRecall < 15000L) {
@@ -546,14 +587,21 @@ public class GunItem implements Listener {
             }
         }
 
-        player.getWorld().playSound(blockLoc, Sound.BLOCK_ANVIL_PLACE, 0.8f, 1.5f);
-        if (recallActivated) {
-            // Action bar and title already set by tryTemporalRecall
-        } else if (recallRemaining > 0) {
-            player.sendActionBar(ChatColor.YELLOW + Messages.get("card.recall-cooldown", recallRemaining)
-                    + ChatColor.DARK_GRAY + " | " + ChatColor.BLUE + Messages.get("gun.shield-activated"));
+        if (isEcho) {
+            player.getWorld().playSound(blockLoc, Sound.BLOCK_CONDUIT_ACTIVATE, 0.9f, 1.8f);
+            player.getWorld().playSound(blockLoc, Sound.BLOCK_ANVIL_PLACE, 0.6f, 1.8f);
+            player.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, blockLoc.clone().add(0, 1.0, 0), 16, 0.4, 0.4, 0.4, 0.05);
+            player.sendActionBar(ChatColor.AQUA + "✦ ECHO ✦ " + ChatColor.BLUE + Messages.get("gun.shield-activated"));
         } else {
-            player.sendActionBar(ChatColor.BLUE + Messages.get("gun.shield-activated"));
+            player.getWorld().playSound(blockLoc, Sound.BLOCK_ANVIL_PLACE, 0.8f, 1.5f);
+            if (recallActivated) {
+                // Action bar and title already set by tryTemporalRecall
+            } else if (recallRemaining > 0) {
+                player.sendActionBar(ChatColor.YELLOW + Messages.get("card.recall-cooldown", recallRemaining)
+                        + ChatColor.DARK_GRAY + " | " + ChatColor.BLUE + Messages.get("gun.shield-activated"));
+            } else {
+                player.sendActionBar(ChatColor.BLUE + Messages.get("gun.shield-activated"));
+            }
         }
     }
 
@@ -597,11 +645,13 @@ public class GunItem implements Listener {
         cancelReload(uuid);
         shieldCooldowns.remove(uuid);
         activeShields.remove(uuid);
+        activeShieldTokens.remove(uuid);
         shieldCharges.remove(uuid);
         silencedPlayers.remove(uuid);
         Integer sawTaskId = activeSawTasks.remove(uuid);
         if (sawTaskId != null) {
             Bukkit.getScheduler().cancelTask(sawTaskId);
+            stopSawSound();
         }
         shotThisTick.remove(uuid);
         partyLocked.remove(uuid);
@@ -734,6 +784,7 @@ public class GunItem implements Listener {
     }
     public static void resetShieldActive(UUID uuid) {
         activeShields.remove(uuid);
+        activeShieldTokens.remove(uuid);
     }
     public static void resetRoundState() {
         for (ReloadTask task : new ArrayList<>(reloadTasks.values())) {
@@ -745,13 +796,25 @@ public class GunItem implements Listener {
             Bukkit.getScheduler().cancelTask(sawTaskId);
         }
         activeSawTasks.clear();
+        stopSawSound();
         activeShields.clear();
+        activeShieldTokens.clear();
         shieldCooldowns.clear();
         shieldCharges.clear();
         silencedPlayers.clear();
         shotThisTick.clear();
         partyLocked.clear();
         noPartyCooldowns.clear();
+    }
+
+    private static void stopSawSound() {
+        if (activeSawTasks.isEmpty() && Bukkit.getServer() != null) {
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                try {
+                    p.stopSound("rounds:saw", SoundCategory.PLAYERS);
+                } catch (Throwable ignored) {}
+            }
+        }
     }
 
     public static boolean consumeShotThisTick(UUID uuid) {

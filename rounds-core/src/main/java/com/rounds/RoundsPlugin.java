@@ -29,6 +29,7 @@ public class RoundsPlugin extends JavaPlugin {
     private CardManager cardManager;
     private CardGUIListener cardGUIListener;
     private CardDisplayManager cardDisplayManager;
+    private com.rounds.music.RoundMusicManager roundMusicManager;
     private BlockListener blockListener;
     private BotManager botManager;
     private com.rounds.api.impl.CustomDataManager customDataManager;
@@ -63,6 +64,7 @@ public class RoundsPlugin extends JavaPlugin {
         blockListener = new BlockListener(this);
         cardGUIListener = new CardGUIListener(this);
         cardDisplayManager = new CardDisplayManager(this);
+        roundMusicManager = new com.rounds.music.RoundMusicManager(this);
         botManager = new BotManager(this);
 
         DebugCommands.register(this);
@@ -79,6 +81,7 @@ public class RoundsPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(blockListener, this);
         getServer().getPluginManager().registerEvents(cardGUIListener, this);
         getServer().getPluginManager().registerEvents(cardDisplayManager, this);
+        getServer().getPluginManager().registerEvents(roundMusicManager, this);
         getServer().getPluginManager().registerEvents(gameManager, this);
         getServer().getPluginManager().registerEvents(playerDataManager, this);
         getServer().getPluginManager().registerEvents(botManager, this);
@@ -128,6 +131,9 @@ public class RoundsPlugin extends JavaPlugin {
         if (customDataManager != null) {
             customDataManager.clearAll();
         }
+        if (roundMusicManager != null) {
+            roundMusicManager.stop();
+        }
         instance = null;
     }
 
@@ -140,6 +146,7 @@ public class RoundsPlugin extends JavaPlugin {
     public CardManager getCardManager() { return cardManager; }
     public CardGUIListener getCardGUI() { return cardGUIListener; }
     public CardDisplayManager getCardDisplay() { return cardDisplayManager; }
+    public com.rounds.music.RoundMusicManager getRoundMusicManager() { return roundMusicManager; }
     public BlockListener getBlockListener() { return blockListener; }
     public BotManager getBotManager() { return botManager; }
     public com.rounds.api.impl.CustomDataManager getCustomDataManager() { return customDataManager; }

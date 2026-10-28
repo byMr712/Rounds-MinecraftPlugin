@@ -202,6 +202,9 @@ public class GameManager implements Listener {
         }
         if (isGameActive()) return;
         gameActive = true;
+        if (plugin.getRoundMusicManager() != null) {
+            plugin.getRoundMusicManager().resetPlaylist();
+        }
 
         resetWins();
         resetAllCards();
@@ -1047,6 +1050,9 @@ public class GameManager implements Listener {
         GunItem.resetRoundState();
         com.rounds.listener.LegendaryEffects.clearRoundState();
         chameleonStillTicks.clear();
+        if (plugin.getRoundMusicManager() != null) {
+            plugin.getRoundMusicManager().onRoundStart();
+        }
         long roundTimeMs = (plugin != null) ? plugin.getRoundsConfig().getRoundTimeSeconds() * 1000L : 180_000L;
         autoDeathPhaseDurationMs = Math.max(1000L, roundTimeMs);
         autoDeathNextEvent = System.currentTimeMillis() + autoDeathPhaseDurationMs;
@@ -1258,6 +1264,9 @@ public class GameManager implements Listener {
         GunItem.resetRoundState();
         com.rounds.listener.LegendaryEffects.clearRoundState();
         highlightGlowUntil.clear();
+        if (plugin.getRoundMusicManager() != null) {
+            plugin.getRoundMusicManager().stop();
+        }
         hideAutoDeathBossBar();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             clearCardEffects(p);
@@ -1717,6 +1726,9 @@ public class GameManager implements Listener {
         // Cancelling on ANY position change blocks walk/sneak reliably; a standing player sends
         // no position delta, so there is no view shake, and look is client-authoritative and kept.
         if (event.hasChangedPosition()) {
+            if (plugin.getCardDisplay() != null && plugin.getCardDisplay().isWithinSelectionBounds(player, to)) {
+                return;
+            }
             event.setCancelled(true);
         }
     }
@@ -1756,6 +1768,7 @@ public class GameManager implements Listener {
         PlayerData deadData = plugin.getPlayerDataManager().getData(dead);
         if (deadData.phoenixUses > 0) {
             deadData.phoenixUses--;
+            com.rounds.listener.LegendaryEffects.clearDecay(dead.getUniqueId());
             event.setCancelled(true);
             dead.setFallDistance(0);
             dead.setFireTicks(0);
@@ -1790,6 +1803,7 @@ public class GameManager implements Listener {
         }
 
         deadPlayers.add(dead.getUniqueId());
+        com.rounds.listener.LegendaryEffects.clearDecay(dead.getUniqueId());
         com.rounds.stats.MatchStatsManager.recordDeath(dead.getUniqueId());
         highlightGlowUntil.remove(dead.getUniqueId());
         updateTeamNametagVisibility();

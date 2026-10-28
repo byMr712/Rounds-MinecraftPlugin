@@ -98,6 +98,8 @@ public class PlayerData {
     public double tacticalReload = 0;
     public double ammoPerHit = 0;
     public double hpBoostOnHit = 0;
+    public double decay = 0;
+    public double echo = 0;
     public double pristinePerseverance = 0;
     public double hpCost = 0;
     public double bloodFurry = 0;
@@ -298,6 +300,8 @@ public class PlayerData {
         razorwireLifesteal = 0;
         temporalRecall = 0;
         bulletTime = 0;
+        decay = 0;
+        echo = 0;
         x = 0;
         y = 0;
         z = 0;

@@ -62,6 +62,9 @@ public final class RoundsConfig {
     private double botJumpPadParryChance;
     private int botJumpPadParryMinLevel;
 
+    private boolean musicEnabled;
+    private double musicVolume;
+
     public RoundsConfig(RoundsPlugin plugin) {
         this.plugin = plugin;
         reload();
@@ -148,6 +151,9 @@ public final class RoundsConfig {
         botProximityHearingDistance = c.getDouble("bots.vision.proximity-hearing", 2.5);
         botJumpPadParryChance = c.getDouble("bots.jump-pad-parry.chance", 0.50);
         botJumpPadParryMinLevel = c.getInt("bots.jump-pad-parry.min-level", 5);
+
+        musicEnabled = c.getBoolean("music.enabled", true);
+        musicVolume = c.getDouble("music.volume", 0.4);
 
         DefaultStats ds = new DefaultStats();
         ds.dmg = c.getDouble("defaults.damage", 3.0);
@@ -238,5 +244,25 @@ public final class RoundsConfig {
 
     public List<GameTeam> getEnabledTeams() {
         return Collections.unmodifiableList(enabledTeams);
+    }
+
+    public boolean isMusicEnabled() {
+        return musicEnabled;
+    }
+
+    public void setMusicEnabled(boolean enabled) {
+        this.musicEnabled = enabled;
+        plugin.getConfig().set("music.enabled", enabled);
+        plugin.saveConfig();
+    }
+
+    public double getMusicVolume() {
+        return musicVolume;
+    }
+
+    public void setMusicVolume(double volume) {
+        this.musicVolume = Math.max(0.0, Math.min(1.0, volume));
+        plugin.getConfig().set("music.volume", this.musicVolume);
+        plugin.saveConfig();
     }
 }

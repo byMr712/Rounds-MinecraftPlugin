@@ -3,12 +3,28 @@ name:
   ru: "&2Распад"
   en: "&2Decay"
 description:
-  ru: "ЯД, +50% ХП"
-  en: "POISON, +50% HP"
+  ru: "Весь полученный урон распределяется равномерно на {v} сек, +50% ХП"
+  en: "All damage taken is spread evenly over {v}s, +50% HP"
 material: POISONOUS_POTATO
 enabled: true
 variations:
   - rarity: COMMON
+    value: "3"
     effects:
-      poison: 1
+      decay: 3
+      hp: 0.5
+  - rarity: UNCOMMON
+    value: "4"
+    effects:
+      decay: 4
+      hp: 0.5
+  - rarity: RARE
+    value: "5"
+    effects:
+      decay: 5
+      hp: 0.5
+  - rarity: EPIC
+    value: "6"
+    effects:
+      decay: 6
       hp: 0.5

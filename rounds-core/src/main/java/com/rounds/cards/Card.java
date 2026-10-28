@@ -129,6 +129,8 @@ public class Card {
                 }
                 break;
             case "saw": data.saw = PlayerData.round2(Math.max(data.saw + value, 0)); break;
+            case "decay": data.decay = PlayerData.round2(Math.max(data.decay + value, 0)); break;
+            case "echo": data.echo = PlayerData.round2(Math.max(data.echo + value, 0)); break;
             case "shockwave": data.shockwave = PlayerData.round2(Math.max(data.shockwave + value, 0)); break;
             case "silence": data.silence = PlayerData.round2(Math.max(data.silence + value, 0)); break;
             case "sneaky": data.sneaky = PlayerData.round2(Math.max(data.sneaky + value, 0)); break;

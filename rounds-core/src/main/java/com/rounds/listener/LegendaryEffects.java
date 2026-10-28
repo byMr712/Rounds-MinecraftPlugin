@@ -5,6 +5,7 @@ import com.rounds.player.PlayerData;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -14,6 +15,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 
@@ -22,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -60,9 +63,24 @@ public class LegendaryEffects implements Listener {
 
     private static final Map<UUID, Long> lastRazorwire = new ConcurrentHashMap<>();
 
+    public static class DecaySlice {
+        public double damagePerStep;
+        public int stepsRemaining;
+        public UUID attackerId;
+    }
+
+    private static final Map<UUID, List<DecaySlice>> decaySlices = new ConcurrentHashMap<>();
+    private static final Set<UUID> isApplyingDecay = ConcurrentHashMap.newKeySet();
+
+    public static void clearDecay(UUID uuid) {
+        decaySlices.remove(uuid);
+        isApplyingDecay.remove(uuid);
+    }
+
     public LegendaryEffects(RoundsPlugin plugin) {
         this.plugin = plugin;
         instance = this;
+        Bukkit.getScheduler().runTaskTimer(plugin, this::tickDecay, 5L, 5L);
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             long now = System.currentTimeMillis();
             for (Player p : Bukkit.getOnlinePlayers()) {
@@ -83,6 +101,8 @@ public class LegendaryEffects implements Listener {
     }
 
     public static void clearRoundState() {
+        decaySlices.clear();
+        isApplyingDecay.clear();
         secondWindUses.clear();
         skyfallCooldowns.clear();
         fallPeakY.clear();
@@ -93,6 +113,8 @@ public class LegendaryEffects implements Listener {
     }
 
     public static void resetAll() {
+        decaySlices.clear();
+        isApplyingDecay.clear();
         rageUntil.clear();
         secondWindUses.clear();
         fallPeakY.clear();
@@ -158,6 +180,8 @@ public class LegendaryEffects implements Listener {
     public void onDamage(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Player player)) return;
 
+        boolean isDecayTick = isApplyingDecay.contains(player.getUniqueId());
+
         if (player.isInvulnerable()) {
             event.setCancelled(true);
             return;
@@ -165,6 +189,43 @@ public class LegendaryEffects implements Listener {
 
         PlayerData data = plugin.getPlayerDataManager().getData(player.getUniqueId());
         if (data == null) return;
+
+        if (!isDecayTick && data.decay > 0 && event.getCause() != EntityDamageEvent.DamageCause.VOID) {
+            double incomingDmg = event.getFinalDamage();
+            if (incomingDmg > 0.0) {
+                event.setCancelled(true);
+                player.setNoDamageTicks(0);
+
+                try { player.playHurtAnimation(0.0f); } catch (Throwable ignored) {}
+                player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_HURT, 0.7f, 1.2f);
+
+                UUID attackerId = null;
+                if (event instanceof EntityDamageByEntityEvent edbe) {
+                    attackerId = edbe.getDamager().getUniqueId();
+                    com.rounds.stats.MatchStatsManager.recordLastDamager(player.getUniqueId(), edbe.getDamager().getUniqueId());
+                } else {
+                    attackerId = com.rounds.stats.MatchStatsManager.getLastDamager(player.getUniqueId());
+                }
+
+                if (data.bloodFurry > 0) {
+                    rageUntil.put(player.getUniqueId(), System.currentTimeMillis() + 3000L);
+                }
+                if (data.spiteRazorwire > 0) {
+                    try { triggerRazorwire(player, data); } catch (Throwable ignored) {}
+                }
+
+                int totalSteps = Math.max(4, (int) Math.round(data.decay * 4.0));
+                double dmgPerStep = incomingDmg / totalSteps;
+
+                DecaySlice slice = new DecaySlice();
+                slice.damagePerStep = dmgPerStep;
+                slice.stepsRemaining = totalSteps;
+                slice.attackerId = attackerId;
+
+                decaySlices.computeIfAbsent(player.getUniqueId(), k -> new java.util.concurrent.CopyOnWriteArrayList<>()).add(slice);
+            }
+            return;
+        }
 
         // Check fatal or low-health Bullet Time save
         if (data.bulletTime > 0
@@ -175,6 +236,7 @@ public class LegendaryEffects implements Listener {
                 || (player.getHealth() - event.getDamage()) <= data.getMaxHealth() * 0.20)) {
             event.setCancelled(true);
             player.setHealth(Math.max(data.getMaxHealth() * 0.20, 2.0));
+            clearDecay(player.getUniqueId());
             triggerBulletTime(player, data);
             return;
         }
@@ -186,6 +248,7 @@ public class LegendaryEffects implements Listener {
                 && plugin.getGameManager().isParticipant(player.getUniqueId())
                 && event.getFinalDamage() >= player.getHealth()) {
             secondWindUses.put(player.getUniqueId(), used + 1);
+            clearDecay(player.getUniqueId());
             event.setCancelled(true);
             player.setHealth(1.0);
             player.setFallDistance(0);
@@ -638,6 +701,57 @@ public class LegendaryEffects implements Listener {
     }
 
     /** Rejects NaN/Infinity positions and missing worlds so raytraces can never throw "not finite". */
+    private void tickDecay() {
+        if (decaySlices.isEmpty() || Bukkit.getServer() == null) return;
+        for (Map.Entry<UUID, List<DecaySlice>> entry : decaySlices.entrySet()) {
+            UUID uuid = entry.getKey();
+            Player p = Bukkit.getPlayer(uuid);
+            if (p == null || !p.isOnline() || p.isDead()) {
+                decaySlices.remove(uuid);
+                continue;
+            }
+            List<DecaySlice> slices = entry.getValue();
+            if (slices == null || slices.isEmpty()) {
+                decaySlices.remove(uuid);
+                continue;
+            }
+
+            double totalTickDmg = 0.0;
+            UUID lastAttacker = null;
+            Iterator<DecaySlice> it = slices.iterator();
+            while (it.hasNext()) {
+                DecaySlice s = it.next();
+                totalTickDmg += s.damagePerStep;
+                if (s.attackerId != null) lastAttacker = s.attackerId;
+                s.stepsRemaining--;
+                if (s.stepsRemaining <= 0) {
+                    it.remove();
+                }
+            }
+
+            if (totalTickDmg > 0.0 && p.isOnline() && !p.isDead()) {
+                Location loc = p.getLocation().add(0, 1.0, 0);
+                loc.getWorld().spawnParticle(Particle.REDSTONE, loc, 4, 0.3, 0.4, 0.3, 0,
+                        new Particle.DustOptions(Color.fromRGB(45, 140, 35), 0.9f));
+
+                isApplyingDecay.add(uuid);
+                try {
+                    p.setNoDamageTicks(0);
+                    Player attacker = (lastAttacker != null) ? Bukkit.getPlayer(lastAttacker) : null;
+                    if (attacker != null && attacker.isOnline()) {
+                        com.rounds.stats.MatchStatsManager.recordLastDamager(p.getUniqueId(), attacker.getUniqueId());
+                        p.damage(totalTickDmg, attacker);
+                    } else {
+                        p.damage(totalTickDmg);
+                    }
+                } catch (Throwable ignored) {
+                } finally {
+                    isApplyingDecay.remove(uuid);
+                }
+            }
+        }
+    }
+
     private static boolean isFiniteLocation(Location l) {
         return l != null && l.getWorld() != null
                 && Double.isFinite(l.getX()) && Double.isFinite(l.getY()) && Double.isFinite(l.getZ());

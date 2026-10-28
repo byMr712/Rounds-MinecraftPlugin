@@ -130,4 +130,12 @@ public class NmsBridgeImpl implements com.rounds.nms.NmsBridge {
         } catch (Throwable ignored) {
         }
     }
+    @Override
+    public org.bukkit.inventory.ItemStack applyCardTexture(org.bukkit.inventory.ItemStack item, int familyId) {
+        net.minecraft.world.item.ItemStack nms = org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(item);
+        nms.set(net.minecraft.core.component.DataComponents.ITEM_MODEL,
+                net.minecraft.resources.Identifier.fromNamespaceAndPath("rounds", "card_" + familyId));
+        org.bukkit.Bukkit.getLogger().info("[RoundsCard] item_model applied familyId=" + familyId);
+        return org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(nms);
+    }
 }

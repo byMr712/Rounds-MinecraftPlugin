@@ -1713,13 +1713,11 @@ public class GameManager implements Listener {
         Location to = event.getTo();
         if (to == null) return;
 
-        // Freeze position (X, Y, Z) while cards are being picked, allow looking around (yaw, pitch)
-        if (from.getX() != to.getX() || from.getY() != to.getY() || from.getZ() != to.getZ()) {
-            Location locked = from.clone();
-            locked.setYaw(to.getYaw());
-            locked.setPitch(to.getPitch());
-            event.setTo(locked);
-            player.setVelocity(new Vector(0, 0, 0));
+        // Freeze position (X, Y, Z) while cards are being picked, allow looking around (yaw, pitch).
+        // Cancelling on ANY position change blocks walk/sneak reliably; a standing player sends
+        // no position delta, so there is no view shake, and look is client-authoritative and kept.
+        if (event.hasChangedPosition()) {
+            event.setCancelled(true);
         }
     }
 

@@ -3,6 +3,8 @@ package com.rounds.nms;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.UUID;
 
@@ -47,4 +49,18 @@ public interface NmsBridge {
      * Used for the team-colored spectator glow and must be cheap.
      */
     void sendEntityFlags(Player spectator, Player target, byte flags);
+
+    /**
+     * Applies the card texture to the given carrier item and returns the modified item.
+     * The default uses the legacy integer custom_model_data (Minecraft up to 1.21.1);
+     * versions 1.21.2+ override this with the structured strings-based component.
+     */
+    default ItemStack applyCardTexture(ItemStack item, int familyId) {
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setCustomModelData(4000 + familyId);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
 }

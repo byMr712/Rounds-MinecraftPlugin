@@ -99,7 +99,12 @@ public class CardManager {
         cards = finalCards;
         pendingCards.put(player.getUniqueId(), cards);
         pendingPicks.add(player.getUniqueId());
-        plugin.getCardGUI().open(player, cards);
+        if (plugin.getBotManager() != null && plugin.getBotManager().isBot(player)) {
+            // Bots keep the silent auto-select flow (no world-space UI)
+            plugin.getCardGUI().open(player, cards);
+        } else {
+            plugin.getCardDisplay().open(player, cards);
+        }
         startChoiceTimer(player);
 
         List<Integer> cardIds = new java.util.ArrayList<>();
@@ -162,6 +167,7 @@ public class CardManager {
         }
 
         pendingPicks.remove(player.getUniqueId());
+        plugin.getCardDisplay().close(player);
         plugin.getGameManager().removePendingCardJoiner(player.getUniqueId());
 
         GameTeam team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
@@ -284,6 +290,7 @@ public class CardManager {
         cancelAllChoiceTimers();
         pendingPicks.clear();
         pendingCards.clear();
+        plugin.getCardDisplay().closeAll();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             PlayerData data = plugin.getPlayerDataManager().getData(p);
             data.resetAllCards();
@@ -325,7 +332,11 @@ public class CardManager {
         pendingPicks.add(uuid);
         Player player = plugin.getServer().getPlayer(uuid);
         if (player != null && player.isOnline()) {
-            plugin.getCardGUI().open(player, cards);
+            if (plugin.getBotManager() != null && plugin.getBotManager().isBot(player)) {
+                plugin.getCardGUI().open(player, cards);
+            } else {
+                plugin.getCardDisplay().open(player, cards);
+            }
             startChoiceTimer(player);
             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
         }
@@ -335,6 +346,7 @@ public class CardManager {
         cancelAllChoiceTimers();
         pendingPicks.clear();
         pendingCards.clear();
+        plugin.getCardDisplay().closeAll();
     }
 
     public void removePendingPick(UUID uuid) {

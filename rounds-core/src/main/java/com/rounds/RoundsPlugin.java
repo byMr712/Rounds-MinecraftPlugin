@@ -8,6 +8,7 @@ import com.rounds.command.RBotCommand;
 import com.rounds.entity.RoundsEntities;
 import com.rounds.game.GameManager;
 import com.rounds.gui.CardGUIListener;
+import com.rounds.gui.carddisplay.CardDisplayManager;
 import com.rounds.item.GunItem;
 import com.rounds.listener.JumpListener;
 import com.rounds.placeholder.RoundsPlaceholders;
@@ -27,6 +28,7 @@ public class RoundsPlugin extends JavaPlugin {
     private PlayerDataManager playerDataManager;
     private CardManager cardManager;
     private CardGUIListener cardGUIListener;
+    private CardDisplayManager cardDisplayManager;
     private BlockListener blockListener;
     private BotManager botManager;
     private com.rounds.api.impl.CustomDataManager customDataManager;
@@ -60,6 +62,7 @@ public class RoundsPlugin extends JavaPlugin {
         gameManager = new GameManager(this);
         blockListener = new BlockListener(this);
         cardGUIListener = new CardGUIListener(this);
+        cardDisplayManager = new CardDisplayManager(this);
         botManager = new BotManager(this);
 
         DebugCommands.register(this);
@@ -75,6 +78,7 @@ public class RoundsPlugin extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(blockListener, this);
         getServer().getPluginManager().registerEvents(cardGUIListener, this);
+        getServer().getPluginManager().registerEvents(cardDisplayManager, this);
         getServer().getPluginManager().registerEvents(gameManager, this);
         getServer().getPluginManager().registerEvents(playerDataManager, this);
         getServer().getPluginManager().registerEvents(botManager, this);
@@ -135,6 +139,7 @@ public class RoundsPlugin extends JavaPlugin {
     public PlayerDataManager getPlayerDataManager() { return playerDataManager; }
     public CardManager getCardManager() { return cardManager; }
     public CardGUIListener getCardGUI() { return cardGUIListener; }
+    public CardDisplayManager getCardDisplay() { return cardDisplayManager; }
     public BlockListener getBlockListener() { return blockListener; }
     public BotManager getBotManager() { return botManager; }
     public com.rounds.api.impl.CustomDataManager getCustomDataManager() { return customDataManager; }

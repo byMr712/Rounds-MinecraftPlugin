@@ -241,6 +241,7 @@ public class BotManager implements Listener {
                 plugin.getCardGUI().cleanupPlayer(botUuid);
             }
             com.rounds.entity.RoundsEntities.clearPlayer(botUuid);
+            plugin.getCardDisplay().cleanupPlayer(botUuid);
             if (plugin.getBlockListener() != null) {
                 plugin.getBlockListener().cleanupPlayer(botUuid);
             }

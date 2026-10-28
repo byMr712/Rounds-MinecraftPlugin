@@ -160,21 +160,19 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
         switch (sub) {
             case "help" -> sendHelp(sender);
-            case "start" -> handleDebugStart(sender, args);
-            case "status" -> {
-                if (args.length >= 2 && args[1].equalsIgnoreCase("debug")) {
-                    handleDebugStatus(sender);
-                    return true;
-                }
-                handleStatus(sender);
+            case "debug" -> {
+                handleDebugSub(sender, args);
+                return true;
             }
-            case "stop" -> {
-                if (args.length >= 2 && args[1].equalsIgnoreCase("debug")) {
-                    handleDebugStop(sender, args);
-                    return true;
+            case "start" -> {
+                if (plugin.getGameManager().isGameStarted()) {
+                    sender.sendMessage(ChatColor.RED + Messages.get("debug.game-already-started"));
+                } else {
+                    plugin.getGameManager().startGame();
                 }
-                handleStop(sender);
             }
+            case "status" -> handleStatus(sender);
+            case "stop" -> handleStop(sender);
             case "rounds" -> handleRounds(sender, args);
             case "autodeath" -> handleAutoDeath(sender, args);
             case "info" -> handleInfo(sender);
@@ -370,9 +368,43 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         sender.sendMessage(B + "\u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
     }
 
+    private void handleDebugSub(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage(ChatColor.RED + "Использование: /rdebug debug start | /rdebug debug start <from> | /rdebug debug start <from> stop <to> | /rdebug debug stop | /rdebug debug stop <to> | /rdebug debug status");
+            return;
+        }
+        String sub = args[1].toLowerCase();
+        switch (sub) {
+            case "start" -> {
+                String[] subArgs = new String[args.length - 1];
+                System.arraycopy(args, 1, subArgs, 0, args.length - 1);
+                handleDebugStart(sender, subArgs);
+            }
+            case "stop" -> {
+                String[] subArgs = new String[args.length - 1];
+                System.arraycopy(args, 1, subArgs, 0, args.length - 1);
+                handleDebugStop(sender, subArgs);
+            }
+            case "status" -> handleDebugStatus(sender);
+            default -> sender.sendMessage(ChatColor.RED + "Использование: /rdebug debug start | /rdebug debug start <from> | /rdebug debug start <from> stop <to> | /rdebug debug stop | /rdebug debug stop <to> | /rdebug debug status");
+        }
+    }
+
     private void handleDebugStart(CommandSender sender, String[] args) {
         if (!sender.hasPermission("rounds.admin")) {
             sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
+            return;
+        }
+        if (com.rounds.debug.DebugSession.active) {
+            sender.sendMessage(ChatColor.RED + "Дебаг уже запущен. Используй /rdebug debug stop для остановки.");
+            return;
+        }
+        if (!com.rounds.debug.DebugSession.triggered && com.rounds.debug.DebugSession.startAt != -1) {
+            String planned = "Дебаг уже запланирован: старт в R#" + com.rounds.debug.DebugSession.startAt;
+            if (com.rounds.debug.DebugSession.stopAt != -1) {
+                planned += ", автостоп в конце R#" + com.rounds.debug.DebugSession.stopAt;
+            }
+            sender.sendMessage(ChatColor.RED + planned + ". Сначала /rdebug debug stop для отмены плана.");
             return;
         }
         if (args.length == 1) {
@@ -516,6 +548,15 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     }
 
     private void handleStop(CommandSender sender) {
+        try {
+            if (com.rounds.debug.DebugSession.active) {
+                com.rounds.debug.DebugLog.flushFinal("GAME STOPPED BY /rdebug stop");
+                com.rounds.debug.DebugSession.closeWriter();
+                com.rounds.debug.DebugSession.clear();
+            } else if (!com.rounds.debug.DebugSession.triggered && com.rounds.debug.DebugSession.startAt != -1) {
+                com.rounds.debug.DebugSession.clear();
+            }
+        } catch (Throwable ignored) {}
         GameManager gm = plugin.getGameManager();
         gm.stopGame();
         plugin.getTeamManager().clearAll();

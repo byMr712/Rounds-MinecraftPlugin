@@ -12,6 +12,22 @@
 A Minecraft plugin for the competitive mini-game [**ROUNDS**](https://store.steampowered.com/app/1557740/ROUNDS/), designed for Paper/Purpur servers. Features include support for 2–4 teams, an in-depth card system with a wide variety of upgrade cards (plus the ability to create your own), a configurable number of rounds, an interactive physics-based block system for rapid map setup, a card-selection mechanic for the losing team, an auto-kill feature for prolonged rounds, a "freeplay" mode, and full support for [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) and [**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi).
 
 
+## System Requirements
+
+- **Server: paper/purpur with Minecraft version 1.20.4 - 26.3**
+- **Java:** 17+
+- [**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi) and [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) (Optional; the plugin itself can also display core data, should you wish to customize things further)
+
+
+## Installation
+
+1. Take the jar for your server version and place it in the server's "plugins/" folder.
+2. Restart the server to generate configuration files.
+3. Configure `plugins/Rounds/config.yml` if needed.
+4. Add custom cards to `plugins/Rounds/cards/custom/` (optional).
+5. Join the server as an administrator (`rounds.admin` or OP), run `/rdebug giveblocks`, and place the interactive blocks.
+
+
 ## Key Features
 
 - **Team Firefights (Up to 4 Teams):** Blue, Red, Yellow, and Green teams + seamless spectator mode.
@@ -20,7 +36,7 @@ A Minecraft plugin for the competitive mini-game [**ROUNDS**](https://store.stea
   - **Right Click:** Raises shield to deflect bullets and trigger explosive counter-abilities.
   - **Q (Drop Key):** Manually reload your magazine with a live Action Bar progress bar.
 - **Card System and Combat Abilities:**
-  - **In-World 3D Card Selection Scene:** Instead of a flat GUI inventory, players experience an interactive 3D semicircular showcase floating in the world via Text Display entities. Cards display their real graphic art through the custom bitmap font: every rarity variation gets its own glyph and texture. Card titles and ability descriptions are drawn directly onto the card face textures, with glowing rarity stars floating above each card (from 1 to 5 stars by tier: Common - 1, Uncommon - 2, Rare - 3, Epic - 4, Legendary - 5). Players approach cards on foot (up to 1.5m forward) for close inspection; client-side barrier flooring and invisible perimeter collision prevent drops off cliffs or onto jump pads. Epic and Legendary cards feature active flame particles, selection is accompanied by carousel animation, and expiring timers trigger automatic random selection without kicking players from the server.
+  - **In-World 3D Card Selection Scene:** Instead of a flat GUI inventory, players experience an interactive 3D semicircular showcase floating in the world via Text Display entities. Cards display their real graphic art through the custom bitmap font: every rarity variation gets its own glyph and texture. Card titles and ability descriptions are drawn directly onto the card face textures, with glowing rarity stars floating above each card (from 1 to 5 stars by tier: Common - 1, Uncommon - 2, Rare - 3, Epic - 4, Legendary - 5). Players approach cards on foot (up to 2.0m forward) for close inspection; client-side barrier flooring and invisible perimeter collision prevent drops off cliffs or onto jump pads. Epic and Legendary cards feature active flame particles, selection is accompanied by carousel animation, and expiring timers trigger automatic random selection without kicking players from the server.
   - **Official Cross-Version Resource Pack (Rounds-ResourcePack.zip, -RU.zip, -EN.zip):**
     - Localized packs with language text on card faces: `Rounds-ResourcePack-RU.zip`, `Rounds-ResourcePack-EN.zip`, and default `Rounds-ResourcePack.zip` (source textures located in `test-servers/original_mod/cards/ru` and `en`).
     - 236 raster card textures (one per rarity variation) at the standard 160x250 resolution (original art size, no resampling) mapped to the `rounds:default` font (codepoints `0xE000 + familyId*10 + rarity ordinal`). Each variation gets its own texture via the `art` key inside `variations` (e.g. `art: card5-common`). Text is rendered with high-contrast drop shadows without backdrop boxes (`tools/generate_card_textures.py`), with `{0}` placeholders filled from each variation's `values` list, leaving central artwork 100% visible.
@@ -68,21 +84,6 @@ A Minecraft plugin for the competitive mini-game [**ROUNDS**](https://store.stea
   - Operates completely autonomously without requiring PlaceholderAPI thanks to native stat calculation, utilizing double objective buffering for zero flicker.
   - Full optional support for [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) and [**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi).
 - **Localization:** Complete UI and card translation system (`lang/*.txt`).
-
-
-## System Requirements
-
-- **Server: paper/purpur with Minecraft version 1.20.4 - 26.3**
-- **Java:** 17+
-- [**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi) and [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) (Optional; the plugin itself can also display core data, should you wish to customize things further)
-
-## Installation
-
-1. Take the jar for your server version and place it in the server's "plugins/" folder.
-2. Restart the server to generate configuration files.
-3. Configure `plugins/Rounds/config.yml` if needed.
-4. Add custom cards to `plugins/Rounds/cards/custom/` (optional).
-5. Join the server as an administrator (`rounds.admin` or OP), run `/rdebug giveblocks`, and place the interactive blocks.
 
 
 ## Quick Start: Setting up an Arena
@@ -495,7 +496,7 @@ triggers:
 
 The plugin provides a self-contained, cross-platform resource pack infrastructure capable of building both graphics and audio packages on any operating system.
 
-### 1. Multi-Language Resource Packs with Baked Text (Option 3)
+### 1. Multi-Language Resource Packs with Baked Text
 The official plugin resource pack is based on the original resource pack by **ifrit**, with subsequent modifications: restructured layout, added texture variations, adaptive localization (RU/EN), palette quantization, and optimization by **Mr712**.
 
 Card titles and ability descriptions are rendered directly onto card face textures. Separate language-specific packages are generated:

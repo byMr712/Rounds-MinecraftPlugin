@@ -3,8 +3,8 @@ name:
   ru: "&6Сияние"
   en: "&6Radiance"
 description:
-  ru: "Противники светятся при блоке"
-  en: "Enemies glow when you block"
+  ru: "Противники в радиусе 8 блоков светятся 5 сек при блоке"
+  en: "Enemies within 8 blocks glow for 5s when you block"
 material: LIGHT
 enabled: true
 art: card43.png

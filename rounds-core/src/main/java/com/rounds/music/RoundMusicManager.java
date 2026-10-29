@@ -114,10 +114,10 @@ public class RoundMusicManager implements Listener {
         float volume = (float) getVolume();
         try {
             // Paper entity-bound sound packet: follows player, non-directional, no distance fade
-            player.playSound(player, track.getSoundKey(), SoundCategory.MUSIC, volume, 1.0f);
+            player.playSound(player, track.getSoundKey(), SoundCategory.RECORDS, volume, 1.0f);
         } catch (Throwable t) {
             try {
-                player.playSound(player.getLocation(), track.getSoundKey(), SoundCategory.MUSIC, volume, 1.0f);
+                player.playSound(player.getLocation(), track.getSoundKey(), SoundCategory.RECORDS, volume, 1.0f);
             } catch (Throwable ignored) {}
         }
     }
@@ -126,11 +126,14 @@ public class RoundMusicManager implements Listener {
         if (player == null || !player.isOnline()) return;
         try {
             if (track != null) {
+                player.stopSound(track.getSoundKey(), SoundCategory.RECORDS);
                 player.stopSound(track.getSoundKey(), SoundCategory.MUSIC);
             }
             for (Track t : playlist) {
+                player.stopSound(t.getSoundKey(), SoundCategory.RECORDS);
                 player.stopSound(t.getSoundKey(), SoundCategory.MUSIC);
             }
+            player.stopSound(SoundCategory.RECORDS);
             player.stopSound(SoundCategory.MUSIC);
         } catch (Throwable ignored) {}
     }
@@ -200,6 +203,7 @@ public class RoundMusicManager implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         try {
+            event.getPlayer().stopSound(SoundCategory.RECORDS);
             event.getPlayer().stopSound(SoundCategory.MUSIC);
         } catch (Throwable ignored) {}
         if (currentTrack != null && plugin.getGameManager() != null
@@ -211,6 +215,20 @@ public class RoundMusicManager implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         stopPlayerMusic(event.getPlayer(), currentTrack);
+    }
+
+    @EventHandler
+    public void onGameModeChange(org.bukkit.event.player.PlayerGameModeChangeEvent event) {
+        if (event.getNewGameMode() == org.bukkit.GameMode.SPECTATOR) {
+            if (currentTrack != null && plugin.getGameManager() != null
+                    && plugin.getGameManager().getState() == GameManager.GameState.PLAYING) {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (event.getPlayer().isOnline() && currentTrack != null) {
+                        playTrackForPlayer(event.getPlayer(), currentTrack);
+                    }
+                }, 2L);
+            }
+        }
     }
 
     public boolean isEnabled() {

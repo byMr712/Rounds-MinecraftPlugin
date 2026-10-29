@@ -3,8 +3,8 @@ name:
   ru: "&5Сдохни или умри"
   en: "&5Die Or Perish"
 description:
-  ru: "+{0} урона, {1} ХП за выстрел"
-  en: "+{0} damage, {1} HP per shot"
+  ru: "+{0} урона, -{1} ХП за выстрел"
+  en: "+{0} damage, -{1} HP per shot"
 material: WITHER_ROSE
 enabled: true
 art: card17.png

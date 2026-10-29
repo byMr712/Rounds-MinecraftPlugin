@@ -921,9 +921,25 @@ public class RoundsEntities implements Listener {
                 }
             }
         }
-        if (data.radiance > 0 && living instanceof Player radTarget) {
-            radTarget.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                PotionEffectType.GLOWING, 100, 0));
+        if (data.radiance > 0 && living instanceof Player radTarget && shooterPlayer != null && shooterPlayer.isOnline()) {
+            com.rounds.nms.NmsBridge bridge = plugin.getNmsBridge();
+            if (bridge != null) {
+                byte flags = plugin.getGameManager().getEntitySharedFlags(radTarget, true);
+                bridge.sendEntityFlags(shooterPlayer, radTarget, flags);
+                UUID radTargetId = radTarget.getUniqueId();
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (shooterPlayer.isOnline()) {
+                        Player t = Bukkit.getPlayer(radTargetId);
+                        if (t != null && t.isOnline()) {
+                            byte clearFlags = plugin.getGameManager().getEntitySharedFlags(t, t.hasPotionEffect(PotionEffectType.GLOWING));
+                            bridge.sendEntityFlags(shooterPlayer, t, clearFlags);
+                        }
+                    }
+                }, 100L);
+            } else {
+                radTarget.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                    PotionEffectType.GLOWING, 100, 0));
+            }
         }
         if (data.cold > 0) {
             living.addPotionEffect(new org.bukkit.potion.PotionEffect(

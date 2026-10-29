@@ -386,6 +386,7 @@ public class GameManager implements Listener {
                 p.setInvulnerable(true);
                 p.setVelocity(new Vector(0, 0, 0));
                 p.setNoDamageTicks(0);
+                giveGun(p);
                 plugin.getCardManager().openCardSelection(p, team);
             }
         }
@@ -398,11 +399,17 @@ public class GameManager implements Listener {
     }
 
     public void giveGun(Player player) {
+        boolean isBot = (plugin.getBotManager() != null && plugin.getBotManager().getBot(player.getName()) != null);
         ItemStack gun = GunItem.createGunItem();
-        // Оружие всегда выдается во ВСЕ 9 слотов быстрого доступа,
-        // чтобы пушка была под рукой независимо от выбранного слота.
-        for (int slot = 0; slot < 9; slot++) {
-            player.getInventory().setItem(slot, gun.clone());
+        if (isBot) {
+            for (int slot = 0; slot < 9; slot++) {
+                player.getInventory().setItem(slot, gun.clone());
+            }
+        } else {
+            player.getInventory().setItem(0, gun.clone());
+            if (!GunItem.isGun(player.getInventory().getItem(22))) {
+                player.getInventory().setItem(22, gun.clone());
+            }
         }
     }
 
@@ -1107,8 +1114,17 @@ public class GameManager implements Listener {
                 }
                 p.setAllowFlight(false);
                 p.setFlying(false);
-                p.getInventory().clear();
-                giveGun(p);
+                boolean isBot = (plugin.getBotManager() != null && plugin.getBotManager().getBot(p.getName()) != null);
+                if (isBot) {
+                    if (!GunItem.isGun(p.getInventory().getItem(0))) {
+                        giveGun(p);
+                    }
+                } else {
+                    p.getInventory().setItem(0, GunItem.createGunItem());
+                    if (!GunItem.isGun(p.getInventory().getItem(22))) {
+                        p.getInventory().setItem(22, GunItem.createGunItem());
+                    }
+                }
                 PlayerData roundData = plugin.getPlayerDataManager().getData(p);
                 if (roundData != null) {
                     roundData.ammo = roundData.maxAmmo;
@@ -1961,6 +1977,9 @@ public class GameManager implements Listener {
                 Location spawn = deadTeam != null ? teamSpawns.get(deadTeam) : null;
                 if (spawn == null) spawn = currentZoneCenter;
                 if (spawn != null) player.teleport(spawn);
+                if (plugin.getRoundMusicManager() != null && plugin.getRoundMusicManager().isPlaying()) {
+                    plugin.getRoundMusicManager().playTrackForPlayer(player, plugin.getRoundMusicManager().getCurrentTrack());
+                }
             }, 1L);
             return;
         }
@@ -2756,7 +2775,7 @@ public class GameManager implements Listener {
         }
     }
 
-    private byte getEntitySharedFlags(Player target, boolean glow) {
+    public byte getEntitySharedFlags(Player target, boolean glow) {
         byte flags = 0;
         if (target.getFireTicks() > 0) flags |= 0x01;
         if (target.isSneaking()) flags |= 0x02;

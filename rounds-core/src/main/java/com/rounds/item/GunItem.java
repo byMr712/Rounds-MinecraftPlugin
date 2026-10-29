@@ -13,6 +13,7 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerDropItemEvent;
@@ -122,6 +123,15 @@ public class GunItem implements Listener {
                     || plugin.getCardDisplay().isCardClickRecent(player.getUniqueId()))) {
                 return;
             }
+            PlayerData pData = plugin.getPlayerDataManager().getData(player);
+            if (pData != null) {
+                double effectiveAtkSpeed = Math.max(1.0 + pData.atkSpeed, 0.5);
+                double cooldownTicks = Math.max(pData.atks / effectiveAtkSpeed + pData.atksReload, 1);
+                if (!GunCooldowns.canShoot(player.getUniqueId(), cooldownTicks) || isReloading(player.getUniqueId()) || reloadingPlayers.contains(player.getUniqueId())) {
+                    player.setCooldown(item.getType(), Math.max(1, (int) Math.ceil(cooldownTicks)));
+                    return;
+                }
+            }
             shotThisTick.add(player.getUniqueId());
             doShoot(player);
         } else if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
@@ -131,6 +141,23 @@ public class GunItem implements Listener {
                 return;
             }
             doBlock(player);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerAnimation(org.bukkit.event.player.PlayerAnimationEvent event) {
+        if (event.getAnimationType() != org.bukkit.event.player.PlayerAnimationType.ARM_SWING) return;
+        Player player = event.getPlayer();
+        ItemStack item = player.getInventory().getItemInMainHand();
+        if (!isGun(item)) return;
+        UUID uuid = player.getUniqueId();
+        PlayerData data = plugin.getPlayerDataManager().getData(player);
+        if (data == null) return;
+        double effectiveAtkSpeed = Math.max(1.0 + data.atkSpeed, 0.5);
+        double cooldownTicks = Math.max(data.atks / effectiveAtkSpeed + data.atksReload, 1);
+        if (!GunCooldowns.canShoot(uuid, cooldownTicks) || isReloading(uuid) || reloadingPlayers.contains(uuid)) {
+            event.setCancelled(true);
+            player.setCooldown(item.getType(), Math.max(1, (int) Math.ceil(cooldownTicks)));
         }
     }
 
@@ -230,6 +257,7 @@ public class GunItem implements Listener {
         }
 
         GunCooldowns.recordShot(uuid);
+        player.setCooldown(player.getInventory().getItemInMainHand().getType(), Math.max(1, (int) Math.ceil(cooldownTicks)));
         com.rounds.stats.MatchStatsManager.recordShot(uuid);
         cancelReload(uuid);
         data.executeTriggers(com.rounds.cards.CardTrigger.ON_SHOOT, player, null, 1.0);
@@ -486,15 +514,31 @@ public class GunItem implements Listener {
         }
 
         if (data.radiance > 0) {
-            // Сияние: при блоке все враги в радиусе 8 блоков светятся 5 секунд.
+            // Сияние: при блоке все враги в радиусе 8 блоков светятся 5 секунд ТОЛЬКО для блокирующего игрока.
+            com.rounds.nms.NmsBridge bridge = plugin.getNmsBridge();
             for (Entity entity : blockLoc.getNearbyEntities(8.0, 8.0, 8.0)) {
                 if (!(entity instanceof Player glowTarget) || glowTarget.getUniqueId().equals(uuid)) continue;
                 if (glowTarget.getGameMode() == GameMode.SPECTATOR) continue;
                 GameTeam myTeam = plugin.getTeamManager().getPlayerTeam(uuid);
                 GameTeam targetTeam = plugin.getTeamManager().getPlayerTeam(glowTarget.getUniqueId());
                 if (myTeam != null && targetTeam != null && myTeam != targetTeam) {
-                    glowTarget.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                        PotionEffectType.GLOWING, 100, 0));
+                    if (bridge != null) {
+                        byte flags = plugin.getGameManager().getEntitySharedFlags(glowTarget, true);
+                        bridge.sendEntityFlags(player, glowTarget, flags);
+                        final UUID targetId = glowTarget.getUniqueId();
+                        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                            if (player.isOnline()) {
+                                Player t = Bukkit.getPlayer(targetId);
+                                if (t != null && t.isOnline()) {
+                                    byte clearFlags = plugin.getGameManager().getEntitySharedFlags(t, t.hasPotionEffect(PotionEffectType.GLOWING));
+                                    bridge.sendEntityFlags(player, t, clearFlags);
+                                }
+                            }
+                        }, 100L);
+                    } else {
+                        glowTarget.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                            PotionEffectType.GLOWING, 100, 0));
+                    }
                 }
             }
             player.getWorld().playSound(blockLoc, Sound.BLOCK_BEACON_ACTIVATE, SoundCategory.RECORDS, 0.8f, 1.5f);

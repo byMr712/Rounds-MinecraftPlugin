@@ -498,9 +498,9 @@ triggers:
 Официальный ресурспак плагина основан на оригинальном ресурспаке от автора **ifrit**, с последующими изменениями: переработкой структуры, добавлением вариаций текстур, адаптивной локализацией (RU/EN), квантованием палитры и оптимизацией от **Mr712**.
 
 Текст названия и описания наносится непосредственно на текстуры карточек. Чтобы поддерживать несколько языков, формируются отдельные ресурспаки:
-- `Rounds-ResourcePack-RU.zip` — текстуры с запеченным русским переводом.
-- `Rounds-ResourcePack-EN.zip` — текстуры с запеченным английским переводом.
-- `Rounds-ResourcePack.zip` — базовый пакет с оригинальными чистыми карточками (без текста) для добавления своих переводов и кастомного текста сторонними авторами ([Скачать версию для разработчиков на Google Диске](https://drive.google.com/file/d/13Chj0DIqG81qXGdEg2IBgMq_GYeWjyPH/view?usp=sharing)).
+- `Rounds-ResourcePack-RU.zip` — текстуры с запеченным русским переводом ([Скачать на Google Диске](https://drive.google.com/file/d/1PT12q2CvFDOn9893XH52pDJiOXmIzH9l/view?usp=sharing)).
+- `Rounds-ResourcePack-EN.zip` — текстуры с запеченным английским переводом ([Скачать на Google Диске](https://drive.google.com/file/d/1LarckHImo3S0LpfEYLUOSHO69ds22_Ai/view?usp=sharing)).
+- `Rounds-ResourcePack.zip` — базовый пакет с оригинальными чистыми карточками (без текста) для добавления своих переводов и кастомного текста сторонними авторами ([Скачать версию для разработчиков на Google Диске](https://drive.google.com/file/d/1g12GnBL-X-s6G53o61FOwzi4M731VVk1/view?usp=sharing)).
 
 Кодовые позиции растровых глифов шрифта (`0xE000` + `familyId`) идентичны во всех пакетах. Игрок просто выбирает ресурспак своего языка в настройках Minecraft без необходимости менять что-либо на сервере.
 
@@ -508,10 +508,10 @@ triggers:
 Чтобы игроки автоматически скачивали мой уже готовый русскоязычный ресурспак при подключении к серверу, укажите следующие параметры в файле `server.properties`:
 
 ```properties
-resource-pack=https://drive.google.com/uc?export=download&id=1n9V0ovF2Qjv7UEU2-ZQ1KqjyVK4dM1yK
+resource-pack=https://drive.google.com/uc?export=download&id=1PT12q2CvFDOn9893XH52pDJiOXmIzH9l
 resource-pack-id=276093b4-f5ee-3eca-8dba-2448a11ee78a
 resource-pack-prompt={"text"\:"Ресурспак на карточки ROUNDS","color"\:"gold"}
-resource-pack-sha1=5e894b8ef978866810c23770e9a976ddbce6e9f1
+resource-pack-sha1=56733eb7427eb17950c026dfc37abd28efd41b97
 ```
 
 ### 2. Кроссплатформенный билдер в Gradle (`CardPackBuilder`)

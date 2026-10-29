@@ -10,21 +10,25 @@ enabled: true
 art: card6.png
 variations:
   - rarity: EPIC
+    art: card100-epic
     value: "35%"
     effects:
       damage: 0.35
       attack-speed: 0.1
   - rarity: COMMON
+    art: card100-common
     value: "15%"
     effects:
       damage: 0.15
       attack-speed: 0.1
   - rarity: UNCOMMON
+    art: card100-uncommon
     value: "25%"
     effects:
       damage: 0.25
       attack-speed: 0.1
   - rarity: RARE
+    art: card100-rare
     value: "30%"
     effects:
       damage: 0.3

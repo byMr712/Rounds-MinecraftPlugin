@@ -10,6 +10,7 @@ enabled: true
 art: card17.png
 variations:
   - rarity: LEGENDARY
+    art: card84-legendary
     effects:
       damage: 1.5
       hp: -0.5

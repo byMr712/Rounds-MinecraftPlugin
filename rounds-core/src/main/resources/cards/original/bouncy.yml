@@ -10,24 +10,28 @@ enabled: true
 art: card5.png
 variations:
   - rarity: COMMON
+    art: card5-common
     values: ["2", "+25%", "+10%"]
     effects:
       bounce: 2
       damage: 0.25
       reload: 1
   - rarity: UNCOMMON
+    art: card5-uncommon
     values: ["3", "+30%", "+12%"]
     effects:
       bounce: 3
       damage: 0.3
       reload: 1.2
   - rarity: RARE
+    art: card5-rare
     values: ["4", "+35%", "+14%"]
     effects:
       bounce: 4
       damage: 0.35
       reload: 1.4
   - rarity: EPIC
+    art: card5-epic
     values: ["5", "+40%", "+16%"]
     effects:
       bounce: 5

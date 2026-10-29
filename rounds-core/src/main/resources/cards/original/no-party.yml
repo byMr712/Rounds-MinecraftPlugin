@@ -10,5 +10,6 @@ enabled: true
 art: card20.png
 variations:
   - rarity: RARE
+    art: card119-rare
     effects:
       no-party: 1

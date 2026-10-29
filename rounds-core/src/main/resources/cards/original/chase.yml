@@ -10,21 +10,25 @@ enabled: true
 art: card10.png
 variations:
   - rarity: RARE
+    art: card10-rare
     values: ["30%", "50%"]
     effects:
       speed: 0.3
       hp: 0.5
   - rarity: COMMON
+    art: card10-common
     values: ["10%", "25%"]
     effects:
       speed: 0.1
       hp: 0.25
   - rarity: UNCOMMON
+    art: card10-uncommon
     values: ["20%", "35%"]
     effects:
       speed: 0.2
       hp: 0.35
   - rarity: EPIC
+    art: card10-epic
     values: ["60%", "65%"]
     effects:
       speed: 0.6

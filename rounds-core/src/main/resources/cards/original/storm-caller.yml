@@ -10,5 +10,6 @@ enabled: true
 art: card20.png
 variations:
   - rarity: LEGENDARY
+    art: card79-legendary
     effects:
       storm-caller: 0.25

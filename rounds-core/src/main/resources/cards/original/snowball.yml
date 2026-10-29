@@ -10,5 +10,6 @@ enabled: true
 art: card11.png
 variations:
   - rarity: LEGENDARY
+    art: card82-legendary
     effects:
       snowball: 1

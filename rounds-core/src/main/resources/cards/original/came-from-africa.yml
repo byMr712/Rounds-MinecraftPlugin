@@ -10,18 +10,22 @@ enabled: true
 art: card10.png
 variations:
   - rarity: COMMON
+    art: card97-common
     value: "5"
     effects:
       attack-range: 5
   - rarity: UNCOMMON
+    art: card97-uncommon
     value: "8"
     effects:
       attack-range: 8
   - rarity: RARE
+    art: card97-rare
     value: "11"
     effects:
       attack-range: 11
   - rarity: EPIC
+    art: card97-epic
     value: "14"
     effects:
       attack-range: 14

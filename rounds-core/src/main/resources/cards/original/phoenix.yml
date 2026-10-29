@@ -10,6 +10,7 @@ enabled: true
 art: card37.png
 variations:
   - rarity: LEGENDARY
+    art: card37-legendary
     effects:
       phoenix: 1
       hp: -0.35

@@ -10,18 +10,22 @@ enabled: true
 art: card6.png
 variations:
   - rarity: RARE
+    art: card6-rare
     value: "20%"
     effects:
       hp_boost_on_hit: 2.0
   - rarity: COMMON
+    art: card6-common
     value: "10%"
     effects:
       hp_boost_on_hit: 1.0
   - rarity: UNCOMMON
+    art: card6-uncommon
     value: "15%"
     effects:
       hp_boost_on_hit: 1.5
   - rarity: EPIC
+    art: card6-epic
     value: "25%"
     effects:
       hp_boost_on_hit: 2.5

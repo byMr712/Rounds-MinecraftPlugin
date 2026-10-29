@@ -10,5 +10,6 @@ enabled: true
 art: card6.png
 variations:
   - rarity: LEGENDARY
+    art: card78-legendary
     effects:
       executioner: 1

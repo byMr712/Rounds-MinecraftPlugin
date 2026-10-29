@@ -10,6 +10,7 @@ enabled: true
 art: card43.png
 variations:
   - rarity: RARE
+    art: card43-rare
     effects:
       radiance: 1
       hp: 0.5

@@ -10,18 +10,22 @@ enabled: true
 art: card9.png
 variations:
   - rarity: COMMON
+    art: card69-common
     value: "20%"
     effects:
       damage: 0.2
   - rarity: UNCOMMON
+    art: card69-uncommon
     value: "30%"
     effects:
       damage: 0.3
   - rarity: RARE
+    art: card69-rare
     value: "40%"
     effects:
       damage: 0.4
   - rarity: EPIC
+    art: card69-epic
     value: "50%"
     effects:
       damage: 0.5

@@ -10,18 +10,22 @@ enabled: true
 art: card15.png
 variations:
   - rarity: COMMON
+    art: card15-common
     value: "3"
     effects:
       decay: 3
   - rarity: UNCOMMON
+    art: card15-uncommon
     value: "4"
     effects:
       decay: 4
   - rarity: RARE
+    art: card15-rare
     value: "5"
     effects:
       decay: 5
   - rarity: EPIC
+    art: card15-epic
     value: "6"
     effects:
       decay: 6

@@ -10,11 +10,13 @@ enabled: true
 art: card26.png
 variations:
   - rarity: RARE
+    art: card26-rare
     values: ["100%", "40%"]
     effects:
       damage: 1.0
       hp: -0.4
   - rarity: RARE
+    art: card26-rare
     values: ["100%", "80%"]
     effects:
       damage: 1.0

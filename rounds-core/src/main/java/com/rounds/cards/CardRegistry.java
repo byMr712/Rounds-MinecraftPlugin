@@ -218,7 +218,7 @@ public class CardRegistry {
                 config.getBoolean("enabled", true),
                 loadEffects(config),
                 config.getStringList("commands"), config.getString("script", null),
-                triggers);
+                triggers, config.getString("art", null));
     }
 
     private Card parseVariationCard(YamlConfiguration config, Map<?, ?> variation, int fallbackId, int familyId) {
@@ -251,10 +251,12 @@ public class CardRegistry {
         }
 
         List<CardTriggerAction> triggers = loadTriggers(config, variation);
+        // Per-variation art (e.g. "card5-common") overrides the family-level art.
+        String art = variation.get("art") != null ? String.valueOf(variation.get("art")) : config.getString("art", null);
         return new Card(id, familyId, names, descriptions, parseMaterial(materialStr), parseRarity(rarityStr),
                 config.getBoolean("enabled", true), effects,
                 config.getStringList("commands"), config.getString("script", null),
-                triggers);
+                triggers, art);
     }
 
     private List<CardTriggerAction> loadTriggers(YamlConfiguration config, Map<?, ?> variation) {

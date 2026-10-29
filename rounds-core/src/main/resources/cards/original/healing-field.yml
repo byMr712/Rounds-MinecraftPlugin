@@ -10,6 +10,7 @@ enabled: true
 art: card28.png
 variations:
   - rarity: RARE
+    art: card28-rare
     effects:
       heal: 1
       hp: 0.5

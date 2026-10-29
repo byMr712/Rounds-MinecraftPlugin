@@ -10,6 +10,7 @@ enabled: true
 art: card25.png
 variations:
   - rarity: RARE
+    art: card25-rare
     effects:
       cold: 1
       cold_lvl: 1

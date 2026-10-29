@@ -10,5 +10,6 @@ enabled: true
 art: card17.png
 variations:
   - rarity: LEGENDARY
+    art: card88-legendary
     effects:
       overheat: 0.1

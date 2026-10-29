@@ -10,5 +10,6 @@ enabled: true
 art: card16.png
 variations:
   - rarity: LEGENDARY
+    art: card90-legendary
     effects:
       spikes: 0.1

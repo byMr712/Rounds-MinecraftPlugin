@@ -10,21 +10,25 @@ enabled: true
 art: card17.png
 variations:
   - rarity: EPIC
+    art: card107-epic
     values: ["40%", "5%"]
     effects:
       damage: 0.4
       hp-cost: 0.05
   - rarity: COMMON
+    art: card107-common
     values: ["15%", "2%"]
     effects:
       damage: 0.15
       hp-cost: 0.02
   - rarity: UNCOMMON
+    art: card107-uncommon
     values: ["25%", "3%"]
     effects:
       damage: 0.25
       hp-cost: 0.03
   - rarity: RARE
+    art: card107-rare
     values: ["32%", "4%"]
     effects:
       damage: 0.32

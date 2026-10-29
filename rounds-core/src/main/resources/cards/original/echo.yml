@@ -10,5 +10,6 @@ enabled: true
 art: card49.png
 variations:
   - rarity: RARE
+    art: card127-rare
     effects:
       echo: 1

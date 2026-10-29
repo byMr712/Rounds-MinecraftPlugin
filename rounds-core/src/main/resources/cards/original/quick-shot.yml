@@ -10,21 +10,25 @@ enabled: true
 art: card41.png
 variations:
   - rarity: COMMON
+    art: card41-common
     values: ["150%", "10%"]
     effects:
       bullet_speed: 1.5
       reload: 1
   - rarity: UNCOMMON
+    art: card41-uncommon
     values: ["225%", "15%"]
     effects:
       bullet_speed: 2.25
       reload: 1.5
   - rarity: RARE
+    art: card41-rare
     values: ["300%", "20%"]
     effects:
       bullet_speed: 3.0
       reload: 2
   - rarity: EPIC
+    art: card41-epic
     values: ["375%", "25%"]
     effects:
       bullet_speed: 3.75

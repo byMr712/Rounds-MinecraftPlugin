@@ -10,5 +10,6 @@ enabled: true
 art: card35.png
 variations:
   - rarity: LEGENDARY
+    art: card77-legendary
     effects:
       blood-furry: 0.6

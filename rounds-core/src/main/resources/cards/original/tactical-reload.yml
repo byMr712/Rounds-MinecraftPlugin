@@ -10,6 +10,7 @@ enabled: true
 art: card40.png
 variations:
   - rarity: COMMON
+    art: card58-common
     effects:
       tactical_reload: 1
       block_cd: 0.5

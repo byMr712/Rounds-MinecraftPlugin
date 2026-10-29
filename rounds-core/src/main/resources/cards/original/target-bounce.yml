@@ -10,6 +10,7 @@ enabled: true
 art: card46.png
 variations:
   - rarity: RARE
+    art: card60-rare
     effects:
       tg-bounce: 1
       bounce: 1

@@ -10,6 +10,7 @@ enabled: true
 art: card18.png
 variations:
   - rarity: RARE
+    art: card18-rare
     effects:
       drill: 1
       reload: -4

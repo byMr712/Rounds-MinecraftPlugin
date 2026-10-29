@@ -10,18 +10,22 @@ enabled: true
 art: card5.png
 variations:
   - rarity: COMMON
+    art: card73-common
     value: "20%"
     effects:
       jump-height: 0.2
   - rarity: UNCOMMON
+    art: card73-uncommon
     value: "30%"
     effects:
       jump-height: 0.3
   - rarity: RARE
+    art: card73-rare
     value: "40%"
     effects:
       jump-height: 0.4
   - rarity: EPIC
+    art: card73-epic
     value: "50%"
     effects:
       jump-height: 0.5

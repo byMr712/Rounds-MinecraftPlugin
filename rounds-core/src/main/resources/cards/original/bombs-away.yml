@@ -10,6 +10,7 @@ enabled: true
 art: card4.png
 variations:
   - rarity: RARE
+    art: card4-rare
     effects:
       bomb_on_block: 1
       hp: 0.5

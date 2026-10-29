@@ -10,21 +10,25 @@ enabled: true
 art: card16.png
 variations:
   - rarity: COMMON
+    art: card16-common
     values: ["-50%", "30%"]
     effects:
       block_cd: -0.5
       hp: 0.3
   - rarity: UNCOMMON
+    art: card16-uncommon
     values: ["-40%", "45%"]
     effects:
       block_cd: -0.4
       hp: 0.45
   - rarity: RARE
+    art: card16-rare
     values: ["-30%", "60%"]
     effects:
       block_cd: -0.3
       hp: 0.6
   - rarity: EPIC
+    art: card16-epic
     values: ["-20%", "80%"]
     effects:
       block_cd: -0.2

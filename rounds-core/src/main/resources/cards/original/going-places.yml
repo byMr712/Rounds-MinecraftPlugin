@@ -10,21 +10,25 @@ enabled: true
 art: card26.png
 variations:
   - rarity: EPIC
+    art: card115-epic
     values: ["50%", "30%"]
     effects:
       damage: 0.5
       hp: -0.3
   - rarity: COMMON
+    art: card115-common
     values: ["20%", "15%"]
     effects:
       damage: 0.2
       hp: -0.15
   - rarity: UNCOMMON
+    art: card115-uncommon
     values: ["30%", "20%"]
     effects:
       damage: 0.3
       hp: -0.2
   - rarity: RARE
+    art: card115-rare
     values: ["40%", "25%"]
     effects:
       damage: 0.4

@@ -10,21 +10,25 @@ enabled: true
 art: card1.png
 variations:
   - rarity: UNCOMMON
+    art: card94-uncommon
     value: "10%"
     effects:
       hp: 0.1
       heal: 1
   - rarity: COMMON
+    art: card94-common
     value: "5%"
     effects:
       hp: 0.05
       heal: 1
   - rarity: RARE
+    art: card94-rare
     value: "20%"
     effects:
       hp: 0.2
       heal: 1
   - rarity: EPIC
+    art: card94-epic
     value: "30%"
     effects:
       hp: 0.3

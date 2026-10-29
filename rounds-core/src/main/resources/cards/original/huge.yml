@@ -7,24 +7,28 @@ enabled: true
 art: card30.png
 variations:
   - rarity: COMMON
+    art: card30-common
     description:
       ru: "+80% ХП"
       en: "+80% HP"
     effects:
       hp: 0.8
   - rarity: UNCOMMON
+    art: card30-uncommon
     description:
       ru: "+110% ХП"
       en: "+110% HP"
     effects:
       hp: 1.1
   - rarity: RARE
+    art: card30-rare
     description:
       ru: "+140% ХП"
       en: "+140% HP"
     effects:
       hp: 1.4
   - rarity: EPIC
+    art: card30-epic
     description:
       ru: "+180% ХП"
       en: "+180% HP"

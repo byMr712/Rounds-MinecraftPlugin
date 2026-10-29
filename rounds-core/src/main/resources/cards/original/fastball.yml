@@ -10,21 +10,25 @@ enabled: true
 art: card24.png
 variations:
   - rarity: COMMON
+    art: card24-common
     values: ["250%", "50%"]
     effects:
       bullet_speed: 2.5
       attack_speed: -0.5
   - rarity: UNCOMMON
+    art: card24-uncommon
     values: ["350%", "60%"]
     effects:
       bullet_speed: 3.5
       attack_speed: -0.6
   - rarity: RARE
+    art: card24-rare
     values: ["450%", "70%"]
     effects:
       bullet_speed: 4.5
       attack_speed: -0.7
   - rarity: EPIC
+    art: card24-epic
     values: ["550%", "80%"]
     effects:
       bullet_speed: 5.5

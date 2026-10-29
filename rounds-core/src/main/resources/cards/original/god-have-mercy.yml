@@ -10,5 +10,6 @@ enabled: true
 art: card28.png
 variations:
   - rarity: UNCOMMON
+    art: card111-uncommon
     effects:
       shields-up: 1

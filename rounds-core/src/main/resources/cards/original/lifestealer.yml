@@ -10,6 +10,7 @@ enabled: true
 art: card33.png
 variations:
   - rarity: RARE
+    art: card33-rare
     effects:
       lifesteal_aura: 1
       hp: 0.25

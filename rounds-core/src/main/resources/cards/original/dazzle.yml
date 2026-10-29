@@ -10,6 +10,7 @@ enabled: true
 art: card14.png
 variations:
   - rarity: RARE
+    art: card14-rare
     effects:
       stun: 1
       reload: 1

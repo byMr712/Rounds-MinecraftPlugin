@@ -10,6 +10,7 @@ enabled: true
 art: card42.png
 variations:
   - rarity: RARE
+    art: card42-rare
     effects:
       homing_on_block: 5
       hp: 0.5

@@ -10,5 +10,6 @@ enabled: true
 art: card13.png
 variations:
   - rarity: LEGENDARY
+    art: card86-legendary
     effects:
       card-bonus: 2

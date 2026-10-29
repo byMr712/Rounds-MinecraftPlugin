@@ -10,18 +10,22 @@ enabled: true
 art: card40.png
 variations:
   - rarity: COMMON
+    art: card122-common
     value: "2"
     effects:
       auto_reload_delay: 2.0
   - rarity: UNCOMMON
+    art: card122-uncommon
     value: "1.5"
     effects:
       auto_reload_delay: 1.5
   - rarity: RARE
+    art: card122-rare
     value: "1"
     effects:
       auto_reload_delay: 1.0
   - rarity: EPIC
+    art: card122-epic
     value: "0.5"
     effects:
       auto_reload_delay: 0.5

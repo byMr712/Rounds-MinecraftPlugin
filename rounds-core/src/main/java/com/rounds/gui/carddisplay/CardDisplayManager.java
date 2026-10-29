@@ -3,12 +3,11 @@ package com.rounds.gui.carddisplay;
 import com.rounds.RoundsPlugin;
 import com.rounds.cards.Card;
 import com.rounds.cards.CardRegistry;
-import com.rounds.util.Messages;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.entity.Display;
@@ -20,6 +19,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -35,9 +35,8 @@ import java.util.concurrent.ThreadLocalRandom;
  * World-space card draft UI using custom-font glyphs: five card images hang in the air in a
  * half-circle around the player (each card = a TextDisplay rendering a private-use codepoint
  * that the resource pack maps to the card texture). The player turns their head to look at
- * them, hover shows the card's own description on the action bar, left-click
- * (or hotkeys 1..5) picks. Rarity drives the glowing outline, EPIC/LEGENDARY cards are
- * wrapped in colored fire particles.
+ * them and left-clicks (or presses hotkeys 1..5) to pick; no hover text is shown. Rarity
+ * drives the glowing outline, EPIC/LEGENDARY cards are wrapped in colored fire particles.
  */
 public class CardDisplayManager implements Listener {
 
@@ -48,13 +47,11 @@ public class CardDisplayManager implements Listener {
     private static final double RADIUS = 2.2;
     private static final double FAN_TOTAL_DEG = 160.0;
     private static final double CARD_CENTER_OFFSET = 1.2;
-    private static final int DESC_WRAP = 30;
     // Card glyph is 88 font units tall (bitmap provider) rendered at ~0.025 blocks/unit,
     // source images are 160x250 (width = 0.64 * height). A small margin is added so the
     // edges of the card are comfortably selectable.
     private static final double CARD_HALF_WIDTH = 0.76;
     private static final double CARD_HALF_HEIGHT = 1.16;
-    private static final int GLYPH_BASE = 0xE000;
     private static final Key CARD_FONT = Key.key("rounds", "default");
 
     public CardDisplayManager(RoundsPlugin plugin) {
@@ -62,7 +59,9 @@ public class CardDisplayManager implements Listener {
     }
 
     public void open(Player player, List<Card> cards) {
-        close(player);
+        if (player == null || !player.isOnline()) return;
+        if (player.getGameMode() == GameMode.SPECTATOR) return;
+        close(player.getUniqueId());
         Scene scene = new Scene(player, cards);
         scenes.put(player.getUniqueId(), scene);
         scene.begin();
@@ -71,9 +70,12 @@ public class CardDisplayManager implements Listener {
 
     public void close(Player player) {
         if (player == null) return;
-        Scene scene = scenes.remove(player.getUniqueId());
-        if (scene != null) scene.dispose();
-        showOtherPlayers(player);
+        close(player.getUniqueId());
+    }
+
+    public void close(UUID playerId) {
+        if (playerId == null) return;
+        cleanupPlayer(playerId);
     }
 
     public boolean isWithinSelectionBounds(Player player, Location to) {
@@ -84,10 +86,14 @@ public class CardDisplayManager implements Listener {
 
     public void closeAll() {
         for (UUID uuid : new ArrayList<>(scenes.keySet())) {
-            Player p = Bukkit.getPlayer(uuid);
-            Scene s = scenes.remove(uuid);
-            if (s != null) s.dispose();
-            if (p != null) showOtherPlayers(p);
+            cleanupPlayer(uuid);
+        }
+        for (org.bukkit.World w : Bukkit.getWorlds()) {
+            for (TextDisplay td : w.getEntitiesByClass(TextDisplay.class)) {
+                if (td.getScoreboardTags().contains("rounds_card_display")) {
+                    td.remove();
+                }
+            }
         }
     }
 
@@ -96,7 +102,17 @@ public class CardDisplayManager implements Listener {
         Scene s = scenes.remove(uuid);
         if (s != null) s.dispose();
         Player p = Bukkit.getPlayer(uuid);
-        if (p != null) showOtherPlayers(p);
+        if (p != null) {
+            showOtherPlayers(p);
+            p.sendActionBar(Component.empty());
+        }
+        for (org.bukkit.World w : Bukkit.getWorlds()) {
+            for (TextDisplay td : w.getEntitiesByClass(TextDisplay.class)) {
+                if (td.getScoreboardTags().contains("owner_" + uuid)) {
+                    td.remove();
+                }
+            }
+        }
     }
 
     private void hideOtherPlayers(Player viewer) {
@@ -116,6 +132,17 @@ public class CardDisplayManager implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
         cleanupPlayer(event.getPlayer().getUniqueId());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        if (player.getGameMode() == GameMode.SPECTATOR
+                || plugin.getGameManager() == null
+                || !plugin.getGameManager().isGameStarted()
+                || plugin.getGameManager().getState() != com.rounds.game.GameManager.GameState.CARDS) {
+            cleanupPlayer(player.getUniqueId());
+        }
     }
 
     @EventHandler
@@ -163,7 +190,7 @@ public class CardDisplayManager implements Listener {
                 return Component.text(String.valueOf(customGlyph)).font(CARD_FONT);
             }
         }
-        return Component.text(String.valueOf((char) (GLYPH_BASE + card.getFamilyId()))).font(CARD_FONT);
+        return Component.text(String.valueOf((char) card.getGlyphCodepoint())).font(CARD_FONT);
     }
 
     private final class Scene {
@@ -176,7 +203,6 @@ public class CardDisplayManager implements Listener {
 
         TextDisplay[] displays = new TextDisplay[SLOT_COUNT];
         Location[] targets = new Location[SLOT_COUNT];
-        TextDisplay description;
         int hovered = -1;
 
         BukkitTask tickTask;
@@ -223,26 +249,18 @@ public class CardDisplayManager implements Listener {
                 spawnCard(i, loc);
             }
 
-            if (plugin.getConfig().getBoolean("card-display.show-floating-description", false)) {
-                description = player.getWorld().spawn(eye.clone(), TextDisplay.class);
-                if (description != null) {
-                    description.setBillboard(Display.Billboard.VERTICAL);
-                    description.setSeeThrough(true);
-                    description.setBackgroundColor(Color.fromARGB(170, 8, 8, 14));
-                    // Wide enough for manually wrapped lines (~30 chars), so the display's own
-                    // auto-wrap (default 200px) never re-wraps them.
-                    description.setLineWidth(220);
-                    description.setAlignment(TextDisplay.TextAlignment.CENTER);
-                    description.setShadowed(true);
-                    // Description scale (user-tuned: 3x -> 1.2x -> ~1.0x of the default text size).
-                    description.setTransformation(new org.bukkit.util.Transformation(
-                            new org.joml.Vector3f(0f, 0f, 0f),
-                            new org.joml.AxisAngle4f(),
-                            new org.joml.Vector3f(1.02f, 1.02f, 1.02f),
-                            new org.joml.AxisAngle4f()));
-                    description.text(Component.empty());
+            // Warm-up: the client does not interpolate the very first teleport of a freshly
+            // spawned Display entity (it snaps). A tiny no-op teleport right after spawning
+            // initializes the client lerp state, so the first wheel rotation slides smoothly
+            // just like all following ones.
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                for (int i = 0; i < SLOT_COUNT; i++) {
+                    if (displays[i] != null && displays[i].isValid()) {
+                        displays[i].setTeleportDuration(2);
+                        displays[i].teleport(displays[i].getLocation());
+                    }
                 }
-            }
+            }, 2L);
 
             tickTask = new BukkitRunnable() {
                 @Override
@@ -268,6 +286,7 @@ public class CardDisplayManager implements Listener {
             double rad = Math.toRadians(yaw + deg);
             double x = eye.getX() - Math.sin(rad) * radius;
             double z = eye.getZ() + Math.cos(rad) * radius;
+            // Fixed billboard: face the player once, do not track the camera afterwards.
             float facing = (float) ((yaw + deg + 180.0) % 360.0);
             return new Location(eye.getWorld(), x, eye.getY() - CARD_CENTER_OFFSET, z, facing, 0f);
         }
@@ -276,11 +295,25 @@ public class CardDisplayManager implements Listener {
             Card card = cards.get(i);
             TextDisplay display = player.getWorld().spawn(loc, TextDisplay.class);
             if (display != null) {
+                char glyph = (char) card.getGlyphCodepoint();
+                if (card instanceof com.rounds.api.impl.CustomCardAdapter adapter) {
+                    Character custom = adapter.getCustomCard().getGlyph();
+                    if (custom != null) glyph = custom;
+                }
+                plugin.getLogger().info("[CardDisplay] slot=" + i + " cardId=" + card.getId()
+                        + " familyId=" + card.getFamilyId()
+                        + " rarity=" + card.getRarity()
+                        + " art=" + card.getArt()
+                        + " glyph=U+" + Integer.toHexString(glyph).toUpperCase()
+                        + " font=rounds:default at " + loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ()
+                        + " world=" + loc.getWorld().getName());
                 display.text(cardGlyph(card));
                 display.setBillboard(Display.Billboard.FIXED);
                 display.setViewRange(0.6f);
                 display.setGlowing(true);
                 display.setGlowColorOverride(rarityColor(card.getRarity()));
+                display.addScoreboardTag("rounds_card_display");
+                display.addScoreboardTag("owner_" + playerId);
                 displays[i] = display;
             }
         }
@@ -292,52 +325,24 @@ public class CardDisplayManager implements Listener {
             double bestT = Double.MAX_VALUE;
             for (int i = 0; i < SLOT_COUNT && i < cards.size(); i++) {
                 if (displays[i] == null) continue;
-                // Ray-rectangle intersection against the card's visible plane, so the whole
-                // card (including its edges) is selectable, not just its center.
                 org.bukkit.util.Vector center = displays[i].getLocation().toVector()
                         .add(new org.bukkit.util.Vector(0, CARD_CENTER_OFFSET, 0));
                 org.bukkit.util.Vector distVec = center.clone().subtract(eye.toVector());
                 if (distVec.lengthSquared() < 0.01) continue;
-                org.bukkit.util.Vector normal = distVec.clone().normalize(); // eye -> card center
+                org.bukkit.util.Vector normal = distVec.clone().normalize();
                 double denom = normal.dot(dir);
-                if (Math.abs(denom) < 1e-6) continue; // card edge-on / behind
+                if (Math.abs(denom) < 1e-6) continue;
                 double t = distVec.dot(normal) / denom;
                 if (t < 0) continue;
                 org.bukkit.util.Vector hit = eye.toVector().add(dir.clone().multiply(t));
                 org.bukkit.util.Vector pc = hit.clone().subtract(center);
-                // dot(pc, right) where right = (normal.z, 0, -normal.x)
                 double x = pc.getX() * normal.getZ() - pc.getZ() * normal.getX();
                 double y = pc.getY();
                 if (Math.abs(x) <= CARD_HALF_WIDTH && Math.abs(y) <= CARD_HALF_HEIGHT) {
                     if (t < bestT) { bestT = t; best = i; }
                 }
             }
-
-            if (description != null) {
-                if (best >= 0) {
-                    if (best != hovered) {
-                        Card c = cards.get(best);
-                        String lang = Messages.getLanguageCode();
-                        List<String> lines = Card.wrapText(c.getDescription(lang), DESC_WRAP);
-                        // Newline inside the text component is a real line break for a
-                        // TextDisplay (Component.join was removed in newer Adventure).
-                        description.text(LegacyComponentSerializer.legacySection()
-                                .deserialize(String.join("\n", lines)));
-                    }
-                    description.teleport(descriptionPos(eye, player.getLocation().getYaw()));
-                } else {
-                    if (hovered >= 0) description.text(Component.empty());
-                }
-            }
             hovered = best;
-        }
-
-        Location descriptionPos(Location eye, float yaw) {
-            double rad = Math.toRadians(yaw);
-            double x = eye.getX() - Math.sin(rad) * 1.3;
-            double z = eye.getZ() + Math.cos(rad) * 1.3;
-            // Ground is at eye - 1.62 for a standing player; keep the block above it.
-            return new Location(eye.getWorld(), x, eye.getY() - 1.45, z);
         }
 
         void spawnFireParticles() {
@@ -382,16 +387,14 @@ public class CardDisplayManager implements Listener {
             int last = SLOT_COUNT - 1;
             Location enter = targets[last].clone().add(1.6, 0, 0);
             spawnCard(last, enter);
-            if (displays[last] != null && targets[last] != null) {
-                displays[last].setTeleportDuration(10);
-                displays[last].teleport(targets[last]);
-                displays[last].setBrightness(new Display.Brightness(0, 0));
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    if (displays[last] != null && displays[last].isValid()) {
-                        displays[last].setBrightness(new Display.Brightness(15, 15));
-                    }
-                }, 1L);
-            }
+            // Let the client register the freshly spawned entity for one tick before the
+            // interpolated slide into the slot begins; otherwise the entry pops instantly.
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (displays[last] != null && displays[last].isValid() && targets[last] != null) {
+                    displays[last].setTeleportDuration(10);
+                    displays[last].teleport(targets[last]);
+                }
+            }, 1L);
         }
 
         void fadeOut(TextDisplay display) {
@@ -409,9 +412,14 @@ public class CardDisplayManager implements Listener {
             if (tickTask != null) tickTask.cancel();
             if (carouselTask != null) carouselTask.cancel();
             for (int i = 0; i < SLOT_COUNT; i++) {
-                if (displays[i] != null) displays[i].remove();
+                if (displays[i] != null) {
+                    displays[i].remove();
+                    displays[i] = null;
+                }
             }
-            if (description != null) description.remove();
+            if (player.isOnline()) {
+                player.sendActionBar(Component.empty());
+            }
             tickTask = null;
             carouselTask = null;
             displays = new TextDisplay[SLOT_COUNT];

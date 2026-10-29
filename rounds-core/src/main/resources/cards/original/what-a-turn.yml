@@ -10,18 +10,22 @@ enabled: true
 art: card46.png
 variations:
   - rarity: COMMON
+    art: card96-common
     value: "1"
     effects:
       bounce: 1
   - rarity: UNCOMMON
+    art: card96-uncommon
     value: "2"
     effects:
       bounce: 2
   - rarity: RARE
+    art: card96-rare
     value: "3"
     effects:
       bounce: 3
   - rarity: EPIC
+    art: card96-epic
     value: "4"
     effects:
       bounce: 4

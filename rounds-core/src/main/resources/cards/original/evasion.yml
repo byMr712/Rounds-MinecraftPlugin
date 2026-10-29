@@ -10,5 +10,6 @@ enabled: true
 art: card10.png
 variations:
   - rarity: LEGENDARY
+    art: card80-legendary
     effects:
       evasion: 0.3

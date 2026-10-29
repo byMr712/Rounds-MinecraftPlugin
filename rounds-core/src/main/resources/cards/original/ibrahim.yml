@@ -10,5 +10,6 @@ enabled: true
 art: card4.png
 variations:
   - rarity: RARE
+    art: card101-rare
     effects:
       bomb-bullet: 1

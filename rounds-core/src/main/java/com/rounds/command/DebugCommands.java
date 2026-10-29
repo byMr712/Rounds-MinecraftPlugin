@@ -27,6 +27,12 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.util.*;
 
+import com.rounds.cards.Card;
+import net.kyori.adventure.key.Key;
+import net.kyori.adventure.text.Component;
+import org.bukkit.entity.Display;
+import org.bukkit.entity.TextDisplay;
+
 public class DebugCommands implements CommandExecutor, TabCompleter {
 
     private final RoundsPlugin plugin;
@@ -200,6 +206,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "placeholders" -> handlePlaceholders(sender);
             case "bot" -> handleBot(sender, args);
             case "draft" -> handleDraft(sender, args);
+            case "cardtest" -> handleCardTest(sender, args);
             case "cardchoicetime" -> handleCardChoiceTime(sender, args);
             case "bossbar" -> handleBossBar(sender, args);
             case "music" -> handleMusic(sender, args);
@@ -244,6 +251,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxSection(sender, R, Messages.get("debug.help-section-debug"));
         boxKv(sender, "/rdebug bot <name> [team]", "Заспавнить бота в игру");
         boxKv(sender, "/rdebug draft [player]", "Открыть драфт карт игроку");
+        boxKv(sender, "/rdebug cardtest [id|clear]", "Тест 3D-отображения карт (глифы/шрифты)");
         boxKv(sender, "/rdebug stats show <player>", Messages.get("debug.help-stats-show"));
         if (sender.hasPermission("rounds.admin")) {
             boxKv(sender, "/rdebug stats add <player> <stat> <value>", Messages.get("debug.help-stats-add"));
@@ -1672,6 +1680,87 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.GREEN + "Opened card draft GUI for " + target.getName());
     }
 
+    private void handleCardTest(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(ChatColor.RED + "This command can only be executed by a player.");
+            return;
+        }
+
+        if (args.length >= 2 && "clear".equalsIgnoreCase(args[1])) {
+            int count = 0;
+            for (TextDisplay td : player.getWorld().getEntitiesByClass(TextDisplay.class)) {
+                if (td.getScoreboardTags().contains("rounds_test_display")) {
+                    td.remove();
+                    count++;
+                }
+            }
+            player.sendMessage(ChatColor.GREEN + "[CardTest] Removed " + count + " test displays.");
+            return;
+        }
+
+        int cardId = 1;
+        if (args.length >= 2) {
+            try {
+                cardId = Integer.parseInt(args[1]);
+            } catch (NumberFormatException e) {
+                Card found = plugin.getCardManager().getRegistry().findCardByName(args[1]);
+                if (found != null) cardId = found.getId();
+            }
+        }
+        Card card = plugin.getCardManager().getRegistry().getCard(cardId);
+        int familyId = card != null ? card.getFamilyId() : cardId;
+        int glyphCp = card != null ? card.getGlyphCodepoint() : 0xE000 + cardId * 10;
+        String cardName = card != null ? card.getName("ru") : ("Card #" + cardId);
+
+        for (TextDisplay td : player.getWorld().getEntitiesByClass(TextDisplay.class)) {
+            if (td.getScoreboardTags().contains("rounds_test_display")) {
+                td.remove();
+            }
+        }
+
+        Location eye = player.getEyeLocation();
+        org.bukkit.util.Vector dir = eye.getDirection().setY(0).normalize();
+        if (dir.lengthSquared() < 0.01) dir = new org.bukkit.util.Vector(0, 0, 1);
+        org.bukkit.util.Vector side = new org.bukkit.util.Vector(-dir.getZ(), 0, dir.getX());
+
+        Location centerLoc = eye.clone().add(dir.clone().multiply(2.2)).add(0, -1.2, 0);
+        TextDisplay tdCenter = player.getWorld().spawn(centerLoc, TextDisplay.class);
+        tdCenter.text(Component.text(String.valueOf((char) glyphCp)).font(Key.key("rounds", "default")));
+        tdCenter.setBillboard(Display.Billboard.CENTER);
+        tdCenter.setSeeThrough(false);
+        tdCenter.setViewRange(1.0f);
+        tdCenter.setBrightness(new Display.Brightness(15, 15));
+        tdCenter.addScoreboardTag("rounds_test_display");
+
+        Location leftLoc = centerLoc.clone().add(side.clone().multiply(-1.6));
+        TextDisplay tdLeft = player.getWorld().spawn(leftLoc, TextDisplay.class);
+        tdLeft.text(Component.text(String.valueOf((char) glyphCp)));
+        tdLeft.setBillboard(Display.Billboard.CENTER);
+        tdLeft.setSeeThrough(false);
+        tdLeft.setViewRange(1.0f);
+        tdLeft.setBrightness(new Display.Brightness(15, 15));
+        tdLeft.addScoreboardTag("rounds_test_display");
+
+        Location rightLoc = centerLoc.clone().add(side.clone().multiply(1.6));
+        TextDisplay tdRight = player.getWorld().spawn(rightLoc, TextDisplay.class);
+        tdRight.text(Component.text("TEST LABEL\n" + cardName + "\nID: " + cardId + " (fid: " + familyId + ")\nChar: \\u" + Integer.toHexString(glyphCp).toUpperCase()));
+        tdRight.setBillboard(Display.Billboard.CENTER);
+        tdRight.setSeeThrough(false);
+        tdRight.setViewRange(1.0f);
+        tdRight.setBrightness(new Display.Brightness(15, 15));
+        tdRight.addScoreboardTag("rounds_test_display");
+
+        player.sendMessage(ChatColor.GOLD + "=== [Rounds CardTest Debug] ===");
+        player.sendMessage(ChatColor.YELLOW + "Spawned 3 test displays 2.2m ahead:");
+        player.sendMessage(ChatColor.AQUA + "  Center: " + ChatColor.WHITE + "Glyph \\u" + Integer.toHexString(glyphCp).toUpperCase() + " [font: rounds:default]");
+        player.sendMessage(ChatColor.GREEN + "  Left:   " + ChatColor.WHITE + "Glyph \\u" + Integer.toHexString(glyphCp).toUpperCase() + " [font: minecraft:default]");
+        player.sendMessage(ChatColor.LIGHT_PURPLE + "  Right:  " + ChatColor.WHITE + "Plain Text Label (" + cardName + ")");
+        player.sendMessage(ChatColor.GRAY + "If you see textures: resourcepack font works!");
+        player.sendMessage(ChatColor.GRAY + "If you see square/tofu: font mapping missing in pack.");
+        player.sendMessage(ChatColor.GRAY + "If you see only Right: custom glyph failed to render.");
+        player.sendMessage(ChatColor.RED + "Run '/rdebug cardtest clear' to remove.");
+    }
+
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         boolean admin = sender.hasPermission("rounds.admin");
@@ -1782,6 +1871,13 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 if (args.length == 2) {
                     List<String> list = new ArrayList<>();
                     Bukkit.getOnlinePlayers().forEach(p -> list.add(p.getName()));
+                    yield filterStartsWith(list, input);
+                }
+                yield Collections.emptyList();
+            }
+            case "cardtest" -> {
+                if (args.length == 2) {
+                    List<String> list = new ArrayList<>(Arrays.asList("clear", "1", "2", "3", "4", "5", "10", "20", "84"));
                     yield filterStartsWith(list, input);
                 }
                 yield Collections.emptyList();

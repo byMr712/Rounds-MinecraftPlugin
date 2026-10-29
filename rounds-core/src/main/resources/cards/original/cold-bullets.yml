@@ -10,6 +10,7 @@ enabled: true
 art: card12.png
 variations:
   - rarity: COMMON
+    art: card12-common
     effects:
       cold: 1
       cold_lvl: 1

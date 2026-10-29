@@ -10,21 +10,25 @@ enabled: true
 art: card25.png
 variations:
   - rarity: EPIC
+    art: card106-epic
     value: "20%"
     effects:
       leech: 0.2
       speed-boost: 1
   - rarity: COMMON
+    art: card106-common
     value: "5%"
     effects:
       leech: 0.05
       speed-boost: 1
   - rarity: UNCOMMON
+    art: card106-uncommon
     value: "10%"
     effects:
       leech: 0.1
       speed-boost: 1
   - rarity: RARE
+    art: card106-rare
     value: "15%"
     effects:
       leech: 0.15

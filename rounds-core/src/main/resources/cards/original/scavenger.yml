@@ -10,21 +10,25 @@ enabled: true
 art: card48.png
 variations:
   - rarity: COMMON
+    art: card48-common
     values: ["1", "10%"]
     effects:
       ammo-per-hit: 1
       reload: 1
   - rarity: UNCOMMON
+    art: card48-uncommon
     values: ["1.5", "15%"]
     effects:
       ammo-per-hit: 1.5
       reload: 1.5
   - rarity: RARE
+    art: card48-rare
     values: ["2", "20%"]
     effects:
       ammo-per-hit: 2
       reload: 2
   - rarity: EPIC
+    art: card48-epic
     values: ["2.5", "25%"]
     effects:
       ammo-per-hit: 2.5

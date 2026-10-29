@@ -10,18 +10,22 @@ enabled: true
 art: card40.png
 variations:
   - rarity: COMMON
+    art: card40-common
     value: "20%"
     effects:
       reload_speed: 0.2
   - rarity: UNCOMMON
+    art: card40-uncommon
     value: "35%"
     effects:
       reload_speed: 0.35
   - rarity: RARE
+    art: card40-rare
     value: "50%"
     effects:
       reload_speed: 0.5
   - rarity: EPIC
+    art: card40-epic
     value: "70%"
     effects:
       reload_speed: 0.7

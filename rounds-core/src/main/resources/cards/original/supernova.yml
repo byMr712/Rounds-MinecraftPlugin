@@ -10,6 +10,7 @@ enabled: true
 art: card22.png
 variations:
   - rarity: LEGENDARY
+    art: card57-legendary
     effects:
       implode: 1
       stun: 1

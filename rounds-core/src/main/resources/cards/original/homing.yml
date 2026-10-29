@@ -10,6 +10,7 @@ enabled: true
 art: card29.png
 variations:
   - rarity: RARE
+    art: card29-rare
     effects:
       homing: 1
       damage: -0.3

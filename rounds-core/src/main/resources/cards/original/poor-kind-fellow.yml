@@ -10,5 +10,6 @@ enabled: true
 art: card28.png
 variations:
   - rarity: RARE
+    art: card112-rare
     effects:
       lifesteal-aura: 1

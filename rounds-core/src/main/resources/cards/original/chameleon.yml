@@ -10,5 +10,6 @@ enabled: true
 art: card10.png
 variations:
   - rarity: LEGENDARY
+    art: card81-legendary
     effects:
       chameleon: 1

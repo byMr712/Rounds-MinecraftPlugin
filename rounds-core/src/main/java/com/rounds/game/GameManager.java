@@ -2722,7 +2722,12 @@ public class GameManager implements Listener {
                 }
 
                 plugin.getPlayerDataManager().applySavedData(uuid, playerSaved);
-                plugin.getCardManager().restorePendingPick(uuid, playerSaved.pendingCardIds);
+                if (state == GameState.CARDS) {
+                    plugin.getCardManager().restorePendingPick(uuid, playerSaved.pendingCardIds);
+                } else {
+                    plugin.getCardManager().cleanupPlayer(uuid);
+                    plugin.getCardDisplay().cleanupPlayer(uuid);
+                }
 
                 if (state == GameState.PLAYING) {
                     giveGun(player);

@@ -10,24 +10,28 @@ enabled: true
 art: card9.png
 variations:
   - rarity: RARE
+    art: card9-rare
     values: ["100%", "75%", "10%"]
     effects:
       damage: 1.0
       attack_speed: -0.75
       reload: 1
   - rarity: COMMON
+    art: card9-common
     values: ["50%", "75%", "5%"]
     effects:
       damage: 0.5
       attack_speed: -0.75
       reload: 0.5
   - rarity: UNCOMMON
+    art: card9-uncommon
     values: ["75%", "55%", "8%"]
     effects:
       damage: 0.75
       attack_speed: -0.55
       reload: 0.8
   - rarity: EPIC
+    art: card9-epic
     values: ["125%", "95%", "13%"]
     effects:
       damage: 1.25

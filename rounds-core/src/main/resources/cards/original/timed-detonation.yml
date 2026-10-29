@@ -10,6 +10,7 @@ enabled: true
 art: card4.png
 variations:
   - rarity: RARE
+    art: card64-rare
     effects:
       bomb_bullet: 1
       damage: -0.15

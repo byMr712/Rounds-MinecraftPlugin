@@ -10,5 +10,6 @@ enabled: true
 art: card18.png
 variations:
   - rarity: RARE
+    art: card105-rare
     effects:
       overpower: 1

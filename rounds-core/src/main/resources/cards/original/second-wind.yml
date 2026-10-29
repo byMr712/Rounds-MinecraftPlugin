@@ -10,5 +10,6 @@ enabled: true
 art: card39.png
 variations:
   - rarity: LEGENDARY
+    art: card89-legendary
     effects:
       second-wind: 1

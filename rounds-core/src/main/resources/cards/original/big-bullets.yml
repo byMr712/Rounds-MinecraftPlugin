@@ -10,6 +10,7 @@ enabled: true
 art: card3.png
 variations:
   - rarity: COMMON
+    art: card3-common
     effects:
       big_bullet: 1
       reload: -0.3

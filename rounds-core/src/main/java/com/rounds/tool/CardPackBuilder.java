@@ -19,8 +19,24 @@ import java.util.zip.ZipOutputStream;
  */
 public class CardPackBuilder {
 
-    private static final Pattern ID_PATTERN = Pattern.compile("^\\s*id\\s*:\\s*(\\d+)\\s*$");
-    private static final Pattern ART_PATTERN = Pattern.compile("^\\s*art\\s*:\\s*[\"']?([^\"'\n\r]+)[\"']?");
+    private static final Pattern ID_PATTERN = Pattern.compile("^id\\s*:\\s*(\\d+)\\s*$");
+    private static final Pattern ART_PATTERN = Pattern.compile("^art\\s*:\\s*[\"']?([^\"'\n\r]+)[\"']?");
+    private static final Pattern TOP_RARITY_PATTERN = Pattern.compile("^rarity\\s*:\\s*([A-Za-z]+)\\s*$");
+    private static final Pattern VAR_RARITY_PATTERN = Pattern.compile("^\\s*-\\s+rarity\\s*:\\s*([A-Za-z]+)\\s*$");
+    private static final Pattern VAR_ART_PATTERN = Pattern.compile("^\\s+art\\s*:\\s*[\"']?([^\"'\n\r]+)[\"']?");
+    private static final int GLYPH_BASE = 0xE000;
+
+    private static final class Variation {
+        String rarity;
+        String art;
+    }
+
+    private static final class FamilyCard {
+        int id;
+        String art;
+        String rarity;
+        final List<Variation> variations = new ArrayList<>();
+    }
 
     public static void main(String[] args) {
         boolean deployDesktop = false;
@@ -38,7 +54,7 @@ public class CardPackBuilder {
             Path projectRoot = findProjectRoot();
             System.out.println("CardPackBuilder running at project root: " + projectRoot);
 
-            Map<Integer, String> familyArt = collectFamilyCards(projectRoot);
+            Map<Integer, FamilyCard> familyArt = collectFamilyCards(projectRoot);
             System.out.println("Discovered " + familyArt.size() + " card definitions with explicit art mappings.");
 
             Path outDir = projectRoot.resolve("build").resolve("distributions").resolve("cardpacks");
@@ -71,18 +87,26 @@ public class CardPackBuilder {
                 Path instancesRoot = Paths.get(System.getProperty("user.home"), "AppData", "Roaming", "ATLauncher", "instances");
                 if (Files.isDirectory(instancesRoot)) {
                     int count = 0;
+                    int skipped = 0;
                     try (DirectoryStream<Path> stream = Files.newDirectoryStream(instancesRoot)) {
                         for (Path instance : stream) {
                             Path rp = instance.resolve("resourcepacks");
                             if (Files.isDirectory(rp)) {
-                                Files.copy(ruZip, rp.resolve(ruZip.getFileName()), StandardCopyOption.REPLACE_EXISTING);
-                                Files.copy(enZip, rp.resolve(enZip.getFileName()), StandardCopyOption.REPLACE_EXISTING);
-                                Files.copy(defaultZip, rp.resolve(defaultZip.getFileName()), StandardCopyOption.REPLACE_EXISTING);
-                                count++;
+                                try {
+                                    Files.copy(ruZip, rp.resolve(ruZip.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+                                    Files.copy(enZip, rp.resolve(enZip.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+                                    Files.copy(defaultZip, rp.resolve(defaultZip.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+                                    count++;
+                                } catch (IOException locked) {
+                                    // Instance pack file is locked (game running): skip, report.
+                                    System.out.println("Skipped locked instance: " + instance.getFileName());
+                                    skipped++;
+                                }
                             }
                         }
                     }
-                    System.out.println("Deployed all packs to " + count + " ATLauncher client instances.");
+                    System.out.println("Deployed all packs to " + count + " ATLauncher client instances"
+                            + (skipped > 0 ? " (" + skipped + " locked/skipped - close the game and re-run)" : "") + ".");
                 }
             }
 
@@ -105,27 +129,38 @@ public class CardPackBuilder {
         return Paths.get(".").toAbsolutePath().normalize();
     }
 
-    private static Map<Integer, String> collectFamilyCards(Path root) throws IOException {
-        Map<Integer, String> cardMap = new TreeMap<>();
+    private static Map<Integer, FamilyCard> collectFamilyCards(Path root) throws IOException {
+        Map<Integer, FamilyCard> cardMap = new TreeMap<>();
         Path cardsDir = root.resolve("rounds-core").resolve("src").resolve("main").resolve("resources").resolve("cards");
         if (Files.isDirectory(cardsDir)) {
             try (var paths = Files.walk(cardsDir)) {
                 paths.filter(p -> p.toString().endsWith(".yml")).forEach(p -> {
                     try {
-                        Integer id = null;
-                        String art = null;
+                        FamilyCard fc = new FamilyCard();
+                        Variation current = null;
+                        boolean inVariations = false;
                         for (String line : Files.readAllLines(p, StandardCharsets.UTF_8)) {
+                            if (line.matches("^\\s*variations\\s*:\\s*$")) { inVariations = true; continue; }
                             Matcher mId = ID_PATTERN.matcher(line);
-                            if (mId.find()) {
-                                id = Integer.parseInt(mId.group(1));
-                            }
+                            if (mId.find()) { fc.id = Integer.parseInt(mId.group(1)); continue; }
                             Matcher mArt = ART_PATTERN.matcher(line);
-                            if (mArt.find()) {
-                                art = mArt.group(1).trim();
+                            if (mArt.find()) { fc.art = mArt.group(1).trim(); continue; }
+                            Matcher mRar = TOP_RARITY_PATTERN.matcher(line);
+                            if (mRar.find() && fc.rarity == null) { fc.rarity = mRar.group(1).toUpperCase(); continue; }
+                            Matcher mVar = VAR_RARITY_PATTERN.matcher(line);
+                            if (inVariations && mVar.find()) {
+                                current = new Variation();
+                                current.rarity = mVar.group(1).toUpperCase();
+                                fc.variations.add(current);
+                                continue;
+                            }
+                            Matcher mVarArt = VAR_ART_PATTERN.matcher(line);
+                            if (inVariations && current != null && mVarArt.find() && current.art == null) {
+                                current.art = mVarArt.group(1).trim();
                             }
                         }
-                        if (id != null) {
-                            cardMap.put(id, art != null ? art : "");
+                        if (fc.id != 0) {
+                            cardMap.put(fc.id, fc);
                         }
                     } catch (Exception ignored) {}
                 });
@@ -134,7 +169,19 @@ public class CardPackBuilder {
         return cardMap;
     }
 
-    private static void buildPack(Path root, Map<Integer, String> familyArt, String lang, String label, Path outZip) throws IOException {
+    private static int rarityOrdinal(String rarity) {
+        if (rarity == null) return 0;
+        return switch (rarity.toUpperCase()) {
+            case "COMMON" -> 0;
+            case "UNCOMMON" -> 1;
+            case "RARE" -> 2;
+            case "EPIC" -> 3;
+            case "LEGENDARY" -> 4;
+            default -> 0;
+        };
+    }
+
+    private static void buildPack(Path root, Map<Integer, FamilyCard> familyArt, String lang, String label, Path outZip) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (ZipOutputStream zos = new ZipOutputStream(baos)) {
             // 1. pack.mcmeta
@@ -198,50 +245,63 @@ public class CardPackBuilder {
             int imgCount = sourceImages.isEmpty() ? 1 : sourceImages.size();
             List<String> providers = new ArrayList<>();
             int idx = 0;
+            Set<Integer> usedCodepoints = new HashSet<>();
 
-            for (Map.Entry<Integer, String> entry : familyArt.entrySet()) {
-                int fid = entry.getKey();
-                String customArt = entry.getValue();
-                int cp = 0xE000 + fid;
-                String hex = String.format("%04X", cp);
+            for (FamilyCard fc : familyArt.values()) {
+                List<Variation> slots = new ArrayList<>();
+                if (fc.variations.isEmpty()) {
+                    Variation v = new Variation();
+                    v.rarity = fc.rarity != null ? fc.rarity : "COMMON";
+                    v.art = fc.art;
+                    slots.add(v);
+                } else {
+                    slots = fc.variations;
+                }
+                for (Variation v : slots) {
+                    // Stable glyph per variation: familyId * 10 + rarity ordinal, mirrored by
+                    // Card.getGlyphCodepoint() on the server.
+                    int cp = GLYPH_BASE + fc.id * 10 + rarityOrdinal(v.rarity);
+                    if (!usedCodepoints.add(cp)) continue; // duplicate rarity shares the slot
+                    String artName = (v.art != null && !v.art.isBlank()) ? v.art : fc.art;
+                    if (artName == null || artName.isBlank()) artName = "card_" + fc.id;
+                    String texName = artName.endsWith(".png")
+                            ? artName.substring(0, artName.length() - 4)
+                            : artName;
+                    String hex = String.format("%04X", cp);
+                    providers.add("    { \"type\": \"bitmap\", \"file\": \"rounds:font/" + texName + ".png\", \"ascent\": 87, \"height\": 88, \"chars\": [\"\\u" + hex + "\"] }");
 
-                providers.add("    { \"type\": \"bitmap\", \"file\": \"rounds:font/card_" + fid + ".png\", \"ascent\": 87, \"height\": 88, \"chars\": [\"\\u" + hex + "\"] }");
-
-                Path cardFile = targetCardsDir.resolve("card_" + fid + ".png");
-                if (!Files.exists(cardFile)) {
-                    cardFile = targetCardsDir.resolve("card" + fid + ".png");
-                }
-                if (!Files.exists(cardFile) && customArt != null && !customArt.isEmpty()) {
-                    String artFile = customArt.endsWith(".png") ? customArt : customArt + ".png";
-                    Path artCandidate = targetCardsDir.resolve(artFile);
-                    if (!Files.exists(artCandidate)) {
-                        artCandidate = baseCardsDir.resolve(artFile);
+                    Path cardFile = null;
+                    if (fc.variations.isEmpty()) {
+                        // Legacy single card: prefer the baked texture generated for the family id.
+                        cardFile = resolveCardPng("card_" + fc.id, targetCardsDir, baseCardsDir);
+                        if (cardFile == null) cardFile = resolveCardPng("card" + fc.id, targetCardsDir, baseCardsDir);
                     }
-                    if (Files.exists(artCandidate)) {
-                        cardFile = artCandidate;
+                    if (cardFile == null) {
+                        cardFile = resolveCardPng(artName, targetCardsDir, baseCardsDir);
                     }
-                }
-                if (!Files.exists(cardFile)) {
-                    Path defArt = targetCardsDir.resolve("card_default.png");
-                    if (!Files.exists(defArt)) defArt = baseCardsDir.resolve("card_default.png");
-                    if (!Files.exists(defArt)) defArt = targetCardsDir.resolve("card_missing.png");
-                    if (!Files.exists(defArt)) defArt = baseCardsDir.resolve("card_missing.png");
-                    if (Files.exists(defArt)) {
-                        cardFile = defArt;
+                    if (cardFile == null && fc.art != null && !fc.art.equals(artName)) {
+                        cardFile = resolveCardPng(fc.art, targetCardsDir, baseCardsDir);
                     }
+                    if (cardFile == null) {
+                        cardFile = resolveCardPng("card_default", targetCardsDir, baseCardsDir);
+                    }
+                    if (cardFile == null) {
+                        cardFile = resolveCardPng("card_missing", targetCardsDir, baseCardsDir);
+                    }
+                    if (cardFile == null && !sourceImages.isEmpty()) {
+                        cardFile = sourceImages.get(idx % imgCount);
+                    }
+                    if (cardFile != null) {
+                        writeEntry(zos, "assets/rounds/textures/font/" + texName + ".png", Files.readAllBytes(cardFile));
+                    }
+                    idx++;
                 }
-                if (!Files.exists(cardFile) && !sourceImages.isEmpty()) {
-                    cardFile = sourceImages.get(idx % imgCount);
-                }
-                if (cardFile != null && Files.exists(cardFile)) {
-                    byte[] imgBytes = Files.readAllBytes(cardFile);
-                    writeEntry(zos, "assets/rounds/textures/font/card_" + fid + ".png", imgBytes);
-                }
-                idx++;
             }
 
             String fontJson = "{\n  \"providers\": [\n" + String.join(",\n", providers) + "\n  ]\n}\n";
             writeEntry(zos, "assets/rounds/font/default.json", fontJson.getBytes(StandardCharsets.UTF_8));
+            // NOTE: never write assets/minecraft/font/default.json here — it would replace
+            // the vanilla default font providers and break all regular text rendering.
 
             // 4. Sounds
             Path soundsDir = root.resolve("test-servers").resolve("original_mod").resolve("sounds");
@@ -290,6 +350,16 @@ public class CardPackBuilder {
         byte[] zipBytes = baos.toByteArray();
         Files.write(outZip, zipBytes, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
         System.out.println("Generated: " + outZip.getFileName() + " (" + (zipBytes.length / 1024) + " KB)");
+    }
+
+    private static Path resolveCardPng(String artName, Path targetCardsDir, Path baseCardsDir) {
+        if (artName == null || artName.isBlank()) return null;
+        String base = artName.endsWith(".png") ? artName : artName + ".png";
+        Path p = targetCardsDir.resolve(base);
+        if (Files.exists(p)) return p;
+        p = baseCardsDir.resolve(base);
+        if (Files.exists(p)) return p;
+        return null;
     }
 
     private static void writeEntry(ZipOutputStream zos, String entryName, byte[] data) throws IOException {

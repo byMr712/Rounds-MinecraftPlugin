@@ -10,6 +10,7 @@ enabled: true
 art: card16.png
 variations:
   - rarity: RARE
+    art: card51-rare
     effects:
       shockwave: 1
       hp: 0.5

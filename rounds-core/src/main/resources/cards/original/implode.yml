@@ -10,6 +10,7 @@ enabled: true
 art: card31.png
 variations:
   - rarity: RARE
+    art: card31-rare
     effects:
       implode: 1
       hp: 0.5

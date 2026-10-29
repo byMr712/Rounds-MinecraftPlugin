@@ -10,5 +10,6 @@ enabled: true
 art: card25.png
 variations:
   - rarity: LEGENDARY
+    art: card83-legendary
     effects:
       skyfall: 1

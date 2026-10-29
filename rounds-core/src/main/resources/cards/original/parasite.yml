@@ -10,6 +10,7 @@ enabled: true
 art: card36.png
 variations:
   - rarity: RARE
+    art: card36-rare
     effects:
       poison: 1
       leech: 0.5

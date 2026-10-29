@@ -10,5 +10,6 @@ enabled: true
 art: card20.png
 variations:
   - rarity: UNCOMMON
+    art: card110-uncommon
     effects:
       shockwave: 1

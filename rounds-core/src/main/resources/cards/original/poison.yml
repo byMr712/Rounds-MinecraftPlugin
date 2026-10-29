@@ -10,6 +10,7 @@ enabled: true
 art: card38.png
 variations:
   - rarity: COMMON
+    art: card38-common
     effects:
       poison: 1
       poison_lvl: 1

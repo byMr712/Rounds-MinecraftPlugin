@@ -10,5 +10,6 @@ enabled: true
 art: card23.png
 variations:
   - rarity: RARE
+    art: card102-rare
     effects:
       teleport: 1

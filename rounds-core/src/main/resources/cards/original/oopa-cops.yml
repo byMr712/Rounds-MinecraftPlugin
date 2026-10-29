@@ -10,5 +10,6 @@ enabled: true
 art: card10.png
 variations:
   - rarity: UNCOMMON
+    art: card121-uncommon
     effects:
       stun: 1

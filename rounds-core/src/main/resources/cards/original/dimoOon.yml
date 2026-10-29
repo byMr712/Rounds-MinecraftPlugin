@@ -10,5 +10,6 @@ enabled: true
 art: card29.png
 variations:
   - rarity: EPIC
+    art: card98-epic
     effects:
       homing: 1

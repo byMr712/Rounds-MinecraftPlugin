@@ -10,5 +10,6 @@ enabled: true
 art: card27.png
 variations:
   - rarity: COMMON
+    art: card27-common
     effects:
       grow: 1

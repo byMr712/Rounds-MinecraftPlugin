@@ -10,21 +10,25 @@ enabled: true
 art: card23.png
 variations:
   - rarity: COMMON
+    art: card23-common
     values: ["100%", "30%"]
     effects:
       bullet_speed: 1.0
       reload_speed: 0.3
   - rarity: UNCOMMON
+    art: card23-uncommon
     values: ["150%", "40%"]
     effects:
       bullet_speed: 1.5
       reload_speed: 0.4
   - rarity: RARE
+    art: card23-rare
     values: ["200%", "50%"]
     effects:
       bullet_speed: 2.0
       reload_speed: 0.5
   - rarity: EPIC
+    art: card23-epic
     values: ["250%", "60%"]
     effects:
       bullet_speed: 2.5

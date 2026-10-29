@@ -10,6 +10,7 @@ enabled: true
 art: card20.png
 variations:
   - rarity: RARE
+    art: card20-rare
     effects:
       emp: 1
       hp: 0.5

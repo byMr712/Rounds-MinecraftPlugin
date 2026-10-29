@@ -3,6 +3,11 @@
 Automated card texture generator for Rounds Minecraft Plugin.
 Reads YAML card definitions (ru/en names and descriptions) and bakes
 formatted text directly onto semantically matching card face textures.
+
+Standard resolution is 160x250 (the original source art size): no resizing
+is ever needed downstream, and every card variation gets its own texture
+named card<id>-<rarity>.png (e.g. card5-common.png) with description
+placeholders ({0}, {1}, {v}) filled from the variation's "values" list.
 """
 
 import os
@@ -32,6 +37,9 @@ DESC_RU_RE = re.compile(r"description:\s*(?:.*\n)*?\s*ru:\s*[\"']?([^\"'\n]+)[\"
 DESC_EN_RE = re.compile(r"description:\s*(?:.*\n)*?\s*en:\s*[\"']?([^\"'\n]+)[\"']?", re.MULTILINE)
 RARITY_RE = re.compile(r"rarity:\s*([A-Z]+)", re.MULTILINE)
 
+# Standard card texture resolution: 160x250 (matches original source art).
+CARD_SIZE = (160, 250)
+
 # Rarity accent colors
 # Visual layout settings
 DRAW_DESC_BOX = False # Set True to render a dark semi-transparent box behind description
@@ -42,16 +50,6 @@ RARITY_COLORS = {
     "RARE": (85, 255, 255, 255),
     "EPIC": (255, 85, 255, 255),
     "LEGENDARY": (255, 215, 0, 255),
-}
-
-# Semantic archetype pools for thematic artwork matching
-ARCHETYPE_POOLS = {
-    "SUMMON": ["card1.png", "card37.png", "card49.png", "card20.png"],
-    "SHIELD": ["card16.png", "card47.png", "card48.png", "card21.png"],
-    "EXPLOSIVE": ["card4.png", "card22.png", "card45.png"],
-    "MOBILITY": ["card10.png", "card24.png", "card5.png"],
-    "HEALTH": ["card27.png", "card30.png", "card32.png", "card15.png"],
-    "SHOOTING": ["card2.png", "card7.png", "card8.png", "card12.png", "card18.png", "card3.png", "card13.png", "card17.png"]
 }
 
 def get_font(size, bold=False):
@@ -86,6 +84,24 @@ def wrap_text(text, max_chars=22):
         lines.append(" ".join(cur))
     return lines
 
+def wrap_text_px(text, font, max_w, draw):
+    """Wraps text by measured pixel width so lines use the full available card width."""
+    clean = re.sub(r"&[0-9a-fk-or]", "", text).strip()
+    words = clean.split()
+    lines = []
+    cur = []
+    for w_ in words:
+        test = " ".join(cur + [w_]) if cur else w_
+        if draw.textlength(test, font=font) <= max_w:
+            cur.append(w_)
+        else:
+            if cur:
+                lines.append(" ".join(cur))
+            cur = [w_]
+    if cur:
+        lines.append(" ".join(cur))
+    return lines
+
 def resolve_base_image(cid, text, base_images_dict):
     """
     Determines card visual suitability:
@@ -109,7 +125,77 @@ def resolve_base_image(cid, text, base_images_dict):
     all_imgs = list(base_images_dict.values())
     return all_imgs[0] if all_imgs else None
 
-def render_card(base_image_path, title, desc, rarity, out_path, target_size=(320, 500)):
+def parse_variations(text):
+    """Parses the 'variations:' list into dicts {rarity, values, art, descriptions}."""
+    variations = []
+    lines = text.splitlines()
+    in_variations = False
+    current = None
+    sub = None  # None | "values_block" | "desc_map"
+    for line in lines:
+        if re.match(r"^\s*variations\s*:\s*$", line):
+            in_variations = True
+            continue
+        if not in_variations:
+            continue
+        m = re.match(r"^\s*-\s+rarity\s*:\s*([A-Za-z]+)", line)
+        if m:
+            current = {"rarity": m.group(1).upper(), "values": [], "art": None, "descriptions": {}}
+            variations.append(current)
+            sub = None
+            continue
+        if current is None:
+            continue
+        m = re.match(r"^\s*art\s*:\s*[\"']?([^\"'\n]+)", line)
+        if m and current["art"] is None:
+            current["art"] = m.group(1).strip()
+            sub = None
+            continue
+        m = re.match(r"^\s*description\s*:\s*$", line)
+        if m:
+            sub = "desc_map"
+            continue
+        if sub == "desc_map":
+            m = re.match(r"^\s*(ru|en)\s*:\s*[\"']?([^\"'\n]+)", line)
+            if m:
+                current["descriptions"][m.group(1)] = m.group(2).strip()
+                continue
+            sub = None
+        m = re.match(r"^\s*value\s*:\s*[\"']?([^\"'\n]+)", line)
+        if m and not current["values"]:
+            # Singular "value:" (e.g. doki-doki, insanely-first) fills {v}/{sec} only.
+            current["values"] = [m.group(1).strip()]
+            sub = None
+            continue
+        m = re.match(r"^\s*values\s*:\s*\[(.*)\]\s*$", line)
+        if m:
+            raw = m.group(1)
+            current["values"] = [v.strip().strip('"\'') for v in raw.split(",") if v.strip()]
+            sub = None
+            continue
+        m = re.match(r"^\s*values\s*:\s*$", line)
+        if m:
+            current["values"] = []
+            sub = "values_block"
+            continue
+        if sub == "values_block":
+            m = re.match(r"^\s*-\s*[\"']?([^\"'\n]+)", line)
+            if m:
+                current["values"].append(m.group(1).strip().strip('"\''))
+                continue
+            sub = None
+    return variations
+
+def fill_template(desc, values):
+    if not desc:
+        return desc
+    for i, v in enumerate(values):
+        desc = desc.replace("{" + str(i) + "}", v)
+    if values:
+        desc = desc.replace("{v}", values[0]).replace("{sec}", values[0])
+    return desc
+
+def render_card(base_image_path, title, desc, rarity, out_path, target_size=CARD_SIZE):
     img = Image.open(base_image_path).convert("RGBA")
     if target_size and img.size != target_size:
         img = img.resize(target_size, Image.Resampling.LANCZOS)
@@ -164,42 +250,28 @@ def render_card(base_image_path, title, desc, rarity, out_path, target_size=(320
         title_bottom = ty + (bbox[3] - bbox[1])
         ty += line_h
 
-    # 2. Description box in second half (anchored at the top of the lower half, expanding downwards)
+    # 2. Description block in the lower third: anchored at a fixed top and flowing downwards,
+    #    using the full card width; the font shrinks for long text instead of climbing upwards.
     if desc and desc.strip():
         clean_desc = desc.strip()
-        if len(clean_desc) > 120:
-            desc_pt = 8.5
-            max_chars = int(32 * (sx / 2.0)) if sx >= 1.5 else 22
-        elif len(clean_desc) > 60:
-            desc_pt = 9.5
-            max_chars = int(28 * (sx / 2.0)) if sx >= 1.5 else 21
-        else:
-            desc_pt = 10.0
-            max_chars = int(24 * (sx / 2.0)) if sx >= 1.5 else 20
+        box_pad_x = int(8 * sx)
+        max_text_w = w - box_pad_x * 2 - int(8 * sx)
+        area_top = int(155 * sy)
+        area_bottom = h - int(10 * sy)
 
-        desc_font_size = max(7, int(desc_pt * sy))
+        desc_font_size = max(7, int(10.0 * sy))
         desc_font = get_font(desc_font_size, bold=False)
-        desc_lines = wrap_text(clean_desc, max_chars=max(18, max_chars))
+        desc_lines = wrap_text_px(clean_desc, desc_font, max_text_w, draw)
+        while desc_font_size > 6:
+            line_h = int(desc_font_size * 1.25)
+            if len(desc_lines) * line_h <= area_bottom - area_top:
+                break
+            desc_font_size -= 1
+            desc_font = get_font(desc_font_size, bold=False)
+            desc_lines = wrap_text_px(clean_desc, desc_font, max_text_w, draw)
 
         line_spacing = int(desc_font_size * 1.25)
-        box_pad_y = int(6 * sy)
-        box_pad_x = int(8 * sx)
-        box_h = len(desc_lines) * line_spacing + box_pad_y * 2
-
-        base_start_y = int(155 * sy)
-        if base_start_y + box_h > h - int(12 * sy):
-            box_y1 = max(int(135 * sy), h - int(12 * sy) - box_h)
-        else:
-            box_y1 = base_start_y
-
-        box_y2 = min(h - int(10 * sy), box_y1 + box_h)
-
-        if DRAW_DESC_BOX:
-            draw.rounded_rectangle([box_pad_x, box_y1, w - box_pad_x, box_y2], radius=max(2, int(4 * sx)), fill=(10, 12, 18, 205), outline=(50, 55, 70, 170))
-            dy = box_y1 + box_pad_y
-        else:
-            dy = box_y1
-
+        dy = area_top
         for line in desc_lines:
             bbox = draw.textbbox((0, 0), line, font=desc_font)
             lw = bbox[2] - bbox[0]
@@ -226,8 +298,14 @@ def main():
     base_images_dict = {p.name: p for p in base_images}
     card_files = list(CARDS_DIR.rglob("*.yml"))
     processed = 0
+    variation_count = 0
 
-    print(f"Generating localized card textures for {len(card_files)} card definitions with semantic matching...")
+    # Clean regeneration at the standard 160x250 resolution.
+    for d in (RU_OUT_DIR, EN_OUT_DIR):
+        for p in d.glob("*.png"):
+            p.unlink()
+
+    print(f"Generating localized 160x250 card textures for {len(card_files)} card definitions...")
 
     for cfile in card_files:
         text = cfile.read_text(encoding="utf-8")
@@ -251,14 +329,28 @@ def main():
         # Resolve semantically appropriate base artwork
         base_img = resolve_base_image(cid, text, base_images_dict)
 
-        # Render RU
-        render_card(base_img, name_ru, desc_ru, rarity, RU_OUT_DIR / f"card_{cid}.png")
-        # Render EN
-        render_card(base_img, name_en, desc_en, rarity, EN_OUT_DIR / f"card_{cid}.png")
+        variations = parse_variations(text)
+        if variations:
+            for var in variations:
+                rar = var["rarity"]
+                vd = var["descriptions"]
+                if vd:
+                    d_ru = vd.get("ru", desc_ru)
+                    d_en = vd.get("en", desc_en)
+                else:
+                    d_ru = fill_template(desc_ru, var["values"])
+                    d_en = fill_template(desc_en, var["values"])
+                out_name = f"card{cid}-{rar.lower()}.png"
+                render_card(base_img, name_ru, d_ru, rar, RU_OUT_DIR / out_name)
+                render_card(base_img, name_en, d_en, rar, EN_OUT_DIR / out_name)
+                variation_count += 1
+        else:
+            render_card(base_img, name_ru, desc_ru, rarity, RU_OUT_DIR / f"card_{cid}.png")
+            render_card(base_img, name_en, desc_en, rarity, EN_OUT_DIR / f"card_{cid}.png")
 
         processed += 1
 
-    print(f"Successfully baked textures for {processed} cards into 'cards/ru' and 'cards/en'.")
+    print(f"Successfully baked textures for {processed} cards ({variation_count} variations) into 'cards/ru' and 'cards/en' at 160x250.")
 
 if __name__ == "__main__":
     main()

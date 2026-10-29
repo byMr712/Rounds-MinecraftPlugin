@@ -10,5 +10,6 @@ enabled: true
 art: card44.png
 variations:
   - rarity: RARE
+    art: card44-rare
     effects:
       refresh: 1

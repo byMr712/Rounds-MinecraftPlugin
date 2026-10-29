@@ -103,7 +103,7 @@ Run the texture generation tool:
 ```bash
 python tools/generate_card_textures.py
 ```
-This automatically bakes title and description text for all 118 cards in HD 320x500 (Lanczos) onto card PNG textures in `cards/ru` and `cards/en` with high-contrast drop shadows without backdrop boxes.
+This automatically bakes title and description text for all 118 cards at the standard 160x250 resolution (original art size, no resampling) onto card PNG textures in `cards/ru` and `cards/en` with high-contrast drop shadows without backdrop boxes. Each rarity variation gets its own texture `card<id>-<rarity>.png` with `{0}` placeholders filled from the variation's `values` list.
 
 
 ## 3. Code Standards & Pull Request Guidelines

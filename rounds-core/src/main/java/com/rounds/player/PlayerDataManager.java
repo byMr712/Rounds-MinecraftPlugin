@@ -502,7 +502,13 @@ public class PlayerDataManager implements Listener {
                 SavedPlayerData playerSaved = loadPlayerFullData(uuid);
                 if (playerSaved != null) {
                     applySavedData(uuid, playerSaved);
-                    plugin.getCardManager().restorePendingPick(uuid, playerSaved.pendingCardIds);
+                    if (plugin.getGameManager().isGameStarted()
+                            && plugin.getGameManager().getState() == GameManager.GameState.CARDS) {
+                        plugin.getCardManager().restorePendingPick(uuid, playerSaved.pendingCardIds);
+                    } else {
+                        plugin.getCardManager().cleanupPlayer(uuid);
+                        plugin.getCardDisplay().cleanupPlayer(uuid);
+                    }
                 }
                 if (data != null && data.recalculateOnLogin) {
                     data.recalculateOnLogin = false;
@@ -541,6 +547,8 @@ public class PlayerDataManager implements Listener {
                             player.setAllowFlight(true);
                             player.setFlying(true);
                             player.setInvulnerable(true);
+                            plugin.getCardManager().cleanupPlayer(uuid);
+                            plugin.getCardDisplay().cleanupPlayer(uuid);
                             if (team != null) {
                                 Location spawn = currentGm.getTeamSpawns().get(team);
                                 if (spawn != null) player.teleport(spawn);
@@ -559,6 +567,8 @@ public class PlayerDataManager implements Listener {
                             player.setAllowFlight(true);
                             player.setFlying(true);
                             player.setInvulnerable(true);
+                            plugin.getCardManager().cleanupPlayer(uuid);
+                            plugin.getCardDisplay().cleanupPlayer(uuid);
                         }
                     } else if (curState == GameManager.GameState.CARDS) {
                         if (team != null) {
@@ -698,6 +708,7 @@ public class PlayerDataManager implements Listener {
             plugin.getCustomDataManager().onPlayerQuit(uuid, plugin.getGameManager().isGameStarted());
         }
         plugin.getGameManager().onPlayerQuit(uuid);
+        plugin.getCardDisplay().cleanupPlayer(uuid);
         if (plugin.getGameManager().getState() == GameManager.GameState.CARDS) {
             plugin.getCardManager().removePendingPick(uuid);
             Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
@@ -707,6 +718,8 @@ public class PlayerDataManager implements Listener {
                     checkGm.onAllCardsPicked();
                 }
             }, 10L);
+        } else {
+            plugin.getCardManager().cleanupPlayer(uuid);
         }
         cache.remove(uuid);
         GunCooldowns.clear(uuid);
@@ -939,19 +952,18 @@ public class PlayerDataManager implements Listener {
             }
 
             double scale = 1.0;
-            if (data.hp > 0) {
-                scale += data.hp * 0.25;
-            }
+            double hpDelta = (data.hp - 20.0) / 20.0;
+            scale += hpDelta * 0.125;
             if (data.grow > 0) {
-                scale += data.grow * 0.15;
+                scale += data.grow * 0.075;
             }
             if (data.evasion > 0) {
-                scale -= data.evasion * 0.15;
+                scale -= data.evasion * 0.075;
             }
             if (data.sneaky > 0) {
-                scale -= data.sneaky * 0.10;
+                scale -= data.sneaky * 0.05;
             }
-            scale = Math.max(0.70, Math.min(1.80, PlayerData.round2(scale)));
+            scale = Math.max(0.85, Math.min(1.40, PlayerData.round2(scale)));
             inst.setBaseValue(scale);
         } catch (Throwable ignored) {}
     }
@@ -974,11 +986,12 @@ public class PlayerDataManager implements Listener {
         } catch (Throwable ignored) {}
         if (data != null) {
             double scale = 1.0;
-            if (data.hp > 0) scale += data.hp * 0.25;
-            if (data.grow > 0) scale += data.grow * 0.15;
-            if (data.evasion > 0) scale -= data.evasion * 0.15;
-            if (data.sneaky > 0) scale -= data.sneaky * 0.10;
-            return Math.max(0.70, Math.min(1.80, PlayerData.round2(scale)));
+            double hpDelta = (data.hp - 20.0) / 20.0;
+            scale += hpDelta * 0.125;
+            if (data.grow > 0) scale += data.grow * 0.075;
+            if (data.evasion > 0) scale -= data.evasion * 0.075;
+            if (data.sneaky > 0) scale -= data.sneaky * 0.05;
+            return Math.max(0.85, Math.min(1.40, PlayerData.round2(scale)));
         }
         return 1.0;
     }

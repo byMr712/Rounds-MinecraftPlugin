@@ -10,5 +10,6 @@ enabled: true
 art: card21.png
 variations:
   - rarity: COMMON
+    art: card21-common
     effects:
       empower: 1

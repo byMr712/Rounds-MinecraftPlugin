@@ -10,5 +10,6 @@ enabled: true
 art: card39.png
 variations:
   - rarity: LEGENDARY
+    art: card39-legendary
     effects:
       pristine_perseverance: 4.0

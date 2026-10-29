@@ -10,24 +10,28 @@ enabled: true
 art: card2.png
 variations:
   - rarity: RARE
+    art: card54-rare
     values: ["1000%", "12", "75%"]
     effects:
       attack_speed: 10.0
       ammo: 12
       damage: -0.75
   - rarity: COMMON
+    art: card54-common
     values: ["500%", "6", "50%"]
     effects:
       attack_speed: 5.0
       ammo: 6
       damage: -0.5
   - rarity: UNCOMMON
+    art: card54-uncommon
     values: ["750%", "9", "60%"]
     effects:
       attack_speed: 7.5
       ammo: 9
       damage: -0.6
   - rarity: EPIC
+    art: card54-epic
     values: ["1250%", "15", "90%"]
     effects:
       attack_speed: 12.5

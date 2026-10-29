@@ -10,5 +10,6 @@ enabled: true
 art: card35.png
 variations:
   - rarity: RARE
+    art: card35-rare
     effects:
       overpower: 1

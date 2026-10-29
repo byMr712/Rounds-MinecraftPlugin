@@ -29,18 +29,26 @@ public class Card {
     private final List<String> commands;
     private final String customScript;
     private final List<CardTriggerAction> triggers;
+    private final String art;
 
     public Card(int id, int familyId, Map<String, String> names, Map<String, String> descriptions,
                 Material material,
                 CardRegistry.Rarity rarity, boolean enabled, Map<String, Double> effects,
                 List<String> commands, String customScript) {
-        this(id, familyId, names, descriptions, material, rarity, enabled, effects, commands, customScript, Collections.emptyList());
+        this(id, familyId, names, descriptions, material, rarity, enabled, effects, commands, customScript, Collections.emptyList(), null);
     }
 
     public Card(int id, int familyId, Map<String, String> names, Map<String, String> descriptions,
                 Material material,
                 CardRegistry.Rarity rarity, boolean enabled, Map<String, Double> effects,
                 List<String> commands, String customScript, List<CardTriggerAction> triggers) {
+        this(id, familyId, names, descriptions, material, rarity, enabled, effects, commands, customScript, triggers, null);
+    }
+
+    public Card(int id, int familyId, Map<String, String> names, Map<String, String> descriptions,
+                Material material,
+                CardRegistry.Rarity rarity, boolean enabled, Map<String, Double> effects,
+                List<String> commands, String customScript, List<CardTriggerAction> triggers, String art) {
         this.id = id;
         this.familyId = familyId;
         this.names = names;
@@ -52,6 +60,16 @@ public class Card {
         this.commands = commands;
         this.customScript = customScript;
         this.triggers = triggers != null ? Collections.unmodifiableList(new ArrayList<>(triggers)) : Collections.emptyList();
+        this.art = art;
+    }
+
+    /**
+     * Private-use codepoint of this card's texture in the {@code rounds:default} font.
+     * Stable across client and server: familyId * 10 + rarity ordinal, so every variation
+     * of a card family gets its own glyph (and its own texture).
+     */
+    public int getGlyphCodepoint() {
+        return 0xE000 + familyId * 10 + rarity.ordinal();
     }
 
     public void apply(Player player, PlayerData data) { apply(player, data, true); }
@@ -310,6 +328,7 @@ public class Card {
 
     public int getId() { return id; }
     public int getFamilyId() { return familyId; }
+    public String getArt() { return art; }
     public Map<String, String> getNames() { return Collections.unmodifiableMap(names); }
     public Map<String, String> getDescriptions() { return Collections.unmodifiableMap(descriptions); }
     public Material getMaterial() { return material; }

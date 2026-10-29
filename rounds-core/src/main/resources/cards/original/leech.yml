@@ -10,21 +10,25 @@ enabled: true
 art: card32.png
 variations:
   - rarity: COMMON
+    art: card32-common
     values: ["75%", "30%"]
     effects:
       leech: 0.75
       hp: 0.3
   - rarity: UNCOMMON
+    art: card32-uncommon
     values: ["90%", "40%"]
     effects:
       leech: 0.9
       hp: 0.4
   - rarity: RARE
+    art: card32-rare
     values: ["100%", "50%"]
     effects:
       leech: 1.0
       hp: 0.5
   - rarity: EPIC
+    art: card32-epic
     values: ["110%", "60%"]
     effects:
       leech: 1.1

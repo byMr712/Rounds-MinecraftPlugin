@@ -10,6 +10,7 @@ enabled: true
 art: card1.png
 variations:
   - rarity: RARE
+    art: card62-rare
     effects:
       teleport: 1
       block_cd: -0.5

@@ -10,5 +10,6 @@ enabled: true
 art: card15.png
 variations:
   - rarity: UNCOMMON
+    art: card116-uncommon
     effects:
       highlight: 1

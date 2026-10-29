@@ -10,6 +10,7 @@ enabled: true
 art: card38.png
 variations:
   - rarity: RARE
+    art: card65-rare
     effects:
       toxic_cloud: 1
       poison_lvl: 1

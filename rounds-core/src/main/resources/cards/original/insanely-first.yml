@@ -10,18 +10,22 @@ enabled: true
 art: card10.png
 variations:
   - rarity: COMMON
+    art: card108-common
     value: "8"
     effects:
       speed: 1
   - rarity: UNCOMMON
+    art: card108-uncommon
     value: "9.5"
     effects:
       speed: 1.5
   - rarity: RARE
+    art: card108-rare
     value: "11"
     effects:
       speed: 2
   - rarity: EPIC
+    art: card108-epic
     value: "14"
     effects:
       speed: 3

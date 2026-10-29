@@ -10,18 +10,22 @@ enabled: true
 art: card30.png
 variations:
   - rarity: COMMON
+    art: card118-common
     value: "20%"
     effects:
       hp: 0.2
   - rarity: UNCOMMON
+    art: card118-uncommon
     value: "35%"
     effects:
       hp: 0.35
   - rarity: RARE
+    art: card118-rare
     value: "50%"
     effects:
       hp: 0.5
   - rarity: EPIC
+    art: card118-epic
     value: "70%"
     effects:
       hp: 0.7

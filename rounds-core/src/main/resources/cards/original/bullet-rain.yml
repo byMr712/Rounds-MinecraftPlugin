@@ -10,5 +10,6 @@ enabled: true
 art: card2.png
 variations:
   - rarity: LEGENDARY
+    art: card92-legendary
     effects:
       bullet-rain: 1

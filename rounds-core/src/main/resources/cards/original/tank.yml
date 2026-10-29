@@ -10,24 +10,28 @@ enabled: true
 art: card30.png
 variations:
   - rarity: COMMON
+    art: card59-common
     values: ["100%", "25%", "10%"]
     effects:
       hp: 1.0
       attack_speed: -0.25
       reload: 1
   - rarity: UNCOMMON
+    art: card59-uncommon
     values: ["130%", "30%", "15%"]
     effects:
       hp: 1.3
       attack_speed: -0.3
       reload: 1.5
   - rarity: RARE
+    art: card59-rare
     values: ["160%", "40%", "20%"]
     effects:
       hp: 1.6
       attack_speed: -0.4
       reload: 2
   - rarity: EPIC
+    art: card59-epic
     values: ["200%", "50%", "25%"]
     effects:
       hp: 2.0

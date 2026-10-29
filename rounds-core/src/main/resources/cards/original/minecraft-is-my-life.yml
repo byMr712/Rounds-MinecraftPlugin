@@ -10,18 +10,22 @@ enabled: true
 art: card27.png
 variations:
   - rarity: UNCOMMON
+    art: card103-uncommon
     value: "20%"
     effects:
       block-cd: -0.2
   - rarity: COMMON
+    art: card103-common
     value: "10%"
     effects:
       block-cd: -0.1
   - rarity: RARE
+    art: card103-rare
     value: "35%"
     effects:
       block-cd: -0.35
   - rarity: EPIC
+    art: card103-epic
     value: "50%"
     effects:
       block-cd: -0.5

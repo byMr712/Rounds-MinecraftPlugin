@@ -10,6 +10,7 @@ enabled: true
 art: card7.png
 variations:
   - rarity: COMMON
+    art: card7-common
     effects:
       bullets: 4
       ammo: 5

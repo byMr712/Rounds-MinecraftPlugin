@@ -10,18 +10,22 @@ enabled: true
 art: card40.png
 variations:
   - rarity: UNCOMMON
+    art: card113-uncommon
     value: "полпатрона"
     effects:
       ammo-per-hit: 0.5
   - rarity: COMMON
+    art: card113-common
     value: "четверть патрона"
     effects:
       ammo-per-hit: 0.25
   - rarity: RARE
+    art: card113-rare
     value: "три четверти патрона"
     effects:
       ammo-per-hit: 0.75
   - rarity: EPIC
+    art: card113-epic
     value: "патрон"
     effects:
       ammo-per-hit: 1.0

@@ -10,5 +10,6 @@ enabled: true
 art: card1.png
 variations:
   - rarity: RARE
+    art: card1-rare
     effects:
       abyssal: 1.0

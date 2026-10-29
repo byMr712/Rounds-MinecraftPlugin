@@ -10,5 +10,6 @@ enabled: true
 art: card50.png
 variations:
   - rarity: LEGENDARY
+    art: card50-legendary
     effects:
       shields_up: 1

@@ -10,18 +10,22 @@ enabled: true
 art: card23.png
 variations:
   - rarity: COMMON
+    art: card109-common
     value: "2"
     effects:
       ammo: 2
   - rarity: UNCOMMON
+    art: card109-uncommon
     value: "3"
     effects:
       ammo: 3
   - rarity: RARE
+    art: card109-rare
     value: "4"
     effects:
       ammo: 4
   - rarity: EPIC
+    art: card109-epic
     value: "5"
     effects:
       ammo: 5

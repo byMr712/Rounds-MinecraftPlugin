@@ -10,21 +10,25 @@ enabled: true
 art: card32.png
 variations:
   - rarity: COMMON
+    art: card61-common
     values: ["50%", "60%"]
     effects:
       speed_boost: 0.5
       leech: 0.6
   - rarity: UNCOMMON
+    art: card61-uncommon
     values: ["65%", "75%"]
     effects:
       speed_boost: 0.65
       leech: 0.75
   - rarity: RARE
+    art: card61-rare
     values: ["80%", "90%"]
     effects:
       speed_boost: 0.8
       leech: 0.9
   - rarity: EPIC
+    art: card61-epic
     values: ["100%", "105%"]
     effects:
       speed_boost: 1.0

@@ -10,24 +10,28 @@ enabled: true
 art: card46.png
 variations:
   - rarity: RARE
+    art: card46-rare
     values: ["2", "+25%", "+10%"]
     effects:
       bounce: 2
       attack_speed: 0.25
       reload: 1
   - rarity: COMMON
+    art: card46-common
     values: ["1", "+10%", "+5%"]
     effects:
       bounce: 1
       attack_speed: 0.1
       reload: 0.5
   - rarity: UNCOMMON
+    art: card46-uncommon
     values: ["2", "+18%", "+8%"]
     effects:
       bounce: 2
       attack_speed: 0.18
       reload: 0.8
   - rarity: EPIC
+    art: card46-epic
     values: ["4", "+40%", "+15%"]
     effects:
       bounce: 4

@@ -10,5 +10,6 @@ enabled: true
 art: card5.png
 variations:
   - rarity: COMMON
+    art: card104-common
     effects:
       sneaky: 1

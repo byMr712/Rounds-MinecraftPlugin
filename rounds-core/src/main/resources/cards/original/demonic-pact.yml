@@ -10,6 +10,7 @@ enabled: true
 art: card17.png
 variations:
   - rarity: LEGENDARY
+    art: card17-legendary
     effects:
       bullets: 9
       ammo: 9

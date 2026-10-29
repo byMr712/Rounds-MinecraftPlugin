@@ -5,11 +5,16 @@ import com.rounds.cards.Card;
 import com.rounds.cards.CardRegistry;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Particle;
+import org.bukkit.World;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
@@ -21,14 +26,16 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -67,8 +74,6 @@ public class CardDisplayManager implements Listener {
         close(player.getUniqueId());
         Scene scene = new Scene(player, cards);
         scenes.put(player.getUniqueId(), scene);
-        player.setAllowFlight(true);
-        player.setFlying(true);
         scene.begin();
         hideOtherPlayers(player);
     }
@@ -212,12 +217,21 @@ public class CardDisplayManager implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onToggleFlight(PlayerToggleFlightEvent event) {
-        if (scenes.containsKey(event.getPlayer().getUniqueId())) {
-            event.setCancelled(true);
-            event.getPlayer().setFlying(true);
-        }
+    private TextColor rarityTextColor(CardRegistry.Rarity rarity) {
+        return switch (rarity) {
+            case COMMON -> NamedTextColor.WHITE;
+            case UNCOMMON -> NamedTextColor.GREEN;
+            case RARE -> NamedTextColor.AQUA;
+            case EPIC -> NamedTextColor.LIGHT_PURPLE;
+            case LEGENDARY -> NamedTextColor.GOLD;
+        };
+    }
+
+    private Component starComponent(Card card) {
+        int count = card.getRarity().ordinal() + 1;
+        String stars = String.join(" ", Collections.nCopies(Math.max(1, Math.min(5, count)), "★"));
+        return Component.text(stars, rarityTextColor(card.getRarity()))
+                .decorate(TextDecoration.BOLD);
     }
 
     private Color rarityColor(CardRegistry.Rarity rarity) {
@@ -253,7 +267,10 @@ public class CardDisplayManager implements Listener {
         final double rx, rz;
 
         TextDisplay[] displays = new TextDisplay[SLOT_COUNT];
+        TextDisplay[] starDisplays = new TextDisplay[SLOT_COUNT];
         Location[] targets = new Location[SLOT_COUNT];
+        Location[] starTargets = new Location[SLOT_COUNT];
+        final Set<Location> fakeBarriers = new HashSet<>();
         int hovered = -1;
 
         BukkitTask tickTask;
@@ -289,7 +306,48 @@ public class CardDisplayManager implements Listener {
             return true;
         }
 
+        void setupWalkingEnclosure() {
+            if (origin.getWorld() == null) return;
+            World world = origin.getWorld();
+            int floorY = (int) Math.floor(origin.getY() - 0.1);
+            int bx = origin.getBlockX();
+            int bz = origin.getBlockZ();
+
+            // Check 7x7 grid around origin (radius 3 blocks)
+            for (int x = bx - 3; x <= bx + 3; x++) {
+                for (int z = bz - 3; z <= bz + 3; z++) {
+                    double cx = x + 0.5;
+                    double cz = z + 0.5;
+                    double dx = cx - origin.getX();
+                    double dz = cz - origin.getZ();
+                    double fwd = dx * fx + dz * fz;
+                    double side = dx * rx + dz * rz;
+
+                    boolean inWalkZone = (fwd >= -0.55 && fwd <= 1.65 && Math.abs(side) <= 1.65);
+                    if (inWalkZone) {
+                        // Protect floor: if non-solid (slope, drop-off, jump-pad abyss), place barrier floor
+                        Location floorLoc = new Location(world, x, floorY, z);
+                        if (!floorLoc.getBlock().getType().isSolid()) {
+                            fakeBarriers.add(floorLoc);
+                            player.sendBlockChange(floorLoc, Material.BARRIER.createBlockData());
+                        }
+                    } else if (fwd >= -1.2 && fwd <= 2.4 && Math.abs(side) <= 2.4) {
+                        // Outer boundary perimeter: invisible barrier walls (2 blocks high) to prevent stepping off
+                        for (int y = floorY + 1; y <= floorY + 2; y++) {
+                            Location wallLoc = new Location(world, x, y, z);
+                            if (!wallLoc.getBlock().getType().isSolid()) {
+                                fakeBarriers.add(wallLoc);
+                                player.sendBlockChange(wallLoc, Material.BARRIER.createBlockData());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         void begin() {
+            setupWalkingEnclosure();
+
             Location eye = player.getEyeLocation();
             float yaw = player.getLocation().getYaw();
 
@@ -297,6 +355,7 @@ public class CardDisplayManager implements Listener {
                 double deg = (i - (SLOT_COUNT - 1) / 2.0) * (FAN_TOTAL_DEG / (SLOT_COUNT - 1));
                 Location loc = fanPosition(eye, yaw, deg, RADIUS);
                 targets[i] = loc;
+                starTargets[i] = starPosition(loc);
                 spawnCard(i, loc);
             }
 
@@ -309,6 +368,10 @@ public class CardDisplayManager implements Listener {
                     if (displays[i] != null && displays[i].isValid()) {
                         displays[i].setTeleportDuration(2);
                         displays[i].teleport(displays[i].getLocation());
+                    }
+                    if (starDisplays[i] != null && starDisplays[i].isValid()) {
+                        starDisplays[i].setTeleportDuration(2);
+                        starDisplays[i].teleport(starDisplays[i].getLocation());
                     }
                 }
             }, 2L);
@@ -342,6 +405,10 @@ public class CardDisplayManager implements Listener {
             return new Location(eye.getWorld(), x, eye.getY() - CARD_CENTER_OFFSET, z, facing, 0f);
         }
 
+        Location starPosition(Location cardLoc) {
+            return cardLoc.clone().add(0, CARD_CENTER_OFFSET + CARD_HALF_HEIGHT + 0.20, 0);
+        }
+
         void spawnCard(int i, Location loc) {
             Card card = cards.get(i);
             TextDisplay display = player.getWorld().spawn(loc, TextDisplay.class);
@@ -367,6 +434,20 @@ public class CardDisplayManager implements Listener {
                 display.addScoreboardTag("rounds_card_display");
                 display.addScoreboardTag("owner_" + playerId);
                 displays[i] = display;
+            }
+
+            Location starLoc = starPosition(loc);
+            TextDisplay starDisplay = player.getWorld().spawn(starLoc, TextDisplay.class);
+            if (starDisplay != null) {
+                starDisplay.text(starComponent(card));
+                starDisplay.setBillboard(Display.Billboard.FIXED);
+                starDisplay.setViewRange(0.6f);
+                starDisplay.setSeeThrough(true);
+                starDisplay.setShadowed(true);
+                starDisplay.setBackgroundColor(Color.fromARGB(0, 0, 0, 0));
+                starDisplay.addScoreboardTag("rounds_card_display");
+                starDisplay.addScoreboardTag("owner_" + playerId);
+                starDisplays[i] = starDisplay;
             }
         }
 
@@ -429,12 +510,19 @@ public class CardDisplayManager implements Listener {
                     displays[i].setTeleportDuration(10);
                     displays[i].teleport(targets[i - 1]);
                 }
+                if (starDisplays[i] != null && starTargets[i - 1] != null) {
+                    starDisplays[i].setTeleportDuration(10);
+                    starDisplays[i].teleport(starTargets[i - 1]);
+                }
             }
             fadeOut(displays[0]);
+            fadeOut(starDisplays[0]);
             for (int i = 0; i < SLOT_COUNT - 1; i++) {
                 displays[i] = displays[i + 1];
+                starDisplays[i] = starDisplays[i + 1];
             }
             displays[SLOT_COUNT - 1] = null;
+            starDisplays[SLOT_COUNT - 1] = null;
 
             int last = SLOT_COUNT - 1;
             Location enter = targets[last].clone().add(1.6, 0, 0);
@@ -445,6 +533,10 @@ public class CardDisplayManager implements Listener {
                 if (displays[last] != null && displays[last].isValid() && targets[last] != null) {
                     displays[last].setTeleportDuration(10);
                     displays[last].teleport(targets[last]);
+                }
+                if (starDisplays[last] != null && starDisplays[last].isValid() && starTargets[last] != null) {
+                    starDisplays[last].setTeleportDuration(10);
+                    starDisplays[last].teleport(starTargets[last]);
                 }
             }, 1L);
         }
@@ -468,13 +560,22 @@ public class CardDisplayManager implements Listener {
                     displays[i].remove();
                     displays[i] = null;
                 }
+                if (starDisplays[i] != null) {
+                    starDisplays[i].remove();
+                    starDisplays[i] = null;
+                }
             }
             if (player.isOnline()) {
                 player.sendActionBar(Component.empty());
+                for (Location loc : fakeBarriers) {
+                    player.sendBlockChange(loc, loc.getBlock().getBlockData());
+                }
             }
+            fakeBarriers.clear();
             tickTask = null;
             carouselTask = null;
             displays = new TextDisplay[SLOT_COUNT];
+            starDisplays = new TextDisplay[SLOT_COUNT];
         }
     }
 }

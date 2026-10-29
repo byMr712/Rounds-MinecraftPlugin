@@ -476,18 +476,6 @@ public class GameManager implements Listener {
                 }
                 data.ammo = Math.min(data.ammo, data.maxAmmo);
             }
-            if (data.autoReloadDelay > 0 && p.getGameMode() != GameMode.SPECTATOR) {
-                if (data.ammo <= 0 && !GunItem.isReloading(p.getUniqueId())) {
-                    data.zeroAmmoTicks++;
-                    int requiredTicks = (int) Math.round(data.autoReloadDelay * 20.0);
-                    if (data.zeroAmmoTicks >= requiredTicks) {
-                        data.zeroAmmoTicks = 0;
-                        GunItem.getInstance().startReload(p, data);
-                    }
-                } else {
-                    data.zeroAmmoTicks = 0;
-                }
-            }
             if (data.lifestealAura > 0) {
                 for (Entity entity : nearby) {
                     if (!(entity instanceof Player enemy)) continue;
@@ -836,6 +824,9 @@ public class GameManager implements Listener {
                 autoDeathNextIsKill = false;
             } else {
                 Bukkit.broadcastMessage(ChatColor.DARK_RED + Messages.get("game.auto-death-warning"));
+                for (Player p : Bukkit.getOnlinePlayers()) {
+                    p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
+                }
                 autoDeathNextIsKill = true;
             }
             autoDeathInitialPhase = false;
@@ -911,7 +902,9 @@ public class GameManager implements Listener {
         if (alive.size() <= 1) return;
         Player victim = alive.get(RANDOM.nextInt(alive.size()));
         Bukkit.broadcastMessage(ChatColor.DARK_RED + Messages.get("game.auto-death-killed", victim.getName()));
-        victim.getWorld().playSound(victim.getLocation(), Sound.ENTITY_WITHER_SPAWN, SoundCategory.RECORDS, 0.7f, 1.2f);
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, SoundCategory.RECORDS, 1.0f, 1.0f);
+        }
 
         // The reaper applies LETHAL DAMAGE through the normal pipeline, never a direct
         // health write: card saves (Bullet Time, Second Wind, Phoenix) must be able to
@@ -1073,7 +1066,18 @@ public class GameManager implements Listener {
             autoDeathBossBar.setProgress(1.0);
         }
 
-        plugin.getServer().broadcastMessage(ChatColor.YELLOW + Messages.get("game.round-start", currentRound));
+        String roundMsg = ChatColor.YELLOW + Messages.get("game.round-start", currentRound);
+        boolean bossBarOn = plugin != null && plugin.getRoundsConfig().isAutoDeathBossBarEnabled();
+        if (bossBarOn) {
+            Bukkit.getConsoleSender().sendMessage(roundMsg);
+        } else {
+            plugin.getServer().broadcastMessage(roundMsg);
+        }
+        try {
+            if (com.rounds.debug.DebugSession.active) {
+                com.rounds.debug.DebugLog.log("GAME", "ROUND " + currentRound + ": " + ChatColor.stripColor(roundMsg));
+            }
+        } catch (Throwable ignored) {}
 
         if (plugin.getBotManager() != null) {
             plugin.getBotManager().randomizeBotLevels();

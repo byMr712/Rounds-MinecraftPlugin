@@ -413,18 +413,6 @@ public class CardDisplayManager implements Listener {
             Card card = cards.get(i);
             TextDisplay display = player.getWorld().spawn(loc, TextDisplay.class);
             if (display != null) {
-                char glyph = (char) card.getGlyphCodepoint();
-                if (card instanceof com.rounds.api.impl.CustomCardAdapter adapter) {
-                    Character custom = adapter.getCustomCard().getGlyph();
-                    if (custom != null) glyph = custom;
-                }
-                plugin.getLogger().info("[CardDisplay] slot=" + i + " cardId=" + card.getId()
-                        + " familyId=" + card.getFamilyId()
-                        + " rarity=" + card.getRarity()
-                        + " art=" + card.getArt()
-                        + " glyph=U+" + Integer.toHexString(glyph).toUpperCase()
-                        + " font=rounds:default at " + loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ()
-                        + " world=" + loc.getWorld().getName());
                 display.text(cardGlyph(card));
                 display.setBillboard(Display.Billboard.FIXED);
                 display.setViewRange(0.6f);

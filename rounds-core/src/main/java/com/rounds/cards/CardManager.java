@@ -182,8 +182,11 @@ public class CardManager {
 
         if (!revealed) {
             String lang = Messages.getLanguageCode();
-            String msg = Messages.get("card.picked", player.getName(), card.getColoredName(lang), card.getDescription(lang));
-            plugin.getServer().broadcastMessage(msg);
+            ChatColor teamColor = (team != null) ? team.getColor() : ChatColor.YELLOW;
+            String rawMsg = Messages.get("card.picked", player.getName(),
+                    ChatColor.stripColor(card.getName(lang)),
+                    ChatColor.stripColor(card.getDescription(lang)));
+            plugin.getServer().broadcastMessage(teamColor + ChatColor.stripColor(rawMsg));
         }
 
         if (allPicksDone()) {
@@ -283,12 +286,16 @@ public class CardManager {
             }
 
             String lang = Messages.getLanguageCode();
+            GameTeam team = (plugin.getTeamManager() != null) ? plugin.getTeamManager().getPlayerTeam(player.getUniqueId()) : null;
+            ChatColor teamColor = (team != null) ? team.getColor() : ChatColor.YELLOW;
             for (Card bonus : granted) {
                 bonus.apply(player, data);
                 data.setCard(bonus.getId(), true);
                 syncPlayerHP(player, data);
-                String msg = Messages.get("card.picked", player.getName(), bonus.getColoredName(lang), bonus.getDescription(lang));
-                plugin.getServer().broadcastMessage(msg);
+                String rawMsg = Messages.get("card.picked", player.getName(),
+                        ChatColor.stripColor(bonus.getName(lang)),
+                        ChatColor.stripColor(bonus.getDescription(lang)));
+                plugin.getServer().broadcastMessage(teamColor + ChatColor.stripColor(rawMsg));
                 revealedAny = true;
             }
         }

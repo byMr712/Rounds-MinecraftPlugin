@@ -34,7 +34,7 @@ A Minecraft plugin for the competitive mini-game [**ROUNDS**](https://store.stea
 - **Custom Weapon (Gun & Shield):**
   - **Left Click:** Fires physics-driven bullets with ricochets, bullet speed, and card effects.
   - **Right Click:** Raises shield to deflect bullets and trigger explosive counter-abilities.
-  - **Q (Drop Key):** Manually reload your magazine with a live Action Bar progress bar.
+  - **Automatic Reload:** When the magazine is emptied, the weapon automatically begins reloading with a visual progress bar in the Action Bar (matching original ROUNDS game mechanics).
 - **Card System and Combat Abilities:**
   - **In-World 3D Card Selection Scene:** Instead of a flat GUI inventory, players experience an interactive 3D semicircular showcase floating in the world via Text Display entities. Cards display their real graphic art through the custom bitmap font: every rarity variation gets its own glyph and texture. Card titles and ability descriptions are drawn directly onto the card face textures, with glowing rarity stars floating above each card (from 1 to 5 stars by tier: Common - 1, Uncommon - 2, Rare - 3, Epic - 4, Legendary - 5). Players approach cards on foot (up to 2.0m forward) for close inspection; client-side barrier flooring and invisible perimeter collision prevent drops off cliffs or onto jump pads. Epic and Legendary cards feature active flame particles, selection is accompanied by carousel animation, and expiring timers trigger automatic random selection without kicking players from the server.
   - **Official Cross-Version Resource Pack (Rounds-ResourcePack.zip, -RU.zip, -EN.zip):**

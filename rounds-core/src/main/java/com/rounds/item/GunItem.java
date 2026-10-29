@@ -262,6 +262,9 @@ public class GunItem implements Listener {
         if (!overheated && !bloodShot) {
             data.ammo -= 1;
             if (data.ammo < 0) data.ammo = 0;
+            if (data.ammo < 1.0 && !isReloading(uuid) && !reloadingPlayers.contains(uuid)) {
+                startReload(player, data);
+            }
         }
         if (data.hpCost > 0 && player.isOnline() && player.isValid()) {
             player.setNoDamageTicks(0);
@@ -281,7 +284,9 @@ public class GunItem implements Listener {
             Vector recoil = direction.clone().multiply(-0.6 * data.trusterLvl);
             player.setVelocity(player.getVelocity().add(recoil));
         }
-        player.sendActionBar(ChatColor.GRAY + Messages.get("gun.ammo-display", (int) data.ammo, (int) data.maxAmmo));
+        if (!isReloading(uuid) && !reloadingPlayers.contains(uuid)) {
+            player.sendActionBar(ChatColor.GRAY + Messages.get("gun.ammo-display", (int) data.ammo, (int) data.maxAmmo));
+        }
         player.getWorld().playSound(bulletOrigin, Sound.ENTITY_FIREWORK_ROCKET_BLAST, SoundCategory.RECORDS, 0.5f, 1.5f);
 
         if (data.shieldsUp > 0 && data.ammo <= 0) {
@@ -630,12 +635,6 @@ public class GunItem implements Listener {
         ItemStack item = event.getItemDrop().getItemStack();
         if (!isGun(item)) return;
         event.setCancelled(true);
-
-        Player player = event.getPlayer();
-        PlayerData data = plugin.getPlayerDataManager().getData(player);
-        if (data.ammo < data.maxAmmo && !isReloading(player.getUniqueId())) {
-            startReload(player, data);
-        }
     }
 
     public void startReload(Player player, PlayerData data) {

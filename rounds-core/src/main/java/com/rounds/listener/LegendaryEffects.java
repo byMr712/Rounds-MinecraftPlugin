@@ -226,9 +226,6 @@ public class LegendaryEffects implements Listener {
                 if (data.bloodFurry > 0) {
                     rageUntil.put(player.getUniqueId(), System.currentTimeMillis() + 3000L);
                 }
-                if (data.spiteRazorwire > 0) {
-                    try { triggerRazorwire(player, data); } catch (Throwable ignored) {}
-                }
 
                 int totalSeconds = (data.decay > 0) ? Math.max(1, (int) Math.round(data.decay)) : 5;
                 DecaySlice slice = new DecaySlice(incomingDmg, totalSeconds, attackerId);
@@ -281,15 +278,6 @@ public class LegendaryEffects implements Listener {
 
         if (data.bloodFurry > 0) {
             rageUntil.put(player.getUniqueId(), System.currentTimeMillis() + 3000L);
-        }
-
-        if (data.spiteRazorwire > 0 && event.getCause() != EntityDamageEvent.DamageCause.VOID) {
-            try {
-                triggerRazorwire(player, data);
-            } catch (Throwable razorError) {
-                // Throwing inside a damage listener aborts the event for all remaining listeners
-                // and kills the whole hurt() call -> victims appear invulnerable. Never propagate.
-            }
         }
 
         if (data.skyfall > 0

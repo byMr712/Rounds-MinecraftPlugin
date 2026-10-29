@@ -4,6 +4,7 @@ import com.rounds.RoundsPlugin;
 import com.rounds.blocks.BlockListener;
 import com.rounds.entity.RoundsEntities;
 import com.rounds.game.GameManager;
+import com.rounds.nms.NmsPlayerHandle;
 import com.rounds.player.PlayerData;
 import com.rounds.teams.TeamManager.GameTeam;
 import org.bukkit.Bukkit;
@@ -696,8 +697,16 @@ public class BotAI extends BukkitRunnable {
 
     @Override
     public void run() {
+        if (bot == null) {
+            cancel();
+            return;
+        }
         Player player = bot.getBukkitPlayer();
-        if (player.isDead() || !player.isOnline() || player.getGameMode() == GameMode.SPECTATOR) {
+        if (player == null || player.isDead() || !player.isOnline() || player.getGameMode() == GameMode.SPECTATOR) {
+            return;
+        }
+        NmsPlayerHandle handle = bot.getHandle();
+        if (handle == null) {
             return;
         }
 
@@ -715,7 +724,7 @@ public class BotAI extends BukkitRunnable {
         if (!isCombatAllowed()) {
             if (tickCount % 40 == 0) {
                 float rndYaw = player.getLocation().getYaw() + (ThreadLocalRandom.current().nextFloat() * 40f - 20f);
-                bot.getHandle().setRot(rndYaw, 0f);
+                bot.setRotation(rndYaw, 0f);
             }
             bot.moveRel(0.0, 0.0, 0.0);
             tickCount++;
@@ -726,9 +735,7 @@ public class BotAI extends BukkitRunnable {
         if (roundWarmupTicks > 0) {
             roundWarmupTicks--;
             float wobbleYaw = player.getLocation().getYaw() + (float) Math.sin(tickCount * 0.2) * 5.0f;
-            bot.getHandle().setRot(wobbleYaw, 0f);
-            bot.getHandle().setYHeadRot(wobbleYaw);
-            bot.getHandle().setYBodyRot(wobbleYaw);
+            bot.setRotation(wobbleYaw, 0f);
             bot.moveRel(0.0, 0.0, 0.0);
             tickCooldowns();
             return;
@@ -786,9 +793,7 @@ public class BotAI extends BukkitRunnable {
             // While airborne/pad launched: orient body and head strictly towards safe landing direction!
             if (Math.abs(steerX) > 0.01 || Math.abs(steerZ) > 0.01) {
                 float flightYaw = (float) Math.toDegrees(Math.atan2(-steerX, steerZ));
-                bot.getHandle().setRot(flightYaw, 5f);
-                bot.getHandle().setYHeadRot(flightYaw);
-                bot.getHandle().setYBodyRot(flightYaw);
+                bot.setRotation(flightYaw, 5f);
                 patrolHeading = flightYaw; // Preserve forward flight heading so bot moves away from edge upon landing
             }
 
@@ -845,9 +850,7 @@ public class BotAI extends BukkitRunnable {
                 coverSearchCooldown = 120;
             } else {
                 // Hold position behind cover, pre-aim steadily down the open corridor
-                bot.getHandle().setRot(ambushAimYaw, 0f);
-                bot.getHandle().setYHeadRot(ambushAimYaw);
-                bot.getHandle().setYBodyRot(ambushAimYaw);
+                bot.setRotation(ambushAimYaw, 0f);
 
                 // If bot has Empower or Homing on block, pre-charge shield!
                 if (data != null && bot.canBlock()) {
@@ -885,9 +888,7 @@ public class BotAI extends BukkitRunnable {
 
             if (cdist > 0.8 && coverSeekTicks < 50) {
                 float moveYaw = (float) Math.toDegrees(Math.atan2(-cdx, cdz));
-                bot.getHandle().setRot(moveYaw, 0f);
-                bot.getHandle().setYHeadRot(moveYaw);
-                bot.getHandle().setYBodyRot(moveYaw);
+                bot.setRotation(moveYaw, 0f);
                 double coverSpd = 0.26 * bot.getSpeedMultiplier();
                 moveCombatRel((cdx / cdist) * coverSpd, (cdz / cdist) * coverSpd);
                 tickCooldowns();
@@ -1384,7 +1385,8 @@ public class BotAI extends BukkitRunnable {
 
         if (distXZ > 1.2) {
             // Abort pursuit immediately if stuck running into a wall on ground (not while in mid-air jumping up steps)
-            if (bot.isOnGround() && bot.getHandle().isHorizontalCollision()) {
+            NmsPlayerHandle h = bot.getHandle();
+            if (bot.isOnGround() && h != null && h.isHorizontalCollision()) {
                 pursuitStuckTicks++;
                 if (pursuitStuckTicks > 12) {
                     pursuitStuckTicks = 0;
@@ -1435,9 +1437,7 @@ public class BotAI extends BukkitRunnable {
             double mx = Math.sin(rad);
             double mz = Math.cos(rad);
 
-            bot.getHandle().setRot(moveYaw, 0f);
-            bot.getHandle().setYHeadRot(moveYaw);
-            bot.getHandle().setYBodyRot(moveYaw);
+            bot.setRotation(moveYaw, 0f);
 
             double pursuitSpd = profile.pursuitSpeed * bot.getSpeedMultiplier();
             lastMoveX = mx * pursuitSpd;
@@ -1464,9 +1464,7 @@ public class BotAI extends BukkitRunnable {
             if (!isDirectionClear(myLoc, yaw, 1.8)) {
                 yaw = findClearDirection(myLoc, yaw);
             }
-            bot.getHandle().setRot(yaw, 0f);
-            bot.getHandle().setYHeadRot(yaw);
-            bot.getHandle().setYBodyRot(yaw);
+            bot.setRotation(yaw, 0f);
             bot.moveRel(0.0, 0.0, 0.0);
             if (searchTicks > 25) {
                 // Done searching this spot, resume patrol exploration
@@ -1494,9 +1492,7 @@ public class BotAI extends BukkitRunnable {
             currentHuntTarget = null;
             currentCorridorWaypoint = null;
             // Instant snap rotation towards open side: never stare into corner/wall!
-            bot.getHandle().setRot(pocketExit, 0f);
-            bot.getHandle().setYHeadRot(pocketExit);
-            bot.getHandle().setYBodyRot(pocketExit);
+            bot.setRotation(pocketExit, 0f);
         }
 
         // High ground vantage hold: survey high ground for 3s instead of immediately jumping back down
@@ -1544,7 +1540,8 @@ public class BotAI extends BukkitRunnable {
         }
 
         // 3. Track stuck status (detect getting blocked by walls/corners on ground)
-        boolean physicallyBlocked = bot.isOnGround() && bot.getHandle().isHorizontalCollision();
+        NmsPlayerHandle h = bot.getHandle();
+        boolean physicallyBlocked = bot.isOnGround() && (h != null && h.isHorizontalCollision());
         if (physicallyBlocked || (lastHuntPos != null && myLoc.getWorld().equals(lastHuntPos.getWorld()) && myLoc.distanceSquared(lastHuntPos) < 0.005)) {
             huntStuckTicks++;
         } else {
@@ -1682,13 +1679,16 @@ public class BotAI extends BukkitRunnable {
         float curPitch = player.getLocation().getPitch();
         float newPitch = curPitch + (0f - curPitch) * 0.12f;
 
-        bot.getHandle().setRot(newYaw, newPitch);
-        bot.getHandle().setYHeadRot(newYaw);
+        h = bot.getHandle();
+        if (h != null) {
+            h.setRot(newYaw, newPitch);
+            h.setYHeadRot(newYaw);
 
-        float bodyYaw = bot.getHandle().getYBodyRot();
-        float bodyDiff = ((newYaw - bodyYaw + 540f) % 360f) - 180f;
-        if (Math.abs(bodyDiff) > 30.0f) {
-            bot.getHandle().setYBodyRot(bodyYaw + (bodyDiff > 0 ? bodyDiff - 30.0f : bodyDiff + 30.0f));
+            float bodyYaw = h.getYBodyRot();
+            float bodyDiff = ((newYaw - bodyYaw + 540f) % 360f) - 180f;
+            if (Math.abs(bodyDiff) > 30.0f) {
+                h.setYBodyRot(bodyYaw + (bodyDiff > 0 ? bodyDiff - 30.0f : bodyDiff + 30.0f));
+            }
         }
 
         // 7. Exploration movement: pause forward thrust while facing an obstacle to avoid faceplanting into walls

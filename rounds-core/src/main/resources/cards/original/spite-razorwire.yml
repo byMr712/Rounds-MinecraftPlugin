@@ -9,8 +9,8 @@ variations:
   - rarity: COMMON
     art: card124-common
     description:
-      ru: "При получении любого урона выбрасывает веером 4 шипа в радиусе 5 блоков, наносящих 25% урона оружия."
-      en: "Upon taking any damage, releases 4 spikes in a 5-block radius dealing 25% gun damage."
+      ru: "При попадании по вам выбрасывает веером 4 шипа в радиусе 5 блоков, наносящих 25% урона оружия."
+      en: "Upon being hit, releases 4 spikes in a 5-block radius dealing 25% gun damage."
     effects:
       spite_razorwire: 1
       razorwire_shards: 4
@@ -19,8 +19,8 @@ variations:
   - rarity: UNCOMMON
     art: card124-uncommon
     description:
-      ru: "При получении любого урона выбрасывает веером 6 шипов в радиусе 6 блоков, наносящих 35% урона оружия."
-      en: "Upon taking any damage, releases 6 spikes in a 6-block radius dealing 35% gun damage."
+      ru: "При попадании по вам выбрасывает веером 6 шипов в радиусе 6 блоков, наносящих 35% урона оружия."
+      en: "Upon being hit, releases 6 spikes in a 6-block radius dealing 35% gun damage."
     effects:
       spite_razorwire: 2
       razorwire_shards: 6
@@ -29,8 +29,8 @@ variations:
   - rarity: RARE
     art: card124-rare
     description:
-      ru: "При получении любого урона выбрасывает веером 8 шипов в радиусе 7 блоков, наносящих 50% урона оружия."
-      en: "Upon taking any damage, releases 8 spikes in a 7-block radius dealing 50% gun damage."
+      ru: "При попадании по вам выбрасывает веером 8 шипов в радиусе 7 блоков, наносящих 50% урона оружия."
+      en: "Upon being hit, releases 8 spikes in a 7-block radius dealing 50% gun damage."
     effects:
       spite_razorwire: 3
       razorwire_shards: 8
@@ -39,8 +39,8 @@ variations:
   - rarity: EPIC
     art: card124-epic
     description:
-      ru: "При получении любого урона выбрасывает 8 самонаводящихся шипов в радиусе 7 блоков на 50% урона, восстанавливая владельцу 10% нанесённого ими урона в виде здоровья."
-      en: "Upon taking any damage, releases 8 homing spikes in a 7-block radius dealing 50% damage and healing the owner for 10% of damage dealt."
+      ru: "При попадании по вам выбрасывает 8 самонаводящихся шипов в радиусе 7 блоков на 50% урона, восстанавливая владельцу 10% нанесённого ими урона в виде здоровья."
+      en: "Upon being hit, releases 8 homing spikes in a 7-block radius dealing 50% damage and healing the owner for 10% of damage dealt."
     effects:
       spite_razorwire: 4
       razorwire_shards: 8

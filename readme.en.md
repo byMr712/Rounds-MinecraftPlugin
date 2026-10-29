@@ -411,7 +411,7 @@ variations:
 | `frost-armor` | Frost Armor: slows attacking enemies |
 | `no-party` | No Party: disables shields and reloads for nearby enemies |
 | `blood-cartridge` | Blood Cartridge: emergency shooting with empty ammo sacrificing % HP (7..15%), bonus damage and crits |
-| `spite-razorwire` | Spite Razorwire: release fan of spikes upon taking any damage (4..8 shards, on Epic: homing and 10% lifesteal) |
+| `spite-razorwire` | Spite Razorwire: release fan of spikes upon being hit (4..8 shards, on Epic: homing and 10% lifesteal) |
 | `temporal-recall` | Temporal Recall: rewind 3s back on shield block, restoring HP and ammo (15s cooldown, Legendary) |
 | `bullet-time` | Bullet Time: death save / on HP <= 20%, 1s invulnerability, 5s 85% slow on enemies and bullets (Legendary) |
 

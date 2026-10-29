@@ -246,23 +246,29 @@ public class FakeBot {
     }
 
     public double getX() {
-        return getBukkitPlayer().getLocation().getX();
+        Player p = getBukkitPlayer();
+        return p != null ? p.getLocation().getX() : 0.0;
     }
 
     public double getY() {
-        return getBukkitPlayer().getLocation().getY();
+        Player p = getBukkitPlayer();
+        return p != null ? p.getLocation().getY() : 0.0;
     }
 
     public double getZ() {
-        return getBukkitPlayer().getLocation().getZ();
+        Player p = getBukkitPlayer();
+        return p != null ? p.getLocation().getZ() : 0.0;
     }
 
     public Location getLocation() {
-        return getBukkitPlayer().getLocation();
+        Player p = getBukkitPlayer();
+        return p != null ? p.getLocation() : null;
     }
 
     public double getMaxHealth() {
-        var attr = getBukkitPlayer().getAttribute(Attribute.GENERIC_MAX_HEALTH);
+        Player p = getBukkitPlayer();
+        if (p == null) return 20.0;
+        var attr = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
         return attr != null ? attr.getValue() : 20.0;
     }
 
@@ -466,7 +472,7 @@ public class FakeBot {
     public void aimAt(Location targetLoc, float maxTurnDeg, float inaccuracyDeg) {
         Player p = getBukkitPlayer();
         NmsPlayerHandle sp = getHandle();
-        if (p.isDead() || !p.isOnline() || sp == null) return;
+        if (p == null || !p.isOnline() || p.isDead() || sp == null) return;
 
         Location myLoc = p.getLocation();
         double dx = targetLoc.getX() - myLoc.getX();
@@ -538,7 +544,7 @@ public class FakeBot {
     public void moveRel(double dx, double dy, double dz) {
         Player p = getBukkitPlayer();
         NmsPlayerHandle sp = getHandle();
-        if (sp == null || p.isDead() || !p.isOnline() || p.getGameMode() == GameMode.SPECTATOR) return;
+        if (sp == null || p == null || !p.isOnline() || p.isDead() || p.getGameMode() == GameMode.SPECTATOR) return;
         if (manager != null && manager.getPlugin() != null && manager.getPlugin().getGameManager().getState() == com.rounds.game.GameManager.GameState.CARDS) return;
         if (com.rounds.listener.LegendaryEffects.isBulletTimeActiveFor(p.getUniqueId())
                 || p.hasPotionEffect(org.bukkit.potion.PotionEffectType.SLOW)) {

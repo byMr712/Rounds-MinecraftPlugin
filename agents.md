@@ -13,7 +13,7 @@
          options.release.set(17)
      }
      ```
-   - Toolchain использует JDK 25 для возможности линковки с NMS новейших серверов (Purpur 26.2), но финальный JAR обязан запускаться на серверах от Paper 1.20.4 до Purpur 26.2+.
+   - Тулчейн модулей: `rounds-core` и `rounds-api` используют toolchain Java 17, а NMS-модули новейших серверов (Purpur 26.2) могут использовать JDK 25 для линковки. Весь код компилируется строго в байткод **Java 17** (`major version: 61`, `options.release.set(17)`).
    - Classpath ordering: `paper-api:1.20.4` всегда ставится ПЕРВЫМ в classpath, чтобы сохранять Bukkit-константы 1.20.4 (`Attribute.GENERIC_MAX_HEALTH`, `Particle.EXPLOSION_HUGE`), избегая конфликтов с переименованными API в новых версиях.
 
 2. **Единый автономный плагин (Zero External Bridge):**
@@ -583,7 +583,7 @@ public enum BotPlaystyle {
       }
       ```
     - **Аудиоинтеграция:** Фоновая музыка раундов (`music1`..`music4`) транслируется потоком (`stream: true`). Звуковые события `block` и `saw` сопровождают парирование щитом и распил пилой. Ванильная фоновая музыка заглушается через `assets/minecraft/sounds.json` (32 события с пустым массивом звуков).
-    - **Скрипты сборки и верификации:** `build-cardpack.ps1` собирает ZIP с прямыми слэшами `/` и синхронизирует его на Desktop и во все инстансы ATLauncher; `test-cardpack.ps1` тестирует целостность и парсинг через нативные кодеки Mojang (`PackMetadataSection`) на Paper 1.21.4, Purpur 26.2 и Paper 26.3.
+    - **Скрипты сборки и верификации:** Кроссплатформенный Gradle-таск `./gradlew buildCardPack` (класс `CardPackBuilder` на базе чистого Java ImageIO/ZipOutputStream с флагами `-PdeployDesktop` и `-PdeployInstances`) и PowerShell-скрипт `build-cardpack.ps1` собирают ZIP-пакеты с прямыми слэшами `/` и синхронизируют их на Desktop и во все инстансы ATLauncher; `test-cardpack.ps1` тестирует целостность и парсинг через нативные кодеки Mojang (`PackMetadataSection`) на Paper 1.21.4, Purpur 26.2 и Paper 26.3.
 
 15. **Спецификация новых карт и механик оружия (New Cards & Weapon Mechanics):**
     - **Decay (Распад, id 15):** Входящий урон перехватывается, буферизуется в `LegendaryEffects.decayBuffers` и выплачивается равными долями каждые 5 тиков на протяжении 4 секунд (смягчение ваншотов). Не дает бонуса к HP. При убийстве долями атрибуция сохраняется за исходным атакующим.
@@ -603,5 +603,5 @@ public enum BotPlaystyle {
     - **JSON Schema валидация (`cards.schema.json`):** Единая схема валидации в корне проекта и в ресурсах плагина предоставляет автодополнение параметров карт, описание эффектов и подсветку ошибок в IntelliJ IDEA и VS Code (`# yaml-language-server: $schema=../../cards.schema.json`).
     - **Кроссплатформенная сборка ресурспаков (`CardPackBuilder`):** Таск `./gradlew buildCardPack` собирает ресурспаки на чистой Java (`ZipOutputStream`, `javax.imageio.ImageIO`) без зависимости от PowerShell или Windows GDI+, обеспечивая сборку на Linux, macOS и GitHub Actions.
     - **Быстрая сборка контрибьютора (`quickBuild`):** Таск `./gradlew quickBuild [-PtargetNms=...]` собирает ядро и один целевой NMS-модуль за 2-3 секунды вместо компиляции всех 17 версионных модулей.
-    - **Автоматический рендеринг текста на текстурах:** Инструмент `tools/generate_card_textures.py` на базе Pillow считывает имена и описания из YAML карт и автоматически запекает текст на PNG-текстуры карт в `cards/ru` и `cards/en`.
-    - **Непрерывная интеграция (CI):** В `.github/workflows/ci.yml` настроен пайплайн сборки, выполнения юнит-тестов и генерации ресурспаков на Java 17/25 при каждом Pull Request.
+    - **Автоматический рендеринг текста на текстурах:** Инструмент `tools/generate_card_textures.py` на базе Pillow считывает имена и описания из YAML всех 118 карт и запекает текст в HD-разрешении 320x500 (Lanczos) на PNG-текстуры карт в `cards/ru` и `cards/en`: заголовки выравниваются сверху (`y = 2px` для 2 строк, `y = 7px` для 1 строки), описания начинаются с `y = 310px` с 6-точечной тенью без плашки фона (`DRAW_DESC_BOX = false`), оставляя центральный арт полностью видимым.
+    - **Непрерывная интеграция (CI):** В `.github/workflows/ci.yml` настроен пайплайн на базе LTS Java 17, включающий выполнение юнит-тестов (`:rounds-api:test`, `:rounds-core:test`), сборку NMS 1.20.4 (`quickBuild -PtargetNms=1204`) и генерацию ресурспаков (`buildCardPack`) при каждом Pull Request.

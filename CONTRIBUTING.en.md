@@ -8,7 +8,7 @@ Thank you for your interest in contributing to the open-source Rounds plugin. Th
 The project uses Gradle with a multi-module architecture.
 
 ### Environment Requirements
-- **JDK 25** (to link against the newest server NMS mappings).
+- **JDK 17+** (`rounds-core` and `rounds-api` use Java 17 toolchain; JDK 25 is supported to link against newest Purpur 26.2 NMS mappings).
 - All source code strictly targets **Java 17** bytecode (`release = 17`).
 
 ### Key Gradle Commands
@@ -103,7 +103,7 @@ Run the texture generation tool:
 ```bash
 python tools/generate_card_textures.py
 ```
-This automatically bakes title and description text onto card PNG textures in `cards/ru` and `cards/en`.
+This automatically bakes title and description text for all 118 cards in HD 320x500 (Lanczos) onto card PNG textures in `cards/ru` and `cards/en` with high-contrast drop shadows without backdrop boxes.
 
 
 ## 3. Code Standards & Pull Request Guidelines

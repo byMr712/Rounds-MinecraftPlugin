@@ -23,12 +23,12 @@ A Minecraft plugin for the competitive mini-game [**ROUNDS**](https://store.stea
   - **In-World 3D Card Selection Scene:** Instead of a flat GUI inventory, players experience an interactive 3D semicircular showcase floating in the world via Text Display entities. Cards display their real graphic art through the custom bitmap font. The floating text description can be toggled via `card-display.show-floating-description: false` in `config.yml` when descriptions are drawn directly onto card face textures. Players can freely step closer to cards (up to 1.5m forward) for detailed inspection while remaining within the selection area boundary. Epic and Legendary cards feature active flame particles, selection is accompanied by carousel animation, and expiring timers trigger automatic random selection without kicking players from the server.
   - **Official Cross-Version Resource Pack (Rounds-CardPack.zip, -RU.zip, -EN.zip):**
     - Localized packs with language text on card faces: `Rounds-CardPack-RU.zip`, `Rounds-CardPack-EN.zip`, and default `Rounds-CardPack.zip` (source textures located in `test-servers/original_mod/cards/ru` and `en`).
-    - 117 high-resolution card textures mapped to the `rounds:default` font (private-use codepoints `\uE001` .. `\uE07F`).
+    - 118 high-resolution HD card textures (320x500 with Lanczos resampling) mapped to the `rounds:default` font (private-use codepoints `\uE001` .. `\uE07F`). Text is rendered with high-contrast drop shadows without backdrop boxes (`tools/generate_card_textures.py`), leaving central artwork 100% visible.
     - Dynamic round soundtracks: streamed background music tracks `music1` .. `music4` during combat rounds.
     - Combat sound effects: shield parry sound (`block.ogg`) and saw continuous cutting sound (`saw.ogg`).
     - Vanilla Minecraft background music silencer (32 sound events muted in `assets/minecraft/sounds.json`), preventing audio clashes.
     - Universal `pack.mcmeta` specification guaranteeing zero compatibility errors across all clients and servers from 1.20.4 to 26.3 (`pack_format: 22`, `supported_formats: [22, 99]`, `min_format: 22`, `max_format: 99`).
-    - Automated resource pack build and synchronization script to Desktop and ATLauncher instances (`build-cardpack.ps1`).
+    - Cross-platform resource pack builder via Gradle (`./gradlew buildCardPack -PdeployDesktop -PdeployInstances`) and `build-cardpack.ps1` script with automatic deployment to Desktop and ATLauncher client instances.
   - **New Cards and Combat Mechanics:**
     - **Decay:** Buffers all incoming player damage and distributes it as gradual damage-over-time ticks across 4 seconds (softening burst damage and one-shots). Features 4 stacking variations (3, 4, 5, 6 seconds).
     - **Echo:** When blocking with the shield, automatically triggers a second shield block pulse 1 second (20 ticks) later without consuming extra cooldowns.

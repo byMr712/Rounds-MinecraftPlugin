@@ -428,6 +428,7 @@ public class GunItem implements Listener {
         if (data.tacticalReload > 0) {
             data.ammo = data.maxAmmo;
             cancelReload(uuid);
+            GunCooldowns.clear(uuid);
         }
 
         Location blockLoc = player.getLocation();
@@ -903,7 +904,7 @@ public class GunItem implements Listener {
                     data.executeTriggers(com.rounds.cards.CardTrigger.ON_RELOAD, player, null, 1.0);
                     reloadingPlayers.remove(uuid);
                     reloadTasks.remove(uuid);
-                    GunCooldowns.recordShot(uuid);
+                    GunCooldowns.clear(uuid);
                     player.sendActionBar(ChatColor.GREEN + Messages.get("gun.reloaded", (int) data.ammo));
                     player.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_LOADING_END, SoundCategory.RECORDS, 1f, 1.2f);
                     cancel();

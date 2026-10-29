@@ -163,14 +163,23 @@ public class CardDisplayManager implements Listener {
     private void hideOtherPlayers(Player viewer) {
         for (Player other : Bukkit.getOnlinePlayers()) {
             if (other.getUniqueId().equals(viewer.getUniqueId())) continue;
-            viewer.hidePlayer(plugin, other);
+            try {
+                viewer.hideEntity(plugin, other);
+            } catch (Throwable t) {
+                viewer.hidePlayer(plugin, other);
+            }
         }
     }
 
     private void showOtherPlayers(Player viewer) {
         for (Player other : Bukkit.getOnlinePlayers()) {
             if (other.getUniqueId().equals(viewer.getUniqueId())) continue;
-            viewer.showPlayer(plugin, other);
+            try {
+                viewer.showEntity(plugin, other);
+            } catch (Throwable ignored) {}
+            try {
+                viewer.showPlayer(plugin, other);
+            } catch (Throwable ignored) {}
         }
     }
 

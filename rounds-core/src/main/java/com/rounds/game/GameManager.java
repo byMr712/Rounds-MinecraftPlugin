@@ -389,6 +389,8 @@ public class GameManager implements Listener {
                 plugin.getCardManager().openCardSelection(p, team);
             }
         }
+        showNameTagsInGame();
+        updateScoreboard();
         saveState();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
@@ -1094,11 +1096,14 @@ public class GameManager implements Listener {
                 int memberIdx = roundTeamMemberCount.getOrDefault(team, 0);
                 roundTeamMemberCount.put(team, memberIdx + 1);
                 Location spawn = getTeammateSpawnLocation(baseSpawn, memberIdx);
+                Location curLoc = p.getLocation();
+                spawn.setYaw(curLoc.getYaw());
+                spawn.setPitch(curLoc.getPitch());
                 p.teleport(spawn);
                 com.rounds.bot.FakeBot bot = (plugin.getBotManager() != null) ? plugin.getBotManager().getBot(p.getName()) : null;
                 if (bot != null) {
                     bot.resetPhysics();
-                    bot.setRotation(spawn.getYaw(), spawn.getPitch());
+                    bot.setRotation(curLoc.getYaw(), curLoc.getPitch());
                 }
                 p.setAllowFlight(false);
                 p.setFlying(false);
@@ -1404,6 +1409,7 @@ public class GameManager implements Listener {
 
         scheduleDelayed(() -> {
             state = GameState.CARDS;
+            deadPlayers.clear();
             saveState();
             musicTick = 0;
             plugin.getCardManager().clearPendingPicks();
@@ -1412,6 +1418,9 @@ public class GameManager implements Listener {
             for (Player p : plugin.getServer().getOnlinePlayers()) {
                 GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
                 if (team != null) {
+                    p.setGameMode(GameMode.ADVENTURE);
+                    p.setAllowFlight(false);
+                    p.setFlying(false);
                     Location spawn = teamSpawns.get(team);
                     if (spawn != null) {
                         p.teleport(spawn);
@@ -1439,6 +1448,7 @@ public class GameManager implements Listener {
                 }
             }
             openCardGUIs();
+            showNameTagsInGame();
             updateScoreboard();
         }, 60L);
     }
@@ -1457,6 +1467,7 @@ public class GameManager implements Listener {
 
         scheduleDelayed(() -> {
             state = GameState.CARDS;
+            deadPlayers.clear();
             saveState();
             musicTick = 0;
             plugin.getCardManager().clearPendingPicks();
@@ -1465,6 +1476,9 @@ public class GameManager implements Listener {
             for (Player p : plugin.getServer().getOnlinePlayers()) {
                 GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
                 if (team != null) {
+                    p.setGameMode(GameMode.ADVENTURE);
+                    p.setAllowFlight(false);
+                    p.setFlying(false);
                     Location spawn = teamSpawns.get(team);
                     if (spawn != null) {
                         p.teleport(spawn);
@@ -1492,6 +1506,7 @@ public class GameManager implements Listener {
                 }
             }
             openCardGUIs(true);
+            showNameTagsInGame();
             updateScoreboard();
         }, 60L);
     }
@@ -1626,7 +1641,13 @@ public class GameManager implements Listener {
                     p.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
                     Location safe = teamSpawns.get(team);
                     if (safe != null && safe.getWorld() != null && safe.getWorld().equals(p.getWorld())) {
-                        p.teleport(safe);
+                        Location cur = p.getLocation();
+                        if (cur.distanceSquared(safe) > 1.0) {
+                            safe = safe.clone();
+                            safe.setYaw(cur.getYaw());
+                            safe.setPitch(cur.getPitch());
+                            p.teleport(safe);
+                        }
                     }
                     sendEnemyPickingCardsTitle(p, 100);
                 } else {
@@ -1827,6 +1848,8 @@ public class GameManager implements Listener {
         if (deadTeam == null) return;
         event.getDrops().clear();
         event.setDroppedExp(0);
+        String vanillaDeathMsg = event.getDeathMessage();
+        event.setDeathMessage(null);
 
         PlayerData deadData = plugin.getPlayerDataManager().getData(dead);
         if (deadData.phoenixUses > 0) {
@@ -1892,12 +1915,24 @@ public class GameManager implements Listener {
                 }
             }
         }
+
+        String loggedDeathMsg = (vanillaDeathMsg != null && !vanillaDeathMsg.isBlank())
+                ? vanillaDeathMsg
+                : ((killer != null)
+                        ? dead.getName() + " was eliminated by " + killer.getName()
+                        : dead.getName() + " was eliminated");
+        plugin.getLogger().info("[Death] " + ChatColor.stripColor(loggedDeathMsg));
+        try {
+            if (com.rounds.debug.DebugSession.active) {
+                com.rounds.debug.DebugLog.log("GAME", "DEATH: " + ChatColor.stripColor(loggedDeathMsg));
+            }
+        } catch (Throwable ignored) {}
+
         if (killer != null) {
             GameTeam killerTeam = plugin.getTeamManager().getPlayerTeam(killer.getUniqueId());
             PlayerData killerData = plugin.getPlayerDataManager().getData(killer);
             if (killerTeam != null && killerTeam != deadTeam) {
                 com.rounds.stats.MatchStatsManager.recordKill(killer.getUniqueId());
-                killer.sendMessage(ChatColor.GREEN + Messages.get("game.eliminated", dead.getName()));
                 if (killerData.refresh > 0) {
                     killerData.ammo = killerData.maxAmmo;
                     GunItem.cancelReload(killer.getUniqueId());
@@ -1909,7 +1944,6 @@ public class GameManager implements Listener {
                 }
             }
         }
-        dead.sendMessage(ChatColor.RED + Messages.get("game.you-eliminated"));
         checkRoundEnd();
     }
 

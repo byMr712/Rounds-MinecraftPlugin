@@ -299,9 +299,9 @@ public class CardDisplayManager implements Listener {
             double fwd = dx * fx + dz * fz;
             double side = dx * rx + dz * rz;
 
-            // Allow approaching cards closer (up to 1.50m forward, cards are at 2.2m),
+            // Allow approaching cards closer (up to 2.00m forward, cards are at 2.2m),
             // and stepping backward with extra room (up to 1.50m backward). Lateral strafe limit 1.50m.
-            if (fwd < -1.50 || fwd > 1.50) return false;
+            if (fwd < -1.50 || fwd > 2.00) return false;
             if (Math.abs(side) > 1.50) return false;
             return true;
         }
@@ -323,7 +323,7 @@ public class CardDisplayManager implements Listener {
                     double fwd = dx * fx + dz * fz;
                     double side = dx * rx + dz * rz;
 
-                    boolean inWalkZone = (fwd >= -1.65 && fwd <= 1.65 && Math.abs(side) <= 1.65);
+                    boolean inWalkZone = (fwd >= -1.65 && fwd <= 2.15 && Math.abs(side) <= 1.65);
                     if (inWalkZone) {
                         // Protect floor: if non-solid (slope, drop-off, jump-pad abyss), place barrier floor
                         Location floorLoc = new Location(world, x, floorY, z);
@@ -331,7 +331,7 @@ public class CardDisplayManager implements Listener {
                             fakeBarriers.add(floorLoc);
                             player.sendBlockChange(floorLoc, Material.BARRIER.createBlockData());
                         }
-                    } else if (fwd >= -2.4 && fwd <= 2.4 && Math.abs(side) <= 2.4) {
+                    } else if (fwd >= -2.4 && fwd <= 2.9 && Math.abs(side) <= 2.4) {
                         // Outer boundary perimeter: invisible barrier walls (2 blocks high) to prevent stepping off
                         for (int y = floorY + 1; y <= floorY + 2; y++) {
                             Location wallLoc = new Location(world, x, y, z);

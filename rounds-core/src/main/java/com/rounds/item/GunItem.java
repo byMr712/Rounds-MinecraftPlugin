@@ -151,7 +151,7 @@ public class GunItem implements Listener {
 
         boolean overheated = false;
         boolean bloodShot = false;
-        if (data.ammo <= 0) {
+        if (data.ammo < 1.0) {
             if (data.overheat > 0) {
                 overheated = true;
             } else if (data.bloodCartridge > 0) {
@@ -261,6 +261,7 @@ public class GunItem implements Listener {
 
         if (!overheated && !bloodShot) {
             data.ammo -= 1;
+            if (data.ammo < 0) data.ammo = 0;
         }
         if (data.hpCost > 0 && player.isOnline() && player.isValid()) {
             player.setNoDamageTicks(0);
@@ -643,6 +644,10 @@ public class GunItem implements Listener {
             player.sendActionBar(ChatColor.RED + Messages.get("gun.party-locked"));
             return;
         }
+        if (isReloading(uuid)) {
+            return;
+        }
+        cancelReload(uuid);
         reloadingPlayers.add(uuid);
         // Крупная пуля замедляет перезарядку: +30% за каждую выбранную карту.
         double bigPenalty = data.bigBullet > 0 ? 1.0 + 0.3 * data.bigBullet : 1.0;
@@ -877,7 +882,8 @@ public class GunItem implements Listener {
                     data.ammo = data.maxAmmo;
                     data.executeTriggers(com.rounds.cards.CardTrigger.ON_RELOAD, player, null, 1.0);
                     reloadingPlayers.remove(uuid);
-            reloadTasks.remove(uuid);
+                    reloadTasks.remove(uuid);
+                    GunCooldowns.recordShot(uuid);
                     player.sendActionBar(ChatColor.GREEN + Messages.get("gun.reloaded", (int) data.ammo));
                     player.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_LOADING_END, SoundCategory.RECORDS, 1f, 1.2f);
                     cancel();

@@ -979,10 +979,12 @@ public class RoundsEntities implements Listener {
             double before = data.ammo;
             data.ammo = Math.min(data.ammo + data.ammoPerHit * b.stack, data.maxAmmo);
             if (data.ammo > before && shooterPlayer != null && shooterPlayer.isOnline()) {
-                if (GunItem.isReloading(ownerId)) {
+                if (data.ammo >= data.maxAmmo && GunItem.isReloading(ownerId)) {
                     GunItem.cancelReload(ownerId);
                 }
-                shooterPlayer.sendActionBar(ChatColor.GRAY + Messages.get("gun.ammo-display", (int) data.ammo, (int) data.maxAmmo));
+                if (!GunItem.isReloading(ownerId)) {
+                    shooterPlayer.sendActionBar(ChatColor.GRAY + Messages.get("gun.ammo-display", (int) data.ammo, (int) data.maxAmmo));
+                }
                 shooterPlayer.playSound(shooterPlayer.getLocation(), Sound.ENTITY_ITEM_PICKUP, SoundCategory.RECORDS, 0.7f, 1.5f);
             }
         }

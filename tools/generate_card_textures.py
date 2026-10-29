@@ -221,24 +221,19 @@ def render_card(base_image_path, title, desc, rarity, out_path, target_size=CARD
         ty = int(3.5 * sy)
         line_h = int(font_size * 1.1)
     else:
-        title_lines = wrap_text(clean_title, max_chars=17)
-        font_size = max(9, int(9.5 * sy))
+        font_size = max(9, int(10.5 * sy))
         while font_size > int(7 * sy):
             title_font = get_font(font_size, bold=True)
-            fits = True
-            for line in title_lines[:2]:
-                l_bbox = draw.textbbox((0, 0), line, font=title_font)
-                if (l_bbox[2] - l_bbox[0]) > max_title_w:
-                    fits = False
-                    break
-            if fits:
+            lines = wrap_text_px(clean_title, title_font, max_title_w, draw)
+            if len(lines) <= 2:
                 break
             font_size -= 1
+        title_lines = wrap_text_px(clean_title, title_font, max_title_w, draw)
         ty = int(1.0 * sy)
         line_h = int(font_size * 1.05)
 
     title_bottom = ty
-    for line in title_lines[:2]:
+    for line in title_lines:
         bbox = draw.textbbox((0, 0), line, font=title_font)
         tw = bbox[2] - bbox[0]
         tx = max(int(4 * sx), (w - tw) // 2)

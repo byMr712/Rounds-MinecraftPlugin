@@ -360,6 +360,54 @@ public class CardPackBuilder {
                 sb.append("}\n");
                 writeEntry(zos, "assets/minecraft/sounds.json", sb.toString().getBytes(StandardCharsets.UTF_8));
             }
+
+            // 5. Weapon 3D model and textures
+            Path gunDir = root.resolve("test-servers").resolve("original_mod").resolve("gun");
+            Path gunModelPath = gunDir.resolve("models").resolve("item").resolve("gun.json");
+            Path gunTexPath = gunDir.resolve("textures").resolve("item").resolve("piton.png");
+            if (Files.exists(gunModelPath) && Files.exists(gunTexPath)) {
+                writeEntry(zos, "assets/rounds/textures/item/piton.png", Files.readAllBytes(gunTexPath));
+                writeEntry(zos, "assets/rounds/models/item/gun.json", Files.readAllBytes(gunModelPath));
+
+                // Legacy model override (Minecraft 1.20.4 - 1.21.3)
+                String stickModelJson = "{\n" +
+                        "  \"parent\": \"minecraft:item/handheld\",\n" +
+                        "  \"textures\": {\n" +
+                        "    \"layer0\": \"minecraft:item/stick\"\n" +
+                        "  },\n" +
+                        "  \"overrides\": [\n" +
+                        "    {\n" +
+                        "      \"predicate\": {\n" +
+                        "        \"custom_model_data\": 1\n" +
+                        "      },\n" +
+                        "      \"model\": \"rounds:item/gun\"\n" +
+                        "    }\n" +
+                        "  ]\n" +
+                        "}\n";
+                writeEntry(zos, "assets/minecraft/models/item/stick.json", stickModelJson.getBytes(StandardCharsets.UTF_8));
+
+                // Modern item model definition (Minecraft 1.21.4+)
+                String stickItemDefJson = "{\n" +
+                        "  \"model\": {\n" +
+                        "    \"type\": \"minecraft:range_dispatch\",\n" +
+                        "    \"property\": \"minecraft:custom_model_data\",\n" +
+                        "    \"fallback\": {\n" +
+                        "      \"type\": \"minecraft:model\",\n" +
+                        "      \"model\": \"minecraft:item/stick\"\n" +
+                        "    },\n" +
+                        "    \"entries\": [\n" +
+                        "      {\n" +
+                        "        \"threshold\": 1.0,\n" +
+                        "        \"model\": {\n" +
+                        "          \"type\": \"minecraft:model\",\n" +
+                        "          \"model\": \"rounds:item/gun\"\n" +
+                        "        }\n" +
+                        "      }\n" +
+                        "    ]\n" +
+                        "  }\n" +
+                        "}\n";
+                writeEntry(zos, "assets/minecraft/items/stick.json", stickItemDefJson.getBytes(StandardCharsets.UTF_8));
+            }
         }
 
         byte[] zipBytes = baos.toByteArray();

@@ -183,10 +183,10 @@ public class CardManager {
         if (!revealed) {
             String lang = Messages.getLanguageCode();
             ChatColor teamColor = (team != null) ? team.getColor() : ChatColor.YELLOW;
-            String rawMsg = Messages.get("card.picked", player.getName(),
-                    ChatColor.stripColor(card.getName(lang)),
-                    ChatColor.stripColor(card.getDescription(lang)));
-            plugin.getServer().broadcastMessage(teamColor + ChatColor.stripColor(rawMsg));
+            String cardName = stripAllColors(card.getName(lang));
+            String cardDesc = stripAllColors(card.getDescription(lang));
+            String rawMsg = Messages.get("card.picked", player.getName(), cardName, cardDesc);
+            plugin.getServer().broadcastMessage(teamColor + stripAllColors(rawMsg));
         }
 
         if (allPicksDone()) {
@@ -292,14 +292,19 @@ public class CardManager {
                 bonus.apply(player, data);
                 data.setCard(bonus.getId(), true);
                 syncPlayerHP(player, data);
-                String rawMsg = Messages.get("card.picked", player.getName(),
-                        ChatColor.stripColor(bonus.getName(lang)),
-                        ChatColor.stripColor(bonus.getDescription(lang)));
-                plugin.getServer().broadcastMessage(teamColor + ChatColor.stripColor(rawMsg));
+                String cardName = stripAllColors(bonus.getName(lang));
+                String cardDesc = stripAllColors(bonus.getDescription(lang));
+                String rawMsg = Messages.get("card.picked", player.getName(), cardName, cardDesc);
+                plugin.getServer().broadcastMessage(teamColor + stripAllColors(rawMsg));
                 revealedAny = true;
             }
         }
         return revealedAny;
+    }
+
+    private static String stripAllColors(String text) {
+        if (text == null) return "";
+        return ChatColor.stripColor(ChatColor.translateAlternateColorCodes('&', text));
     }
 
     public void resetAllCards() {

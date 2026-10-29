@@ -3,33 +3,25 @@ name:
   ru: "&aТётя Зина"
   en: "&aAunt Zina"
 description:
-  ru: "+{v} ХП, регенерация при блоке"
-  en: "+{v} HP, regeneration on block"
+  ru: "Регенерация при блоке"
+  en: "Regeneration on block"
 material: BREAD
 enabled: true
 art: card28.png
 variations:
   - rarity: UNCOMMON
     art: card99-uncommon
-    value: "15%"
     effects:
-      hp: 0.15
       heal: 1
   - rarity: COMMON
     art: card99-common
-    value: "8%"
     effects:
-      hp: 0.08
       heal: 1
   - rarity: RARE
     art: card99-rare
-    value: "25%"
     effects:
-      hp: 0.25
       heal: 1
   - rarity: EPIC
     art: card99-epic
-    value: "35%"
     effects:
-      hp: 0.35
       heal: 1

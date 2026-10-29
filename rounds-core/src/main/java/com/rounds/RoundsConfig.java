@@ -97,7 +97,7 @@ public final class RoundsConfig {
         baseGunCooldown = c.contains("gun.base-cooldown")
                 ? c.getDouble("gun.base-cooldown")
                 : c.getDouble("defaults.attack-speed", 20);
-        gunMaterial = c.getString("gun.material", "CROSSBOW");
+        gunMaterial = c.getString("gun.material", "STICK");
 
         cardSelectionCount = c.getInt("cards.selection-count", 5);
         weightedRarity = c.getBoolean("cards.weighted-rarity", true);
@@ -180,7 +180,8 @@ public final class RoundsConfig {
     public int getCardSelectionTicks() { return cardSelectionTicks; }
     public int getRespawnDelayTicks() { return respawnDelayTicks; }
     public double getBaseGunCooldown() { return baseGunCooldown; }
-    public String getGunMaterial() { return gunMaterial; }
+    public String getGunMaterial() { return gunMaterial != null ? gunMaterial : "STICK"; }
+    public void setGunMaterial(String gunMaterial) { this.gunMaterial = gunMaterial; }
     public int getCardSelectionCount() { return cardSelectionCount; }
     public boolean isWeightedRarity() { return weightedRarity; }
     public boolean isBuiltinScoreboard() { return builtinScoreboard; }

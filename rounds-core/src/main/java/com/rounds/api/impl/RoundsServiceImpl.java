@@ -192,6 +192,25 @@ public class RoundsServiceImpl implements RoundsService {
     }
 
     @Override
+    public org.bukkit.Material getGunMaterial() {
+        if (plugin.getRoundsConfig() != null) {
+            String matName = plugin.getRoundsConfig().getGunMaterial();
+            try {
+                return org.bukkit.Material.valueOf(matName.toUpperCase());
+            } catch (Exception ignored) {}
+        }
+        return org.bukkit.Material.STICK;
+    }
+
+    @Override
+    public void setGunMaterial(org.bukkit.Material material) {
+        Objects.requireNonNull(material, "Material cannot be null");
+        if (plugin.getRoundsConfig() != null) {
+            plugin.getRoundsConfig().setGunMaterial(material.name());
+        }
+    }
+
+    @Override
     public boolean runSync(Runnable task) {
         Objects.requireNonNull(task, "Task cannot be null");
         if (!plugin.isEnabled()) return false;

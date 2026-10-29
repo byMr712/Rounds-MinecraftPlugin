@@ -3,8 +3,8 @@ name:
   ru: "&6Сияние"
   en: "&6Radiance"
 description:
-  ru: "Противники светятся при блоке, +50% ХП"
-  en: "Enemies glow when you block, +50% HP"
+  ru: "Противники светятся при блоке"
+  en: "Enemies glow when you block"
 material: LIGHT
 enabled: true
 art: card43.png
@@ -13,4 +13,3 @@ variations:
     art: card43-rare
     effects:
       radiance: 1
-      hp: 0.5

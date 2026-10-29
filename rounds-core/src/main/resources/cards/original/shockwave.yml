@@ -3,8 +3,8 @@ name:
   ru: "&cУдарная волна"
   en: "&cShockwave"
 description:
-  ru: "Отбрасывает врагов при блоке, +50% ХП"
-  en: "Push enemies on block, +50% HP"
+  ru: "Отбрасывает врагов при блоке"
+  en: "Push enemies on block"
 material: BREWING_STAND
 enabled: true
 art: card16.png
@@ -13,4 +13,3 @@ variations:
     art: card51-rare
     effects:
       shockwave: 1
-      hp: 0.5

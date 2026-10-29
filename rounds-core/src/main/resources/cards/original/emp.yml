@@ -3,8 +3,8 @@ name:
   ru: "&cЭМИ"
   en: "&cEMP"
 description:
-  ru: "Кольцо замедления при блоке, +50% ХП"
-  en: "Slowing ring on block, +50% HP"
+  ru: "Кольцо замедления при блоке"
+  en: "Slowing ring on block"
 material: COMPARATOR
 enabled: true
 art: card20.png
@@ -13,4 +13,3 @@ variations:
     art: card20-rare
     effects:
       emp: 1
-      hp: 0.5

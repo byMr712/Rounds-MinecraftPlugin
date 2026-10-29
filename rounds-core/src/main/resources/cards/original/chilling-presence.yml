@@ -3,8 +3,8 @@ name:
   ru: "&bЗапредельный холод"
   en: "&bChilling Presence"
 description:
-  ru: "Замедляет ближайших врагов, +25% ХП"
-  en: "Slow nearby enemies, +25% HP"
+  ru: "Замедляет ближайших врагов"
+  en: "Slow nearby enemies"
 material: SNOWBALL
 enabled: true
 art: card11.png
@@ -13,4 +13,3 @@ variations:
     art: card11-rare
     effects:
       cold: 1
-      hp: 0.25

@@ -81,6 +81,21 @@ public interface RoundsService {
     boolean isMatchRunning();
 
     /**
+     * Возвращает текущий материал предмета оружия (по умолчанию Material.STICK).
+     *
+     * @return материал оружия.
+     */
+    org.bukkit.Material getGunMaterial();
+
+    /**
+     * Устанавливает кастомный материал оружия для матчей.
+     *
+     * @param material новый материал оружия.
+     * @throws NullPointerException если material == null.
+     */
+    void setGunMaterial(org.bukkit.Material material);
+
+    /**
      * Выполняет задачу в основном потоке сервера.
      *
      * @param task исполняемая задача.

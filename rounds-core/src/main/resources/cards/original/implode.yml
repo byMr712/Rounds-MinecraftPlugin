@@ -3,8 +3,8 @@ name:
   ru: "&4Сжатие"
   en: "&4Implode"
 description:
-  ru: "Притягивает врагов при блоке, +50% ХП"
-  en: "Pull enemies on block, +50% HP"
+  ru: "Притягивает врагов при блоке"
+  en: "Pull enemies on block"
 material: MAGMA_CREAM
 enabled: true
 art: card31.png
@@ -13,4 +13,3 @@ variations:
     art: card31-rare
     effects:
       implode: 1
-      hp: 0.5

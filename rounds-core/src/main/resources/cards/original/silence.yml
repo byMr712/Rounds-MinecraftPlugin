@@ -3,8 +3,8 @@ name:
   ru: "&8Тишина"
   en: "&8Silence"
 description:
-  ru: "Блокирует способности врагов при блоке, +25% ХП"
-  en: "Silence enemies on block, +25% HP"
+  ru: "Блокирует способности врагов при блоке"
+  en: "Silence enemies on block"
 material: OBSIDIAN
 enabled: true
 art: card20.png
@@ -13,4 +13,3 @@ variations:
     art: card52-rare
     effects:
       silence: 1
-      hp: 0.25

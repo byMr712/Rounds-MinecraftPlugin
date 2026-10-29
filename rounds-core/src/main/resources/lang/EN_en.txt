@@ -6,8 +6,8 @@
 gun:
   name: "Gun"
   lore-1: "Rounds Gun"
-  lore-2: "LMB: shoot | RMB: block | Q: reload"
-  no-ammo: "No ammo! Press Q to reload."
+  lore-2: "LMB: shoot | RMB: block"
+  no-ammo: "No ammo! Reloading..."
   ammo-display: "Ammo: {0}/{1}"
   already-loaded: "Already fully loaded!"
   reloading: "Reloading..."
@@ -113,7 +113,7 @@ card:
   timeout-kick: "You did not choose an upgrade card in {0} seconds"
   click-to-select: "Click to select"
   applied: "Applied card: {0}"
-  picked: "&e{0} picks card \u2014 {1}: {2}"
+  picked: "{0} picks card \u2014 {1}: {2}"
   bonus-received: "&6You also received: {0}"
 
   show-prev: "← Previous page ({0}/{1})"

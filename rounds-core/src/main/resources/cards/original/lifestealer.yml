@@ -3,8 +3,8 @@ name:
   ru: "&4Высасыватель жизни"
   en: "&4Lifestealer"
 description:
-  ru: "Крадёт ХП рядом с врагом, +25% ХП"
-  en: "Steal HP when near enemy, +25% HP"
+  ru: "Крадёт ХП рядом с врагом"
+  en: "Steal HP when near enemy"
 material: NETHER_WART
 enabled: true
 art: card33.png
@@ -13,4 +13,3 @@ variations:
     art: card33-rare
     effects:
       lifesteal_aura: 1
-      hp: 0.25

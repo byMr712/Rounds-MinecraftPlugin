@@ -212,7 +212,6 @@ teams:
 
 # Weapon and shield settings
 gun:
-  material: CROSSBOW     # Primary weapon item material
   base-cooldown: 20      # Attack cooldown in ticks
 
 shield:

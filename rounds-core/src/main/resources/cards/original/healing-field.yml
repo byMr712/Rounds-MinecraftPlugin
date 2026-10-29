@@ -3,8 +3,8 @@ name:
   ru: "&aИсцеляющее поле"
   en: "&aHealing Field"
 description:
-  ru: "Аура исцеления по блоку, +50% ХП"
-  en: "Healing aura on block, +50% HP"
+  ru: "Аура исцеления по блоку"
+  en: "Healing aura on block"
 material: GOLDEN_APPLE
 enabled: true
 art: card28.png
@@ -13,4 +13,3 @@ variations:
     art: card28-rare
     effects:
       heal: 1
-      hp: 0.5

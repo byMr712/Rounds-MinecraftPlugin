@@ -70,12 +70,12 @@ public class GunItem implements Listener {
     public static ItemStack createGunItem() {
         String materialName = (plugin != null && plugin.getRoundsConfig() != null)
                 ? plugin.getRoundsConfig().getGunMaterial()
-                : "CROSSBOW";
+                : "STICK";
         Material mat;
         try {
             mat = Material.valueOf(materialName.toUpperCase());
         } catch (IllegalArgumentException e) {
-            mat = Material.CROSSBOW;
+            mat = Material.STICK;
         }
         ItemStack item = new ItemStack(mat);
         ItemMeta meta = item.getItemMeta();
@@ -88,6 +88,12 @@ public class GunItem implements Listener {
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         meta.addAttributeModifier(Attribute.GENERIC_ATTACK_DAMAGE, new AttributeModifier(UUID.nameUUIDFromBytes("rounds_gun_damage".getBytes()), "rounds_gun_damage", 0.0, AttributeModifier.Operation.ADD_NUMBER, EquipmentSlot.HAND));
         meta.getPersistentDataContainer().set(RoundsKeys.GUN, PersistentDataType.BYTE, (byte) 1);
+        int customModelData = (plugin != null && plugin.getConfig() != null)
+                ? plugin.getConfig().getInt("gun.custom-model-data", 1)
+                : 1;
+        if (customModelData > 0) {
+            meta.setCustomModelData(customModelData);
+        }
         item.setItemMeta(meta);
         return item;
     }
@@ -635,6 +641,21 @@ public class GunItem implements Listener {
         ItemStack item = event.getItemDrop().getItemStack();
         if (!isGun(item)) return;
         event.setCancelled(true);
+    }
+
+    @EventHandler
+    public void onInventoryClick(org.bukkit.event.inventory.InventoryClickEvent event) {
+        if (event.getCurrentItem() != null && isGun(event.getCurrentItem())) {
+            if (event.getClick() == org.bukkit.event.inventory.ClickType.DROP
+                    || event.getClick() == org.bukkit.event.inventory.ClickType.CONTROL_DROP) {
+                event.setCancelled(true);
+            }
+        }
+        if (event.getCursor() != null && isGun(event.getCursor())) {
+            if (event.getSlot() == -999) {
+                event.setCancelled(true);
+            }
+        }
     }
 
     public void startReload(Player player, PlayerData data) {

@@ -185,7 +185,7 @@ public final class FrostBiteAddon extends JavaPlugin { // Главный кла�
                 } // Закрытие условия проверки живой цели
                 var loc = event.getHitLocation(); // Координаты трехмерной точки соприкосновения пули
                 loc.getWorld().spawnParticle(Particle.SNOWFLAKE, loc, 15, 0.3, 0.3, 0.3, 0.05); // Эффект снежинок
-                loc.getWorld().playSound(loc, Sound.BLOCK_GLASS_BREAK, 1.0f, 1.4f); // Звуковой эффект раскола льда
+                loc.getWorld().playSound(loc, Sound.BLOCK_GLASS_BREAK, SoundCategory.RECORDS, 1.0f, 1.4f); // Звуковой эффект раскола льда (категория RECORDS для ползунка нотных блоков)
             }) // Закрытие лямбда-выражения перехвата попадания
             .register(); // Сборка экземпляра карты и ее регистрация в драфте Rounds
 

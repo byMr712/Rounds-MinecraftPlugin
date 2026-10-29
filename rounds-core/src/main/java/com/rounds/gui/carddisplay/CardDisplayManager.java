@@ -21,8 +21,10 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +44,7 @@ public class CardDisplayManager implements Listener {
 
     private final RoundsPlugin plugin;
     private final Map<UUID, Scene> scenes = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> lastCardPickMs = new ConcurrentHashMap<>();
 
     private static final int SLOT_COUNT = 5;
     private static final double RADIUS = 2.2;
@@ -64,6 +67,8 @@ public class CardDisplayManager implements Listener {
         close(player.getUniqueId());
         Scene scene = new Scene(player, cards);
         scenes.put(player.getUniqueId(), scene);
+        player.setAllowFlight(true);
+        player.setFlying(true);
         scene.begin();
         hideOtherPlayers(player);
     }
@@ -76,6 +81,27 @@ public class CardDisplayManager implements Listener {
     public void close(UUID playerId) {
         if (playerId == null) return;
         cleanupPlayer(playerId);
+    }
+
+    public boolean hasActiveScene(UUID uuid) {
+        return uuid != null && scenes.containsKey(uuid);
+    }
+
+    public Location getSceneOrigin(UUID uuid) {
+        if (uuid == null) return null;
+        Scene s = scenes.get(uuid);
+        return s != null ? s.origin : null;
+    }
+
+    public boolean isCardClickRecent(UUID uuid) {
+        if (uuid == null) return false;
+        Long t = lastCardPickMs.get(uuid);
+        if (t == null) return false;
+        if (System.currentTimeMillis() - t < 500) {
+            return true;
+        }
+        lastCardPickMs.remove(uuid);
+        return false;
     }
 
     public boolean isWithinSelectionBounds(Player player, Location to) {
@@ -100,7 +126,21 @@ public class CardDisplayManager implements Listener {
     public void cleanupPlayer(UUID uuid) {
         if (uuid == null) return;
         Scene s = scenes.remove(uuid);
-        if (s != null) s.dispose();
+        if (s != null) {
+            s.dispose();
+            Player p = Bukkit.getPlayer(uuid);
+            if (p != null && p.isOnline()) {
+                if (s.origin != null && s.origin.getWorld() != null && s.origin.getWorld().equals(p.getWorld())) {
+                    Location returnLoc = s.origin.clone();
+                    returnLoc.setYaw(p.getLocation().getYaw());
+                    returnLoc.setPitch(p.getLocation().getPitch());
+                    p.teleport(returnLoc);
+                }
+                p.setVelocity(new Vector(0, 0, 0));
+                p.setFlying(false);
+                p.setAllowFlight(false);
+            }
+        }
         Player p = Bukkit.getPlayer(uuid);
         if (p != null) {
             showOtherPlayers(p);
@@ -131,6 +171,7 @@ public class CardDisplayManager implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
+        lastCardPickMs.remove(event.getPlayer().getUniqueId());
         cleanupPlayer(event.getPlayer().getUniqueId());
     }
 
@@ -145,12 +186,13 @@ public class CardDisplayManager implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onLeftClick(PlayerInteractEvent event) {
         Scene scene = scenes.get(event.getPlayer().getUniqueId());
         if (scene == null) return;
         if (event.getAction() != Action.LEFT_CLICK_AIR && event.getAction() != Action.LEFT_CLICK_BLOCK) return;
         event.setCancelled(true);
+        lastCardPickMs.put(event.getPlayer().getUniqueId(), System.currentTimeMillis());
         if (scene.hovered >= 0) {
             scene.select(scene.hovered);
         }
@@ -165,7 +207,16 @@ public class CardDisplayManager implements Listener {
         if (slot >= 0 && slot < scene.cards.size()) {
             event.setCancelled(true);
             player.getInventory().setHeldItemSlot(event.getPreviousSlot());
+            lastCardPickMs.put(player.getUniqueId(), System.currentTimeMillis());
             scene.select(slot);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onToggleFlight(PlayerToggleFlightEvent event) {
+        if (scenes.containsKey(event.getPlayer().getUniqueId())) {
+            event.setCancelled(true);
+            event.getPlayer().setFlying(true);
         }
     }
 

@@ -11,6 +11,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.SoundCategory;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
@@ -153,7 +154,7 @@ public class YamlCustomCardLoader {
 
                 // Sound
                 if (finalHitTrigger.sound != null && loc.getWorld() != null) {
-                    loc.getWorld().playSound(loc, finalHitTrigger.sound, finalHitTrigger.volume, finalHitTrigger.pitch);
+                    loc.getWorld().playSound(loc, finalHitTrigger.sound, SoundCategory.RECORDS, finalHitTrigger.volume, finalHitTrigger.pitch);
                 }
 
                 // Particle

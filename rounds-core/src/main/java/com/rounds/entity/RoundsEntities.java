@@ -14,6 +14,7 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.SoundCategory;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.BlockFace;
@@ -408,7 +409,7 @@ public class RoundsEntities implements Listener {
                         var victimBot = plugin.getBotManager().getBot(victim.getName());
                         if (victimBot != null) victimBot.onAttacked(b.loc, b.ownerId);
                     }
-                    nearest.getWorld().playSound(nearest.getLocation(), Sound.ENTITY_PLAYER_HURT, 1f, 1f);
+                    nearest.getWorld().playSound(nearest.getLocation(), Sound.ENTITY_PLAYER_HURT, SoundCategory.RECORDS, 1f, 1f);
                     Player shooter = Bukkit.getPlayer(b.ownerId);
                     applyHitRedEffects(nearest, (shooter != null ? shooter.getEyeLocation() : b.loc), nearest.getEyeLocation());
                     applyPostHitEffects(b.ownerId, shooterData, nearest, finalDamage, b.stack);
@@ -545,7 +546,7 @@ public class RoundsEntities implements Listener {
                 } else {
                     if (blockEvent.isParry()) {
                         GunItem.resetBlockCooldown(shieldPlayer.getUniqueId());
-                        shieldPlayer.getWorld().playSound(shieldPlayer.getLocation(), Sound.BLOCK_ANVIL_USE, 0.8f, 2.0f);
+                        shieldPlayer.getWorld().playSound(shieldPlayer.getLocation(), Sound.BLOCK_ANVIL_USE, SoundCategory.RECORDS, 0.8f, 2.0f);
                         if (originalShooter != null && originalShooter.isOnline()) {
                             double parryDmg = blockEvent.getDamage() * 0.5;
                             originalShooter.damage(parryDmg, shieldPlayer);
@@ -641,7 +642,7 @@ public class RoundsEntities implements Listener {
                 var victimBot = plugin.getBotManager().getBot(victim.getName());
                 if (victimBot != null) victimBot.onAttacked(b.loc, b.ownerId);
             }
-            hitEnt.getWorld().playSound(hitEnt.getLocation(), Sound.ENTITY_PLAYER_HURT, 1f, 1f);
+            hitEnt.getWorld().playSound(hitEnt.getLocation(), Sound.ENTITY_PLAYER_HURT, SoundCategory.RECORDS, 1f, 1f);
             Player shooter = Bukkit.getPlayer(b.ownerId);
             applyHitRedEffects(hitEnt, (shooter != null ? shooter.getEyeLocation() : b.spawnLoc), new Location(world, hitPX, hitPY, hitPZ));
             applyPostHitEffects(b.ownerId, shooterData, hitEnt, finalDmg, b.stack);
@@ -814,7 +815,7 @@ public class RoundsEntities implements Listener {
         PlayerData d = plugin.getPlayerDataManager().getData(p.getUniqueId());
         if (d == null || d.evasion <= 0) return false;
         if (Math.random() >= d.evasion) return false;
-        p.getWorld().playSound(p.getLocation(), Sound.ENTITY_BAT_TAKEOFF, 1f, 1.5f);
+        p.getWorld().playSound(p.getLocation(), Sound.ENTITY_BAT_TAKEOFF, SoundCategory.RECORDS, 1f, 1.5f);
         p.getWorld().spawnParticle(Particle.CLOUD, p.getLocation().add(0, 1, 0), 10, 0.3, 0.5, 0.3, 0.05);
         return true;
     }
@@ -859,7 +860,7 @@ public class RoundsEntities implements Listener {
     private static void executeTarget(LivingEntity target) {
         target.setNoDamageTicks(0);
         target.damage(Math.max(target.getHealth(), 1) * 100.0);
-        target.getWorld().playSound(target.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.8f, 1.8f);
+        target.getWorld().playSound(target.getLocation(), Sound.ENTITY_WITHER_SPAWN, SoundCategory.RECORDS, 0.8f, 1.8f);
     }
 
     // Единый блок эффектов при прямом попадании: объединяет бывшие событийный
@@ -892,7 +893,7 @@ public class RoundsEntities implements Listener {
                     splashTarget.damage(finalDamage * 0.5);
                 }
             }
-            living.getWorld().playSound(living.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 0.5f, 2.0f);
+            living.getWorld().playSound(living.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, SoundCategory.RECORDS, 0.5f, 2.0f);
         }
         if (data.shockwave > 0) {
             for (Entity entity : living.getNearbyEntities(5.0, 5.0, 5.0)) {
@@ -974,7 +975,7 @@ public class RoundsEntities implements Listener {
                     GunItem.cancelReload(ownerId);
                 }
                 shooterPlayer.sendActionBar(ChatColor.GRAY + Messages.get("gun.ammo-display", (int) data.ammo, (int) data.maxAmmo));
-                shooterPlayer.playSound(shooterPlayer.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.7f, 1.5f);
+                shooterPlayer.playSound(shooterPlayer.getLocation(), Sound.ENTITY_ITEM_PICKUP, SoundCategory.RECORDS, 0.7f, 1.5f);
             }
         }
         data.executeTriggers(com.rounds.cards.CardTrigger.ON_BULLET_HIT, shooterPlayer, living, b.damage);
@@ -1156,7 +1157,7 @@ public class RoundsEntities implements Listener {
         b.bounceCount = 0;
         b.homingTarget = null;
         b.loc = b.loc.clone().add(toTarget.clone().normalize().multiply(0.5));
-        shieldPlayer.getWorld().playSound(shieldPlayer.getLocation(), Sound.BLOCK_ANVIL_USE, 0.6f, 2.0f);
+        shieldPlayer.getWorld().playSound(shieldPlayer.getLocation(), Sound.BLOCK_ANVIL_USE, SoundCategory.RECORDS, 0.6f, 2.0f);
     }
 
     // ==================== Teammate helper ====================
@@ -1217,7 +1218,7 @@ public class RoundsEntities implements Listener {
     }
 
     public static void spawnBomb(Location loc, UUID owner, double bombDamage) {
-        loc.getWorld().playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 1.2f);
+        loc.getWorld().playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, SoundCategory.RECORDS, 1.5f, 1.2f);
         loc.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, loc, 1);
         for (var entity : loc.getNearbyLivingEntities(5.0)) {
             if (entity.getUniqueId().equals(owner)) continue;
@@ -1279,7 +1280,7 @@ public class RoundsEntities implements Listener {
         activeClouds.add(new CloudFx(particleCenter, radius, duration));
         startCloudTicker();
 
-        loc.getWorld().playSound(loc, Sound.BLOCK_HONEY_BLOCK_PLACE, 0.8f, 0.6f);
+        loc.getWorld().playSound(loc, Sound.BLOCK_HONEY_BLOCK_PLACE, SoundCategory.RECORDS, 0.8f, 0.6f);
         loc.getWorld().spawnParticle(Particle.SMOKE_LARGE, loc.clone().add(0, 0.5, 0),
             30, 1.0, 0.5, 1.0, 0.02);
         loc.getWorld().spawnParticle(Particle.REDSTONE, loc.clone().add(0, 0.5, 0),
@@ -1289,7 +1290,7 @@ public class RoundsEntities implements Listener {
     public static void spawnBombShield(Location loc, UUID owner) {
         loc.getWorld().spawnParticle(Particle.EXPLOSION_HUGE, loc, 1, 0, 0, 0, 0);
         loc.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, loc, 3, 0.5, 0.5, 0.5, 0.05);
-        loc.getWorld().playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 1.2f);
+        loc.getWorld().playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, SoundCategory.RECORDS, 1.5f, 1.2f);
         for (var entity : loc.getNearbyLivingEntities(2.0)) {
             if (entity.getUniqueId().equals(owner)) continue;
             if (entity instanceof Player sp) {

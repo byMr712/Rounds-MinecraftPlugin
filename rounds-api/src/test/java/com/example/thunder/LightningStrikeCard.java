@@ -11,6 +11,7 @@ import com.rounds.api.event.RoundsWeaponShootEvent;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.SoundCategory;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
@@ -50,7 +51,7 @@ public class LightningStrikeCard extends CustomCard {
         if (currentShots % 3 == 0) {
             event.addBulletTag(BULLET_TAG);
             Player player = event.getPlayer();
-            player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_THUNDER, 0.7f, 1.8f);
+            player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_THUNDER, SoundCategory.RECORDS, 0.7f, 1.8f);
         }
     }
 
@@ -63,7 +64,7 @@ public class LightningStrikeCard extends CustomCard {
 
         var loc = event.getHitLocation();
         loc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, loc, 25, 0.4, 0.4, 0.4, 0.1);
-        loc.getWorld().playSound(loc, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.8f, 1.5f);
+        loc.getWorld().playSound(loc, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, SoundCategory.RECORDS, 0.8f, 1.5f);
     }
 
     @Override

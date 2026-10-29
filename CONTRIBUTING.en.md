@@ -185,7 +185,7 @@ public final class FrostBiteAddon extends JavaPlugin { // Main addon plugin clas
                 } // End of living target check
                 var loc = event.getHitLocation(); // Get 3D hit coordinates in the world
                 loc.getWorld().spawnParticle(Particle.SNOWFLAKE, loc, 15, 0.3, 0.3, 0.3, 0.05); // Spawn snowflakes
-                loc.getWorld().playSound(loc, Sound.BLOCK_GLASS_BREAK, 1.0f, 1.4f); // Play glass breaking sound
+                loc.getWorld().playSound(loc, Sound.BLOCK_GLASS_BREAK, SoundCategory.RECORDS, 1.0f, 1.4f); // Play glass breaking sound (RECORDS category for note blocks slider)
             }) // End of hit event handler lambda
             .register(); // Build card instance and register immediately into the Rounds draft
 

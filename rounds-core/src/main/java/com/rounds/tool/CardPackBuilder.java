@@ -220,19 +220,24 @@ public class CardPackBuilder {
             // 3. Card font and textures
             Path baseCardsDir = root.resolve("test-servers").resolve("original_mod").resolve("cards");
             Path targetCardsDir = baseCardsDir;
-            if ("RU".equalsIgnoreCase(lang) && Files.isDirectory(baseCardsDir.resolve("ru"))) {
-                targetCardsDir = baseCardsDir.resolve("ru");
-            } else if ("EN".equalsIgnoreCase(lang) && Files.isDirectory(baseCardsDir.resolve("en"))) {
-                targetCardsDir = baseCardsDir.resolve("en");
+            if (Files.isDirectory(baseCardsDir)) {
+                if ("RU".equalsIgnoreCase(lang) && Files.isDirectory(baseCardsDir.resolve("ru"))) {
+                    targetCardsDir = baseCardsDir.resolve("ru");
+                } else if ("EN".equalsIgnoreCase(lang) && Files.isDirectory(baseCardsDir.resolve("en"))) {
+                    targetCardsDir = baseCardsDir.resolve("en");
+                }
+            } else {
+                targetCardsDir = null;
+                baseCardsDir = null;
             }
 
             List<Path> sourceImages = new ArrayList<>();
-            if (Files.isDirectory(targetCardsDir)) {
+            if (targetCardsDir != null && Files.isDirectory(targetCardsDir)) {
                 try (DirectoryStream<Path> stream = Files.newDirectoryStream(targetCardsDir, "*.png")) {
                     for (Path p : stream) sourceImages.add(p);
                 }
             }
-            if (sourceImages.isEmpty() && Files.isDirectory(baseCardsDir)) {
+            if (sourceImages.isEmpty() && baseCardsDir != null && Files.isDirectory(baseCardsDir)) {
                 try (DirectoryStream<Path> stream = Files.newDirectoryStream(baseCardsDir, "*.png")) {
                     for (Path p : stream) sourceImages.add(p);
                 }

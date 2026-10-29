@@ -8,6 +8,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Sound;
+import org.bukkit.SoundCategory;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -346,7 +347,7 @@ public class CardManager {
                 plugin.getCardDisplay().open(player, cards);
             }
             startChoiceTimer(player);
-            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
         }
     }
 
@@ -390,9 +391,9 @@ public class CardManager {
                 remaining--;
 
                 if (remaining <= 5 && remaining >= 2) {
-                    p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+                    p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
                 } else if (remaining == 1) {
-                    p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0f, 1.0f);
+                    p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_LAND, SoundCategory.RECORDS, 1.0f, 1.0f);
                 } else if (remaining <= 0) {
                     cancel();
                     choiceTimers.remove(uuid);

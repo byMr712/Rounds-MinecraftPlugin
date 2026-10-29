@@ -391,7 +391,7 @@ public class GameManager implements Listener {
         }
         saveState();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
-            p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+            p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
         }
     }
 
@@ -616,7 +616,7 @@ public class GameManager implements Listener {
 
         Location baseLoc = summoner.getLocation().add(0, 3, 0);
         summoner.sendTitle("", ChatColor.DARK_PURPLE + (phantomCount > 1 ? "Призвано фантомов: " + phantomCount + "!" : "Фантом призван!"), 10, 40, 10);
-        summoner.getWorld().playSound(baseLoc, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0f, 0.5f);
+        summoner.getWorld().playSound(baseLoc, Sound.ENTITY_ENDER_DRAGON_GROWL, SoundCategory.RECORDS, 1.0f, 0.5f);
 
         for (int i = 0; i < phantomCount; i++) {
             double angle = phantomCount > 1 ? (2 * Math.PI * i / phantomCount) : 0;
@@ -775,7 +775,7 @@ public class GameManager implements Listener {
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) != null) {
                 p.sendTitle(Messages.get("title.game-won"), "", 10, 100, 20);
-                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
             }
             p.sendMessage(ChatColor.GREEN + Messages.get("game.auto-stop-single"));
         }
@@ -911,7 +911,7 @@ public class GameManager implements Listener {
         if (alive.size() <= 1) return;
         Player victim = alive.get(RANDOM.nextInt(alive.size()));
         Bukkit.broadcastMessage(ChatColor.DARK_RED + Messages.get("game.auto-death-killed", victim.getName()));
-        victim.getWorld().playSound(victim.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.7f, 1.2f);
+        victim.getWorld().playSound(victim.getLocation(), Sound.ENTITY_WITHER_SPAWN, SoundCategory.RECORDS, 0.7f, 1.2f);
 
         // The reaper applies LETHAL DAMAGE through the normal pipeline, never a direct
         // health write: card saves (Bullet Time, Second Wind, Phoenix) must be able to
@@ -1054,6 +1054,9 @@ public class GameManager implements Listener {
             }
         }
         GunItem.resetRoundState();
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            PlayerDataManager.GunCooldowns.recordShot(p.getUniqueId());
+        }
         com.rounds.listener.LegendaryEffects.clearRoundState();
         chameleonStillTicks.clear();
         if (plugin.getRoundMusicManager() != null) {
@@ -1276,6 +1279,9 @@ public class GameManager implements Listener {
         removeAllPhantoms();
         RoundsEntities.clearAllState();
         GunItem.resetRoundState();
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            PlayerDataManager.GunCooldowns.recordShot(p.getUniqueId());
+        }
         com.rounds.listener.LegendaryEffects.clearRoundState();
         highlightGlowUntil.clear();
         if (plugin.getRoundMusicManager() != null) {
@@ -1371,17 +1377,17 @@ public class GameManager implements Listener {
             GameTeam pTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             if (pTeam == winner) {
                 p.sendTitle(Messages.get("title.won"), "", 10, 60, 20);
-                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
             } else if (losingTeams.contains(pTeam)) {
                 p.sendTitle(Messages.get("title.lost"), "", 10, 60, 20);
-                p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0f, 1.0f);
+                p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_LAND, SoundCategory.RECORDS, 1.0f, 1.0f);
             } else {
                 String specTitle = Messages.get("title.spectator-won", winner.getColor() + "§l", teamName.toLowerCase());
                 if (specTitle.equals("title.spectator-won")) {
                     specTitle = winner.getColor() + "§lПобедили " + teamName.toLowerCase();
                 }
                 p.sendTitle(specTitle, "", 10, 60, 20);
-                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
             }
         }
 
@@ -1442,7 +1448,7 @@ public class GameManager implements Listener {
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             p.sendTitle(Messages.get("title.draw"), "", 10, 60, 20);
-            p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+            p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
         }
 
         scheduleDelayed(() -> {
@@ -1517,17 +1523,17 @@ public class GameManager implements Listener {
             GameTeam pTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             if (pTeam == winner) {
                 p.sendTitle(Messages.get("title.game-won"), "", 10, 100, 20);
-                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
             } else if (pTeam != null) {
                 p.sendTitle(Messages.get("title.game-lost"), "", 10, 100, 20);
-                p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0f, 1.0f);
+                p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_LAND, SoundCategory.RECORDS, 1.0f, 1.0f);
             } else {
                 String specTitle = Messages.get("title.spectator-won", winner.getColor() + "§l", teamName.toLowerCase());
                 if (specTitle.equals("title.spectator-won")) {
                     specTitle = winner.getColor() + "§lПобедили " + teamName.toLowerCase();
                 }
                 p.sendTitle(specTitle, "", 10, 100, 20);
-                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
             }
         }
 
@@ -1546,6 +1552,9 @@ public class GameManager implements Listener {
             resetAllNameColors();
             plugin.getCardManager().resetAllCards();
             GunItem.resetRoundState();
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            PlayerDataManager.GunCooldowns.recordShot(p.getUniqueId());
+        }
             RoundsEntities.clearAllState();
             restoreGameRules();
             teamSpawns.clear();
@@ -1626,7 +1635,7 @@ public class GameManager implements Listener {
         pendingCardJoiners.clear();
         returningJoiners.clear();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
-            p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+            p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
         }
     }
 
@@ -1655,7 +1664,7 @@ public class GameManager implements Listener {
         pendingCardJoiners.clear();
         returningJoiners.clear();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
-            p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+            p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
         }
     }
 
@@ -1751,11 +1760,21 @@ public class GameManager implements Listener {
         if (to == null) return;
 
         // Freeze position (X, Y, Z) while cards are being picked, allow looking around (yaw, pitch).
-        // Cancelling on ANY position change blocks walk/sneak reliably; a standing player sends
-        // no position delta, so there is no view shake, and look is client-authoritative and kept.
+        // Keep player strictly on the draft horizontal plane (origin.getY()) while picking cards,
+        // so approaching cards over slopes/cliffs/jump-blocks never drops them into an endless fall loop.
         if (event.hasChangedPosition()) {
-            if (plugin.getCardDisplay() != null && plugin.getCardDisplay().isWithinSelectionBounds(player, to)) {
-                return;
+            if (plugin.getCardDisplay() != null && plugin.getCardDisplay().hasActiveScene(player.getUniqueId())) {
+                Location origin = plugin.getCardDisplay().getSceneOrigin(player.getUniqueId());
+                if (origin != null) {
+                    Location target = to.clone();
+                    target.setY(origin.getY());
+                    if (plugin.getCardDisplay().isWithinSelectionBounds(player, target)) {
+                        if (Math.abs(to.getY() - origin.getY()) > 1e-4) {
+                            event.setTo(target);
+                        }
+                        return;
+                    }
+                }
             }
             event.setCancelled(true);
         }
@@ -1804,7 +1823,7 @@ public class GameManager implements Listener {
             dead.setNoDamageTicks(20);
             dead.addPotionEffect(new org.bukkit.potion.PotionEffect(
                 PotionEffectType.REGENERATION, 100, 2));
-            dead.getWorld().playSound(dead.getLocation(), Sound.ENTITY_BLAZE_SHOOT, 1.0f, 1.0f);
+            dead.getWorld().playSound(dead.getLocation(), Sound.ENTITY_BLAZE_SHOOT, SoundCategory.RECORDS, 1.0f, 1.0f);
             dead.sendMessage(ChatColor.RED + Messages.get("game.phoenix-revived"));
             return;
         }
@@ -1827,7 +1846,7 @@ public class GameManager implements Listener {
                     } catch (IllegalArgumentException ignored) {}
                 }
             }
-            dead.getWorld().playSound(deathLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 0.8f);
+            dead.getWorld().playSound(deathLoc, Sound.ENTITY_GENERIC_EXPLODE, SoundCategory.RECORDS, 1.5f, 0.8f);
         }
 
         deadPlayers.add(dead.getUniqueId());
@@ -2074,7 +2093,7 @@ public class GameManager implements Listener {
         WrongMapTeleportTask task = new WrongMapTeleportTask(p.getUniqueId(), currentRound, gameGeneration, currentZoneCenter);
         wrongMapTasks.put(p.getUniqueId(), task);
         p.sendMessage(Messages.get("game.wrong-map-warning", task.lastAnnouncedSecond));
-        p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
+        p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, SoundCategory.RECORDS, 1.0f, 1.0f);
     }
 
     private void cancelAllWrongMapTasks(String reasonKey) {
@@ -2128,7 +2147,7 @@ public class GameManager implements Listener {
                         lastWrongMapCheckTime.remove(p.getUniqueId());
                         lastWrongMapResult.remove(p.getUniqueId());
                         p.sendMessage(Messages.get("game.wrong-map-teleported"));
-                        p.playSound(p.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
+                        p.playSound(p.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, SoundCategory.RECORDS, 1.0f, 1.0f);
                     }
                 }
             } else if (remainingSec < task.lastAnnouncedSecond) {

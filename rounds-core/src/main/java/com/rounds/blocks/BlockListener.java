@@ -471,7 +471,11 @@ public class BlockListener implements Listener {
             player.setNoDamageTicks(0);
             player.damage(damage);
             if (!player.isInvulnerable() && player.getHealth() >= hpBefore && damage > 0.0 && !player.isDead()) {
-                player.setHealth(Math.min(Math.max(0.0, hpBefore - damage), player.getMaxHealth()));
+                if (com.rounds.listener.LegendaryEffects.hasDecay(player.getUniqueId())) {
+                    // Handled by Decay card: damage converted to damage-over-time
+                } else {
+                    player.setHealth(Math.min(Math.max(0.0, hpBefore - damage), player.getMaxHealth()));
+                }
             }
             RoundsEntities.applyHitRedEffects(player, player.getLocation().clone().add(0, -1, 0), player.getLocation());
         } else {

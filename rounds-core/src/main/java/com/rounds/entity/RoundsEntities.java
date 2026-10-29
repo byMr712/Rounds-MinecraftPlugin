@@ -402,7 +402,11 @@ public class RoundsEntities implements Listener {
                             nearest.damage(finalDamage);
                         }
                         if (!nearest.isInvulnerable() && nearest.getHealth() >= hpBefore && finalDamage > 0.0 && !nearest.isDead()) {
-                            safeSetHealth(nearest, hpBefore - finalDamage);
+                            if (nearest instanceof Player p && com.rounds.listener.LegendaryEffects.hasDecay(p.getUniqueId())) {
+                                // Handled by Decay card: damage converted to damage-over-time
+                            } else {
+                                safeSetHealth(nearest, hpBefore - finalDamage);
+                            }
                         }
                     }
                     if (nearest instanceof Player victim && plugin.getBotManager() != null) {
@@ -635,7 +639,11 @@ public class RoundsEntities implements Listener {
                     hitEnt.damage(finalDmg);
                 }
                 if (!hitEnt.isInvulnerable() && hitEnt.getHealth() >= hpBefore && finalDmg > 0.0 && !hitEnt.isDead()) {
-                    safeSetHealth(hitEnt, hpBefore - finalDmg);
+                    if (hitEnt instanceof Player victim && com.rounds.listener.LegendaryEffects.hasDecay(victim.getUniqueId())) {
+                        // Handled by Decay card: damage converted to damage-over-time
+                    } else {
+                        safeSetHealth(hitEnt, hpBefore - finalDmg);
+                    }
                 }
             }
             if (hitEnt instanceof Player victim && plugin.getBotManager() != null) {

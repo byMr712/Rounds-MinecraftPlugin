@@ -22,6 +22,7 @@ import org.bukkit.event.player.PlayerMoveEvent;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -65,9 +66,17 @@ public class LegendaryEffects implements Listener {
     private static final Map<UUID, Long> lastRazorwire = new ConcurrentHashMap<>();
 
     public static class DecaySlice {
-        public double damagePerStep;
-        public int stepsRemaining;
-        public UUID attackerId;
+        public final double damagePerSecond;
+        public final UUID attackerId;
+        public int secondsRemaining;
+        public int ticksUntilNextSecond;
+
+        public DecaySlice(double totalDamage, int totalSeconds, UUID attackerId) {
+            this.damagePerSecond = totalDamage / (double) totalSeconds;
+            this.secondsRemaining = totalSeconds;
+            this.ticksUntilNextSecond = 20; // 1 second interval
+            this.attackerId = attackerId;
+        }
     }
 
     private static final Map<UUID, List<DecaySlice>> decaySlices = new ConcurrentHashMap<>();
@@ -78,10 +87,16 @@ public class LegendaryEffects implements Listener {
         isApplyingDecay.remove(uuid);
     }
 
+    public static boolean hasDecay(UUID uuid) {
+        if (uuid == null || instance == null || instance.plugin == null) return false;
+        PlayerData data = instance.plugin.getPlayerDataManager().getPlayerDataIfPresent(uuid);
+        return data != null && data.decay > 0;
+    }
+
     public LegendaryEffects(RoundsPlugin plugin) {
         this.plugin = plugin;
         instance = this;
-        Bukkit.getScheduler().runTaskTimer(plugin, this::tickDecay, 5L, 5L);
+        Bukkit.getScheduler().runTaskTimer(plugin, this::tickDecay, 1L, 1L);
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             long now = System.currentTimeMillis();
             for (Player p : Bukkit.getOnlinePlayers()) {
@@ -215,15 +230,10 @@ public class LegendaryEffects implements Listener {
                     try { triggerRazorwire(player, data); } catch (Throwable ignored) {}
                 }
 
-                int totalSteps = Math.max(4, (int) Math.round(data.decay * 4.0));
-                double dmgPerStep = incomingDmg / totalSteps;
+                int totalSeconds = (data.decay > 0) ? Math.max(1, (int) Math.round(data.decay)) : 5;
+                DecaySlice slice = new DecaySlice(incomingDmg, totalSeconds, attackerId);
 
-                DecaySlice slice = new DecaySlice();
-                slice.damagePerStep = dmgPerStep;
-                slice.stepsRemaining = totalSteps;
-                slice.attackerId = attackerId;
-
-                decaySlices.computeIfAbsent(player.getUniqueId(), k -> new java.util.concurrent.CopyOnWriteArrayList<>()).add(slice);
+                decaySlices.computeIfAbsent(player.getUniqueId(), k -> Collections.synchronizedList(new ArrayList<>())).add(slice);
             }
             return;
         }
@@ -724,14 +734,24 @@ public class LegendaryEffects implements Listener {
 
             double totalTickDmg = 0.0;
             UUID lastAttacker = null;
-            Iterator<DecaySlice> it = slices.iterator();
-            while (it.hasNext()) {
-                DecaySlice s = it.next();
-                totalTickDmg += s.damagePerStep;
-                if (s.attackerId != null) lastAttacker = s.attackerId;
-                s.stepsRemaining--;
-                if (s.stepsRemaining <= 0) {
-                    it.remove();
+            synchronized (slices) {
+                Iterator<DecaySlice> it = slices.iterator();
+                while (it.hasNext()) {
+                    DecaySlice s = it.next();
+                    s.ticksUntilNextSecond--;
+                    if (s.ticksUntilNextSecond <= 0) {
+                        totalTickDmg += s.damagePerSecond;
+                        if (s.attackerId != null) lastAttacker = s.attackerId;
+                        s.secondsRemaining--;
+                        if (s.secondsRemaining > 0) {
+                            s.ticksUntilNextSecond = 20; // 1 second interval
+                        } else {
+                            it.remove();
+                        }
+                    }
+                }
+                if (slices.isEmpty()) {
+                    decaySlices.remove(uuid);
                 }
             }
 

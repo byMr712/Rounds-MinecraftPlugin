@@ -1570,6 +1570,7 @@ public class GameManager implements Listener {
                 p.getInventory().clear();
                 var attr = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
                 if (attr != null) attr.setBaseValue(20);
+                PlayerDataManager.syncPlayerScale(p, null);
                 p.setHealth(Math.min(p.getHealth(), 20));
                 p.setFoodLevel(20);
                 p.setInvulnerable(false);
@@ -1621,7 +1622,7 @@ public class GameManager implements Listener {
                     p.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
                     Location safe = teamSpawns.get(team);
                     if (safe != null && safe.getWorld() != null && safe.getWorld().equals(p.getWorld())) {
-                        p.teleport(safe.clone().add(0, 1.2, 0));
+                        p.teleport(safe);
                     }
                     sendEnemyPickingCardsTitle(p, 100);
                 } else {
@@ -1672,6 +1673,7 @@ public class GameManager implements Listener {
         for (PotionEffectType type : PotionEffectType.values()) {
             player.removePotionEffect(type);
         }
+        PlayerDataManager.syncPlayerScale(player, null);
     }
 
     private void applySnowballSpeed(Player player, PlayerData data) {
@@ -1776,7 +1778,17 @@ public class GameManager implements Listener {
                     }
                 }
             }
-            event.setCancelled(true);
+            // Freeze players who are NOT currently drafting (waiting team or finished pick)
+            // Keep them securely on their spawn point with smooth camera rotation (no cancelled event jitter)
+            GameTeam team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+            Location spawn = (team != null) ? teamSpawns.get(team) : null;
+            Location lockPos = (spawn != null && spawn.getWorld() != null && spawn.getWorld().equals(player.getWorld()))
+                    ? spawn
+                    : from;
+            Location target = lockPos.clone();
+            target.setYaw(to.getYaw());
+            target.setPitch(to.getPitch());
+            event.setTo(target);
         }
     }
 
@@ -2269,6 +2281,7 @@ public class GameManager implements Listener {
             p.getInventory().clear();
             var attr = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
             if (attr != null) attr.setBaseValue(20);
+            PlayerDataManager.syncPlayerScale(p, null);
             p.setHealth(Math.min(p.getHealth(), 20));
             p.setFoodLevel(20);
             p.setSaturation(5.0f);

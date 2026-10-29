@@ -1,10 +1,10 @@
 id: 42
 name:
-  ru: "&e5 секунд самонаведения пуль при блоке"
-  en: "&e5s Bullet Homing on Block"
+  ru: "&eПочти самонаводка"
+  en: "&eAlmost Homing"
 description:
-  ru: "При блоке: 5 секунд самонаведения пуль, +50% ХП"
-  en: "On block: 5s of bullet homing, +50% HP"
+  ru: "При блоке: 5 секунд самонаведения пуль"
+  en: "On block: 5s of bullet homing"
 material: COMPASS
 enabled: true
 art: card42.png
@@ -13,4 +13,3 @@ variations:
     art: card42-rare
     effects:
       homing_on_block: 5
-      hp: 0.5

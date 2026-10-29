@@ -570,6 +570,7 @@ public class BlockListener implements Listener {
             p.getInventory().clear();
             var attr = p.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
             if (attr != null) attr.setBaseValue(20);
+            com.rounds.player.PlayerDataManager.syncPlayerScale(p, null);
             p.setHealth(20);
             p.setFoodLevel(20);
             p.setGameMode(GameMode.ADVENTURE);

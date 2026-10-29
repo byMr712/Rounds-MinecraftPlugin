@@ -300,8 +300,8 @@ public class CardDisplayManager implements Listener {
             double side = dx * rx + dz * rz;
 
             // Allow approaching cards closer (up to 1.50m forward, cards are at 2.2m),
-            // but not past them. Backward limit 0.40m, lateral strafe limit 1.50m.
-            if (fwd < -0.40 || fwd > 1.50) return false;
+            // and stepping backward with extra room (up to 1.50m backward). Lateral strafe limit 1.50m.
+            if (fwd < -1.50 || fwd > 1.50) return false;
             if (Math.abs(side) > 1.50) return false;
             return true;
         }
@@ -313,9 +313,9 @@ public class CardDisplayManager implements Listener {
             int bx = origin.getBlockX();
             int bz = origin.getBlockZ();
 
-            // Check 7x7 grid around origin (radius 3 blocks)
-            for (int x = bx - 3; x <= bx + 3; x++) {
-                for (int z = bz - 3; z <= bz + 3; z++) {
+            // Check 9x9 grid around origin (radius 4 blocks)
+            for (int x = bx - 4; x <= bx + 4; x++) {
+                for (int z = bz - 4; z <= bz + 4; z++) {
                     double cx = x + 0.5;
                     double cz = z + 0.5;
                     double dx = cx - origin.getX();
@@ -323,7 +323,7 @@ public class CardDisplayManager implements Listener {
                     double fwd = dx * fx + dz * fz;
                     double side = dx * rx + dz * rz;
 
-                    boolean inWalkZone = (fwd >= -0.55 && fwd <= 1.65 && Math.abs(side) <= 1.65);
+                    boolean inWalkZone = (fwd >= -1.65 && fwd <= 1.65 && Math.abs(side) <= 1.65);
                     if (inWalkZone) {
                         // Protect floor: if non-solid (slope, drop-off, jump-pad abyss), place barrier floor
                         Location floorLoc = new Location(world, x, floorY, z);
@@ -331,7 +331,7 @@ public class CardDisplayManager implements Listener {
                             fakeBarriers.add(floorLoc);
                             player.sendBlockChange(floorLoc, Material.BARRIER.createBlockData());
                         }
-                    } else if (fwd >= -1.2 && fwd <= 2.4 && Math.abs(side) <= 2.4) {
+                    } else if (fwd >= -2.4 && fwd <= 2.4 && Math.abs(side) <= 2.4) {
                         // Outer boundary perimeter: invisible barrier walls (2 blocks high) to prevent stepping off
                         for (int y = floorY + 1; y <= floorY + 2; y++) {
                             Location wallLoc = new Location(world, x, y, z);
@@ -481,17 +481,34 @@ public class CardDisplayManager implements Listener {
         void spawnFireParticles() {
             for (int i = 0; i < SLOT_COUNT && i < cards.size(); i++) {
                 if (displays[i] == null) continue;
-                if (!hasFire(cards.get(i).getRarity())) continue;
+                CardRegistry.Rarity rarity = cards.get(i).getRarity();
+                if (!hasFire(rarity)) continue;
                 Location c = displays[i].getLocation().clone().add(0, CARD_CENTER_OFFSET, 0);
-                Color col = rarityColor(cards.get(i).getRarity());
-                Particle.DustOptions dust = new Particle.DustOptions(col, 1.2f);
-                for (int p = 0; p < 6; p++) {
-                    double a = ThreadLocalRandom.current().nextDouble() * Math.PI * 2;
-                    double r = 0.55 + ThreadLocalRandom.current().nextDouble() * 0.3;
-                    double y = -0.7 + ThreadLocalRandom.current().nextDouble() * 1.4;
-                    c.getWorld().spawnParticle(Particle.REDSTONE,
-                            c.getX() + Math.cos(a) * r, c.getY() + y, c.getZ() + Math.sin(a) * r,
-                            1, 0, 0, 0, 0, dust);
+                Color col = rarityColor(rarity);
+                Particle.DustOptions dust = new Particle.DustOptions(col, 0.6f);
+
+                double cardYawRad = Math.toRadians(displays[i].getLocation().getYaw());
+                double nx = -Math.sin(cardYawRad);
+                double nz = Math.cos(cardYawRad);
+                double rightX = -nz;
+                double rightZ = nx;
+
+                for (int p = 0; p < 2; p++) {
+                    ThreadLocalRandom rng = ThreadLocalRandom.current();
+                    // Position particles slightly behind the card (back-glow) and along outer edges
+                    // so card text and description remain 100% crisp and readable
+                    boolean sideEdge = rng.nextBoolean();
+                    double edgeX = sideEdge ? (rng.nextBoolean() ? 1 : -1) * (CARD_HALF_WIDTH + rng.nextDouble() * 0.10)
+                                            : (rng.nextDouble() - 0.5) * 2 * CARD_HALF_WIDTH;
+                    double edgeY = sideEdge ? (rng.nextDouble() - 0.5) * 2 * CARD_HALF_HEIGHT
+                                            : (rng.nextBoolean() ? 1 : -1) * (CARD_HALF_HEIGHT + rng.nextDouble() * 0.10);
+                    double depthOffset = -0.10 - rng.nextDouble() * 0.15; // strictly behind the card plane
+
+                    double px = c.getX() + rightX * edgeX + nx * depthOffset;
+                    double py = c.getY() + edgeY;
+                    double pz = c.getZ() + rightZ * edgeX + nz * depthOffset;
+
+                    c.getWorld().spawnParticle(Particle.REDSTONE, px, py, pz, 1, 0, 0, 0, 0, dust);
                 }
             }
         }

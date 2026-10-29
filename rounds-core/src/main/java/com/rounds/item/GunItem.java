@@ -435,7 +435,7 @@ public class GunItem implements Listener {
                 @Override
                 public void run() {
                     Player p = plugin.getServer().getPlayer(uuid);
-                    if (p == null || !p.isOnline() || p.isDead() || ticks >= 60) {
+                    if (p == null || !p.isOnline() || p.isDead() || ticks >= 90) {
                         activeSawTasks.remove(uuid);
                         cancel();
                         stopSawSound();

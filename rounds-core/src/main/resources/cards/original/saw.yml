@@ -3,8 +3,8 @@ name:
   ru: "&8Пила"
   en: "&8Saw"
 description:
-  ru: "Вращающаяся пила при блоке, +25% ХП"
-  en: "Spinning saw on block, +25% HP"
+  ru: "Вращающаяся пила при блоке"
+  en: "Spinning saw on block"
 material: IRON_AXE
 enabled: true
 art: card47.png
@@ -13,4 +13,3 @@ variations:
     art: card47-rare
     effects:
       saw: 1
-      hp: 0.25

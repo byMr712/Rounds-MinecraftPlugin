@@ -596,6 +596,7 @@ public class PlayerDataManager implements Listener {
                 }, 5L);
             } else {
                 // Joining lobby or joining as spectator with a clean slate
+                syncPlayerScale(player, null);
                 PlayerData data = new PlayerData();
                 data.playerName = player.getName();
                 cache.put(uuid, data);
@@ -615,6 +616,7 @@ public class PlayerDataManager implements Listener {
                             return;
                         }
                         if (plugin.getTeamManager().getPlayerTeam(uuid) != null) return;
+                        syncPlayerScale(player, null);
                         player.setGameMode(GameMode.SPECTATOR);
                         player.setAllowFlight(true);
                         player.setFlying(true);
@@ -698,6 +700,7 @@ public class PlayerDataManager implements Listener {
         } else {
             clearPDC(player);
             removePlayerData(uuid);
+            syncPlayerScale(player, null);
             if (!plugin.getGameManager().isGameStarted()) {
                 plugin.getTeamManager().leaveTeam(uuid);
             }
@@ -931,17 +934,25 @@ public class PlayerDataManager implements Listener {
         }
     }
 
+    public static org.bukkit.attribute.Attribute resolveScaleAttribute() {
+        for (String name : new String[]{"GENERIC_SCALE", "SCALE"}) {
+            try {
+                return org.bukkit.attribute.Attribute.valueOf(name);
+            } catch (Throwable ignored) {}
+        }
+        for (String key : new String[]{"scale", "generic.scale"}) {
+            try {
+                var attr = org.bukkit.Registry.ATTRIBUTE.get(org.bukkit.NamespacedKey.minecraft(key));
+                if (attr != null) return attr;
+            } catch (Throwable ignored) {}
+        }
+        return null;
+    }
+
     public static void syncPlayerScale(Player player, PlayerData data) {
         if (player == null) return;
         try {
-            org.bukkit.attribute.Attribute scaleAttr = null;
-            try {
-                scaleAttr = org.bukkit.attribute.Attribute.valueOf("GENERIC_SCALE");
-            } catch (Throwable t) {
-                try {
-                    scaleAttr = org.bukkit.Registry.ATTRIBUTE.get(org.bukkit.NamespacedKey.minecraft("generic.scale"));
-                } catch (Throwable ignored) {}
-            }
+            org.bukkit.attribute.Attribute scaleAttr = resolveScaleAttribute();
             if (scaleAttr == null) return;
 
             var inst = player.getAttribute(scaleAttr);
@@ -972,14 +983,7 @@ public class PlayerDataManager implements Listener {
     public static double getPlayerScale(Player player, PlayerData data) {
         if (player == null) return 1.0;
         try {
-            org.bukkit.attribute.Attribute scaleAttr = null;
-            try {
-                scaleAttr = org.bukkit.attribute.Attribute.valueOf("GENERIC_SCALE");
-            } catch (Throwable t) {
-                try {
-                    scaleAttr = org.bukkit.Registry.ATTRIBUTE.get(org.bukkit.NamespacedKey.minecraft("generic.scale"));
-                } catch (Throwable ignored) {}
-            }
+            org.bukkit.attribute.Attribute scaleAttr = resolveScaleAttribute();
             if (scaleAttr != null) {
                 var inst = player.getAttribute(scaleAttr);
                 if (inst != null) return inst.getBaseValue();

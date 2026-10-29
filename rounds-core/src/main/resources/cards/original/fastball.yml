@@ -7,6 +7,7 @@ description:
   en: "+{0} Bullet speed, -{1} ATKSPD"
 material: SNOWBALL
 enabled: true
+art: card24.png
 variations:
   - rarity: COMMON
     values: ["250%", "50%"]

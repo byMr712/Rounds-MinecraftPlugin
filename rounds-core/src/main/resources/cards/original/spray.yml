@@ -7,6 +7,7 @@ description:
   en: "+{0} ATKSPD, +{1} Ammo, -{2} DMG"
 material: FIREWORK_ROCKET
 enabled: true
+art: card2.png
 variations:
   - rarity: RARE
     values: ["1000%", "12", "75%"]

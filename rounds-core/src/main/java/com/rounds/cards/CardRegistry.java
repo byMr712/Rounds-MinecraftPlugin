@@ -211,12 +211,14 @@ public class CardRegistry {
         Map<String, String> names = loadLocalizedMap(config, "name");
         if (names.isEmpty()) names.put("en", "Card #" + id);
 
+        List<CardTriggerAction> triggers = loadTriggers(config, null);
         return new Card(id, id, names, loadLocalizedMap(config, "description"),
                 parseMaterial(config.getString("material", "PAPER")),
                 parseRarity(config.getString("rarity", "COMMON")),
                 config.getBoolean("enabled", true),
                 loadEffects(config),
-                config.getStringList("commands"), config.getString("script", null));
+                config.getStringList("commands"), config.getString("script", null),
+                triggers);
     }
 
     private Card parseVariationCard(YamlConfiguration config, Map<?, ?> variation, int fallbackId, int familyId) {
@@ -248,9 +250,34 @@ public class CardRegistry {
             }
         }
 
+        List<CardTriggerAction> triggers = loadTriggers(config, variation);
         return new Card(id, familyId, names, descriptions, parseMaterial(materialStr), parseRarity(rarityStr),
                 config.getBoolean("enabled", true), effects,
-                config.getStringList("commands"), config.getString("script", null));
+                config.getStringList("commands"), config.getString("script", null),
+                triggers);
+    }
+
+    private List<CardTriggerAction> loadTriggers(YamlConfiguration config, Map<?, ?> variation) {
+        List<CardTriggerAction> result = new ArrayList<>();
+        if (variation != null && variation.get("triggers") instanceof List<?> list) {
+            for (Object item : list) {
+                if (item instanceof Map<?, ?> map) {
+                    CardTriggerAction action = CardTriggerAction.fromMap(map);
+                    if (action != null) result.add(action);
+                }
+            }
+            if (!result.isEmpty()) return result;
+        }
+        List<?> topList = config.getList("triggers");
+        if (topList != null) {
+            for (Object item : topList) {
+                if (item instanceof Map<?, ?> map) {
+                    CardTriggerAction action = CardTriggerAction.fromMap(map);
+                    if (action != null) result.add(action);
+                }
+            }
+        }
+        return result;
     }
 
     // Description is declared once at the top as a template with {v} / {0},{1},... placeholders.

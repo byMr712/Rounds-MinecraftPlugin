@@ -53,7 +53,7 @@ class DecayEchoTest {
             Map<?, ?> effects = (Map<?, ?>) v.get("effects");
             assertNotNull(effects);
             assertEquals(expectedDecay[i], ((Number) effects.get("decay")).intValue());
-            assertEquals(0.5, ((Number) effects.get("hp")).doubleValue(), 0.001);
+            assertNull(effects.get("hp"), "Decay must not add extra HP");
         }
     }
 

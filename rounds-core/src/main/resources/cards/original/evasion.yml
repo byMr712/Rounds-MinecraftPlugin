@@ -7,6 +7,7 @@ description:
   en: "30% chance to fully dodge a bullet"
 material: FEATHER
 enabled: true
+art: card10.png
 variations:
   - rarity: LEGENDARY
     effects:

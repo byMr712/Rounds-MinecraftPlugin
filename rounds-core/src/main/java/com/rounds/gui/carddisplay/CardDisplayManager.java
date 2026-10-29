@@ -157,6 +157,12 @@ public class CardDisplayManager implements Listener {
     }
 
     private Component cardGlyph(Card card) {
+        if (card instanceof com.rounds.api.impl.CustomCardAdapter adapter) {
+            Character customGlyph = adapter.getCustomCard().getGlyph();
+            if (customGlyph != null) {
+                return Component.text(String.valueOf(customGlyph)).font(CARD_FONT);
+            }
+        }
         return Component.text(String.valueOf((char) (GLYPH_BASE + card.getFamilyId()))).font(CARD_FONT);
     }
 
@@ -217,23 +223,25 @@ public class CardDisplayManager implements Listener {
                 spawnCard(i, loc);
             }
 
-            description = player.getWorld().spawn(eye.clone(), TextDisplay.class);
-            if (description != null) {
-                description.setBillboard(Display.Billboard.VERTICAL);
-                description.setSeeThrough(true);
-                description.setBackgroundColor(Color.fromARGB(170, 8, 8, 14));
-                // Wide enough for manually wrapped lines (~30 chars), so the display's own
-                // auto-wrap (default 200px) never re-wraps them.
-                description.setLineWidth(220);
-                description.setAlignment(TextDisplay.TextAlignment.CENTER);
-                description.setShadowed(true);
-                // Description scale (user-tuned: 3x -> 1.2x -> ~1.0x of the default text size).
-                description.setTransformation(new org.bukkit.util.Transformation(
-                        new org.joml.Vector3f(0f, 0f, 0f),
-                        new org.joml.AxisAngle4f(),
-                        new org.joml.Vector3f(1.02f, 1.02f, 1.02f),
-                        new org.joml.AxisAngle4f()));
-                description.text(Component.empty());
+            if (plugin.getConfig().getBoolean("card-display.show-floating-description", false)) {
+                description = player.getWorld().spawn(eye.clone(), TextDisplay.class);
+                if (description != null) {
+                    description.setBillboard(Display.Billboard.VERTICAL);
+                    description.setSeeThrough(true);
+                    description.setBackgroundColor(Color.fromARGB(170, 8, 8, 14));
+                    // Wide enough for manually wrapped lines (~30 chars), so the display's own
+                    // auto-wrap (default 200px) never re-wraps them.
+                    description.setLineWidth(220);
+                    description.setAlignment(TextDisplay.TextAlignment.CENTER);
+                    description.setShadowed(true);
+                    // Description scale (user-tuned: 3x -> 1.2x -> ~1.0x of the default text size).
+                    description.setTransformation(new org.bukkit.util.Transformation(
+                            new org.joml.Vector3f(0f, 0f, 0f),
+                            new org.joml.AxisAngle4f(),
+                            new org.joml.Vector3f(1.02f, 1.02f, 1.02f),
+                            new org.joml.AxisAngle4f()));
+                    description.text(Component.empty());
+                }
             }
 
             tickTask = new BukkitRunnable() {

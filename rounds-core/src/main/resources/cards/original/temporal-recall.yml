@@ -8,5 +8,6 @@ description:
 material: CLOCK
 rarity: LEGENDARY
 enabled: true
+art: card44.png
 effects:
   temporal_recall: 1

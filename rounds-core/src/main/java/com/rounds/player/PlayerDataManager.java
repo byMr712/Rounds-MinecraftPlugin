@@ -956,6 +956,33 @@ public class PlayerDataManager implements Listener {
         } catch (Throwable ignored) {}
     }
 
+    public static double getPlayerScale(Player player, PlayerData data) {
+        if (player == null) return 1.0;
+        try {
+            org.bukkit.attribute.Attribute scaleAttr = null;
+            try {
+                scaleAttr = org.bukkit.attribute.Attribute.valueOf("GENERIC_SCALE");
+            } catch (Throwable t) {
+                try {
+                    scaleAttr = org.bukkit.Registry.ATTRIBUTE.get(org.bukkit.NamespacedKey.minecraft("generic.scale"));
+                } catch (Throwable ignored) {}
+            }
+            if (scaleAttr != null) {
+                var inst = player.getAttribute(scaleAttr);
+                if (inst != null) return inst.getBaseValue();
+            }
+        } catch (Throwable ignored) {}
+        if (data != null) {
+            double scale = 1.0;
+            if (data.hp > 0) scale += data.hp * 0.25;
+            if (data.grow > 0) scale += data.grow * 0.15;
+            if (data.evasion > 0) scale -= data.evasion * 0.15;
+            if (data.sneaky > 0) scale -= data.sneaky * 0.10;
+            return Math.max(0.70, Math.min(1.80, PlayerData.round2(scale)));
+        }
+        return 1.0;
+    }
+
     public static class SavedPlayerData {
         public final GameTeam team;
         public final List<Integer> pendingCardIds;

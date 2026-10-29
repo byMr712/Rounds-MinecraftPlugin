@@ -7,6 +7,7 @@ description:
   en: "Enemies glow when you block, +50% HP"
 material: LIGHT
 enabled: true
+art: card43.png
 variations:
   - rarity: RARE
     effects:

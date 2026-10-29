@@ -4,6 +4,7 @@ name:
   en: "&6Spite Razorwire"
 material: IRON_BARS
 enabled: true
+art: card47.png
 variations:
   - rarity: COMMON
     description:

@@ -19,14 +19,27 @@ A Minecraft plugin for the competitive mini-game [**ROUNDS**](https://store.stea
   - **Left Click:** Fires physics-driven bullets with ricochets, bullet speed, and card effects.
   - **Right Click:** Raises shield to deflect bullets and trigger explosive counter-abilities.
   - **Q (Drop Key):** Manually reload your magazine with a live Action Bar progress bar.
-- **Unique Upgrade Cards:**
-  - Massive ability catalog: homing bullets, poison clouds, frost slow, wall drills, executions, close-range saw shredding, and second-wind revives.
-  - 5 rarity tiers: `COMMON`, `UNCOMMON`, `RARE`, `EPIC`, `LEGENDARY` with configurable weights.
-  - Support for variations (single card with scaling stats across rarities).
-  - **Comeback Mechanics:** The losing team drafts a new card between rounds.
-  - Configurable card selection timer (`/rdebug cardchoicetime <sec>`) with warning sounds (XP sound on last 5 seconds, anvil on final second) and auto-selection of a random card upon timeout.
-  - In-game deck inventory viewer (`/rdebug cards show`) and administrative card management.
-  - Card rotation during draft (Wheel mode).
+- **Card System and Combat Abilities:**
+  - **In-World 3D Card Selection Scene:** Instead of a flat GUI inventory, players experience an interactive 3D semicircular showcase floating in the world via Text Display entities. Cards display their real graphic art through the custom bitmap font. The floating text description can be toggled via `card-display.show-floating-description: false` in `config.yml` when descriptions are drawn directly onto card face textures. Players can freely step closer to cards (up to 1.5m forward) for detailed inspection while remaining within the selection area boundary. Epic and Legendary cards feature active flame particles, selection is accompanied by carousel animation, and expiring timers trigger automatic random selection without kicking players from the server.
+  - **Official Cross-Version Resource Pack (Rounds-CardPack.zip, -RU.zip, -EN.zip):**
+    - Localized packs with language text on card faces: `Rounds-CardPack-RU.zip`, `Rounds-CardPack-EN.zip`, and default `Rounds-CardPack.zip` (source textures located in `test-servers/original_mod/cards/ru` and `en`).
+    - 117 high-resolution card textures mapped to the `rounds:default` font (private-use codepoints `\uE001` .. `\uE07F`).
+    - Dynamic round soundtracks: streamed background music tracks `music1` .. `music4` during combat rounds.
+    - Combat sound effects: shield parry sound (`block.ogg`) and saw continuous cutting sound (`saw.ogg`).
+    - Vanilla Minecraft background music silencer (32 sound events muted in `assets/minecraft/sounds.json`), preventing audio clashes.
+    - Universal `pack.mcmeta` specification guaranteeing zero compatibility errors across all clients and servers from 1.20.4 to 26.3 (`pack_format: 22`, `supported_formats: [22, 99]`, `min_format: 22`, `max_format: 99`).
+    - Automated resource pack build and synchronization script to Desktop and ATLauncher instances (`build-cardpack.ps1`).
+  - **New Cards and Combat Mechanics:**
+    - **Decay:** Buffers all incoming player damage and distributes it as gradual damage-over-time ticks across 4 seconds (softening burst damage and one-shots). Features 4 stacking variations (3, 4, 5, 6 seconds).
+    - **Echo:** When blocking with the shield, automatically triggers a second shield block pulse 1 second (20 ticks) later without consuming extra cooldowns.
+    - **Demonic Pact:** Costs 10% current HP per shot with suicide safety (guaranteed minimum 1 HP remains), zero attack delay, +9 bullets per burst, +9 ammo capacity.
+    - **Scavenger:** Successful bullet hits instantly refund ammo to the shooter (`ammo-per-hit`) and immediately cancel active reload timers.
+    - **Thruster:** Recoil propulsion pushing the shooter backward in the opposite direction of their aim vector on every shot.
+    - **Dynamic Player Scaling:** On Paper/Purpur 1.20.5+ / 1.21+ servers, player models and hitboxes dynamically scale via the native `Attribute.GENERIC_SCALE`: health/mass cards (Huge, Tank, Grow) increase scale (up to 1.3x-1.8x), while agility cards (Evasion, Sneaky) reduce hitbox size.
+  - 5 rarity tiers with configurable weights and card variability.
+  - Card compensation: losing teams draft cards between rounds.
+  - Configurable card draft timer (`/rdebug cardchoicetime <sec>`) with audio warnings during the final 5 seconds, anvil chime on the final second, and automatic card selection upon expiration.
+  - Interactive card inventory GUI for players (`/rdebug cards show`) and card draft rotation (Wheel).
 - **Physical Block Setup:** Special interactive blocks for team selection, lobby, arena zones, spawns, jump pads, and elevator lifts.
 - **Native Smart Bots (Fast NMS Fake Players with 10 Difficulty Levels):** Server-side combat bots for solo practice and duels (`/rdebug bot spawn [name] [team] [1..10]`, `/rbot`).
   - **Dynamic Difficulty (Levels 1..10):** Random level assigned to each bot and rerolled every round (`factor = level / 10.0`).
@@ -412,6 +425,106 @@ variations:
 | **LEGENDARY** | Gold (`&6`) | 3 |
 
 
+## Data-Driven Card Event Triggers (Zero-Code Mechanics)
+
+The plugin features a high-performance declarative event trigger and action pipeline. It enables developers and enthusiasts to build entirely new card mechanics through plain YAML files without writing Java code or recompiling the plugin.
+
+### 1. Autocompletion and Schema Validation
+A comprehensive `cards.schema.json` file is bundled at the repository root and in plugin resources. By declaring the schema header at the top of any card file:
+```yaml
+# yaml-language-server: $schema=../../cards.schema.json
+```
+Editors such as IntelliJ IDEA and Visual Studio Code provide:
+- Live autocompletion for all card stats, combat triggers, and actions.
+- Inline documentation tooltips when hovering over any configuration parameter.
+- Real-time syntax and type validation preventing typos and broken configurations.
+
+### 2. Available Combat Triggers (`on:`)
+Triggers are dispatched directly through a pre-compiled registry without runtime string parsing or iterator allocations during combat ticks:
+- `ON_SHOOT`: Dispatched whenever a player fires their weapon.
+- `ON_BULLET_HIT`: Dispatched whenever a bullet successfully strikes an enemy living entity.
+- `ON_DAMAGE_TAKEN`: Dispatched whenever the player takes any incoming damage.
+- `ON_SHIELD_BLOCK`: Dispatched whenever a player successfully blocks an attack or projectile with their shield.
+- `ON_RELOAD`: Dispatched upon successful completion of a weapon reload.
+
+### 3. Available Trigger Actions (`action:`)
+Each action executes immediately with typed parameters:
+- `RESTORE_AMMO`: Adds ammunition back into the player's magazine (`value: N` bullets).
+- `HEAL`: Restores health to the executing player (`value: N` HP).
+- `DAMAGE_VICTIM`: Inflicts direct damage to the target entity (`value: N` damage).
+- `PUSH_SHOOTER`: Applies a recoil velocity impulse to the shooter along their look vector (`value: N` force multiplier).
+- `PUSH_VICTIM`: Applies a knockback velocity impulse to the target away from the shooter (`value: N` force multiplier).
+- `PLAY_SOUND`: Plays an audio clip (`param`: sound identifier, `value`: audio pitch).
+- `SPAWN_PARTICLE`: Spawns visual particles (`param`: Bukkit Particle name, `value`: particle count).
+- `APPLY_POTION`: Applies a potion effect to the target (`param`: effect type name, `value`: duration in seconds).
+
+### Example Advanced Card with Event Triggers (`vampirism.yml`)
+```yaml
+# yaml-language-server: $schema=../../cards.schema.json
+id: 500
+name:
+  ru: "Вампиризм"
+  en: "Vampirism"
+description:
+  ru: "Попадание пулей по врагу исцеляет вас на 2 HP и восполняет 1 патрон"
+  en: "Hitting an enemy with a bullet restores 2 HP and refunds 1 ammo"
+rarity: RARE
+material: REDSTONE
+enabled: true
+effects:
+  bullets: 0
+triggers:
+  - on: ON_BULLET_HIT
+    action: HEAL
+    value: 2.0
+  - on: ON_BULLET_HIT
+    action: RESTORE_AMMO
+    value: 1.0
+  - on: ON_BULLET_HIT
+    action: PLAY_SOUND
+    value: 1.2
+    param: "entity.player.levelup"
+  - on: ON_BULLET_HIT
+    action: SPAWN_PARTICLE
+    value: 6
+    param: "HEART"
+```
+
+
+## Cross-Platform Resource Pack Ecosystem & Asset Pipeline
+
+The plugin provides a self-contained, cross-platform resource pack infrastructure capable of building both graphics and audio packages on any operating system.
+
+### 1. Multi-Language Resource Packs with Baked Text (Option 3)
+To eliminate visual clutter from floating holograms in the arena (`card-display.show-floating-description: false`), card titles and ability descriptions are rendered directly onto card face textures. Separate language-specific packages are generated:
+- `Rounds-CardPack-RU.zip`: Card textures with baked Russian translations.
+- `Rounds-CardPack-EN.zip`: Card textures with baked English translations.
+- `Rounds-CardPack.zip`: Universal fallback pack.
+
+The private-use font glyph codepoints (`` + `familyId`) are identical across all language packs. Players simply activate their preferred language pack in Minecraft settings without requiring any server configuration changes.
+
+### 2. Pure Java Gradle Pack Builder (`CardPackBuilder`)
+Pack building is executed in pure Java using `ZipOutputStream` and `javax.imageio.ImageIO`. It runs reliably on Windows, Linux, macOS, and automated CI runners without external dependencies:
+```bash
+# Standard build into build/distributions/cardpacks/:
+./gradlew buildCardPack
+
+# Build with automatic synchronization to Desktop and ATLauncher instances:
+./gradlew buildCardPack -PdeployDesktop -PdeployInstances
+```
+
+### 3. Automated Card Texture Renderer (`generate_card_textures.py`)
+The Pillow-based asset generation tool in `tools/generate_card_textures.py`:
+1. Scans all card definitions across `cards/original/` and `cards/custom/`.
+2. Extracts Russian and English names and descriptions.
+3. Automatically wraps lines, draws a translucent contrast backdrop, and bakes centered typography with soft drop-shadows onto 160x250 PNG textures.
+4. Outputs ready textures to `cards/ru` and `cards/en`.
+
+Run the asset generator:
+```bash
+python tools/generate_card_textures.py
+```
+
 ## Commands and Permissions
 
 Primary command: `/rdebug` (aliases `/rounds` and `/rbot`).
@@ -738,17 +851,33 @@ Language files are located in `plugins/Rounds/lang/`:
 | `<World>/rounds-map-blocks.yml` | Stored lobby, map zone, and spawn blocks |
 
 
-## Public API for Developers (Rounds Public API)
+## Public API for Developers (Rounds Public API v1.1.0)
 
-The plugin provides a public `rounds-api` module isolated from NMS for building third-party addons and cards. Full documentation: dependency setup, code-based card registration, declarative no-code cards - see [API.en.md](API.en.md).
+The plugin provides a public `rounds-api` module isolated from NMS for building third-party addons and custom cards.
+- API Version: **1.1.0**.
+- Card font glyph support: `.glyph(char)` in `CardBuilder` and `getGlyph()` in `CustomCard` for resource pack font integration and in-world 3D displays.
+- `RoundsService` methods: `getPlayerCards(Player)` to inspect active cards of players in matches, and `getPlayerScale(Player)` to inspect player model scale.
+- Complete documentation covering dependencies, code card registration, and declarative no-code YAML is available in [API.en.md](API.en.md).
 
 ## Building from Source
 
 Requires **JDK 17+**; Gradle **8.9+** is bundled via the wrapper.
 
 ```bash
-gradlew clean build
+# Quick build of core and target NMS module (defaults to 26.2):
+./gradlew quickBuild
+
+# Build targeting a specific Minecraft server version:
+./gradlew quickBuild -PtargetNms=1.20.4
+
+# Cross-platform build of all localized resource packs (RU, EN, Default):
+./gradlew buildCardPack
+
+# Full build of all 17 version modules:
+./gradlew clean build
 ```
+
+Comprehensive guide for creating cards via YAML with `cards.schema.json` and contributing guidelines is available in [CONTRIBUTING.en.md](CONTRIBUTING.en.md).
 
 Ready plugins - one per server version - are placed in `rounds-nms*/build/libs/`:
 

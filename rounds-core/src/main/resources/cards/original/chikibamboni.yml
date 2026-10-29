@@ -7,6 +7,7 @@ description:
   en: "If the enemy is below 15% HP, your shot kills instantly"
 material: STONE_AXE
 enabled: true
+art: card6.png
 variations:
   - rarity: LEGENDARY
     effects:

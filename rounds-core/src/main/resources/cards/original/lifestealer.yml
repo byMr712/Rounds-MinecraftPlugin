@@ -7,6 +7,7 @@ description:
   en: "Steal HP when near enemy, +25% HP"
 material: NETHER_WART
 enabled: true
+art: card33.png
 variations:
   - rarity: RARE
     effects:

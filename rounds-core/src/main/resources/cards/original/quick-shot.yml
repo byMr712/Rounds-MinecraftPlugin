@@ -7,6 +7,7 @@ description:
   en: "+{0} Bullet speed, +{1} Reload time"
 material: FIREWORK_ROCKET
 enabled: true
+art: card41.png
 variations:
   - rarity: COMMON
     values: ["150%", "10%"]

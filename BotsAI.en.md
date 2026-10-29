@@ -2,7 +2,6 @@
 
 The Rounds plugin features a fully autonomous server-side Fake Player system built on native Minecraft NMS (`net.minecraft.server.level.ServerPlayer`). The bots operate purely on server ticks without external bridge plugins (zero external bridge) or client-side bot processes.
 
----
 
 ## 1. NMS Architecture and Entity Lifecycle
 
@@ -48,7 +47,6 @@ The tick loop executes in the following sequence:
 6. Navigation along the `ArenaNavMesh` waypoint graph, gap leaping, and wall detouring.
 7. Cooldown timers: weapon reload, shield abilities, and jump pad parrying.
 
----
 
 ## 2. Difficulty Scaling System (Levels 1..10)
 
@@ -72,7 +70,6 @@ Bot combat proficiency is governed by an integer level $L \in [1..10]$:
 | **Parkour Leap Error Chance** | stepped tiers (-10%) | 27% (Lv 1–3), 18% (Lv 4–7) | 0% (Lv 10, perfect leaps) |
 | **Air Control Landing Error Chance** | stepped tiers (-10%) | 9% (Lv 1–3), 6.3% (Lv 4–7) | 0.9% (Lv 10) |
 
----
 
 ## 3. Combat Personality Archetypes (Playstyles)
 
@@ -98,7 +95,6 @@ At round start (`BotAI.onRoundStart()`), each bot is assigned one of four distin
 - **Juking:** frequent, unpredictable strafe reversals every 26–46 ticks with smooth velocity interpolation.
 - **Dodging:** tactical hops (`velY = 0.38`) while firing with probability `0.025 * factor`.
 
----
 
 ## 4. Fair Vision and Anti-Wallhack Target Detection
 
@@ -115,7 +111,6 @@ Bots cannot see through opaque solid blocks and follow strict visual mechanics:
 3. **Footstep Proximity Hearing:** 2.5 meters. Within this radius, bots can detect enemy footsteps from behind unless separated by solid walls.
 4. **Line-of-Sight Ray Tracing:** `botPlayer.hasLineOfSight(target)` is mandatory. Any solid block blocks detection.
 
----
 
 ## 5. Incoming Fire Awareness (Damage Direction Reaction)
 
@@ -132,7 +127,6 @@ When damaged, bots determine the shot trajectory origin via `onAttacked(Location
    - At Levels 1–2, error reaches $\pm 45^\circ$.
 4. **Natural Turn Interpolation:** rotational velocity is smoothly eased across head and body without instant 0ms snaps.
 
----
 
 ## 6. Pursuit Tenacity and Search Timeouts
 
@@ -145,7 +139,6 @@ When line of sight is broken (target retreats behind a wall), bots initiate purs
 2. **Pursuit Timeout (`PURSUIT_TIMEOUT_TICKS = 120`):** bots pursue the last known target location for up to 6.0 seconds.
 3. Upon arriving (`distXZ <= 1.2`), bots halt for 25 ticks to scan adjacent corridors (`searchScanYaw`). If the target is not found within 120 ticks, the bot transitions back to macro arena patrol.
 
----
 
 ## 7. Tactical Cover, Corner Ambushes, and Healing
 
@@ -163,7 +156,6 @@ When line of sight is broken (target retreats behind a wall), bots initiate purs
      - Fires an empowered burst the instant the target rounds the corner.
      - Once the ambush timer expires (`ambushTicksLeft <= 0`), the bot smoothly resumes patrol.
 
----
 
 ## 8. 3D Movement Engine and Terrain Traversal (`FakeBot.moveRel`)
 
@@ -188,7 +180,6 @@ When line of sight is broken (target retreats behind a wall), bots initiate purs
    - Under-jump failure rate: 30% at Lv 1–3, 20% at Lv 4–7, 10% at Lv 8–9, 0% at Lv 10.
    - **Cliff Drop Prevention:** ledges with drops over 2 blocks are treated as impassable unless a safe landing platform exists ahead.
 
----
 
 ## 9. Narrow Passage Navigation, Red Zones, and Wall Detours
 
@@ -207,7 +198,6 @@ When line of sight is broken (target retreats behind a wall), bots initiate purs
    - **Dynamic Corner Clearing:** every tick tests `isDirectionClear(myLoc, desiredHeading, 2.0)`. The moment the wall corner is cleared, heading lock drops to 0, `wallDetourSign` resets, and the bot immediately resumes course toward its target.
    - In `ArenaNavMesh.getNearestNode(loc)`, a 6-meter line-of-sight walkability check (`isWalkableConnection`) prevents Dijkstra from choosing a starting node located on the opposite side of a solid wall.
 
----
 
 ## 10. Smart Jump Pads and Elevator Up-Blocks
 
@@ -234,7 +224,6 @@ When line of sight is broken (target retreats behind a wall), bots initiate purs
 5. **Up-Blocks (Elevators):**
    - Automatically identifies upper floor exit platforms (`findUpBlockExitPlatform`), receiving a gentle lateral push onto the floor and a downward landing impulse of `velY = -0.32`.
 
----
 
 ## 11. Card Synergies and Shield Block Abilities
 
@@ -255,7 +244,6 @@ Bots inspect active card modifiers in `PlayerData` to adjust combat behavior:
 3. **Movement Modifiers:** jump cards enable recognition of 2–3 block obstacles; speed cards proportionally accelerate strafing and pursuit.
 4. **Stances:** sniper stance (`Grow`), aura rush (`LifestealAura`), camouflage ambush (`Chameleon`).
 
----
 
 ## 12. Card Draft Phase (`GameState.CARDS`)
 
@@ -269,7 +257,6 @@ Bots inspect active card modifiers in `PlayerData` to adjust combat behavior:
    - With probability `factor`, bots select the highest-tier card available; otherwise, they select a random valid card.
    - Deliberation delay ranges from 1 to 10 seconds (average 3–5 seconds), simulating natural player decision-making.
 
----
 
 ## 13. High-Performance Optimization (Stable 20 TPS with 192+ and up to 500 Bots)
 
@@ -300,7 +287,6 @@ Bots inspect active card modifiers in `PlayerData` to adjust combat behavior:
 8. **Anti-Stacking Branch Pruning in `FakeBot.moveRel`:**
    - Entity dislodging loops filter candidates using fast 1D bounding box prunes (`Math.abs(dx) > 1.2 || Math.abs(dz) > 1.2`), skipping Euclidean distance calculations on hundreds of surrounding entities.
 
----
 
 ## 14. Team Balancing and Map Wool Block Affinity
 
@@ -308,7 +294,6 @@ Bots inspect active card modifiers in `PlayerData` to adjust combat behavior:
 - If an arena only features specific colors (e.g. Red and Blue wool), bots only populate teams `RED` and `BLUE`.
 - If a command specifies a team not present on the map, the bot is automatically reassigned to an available team with the fewest members.
 
----
 
 ## 15. Comprehensive Bot Command Reference
 
@@ -329,7 +314,6 @@ Bots inspect active card modifiers in `PlayerData` to adjust combat behavior:
 - `/rdebug bot list`: diagnostic listing of bot entities.
 - `/rdebug bot level <1..10>`: sets the global default difficulty for subsequent spawns.
 
----
 
 ## 16. Combat Hit Visuals, Highlights, and Nametag Formatting
 
@@ -347,7 +331,6 @@ Bots inspect active card modifiers in `PlayerData` to adjust combat behavior:
    - The "Mark Was Good" card limits enemy highlights to 10 seconds (200 ticks) upon moving away.
    - `FakeBot` ticks active potion effect durations each tick, ensuring highlights and slowness effects expire naturally.
 
----
 
 ## Multi-Version NMS Architecture (NmsBridge) for Bots
 

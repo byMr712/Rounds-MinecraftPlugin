@@ -7,6 +7,7 @@ description:
   en: "+{v} HP, regeneration on block"
 material: BREAD
 enabled: true
+art: card28.png
 variations:
   - rarity: UNCOMMON
     value: "15%"

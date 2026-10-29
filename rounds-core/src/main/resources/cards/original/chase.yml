@@ -7,6 +7,7 @@ description:
   en: "+{0} move speed towards enemy, +{1} HP"
 material: FEATHER
 enabled: true
+art: card10.png
 variations:
   - rarity: RARE
     values: ["30%", "50%"]

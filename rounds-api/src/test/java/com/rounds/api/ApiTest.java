@@ -63,6 +63,7 @@ class ApiTest {
             .material(Material.DIAMOND)
             .role(CardRole.SNIPER)
             .customModelData(1234)
+            .glyph('\uE015')
             .build();
 
         assertNotNull(card);
@@ -74,5 +75,6 @@ class ApiTest {
         assertEquals(Material.DIAMOND, card.getMaterial());
         assertEquals(CardRole.SNIPER, card.getRole());
         assertEquals(1234, card.getCustomModelData());
+        assertEquals(Character.valueOf('\uE015'), card.getGlyph());
     }
 }

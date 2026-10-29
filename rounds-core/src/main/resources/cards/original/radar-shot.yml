@@ -7,6 +7,7 @@ description:
   en: "On block: 5s of bullet homing, +50% HP"
 material: COMPASS
 enabled: true
+art: card42.png
 variations:
   - rarity: RARE
     effects:

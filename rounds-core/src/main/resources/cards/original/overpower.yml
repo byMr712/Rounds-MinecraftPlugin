@@ -7,6 +7,7 @@ description:
   en: "Deal max HP %, to enemies on block"
 material: NETHERITE_SWORD
 enabled: true
+art: card35.png
 variations:
   - rarity: RARE
     effects:

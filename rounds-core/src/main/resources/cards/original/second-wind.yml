@@ -7,6 +7,7 @@ description:
   en: "On lethal hit survive with 1 HP and gain 2s of invulnerability"
 material: TOTEM_OF_UNDYING
 enabled: true
+art: card39.png
 variations:
   - rarity: LEGENDARY
     effects:

@@ -7,6 +7,7 @@ description:
   en: "After taking damage: +60% damage for 3 seconds."
 material: REDSTONE
 enabled: true
+art: card35.png
 variations:
   - rarity: LEGENDARY
     effects:

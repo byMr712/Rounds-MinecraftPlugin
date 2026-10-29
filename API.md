@@ -26,8 +26,8 @@ API Rounds предоставляет контролируемый интерф�
 
 API использует класс `com.rounds.api.ApiVersion`.
 
-- Получение: `RoundsAPI.getVersion()`
-- `ApiVersion` содержит информацию о версии API для быстрой проверки совместимости аддона с текущей версией плагина.
+- Получение: `RoundsAPI.getVersion()` (текущая версия: **1.1.0**)
+- `ApiVersion` содержит информацию о версии API для быстрой проверки совместимости аддона с текущей версией плагина. Версия 1.1.0 добавляет поддержку кастомных шрифтовых глифов карт (`glyph`), получение текущей колоды игрока (`getPlayerCards`) и инспекцию масштаба игрока (`getPlayerScale`).
 
 Рекомендуется перед использованием критичного функционала сверять версию API и учитывать возможные изменения между релизами.
 
@@ -137,9 +137,12 @@ public interface RoundsService {
     Optional<CustomCard> getCard(NamespacedKey key);
     List<CustomCard> getRegisteredCards();
 
-    // Данные игроков
+    List<CustomCard> getPlayerCards(Player player);
+
+    // Данные и параметры игроков
     Optional<CustomDataContainer> getCustomData(Player player);
     Optional<CustomDataContainer> getCustomData(UUID playerUuid);
+    double getPlayerScale(Player player);
 
     // Состояние игры
     int getCurrentRound();
@@ -232,7 +235,23 @@ public interface CustomCard {
 
 ### CardBuilder
 
-`com.rounds.api.card.CardBuilder` предназначен для упрощённого создания `CustomCard` без ручной реализации всех методов. Позволяет декларативно задать ключ, название, описание, иконку, редкость, роль и логику `apply`.
+`com.rounds.api.card.CardBuilder` предназначен для упрощённого создания `CustomCard` без ручной реализации всех методов. Позволяет декларативно задать ключ, название, описание, иконку, редкость, роль, растровый глиф шрифта ресурспака (`.glyph(char)`) и логику `apply`.
+
+#### Поддержка шрифтовых глифов и ресурспака
+
+Каждая карта может ассоциироваться с глифом растрового шрифта ресурспака `rounds:default` (встроенные карты используют диапазон `\uE000` + familyId, например `\uE001` .. `\uE07F`). При наличии глифа карта отображается в 3D сцене выбора карт в мире (Text Display billboard) своей уникальной текстурой.
+
+```java
+CustomCard card = CardBuilder.create(plugin, "thunder_strike")
+    .name("ru", "Удар грома")
+    .name("en", "Thunder Strike")
+    .description("ru", "Вызывает молнию при попадании")
+    .rarity(CardRarity.RARE)
+    .material(Material.NETHER_STAR)
+    .role(CardRole.OFFENSIVE)
+    .glyph('\uE025') // Растровый глиф в ресурспаке rounds:default
+    .build();
+```
 
 ### Регистрация и удаление карт
 
@@ -497,7 +516,6 @@ public void onRoundStart(RoundsRoundStartEvent event) {
 - **API-контракт.** Ориентируйтесь строго на публичные типы из `rounds-api`. Внутренние классы `rounds-core` не являются частью API и могут изменяться без сохранения обратной совместимости.
 - **События.** Часть событий может быть отменяема. Всегда учитывайте `isCancelled()`, если событие реализует `Cancellable`.
 
----
 
 ## Совместимость версий сервера и мост NmsBridge
 

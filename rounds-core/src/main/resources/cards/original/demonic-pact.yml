@@ -7,6 +7,7 @@ description:
   en: "+9 Bullets, removes attack delay, -10% HP per shot"
 material: WITHER_SKELETON_SKULL
 enabled: true
+art: card17.png
 variations:
   - rarity: LEGENDARY
     effects:

@@ -7,6 +7,7 @@ description:
   en: "Respawn once on death, -35% HP"
 material: BLAZE_POWDER
 enabled: true
+art: card37.png
 variations:
   - rarity: LEGENDARY
     effects:

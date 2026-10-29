@@ -7,6 +7,7 @@ description:
   en: "Silence enemies on block, +25% HP"
 material: OBSIDIAN
 enabled: true
+art: card20.png
 variations:
   - rarity: RARE
     effects:

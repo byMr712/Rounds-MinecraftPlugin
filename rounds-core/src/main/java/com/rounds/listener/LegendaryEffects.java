@@ -288,6 +288,11 @@ public class LegendaryEffects implements Listener {
             fallPeakY.put(player.getUniqueId(), player.getLocation().getY());
             checkAndTriggerSkyfall(player, data);
         }
+
+        if (!event.isCancelled() && event.getFinalDamage() > 0) {
+            org.bukkit.entity.Entity attacker = (event instanceof org.bukkit.event.entity.EntityDamageByEntityEvent edbe) ? edbe.getDamager() : null;
+            data.executeTriggers(com.rounds.cards.CardTrigger.ON_DAMAGE_TAKEN, player, attacker, event.getFinalDamage());
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

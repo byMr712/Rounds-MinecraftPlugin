@@ -6,6 +6,8 @@ import com.rounds.api.RoundsService;
 import com.rounds.api.card.CustomCard;
 import com.rounds.api.data.CustomDataContainer;
 import com.rounds.player.PlayerData;
+import com.rounds.cards.Card;
+import com.rounds.cards.CardRegistry;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
@@ -18,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RoundsServiceImpl implements RoundsService {
 
     private final RoundsPlugin plugin;
-    private final ApiVersion version = new ApiVersion(1, 0, 0);
+    private final ApiVersion version = new ApiVersion(1, 1, 0);
     private final IdMappingRegistry idMappingRegistry;
     private final Map<NamespacedKey, CustomCard> registeredCardsByKey = new ConcurrentHashMap<>();
     private final List<CustomCard> registeredCardsOrder = Collections.synchronizedList(new ArrayList<>());
@@ -145,6 +147,35 @@ public class RoundsServiceImpl implements RoundsService {
     public Optional<CustomDataContainer> getCustomData(UUID playerUuid) {
         if (plugin.getCustomDataManager() == null) return Optional.empty();
         return plugin.getCustomDataManager().get(playerUuid).map(c -> (CustomDataContainer) c);
+    }
+
+    @Override
+    public List<CustomCard> getPlayerCards(Player player) {
+        if (player == null || plugin.getPlayerDataManager() == null || plugin.getCardManager() == null) {
+            return Collections.emptyList();
+        }
+        PlayerData data = plugin.getPlayerDataManager().getData(player);
+        if (data == null) return Collections.emptyList();
+
+        List<CustomCard> list = new ArrayList<>();
+        CardRegistry reg = plugin.getCardManager().getRegistry();
+        for (Integer cardId : data.getOwnedCards()) {
+            Card c = reg.getCard(cardId);
+            if (c instanceof CustomCardAdapter adapter) {
+                list.add(adapter.getCustomCard());
+            } else if (c != null) {
+                String slug = reg.getCardSlug(c);
+                list.add(new BuiltinCardWrapper(plugin, c, slug != null ? slug : ("card_" + cardId)));
+            }
+        }
+        return Collections.unmodifiableList(list);
+    }
+
+    @Override
+    public double getPlayerScale(Player player) {
+        if (player == null) return 1.0;
+        PlayerData data = plugin.getPlayerDataManager() != null ? plugin.getPlayerDataManager().getData(player) : null;
+        return com.rounds.player.PlayerDataManager.getPlayerScale(player, data);
     }
 
     @Override

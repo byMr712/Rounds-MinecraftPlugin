@@ -7,6 +7,7 @@ description:
   en: "Enemies who hit you are slowed by 20%"
 material: BLUE_ICE
 enabled: true
+art: card11.png
 variations:
   - rarity: LEGENDARY
     effects:

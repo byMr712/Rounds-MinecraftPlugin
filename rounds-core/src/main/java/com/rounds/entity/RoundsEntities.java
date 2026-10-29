@@ -977,6 +977,7 @@ public class RoundsEntities implements Listener {
                 shooterPlayer.playSound(shooterPlayer.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.7f, 1.5f);
             }
         }
+        data.executeTriggers(com.rounds.cards.CardTrigger.ON_BULLET_HIT, shooterPlayer, living, b.damage);
         if (data.refresh > 0 && shooterPlayer != null && shooterPlayer.isOnline()) {
             GunItem.resetBlockCooldown(shooterPlayer.getUniqueId());
         }

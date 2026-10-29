@@ -7,6 +7,7 @@ description:
   en: "The final bullet triggers a lockdown and extends the shield duration by 1 second."
 material: SHIELD
 enabled: true
+art: card50.png
 variations:
   - rarity: LEGENDARY
     effects:

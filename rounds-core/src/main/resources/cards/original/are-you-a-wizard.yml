@@ -7,6 +7,7 @@ description:
   en: "After blocking, your next shot is empowered"
 material: BREWING_STAND
 enabled: true
+art: card1.png
 variations:
   - rarity: RARE
     effects:

@@ -7,6 +7,7 @@ description:
   en: "On block, nearby enemies can't block or reload for 7s (30s ability cooldown)"
 material: GRAY_DYE
 enabled: true
+art: card20.png
 variations:
   - rarity: RARE
     effects:

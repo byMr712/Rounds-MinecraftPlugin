@@ -7,6 +7,7 @@ description:
   en: "When at 0 ammo, automatically reloads weapon after {sec} seconds"
 material: CLOCK
 enabled: true
+art: card40.png
 variations:
   - rarity: COMMON
     value: "2"

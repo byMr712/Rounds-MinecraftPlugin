@@ -3,10 +3,11 @@ name:
   ru: "&bЭхо"
   en: "&bEcho"
 description:
-  ru: "При блоке через 0.5 сек срабатывает второй повторный импульс блока"
-  en: "Blocking triggers a second block pulse after 0.5s"
+  ru: "При блоке через 1 сек срабатывает второй повторный импульс блока"
+  en: "Blocking triggers a second block pulse after 1s"
 material: ECHO_SHARD
 enabled: true
+art: card49.png
 variations:
   - rarity: RARE
     effects:

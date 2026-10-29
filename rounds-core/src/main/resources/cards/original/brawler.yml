@@ -7,6 +7,7 @@ description:
   en: "+{v} HP after dealing damage"
 material: IRON_SWORD
 enabled: true
+art: card6.png
 variations:
   - rarity: RARE
     value: "20%"

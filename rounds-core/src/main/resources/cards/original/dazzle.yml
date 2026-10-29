@@ -7,6 +7,7 @@ description:
   en: "Bullets stun enemies, +10% Reload time"
 material: PRISMARINE_SHARD
 enabled: true
+art: card14.png
 variations:
   - rarity: RARE
     effects:

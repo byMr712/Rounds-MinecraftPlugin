@@ -21,6 +21,7 @@ public abstract class CustomCard {
     private final Material material;
     private final CardRole role;
     private int customModelData = 0; // 0 означает стандартную ванильную модель
+    private Character glyph = null; // Пользовательский символ шрифта ресурспака (например, \uE001)
 
     protected CustomCard(Plugin plugin, String id, CardRarity rarity, Material material, CardRole role) {
         if (plugin == null) {
@@ -72,4 +73,6 @@ public abstract class CustomCard {
     public final CardRole getRole() { return role; }
     public final int getCustomModelData() { return customModelData; }
     public final void setCustomModelData(int customModelData) { this.customModelData = customModelData; }
+    public final Character getGlyph() { return glyph; }
+    public final void setGlyph(Character glyph) { this.glyph = glyph; }
 }

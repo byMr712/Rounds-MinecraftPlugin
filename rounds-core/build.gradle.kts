@@ -8,7 +8,7 @@ version = "1.7"
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(25))
+        languageVersion.set(JavaLanguageVersion.of(17))
     }
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
@@ -22,9 +22,6 @@ repositories {
 
 dependencies {
     implementation(project(":rounds-api"))
-    // Только Paper API (и PlaceholderAPI для офлайн-таб-комплита placeholders).
-    // Любой net.minecraft.* / org.bukkit.craftbukkit.* доступ запрещён: он
-    // изолирован в версионных модулях rounds-nms1204 / rounds-nms262 за NmsBridge.
     compileOnly("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
     compileOnly("me.clip:placeholderapi:2.11.6")
     testImplementation("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
@@ -44,7 +41,6 @@ tasks.processResources {
 }
 
 tasks.jar {
-    // Промежуточный модульный jar. Финальные артефакты собирают rounds-nms1204 / rounds-nms262.
     archiveFileName.set("rounds-core-v${project.version}.jar")
 }
 
@@ -56,6 +52,17 @@ tasks.named<JavaCompile>("compileJava") {
 tasks.named<JavaCompile>("compileTestJava") {
     options.encoding = "UTF-8"
     options.release.set(17)
+}
+
+tasks.register<JavaExec>("buildCardPack") {
+    group = "rounds"
+    description = "Cross-platform universal resource pack generator (RU, EN, Default)."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("com.rounds.tool.CardPackBuilder")
+    val packArgs = mutableListOf<String>()
+    if (project.hasProperty("deployDesktop")) packArgs.add("--deploy-desktop")
+    if (project.hasProperty("deployInstances")) packArgs.add("--deploy-instances")
+    args = packArgs
 }
 
 publishing {

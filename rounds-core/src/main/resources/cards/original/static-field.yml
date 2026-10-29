@@ -7,6 +7,7 @@ description:
   en: "Slow + damage field on block"
 material: CHAIN
 enabled: true
+art: card20.png
 variations:
   - rarity: RARE
     effects:

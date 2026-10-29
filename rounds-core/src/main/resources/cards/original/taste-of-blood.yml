@@ -7,6 +7,7 @@ description:
   en: "+{0} speed after hit, +{1} Lifesteal"
 material: BEEF
 enabled: true
+art: card32.png
 variations:
   - rarity: COMMON
     values: ["50%", "60%"]

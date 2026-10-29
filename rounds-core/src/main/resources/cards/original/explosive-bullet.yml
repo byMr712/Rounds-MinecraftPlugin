@@ -7,6 +7,7 @@ description:
   en: "Bullet explodes on impact, -30% ATKSPD"
 material: FIRE_CHARGE
 enabled: true
+art: card22.png
 variations:
   - rarity: RARE
     effects:

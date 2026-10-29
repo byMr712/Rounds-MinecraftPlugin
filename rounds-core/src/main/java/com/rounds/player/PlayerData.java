@@ -1,6 +1,7 @@
 package com.rounds.player;
 
 import com.rounds.DefaultStats;
+import com.rounds.util.Messages;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,6 +15,7 @@ public class PlayerData {
     public double playerUse = 0;
 
     private final List<Integer> ownedCards = new ArrayList<>();
+    private final List<com.rounds.cards.CardTriggerAction> triggerActions = new ArrayList<>();
     public boolean recalculateOnLogin = false;
 
     public double cardSelect1 = 0;
@@ -199,6 +201,7 @@ public class PlayerData {
 
     public void resetAllCards() {
         ownedCards.clear();
+        triggerActions.clear();
     }
 
     public void resetStats() {
@@ -308,6 +311,7 @@ public class PlayerData {
         shieldActive = false;
         shieldHp = 0;
         phoenixUses = 0;
+        triggerActions.clear();
     }
 
     public double getEffectiveDamage() {
@@ -333,6 +337,87 @@ public class PlayerData {
 
     public static double clampMaxHealth(double value) {
         return Math.max(2, Math.min(value, MAX_HEALTH));
+    }
+
+    public void addTriggerActions(List<com.rounds.cards.CardTriggerAction> actions) {
+        if (actions != null && !actions.isEmpty()) {
+            triggerActions.addAll(actions);
+        }
+    }
+
+    public List<com.rounds.cards.CardTriggerAction> getTriggerActions() {
+        return Collections.unmodifiableList(triggerActions);
+    }
+
+    public void executeTriggers(com.rounds.cards.CardTrigger trigger, org.bukkit.entity.Player player, org.bukkit.entity.Entity target, double contextValue) {
+        if (triggerActions.isEmpty()) return;
+        for (int i = 0; i < triggerActions.size(); i++) {
+            com.rounds.cards.CardTriggerAction act = triggerActions.get(i);
+            if (act.trigger() == trigger) {
+                applyTriggerAction(act, player, target, contextValue);
+            }
+        }
+    }
+
+    private void applyTriggerAction(com.rounds.cards.CardTriggerAction act, org.bukkit.entity.Player player, org.bukkit.entity.Entity target, double contextValue) {
+        switch (act.action()) {
+            case RESTORE_AMMO -> {
+                int toAdd = (int) Math.max(1, act.value());
+                this.ammo = Math.min(this.maxAmmo, this.ammo + toAdd);
+                if (player != null && player.isOnline()) {
+                    player.sendActionBar(org.bukkit.ChatColor.GRAY + Messages.get("gun.ammo-display", (int) this.ammo, (int) this.maxAmmo));
+                }
+            }
+            case HEAL -> {
+                if (player != null && !player.isDead()) {
+                    double maxHp = player.getMaxHealth();
+                    player.setHealth(Math.min(maxHp, player.getHealth() + act.value()));
+                }
+            }
+            case DAMAGE_VICTIM -> {
+                if (target instanceof org.bukkit.entity.LivingEntity living && !living.isDead()) {
+                    living.damage(act.value(), player);
+                }
+            }
+            case PUSH_SHOOTER -> {
+                if (player != null) {
+                    org.bukkit.util.Vector dir = player.getLocation().getDirection();
+                    player.setVelocity(player.getVelocity().add(dir.multiply(act.value())));
+                }
+            }
+            case PUSH_VICTIM -> {
+                if (target != null && player != null) {
+                    org.bukkit.util.Vector dir = target.getLocation().toVector().subtract(player.getLocation().toVector()).normalize();
+                    target.setVelocity(target.getVelocity().add(dir.multiply(act.value())));
+                }
+            }
+            case PLAY_SOUND -> {
+                if (player != null && !act.param().isEmpty()) {
+                    player.playSound(player.getLocation(), act.param(), 1.0f, (float) (act.value() > 0 ? act.value() : 1.0f));
+                }
+            }
+            case SPAWN_PARTICLE -> {
+                if (player != null && !act.param().isEmpty()) {
+                    try {
+                        org.bukkit.Particle p = org.bukkit.Particle.valueOf(act.param().toUpperCase());
+                        int count = (int) Math.max(1, act.value());
+                        org.bukkit.Location loc = target != null ? target.getLocation() : player.getLocation();
+                        loc.getWorld().spawnParticle(p, loc.clone().add(0, 1.0, 0), count, 0.3, 0.3, 0.3, 0.05);
+                    } catch (IllegalArgumentException ignored) {}
+                }
+            }
+            case APPLY_POTION -> {
+                if (target instanceof org.bukkit.entity.LivingEntity living && !act.param().isEmpty()) {
+                    try {
+                        org.bukkit.potion.PotionEffectType pet = org.bukkit.potion.PotionEffectType.getByName(act.param().toUpperCase());
+                        if (pet != null) {
+                            int ticks = (int) Math.max(20, act.value() * 20.0);
+                            living.addPotionEffect(new org.bukkit.potion.PotionEffect(pet, ticks, 0));
+                        }
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
     }
 
     public static double round2(double value) {

@@ -219,6 +219,7 @@ public class GunItem implements Listener {
         GunCooldowns.recordShot(uuid);
         com.rounds.stats.MatchStatsManager.recordShot(uuid);
         cancelReload(uuid);
+        data.executeTriggers(com.rounds.cards.CardTrigger.ON_SHOOT, player, null, 1.0);
 
         int configuredBulletCount = shootEvent.getBulletCount();
         reps = Math.min(configuredBulletCount, MAX_BULLET_REPRESENTATIVES);
@@ -327,7 +328,7 @@ public class GunItem implements Listener {
         if (data.echo > 0) {
             int echoCount = (int) Math.max(1, Math.round(data.echo));
             for (int i = 1; i <= echoCount; i++) {
-                long delayTicks = 10L * i;
+                long delayTicks = 20L * i; // 1.0s (20 ticks)
                 Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                     if (!player.isOnline() || player.isDead()) return;
                     if (plugin.getGameManager().getState() != com.rounds.game.GameManager.GameState.PLAYING) return;
@@ -613,6 +614,7 @@ public class GunItem implements Listener {
                 player.sendActionBar(ChatColor.BLUE + Messages.get("gun.shield-activated"));
             }
         }
+        data.executeTriggers(com.rounds.cards.CardTrigger.ON_SHIELD_BLOCK, player, null, 1.0);
     }
 
     @EventHandler
@@ -866,6 +868,7 @@ public class GunItem implements Listener {
 
                 if (currentTick >= totalTicks) {
                     data.ammo = data.maxAmmo;
+                    data.executeTriggers(com.rounds.cards.CardTrigger.ON_RELOAD, player, null, 1.0);
                     reloadingPlayers.remove(uuid);
             reloadTasks.remove(uuid);
                     player.sendActionBar(ChatColor.GREEN + Messages.get("gun.reloaded", (int) data.ammo));

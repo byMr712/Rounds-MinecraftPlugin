@@ -7,6 +7,7 @@ description:
   en: "Gives a random legendary card"
 material: ENDER_CHEST
 enabled: true
+art: card37.png
 variations:
   - rarity: LEGENDARY
     effects:

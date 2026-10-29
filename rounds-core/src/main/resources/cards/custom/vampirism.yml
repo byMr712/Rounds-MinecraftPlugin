@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=../../cards.schema.json
+id: 500
+name:
+  ru: "Вампиризм"
+  en: "Vampirism"
+description:
+  ru: "Попадание пулей по врагу исцеляет вас на 2 HP и восполняет 1 патрон"
+  en: "Hitting an enemy with a bullet restores 2 HP and refunds 1 ammo"
+rarity: RARE
+material: REDSTONE
+enabled: true
+art: card32.png
+effects:
+  bullets: 0
+triggers:
+  - on: ON_BULLET_HIT
+    action: HEAL
+    value: 2.0
+  - on: ON_BULLET_HIT
+    action: RESTORE_AMMO
+    value: 1.0
+  - on: ON_BULLET_HIT
+    action: PLAY_SOUND
+    value: 1.2
+    param: "entity.player.levelup"
+  - on: ON_BULLET_HIT
+    action: SPAWN_PARTICLE
+    value: 6
+    param: "HEART"

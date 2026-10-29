@@ -7,6 +7,7 @@ description:
   en: "Extra bullet bounces: {0}, {1} DMG, {2} Reload time"
 material: SLIME_BALL
 enabled: true
+art: card5.png
 variations:
   - rarity: COMMON
     values: ["2", "+25%", "+10%"]

@@ -7,6 +7,7 @@ description:
   en: "+{0} HP, -{1} ATKSPD, +{2} Reload time"
 material: IRON_CHESTPLATE
 enabled: true
+art: card30.png
 variations:
   - rarity: COMMON
     values: ["100%", "25%", "10%"]

@@ -1,0 +1,331 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RoundsCard",
+  "description": "Validation schema and auto-completion for Rounds Minecraft Plugin upgrade cards.",
+  "type": "object",
+  "required": [
+    "id"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Link to the JSON schema for validation and autocompletion."
+    },
+    "id": {
+      "type": "integer",
+      "description": "Unique card family ID (must be >= 1). Corresponds to font glyph U+E000 + ID."
+    },
+    "name": {
+      "description": "Localized card name displayable in GUI, chat, and action bars.",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "ru": {
+              "type": "string"
+            },
+            "en": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "description": {
+      "description": "Localized description template with optional {v} or {0} placeholders.",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "ru": {
+              "type": "string"
+            },
+            "en": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "rarity": {
+      "type": "string",
+      "enum": [
+        "COMMON",
+        "UNCOMMON",
+        "RARE",
+        "EPIC",
+        "LEGENDARY"
+      ],
+      "default": "COMMON",
+      "description": "Default card rarity tier affecting draft drop weights and outline colors."
+    },
+    "material": {
+      "type": "string",
+      "default": "PAPER",
+      "description": "Bukkit Material used as item icon in inventory GUIs."
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this card is active and can appear in drafts."
+    },
+    "script": {
+      "type": "string",
+      "description": "Optional custom script identifier for specialized plugin integrations."
+    },
+    "commands": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Console commands executed when the card is drafted (%player% placeholder supported)."
+    },
+    "effects": {
+      "type": "object",
+      "description": "Numeric weapon and character stat modifiers applied additively or multiplicatively.",
+      "properties": {
+        "damage": {
+          "type": "number",
+          "description": "Damage multiplier modifier (+1.0 = +100%)."
+        },
+        "attack-speed": {
+          "type": "number",
+          "description": "Attack speed flat modifier."
+        },
+        "attack-range": {
+          "type": "number",
+          "description": "Attack range modifier."
+        },
+        "bullets": {
+          "type": "number",
+          "description": "Additional bullets per burst."
+        },
+        "ammo": {
+          "type": "number",
+          "description": "Additional max ammo capacity."
+        },
+        "bullet-speed": {
+          "type": "number",
+          "description": "Bullet velocity multiplier."
+        },
+        "bounce": {
+          "type": "number",
+          "description": "Number of surface bounces."
+        },
+        "hp": {
+          "type": "number",
+          "description": "Maximum health multiplier (+0.5 = +50%)."
+        },
+        "hp-cost": {
+          "type": "number",
+          "description": "Health cost fraction per shot (suicide-safe)."
+        },
+        "cold": {
+          "type": "number",
+          "description": "Cold slowdown effect duration in seconds."
+        },
+        "poison": {
+          "type": "number",
+          "description": "Poison effect duration in seconds."
+        },
+        "homing": {
+          "type": "number",
+          "description": "Homing trajectory steering strength."
+        },
+        "leech": {
+          "type": "number",
+          "description": "Lifesteal percentage upon dealing bullet damage."
+        },
+        "empower": {
+          "type": "number",
+          "description": "Empower damage charge on block."
+        },
+        "grow": {
+          "type": "number",
+          "description": "Bullet size and damage increase over distance."
+        },
+        "speed": {
+          "type": "number",
+          "description": "Movement speed modifier."
+        },
+        "stun": {
+          "type": "number",
+          "description": "Stun effect on hit."
+        },
+        "shield": {
+          "type": "number",
+          "description": "Shield cooldown reduction modifier."
+        },
+        "truster": {
+          "type": "number",
+          "description": "Propulsion recoil strength in opposite aim vector."
+        },
+        "decay": {
+          "type": "number",
+          "description": "Damage buffer duration in seconds."
+        },
+        "echo": {
+          "type": "number",
+          "description": "Echo second shield block pulse delay."
+        },
+        "ammo-per-hit": {
+          "type": "number",
+          "description": "Ammo refunded on bullet hit."
+        }
+      },
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
+    "triggers": {
+      "type": "array",
+      "description": "Data-driven combat event trigger actions.",
+      "items": {
+        "type": "object",
+        "required": [
+          "on",
+          "action"
+        ],
+        "properties": {
+          "on": {
+            "type": "string",
+            "enum": [
+              "ON_SHOOT",
+              "ON_BULLET_HIT",
+              "ON_DAMAGE_TAKEN",
+              "ON_SHIELD_BLOCK",
+              "ON_RELOAD"
+            ],
+            "description": "Combat event that triggers this action."
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "RESTORE_AMMO",
+              "HEAL",
+              "DAMAGE_VICTIM",
+              "PUSH_SHOOTER",
+              "PUSH_VICTIM",
+              "PLAY_SOUND",
+              "SPAWN_PARTICLE",
+              "APPLY_POTION"
+            ],
+            "description": "Action executed when triggered."
+          },
+          "value": {
+            "type": "number",
+            "description": "Numeric magnitude (damage, heal amount, ammo count, duration, pitch)."
+          },
+          "param": {
+            "type": "string",
+            "description": "String parameter (sound name, particle type, potion effect name)."
+          }
+        }
+      }
+    },
+    "variations": {
+      "type": "array",
+      "description": "List of rarity variations scaling this card across draft tiers.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "rarity": {
+            "type": "string",
+            "enum": [
+              "COMMON",
+              "UNCOMMON",
+              "RARE",
+              "EPIC",
+              "LEGENDARY"
+            ]
+          },
+          "value": {
+            "type": [
+              "string",
+              "number"
+            ]
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "number"
+              ]
+            }
+          },
+          "material": {
+            "type": "string"
+          },
+          "effects": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "triggers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "on",
+                "action"
+              ],
+              "properties": {
+                "on": {
+                  "type": "string",
+                  "enum": [
+                    "ON_SHOOT",
+                    "ON_BULLET_HIT",
+                    "ON_DAMAGE_TAKEN",
+                    "ON_SHIELD_BLOCK",
+                    "ON_RELOAD"
+                  ]
+                },
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "RESTORE_AMMO",
+                    "HEAL",
+                    "DAMAGE_VICTIM",
+                    "PUSH_SHOOTER",
+                    "PUSH_VICTIM",
+                    "PLAY_SOUND",
+                    "SPAWN_PARTICLE",
+                    "APPLY_POTION"
+                  ]
+                },
+                "value": {
+                  "type": "number"
+                },
+                "param": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "art": {
+      "type": "string",
+      "default": "card_default.png",
+      "description": "Visual artwork file used for 3D card display and font generation (e.g. card1.png, card_default.png). Defaults to black-and-purple checkerboard missing texture if omitted."
+    }
+  }
+}

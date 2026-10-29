@@ -7,6 +7,7 @@ description:
   en: "Bullet size +70%, reload +30%"
 material: IRON_NUGGET
 enabled: true
+art: card3.png
 variations:
   - rarity: COMMON
     effects:

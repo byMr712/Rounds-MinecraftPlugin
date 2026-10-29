@@ -7,6 +7,7 @@ description:
   en: "Teleport forward on block, -Block CD"
 material: ENDER_PEARL
 enabled: true
+art: card1.png
 variations:
   - rarity: RARE
     effects:

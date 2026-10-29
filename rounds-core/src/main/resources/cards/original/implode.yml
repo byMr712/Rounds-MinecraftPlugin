@@ -7,6 +7,7 @@ description:
   en: "Pull enemies on block, +50% HP"
 material: MAGMA_CREAM
 enabled: true
+art: card31.png
 variations:
   - rarity: RARE
     effects:

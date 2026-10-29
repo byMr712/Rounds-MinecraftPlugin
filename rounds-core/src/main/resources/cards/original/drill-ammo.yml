@@ -7,6 +7,7 @@ description:
   en: "Bullets drill through walls, -40% Reload time"
 material: IRON_PICKAXE
 enabled: true
+art: card18.png
 variations:
   - rarity: RARE
     effects:

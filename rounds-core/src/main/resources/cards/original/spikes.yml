@@ -7,6 +7,7 @@ description:
   en: "The attacker takes 10% of their own damage when hitting you"
 material: CACTUS
 enabled: true
+art: card16.png
 variations:
   - rarity: LEGENDARY
     effects:

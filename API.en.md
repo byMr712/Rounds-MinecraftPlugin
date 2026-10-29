@@ -26,8 +26,8 @@ The main entry point is `com.rounds.api.RoundsAPI`. The actual provider is acces
 
 The API uses `com.rounds.api.ApiVersion`.
 
-- Get version: `RoundsAPI.getVersion()`
-- `ApiVersion` contains API version information to check addon compatibility against the current plugin version.
+- Get version: `RoundsAPI.getVersion()` (current version: **1.1.0**)
+- `ApiVersion` contains API version information to check addon compatibility against the current plugin version. Version 1.1.0 introduces custom font glyph support for cards (`glyph`), player deck queries (`getPlayerCards`), and model scale inspection (`getPlayerScale`).
 
 It is recommended to verify the API version for features with strict compatibility requirements.
 
@@ -137,9 +137,12 @@ public interface RoundsService {
     Optional<CustomCard> getCard(NamespacedKey key);
     List<CustomCard> getRegisteredCards();
 
-    // Player data
+    List<CustomCard> getPlayerCards(Player player);
+
+    // Player data and attributes
     Optional<CustomDataContainer> getCustomData(Player player);
     Optional<CustomDataContainer> getCustomData(UUID playerUuid);
+    double getPlayerScale(Player player);
 
     // Game state
     int getCurrentRound();
@@ -494,7 +497,6 @@ public void onRoundStart(RoundsRoundStartEvent event) {
 - **API boundary.** Only use public types from `rounds-api`. Classes from `rounds-core` are internal and not part of the API contract; they may change without backward compatibility guarantees.
 - **Events.** Some events are cancellable. Always check `isCancelled()` when dealing with cancellable events.
 
----
 
 ## Server Version Compatibility and the NmsBridge
 

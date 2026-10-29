@@ -7,6 +7,7 @@ description:
   en: "+{v} HP, regeneration on block"
 material: NOTE_BLOCK
 enabled: true
+art: card1.png
 variations:
   - rarity: UNCOMMON
     value: "10%"

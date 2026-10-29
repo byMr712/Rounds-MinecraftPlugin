@@ -7,6 +7,7 @@ description:
   en: "Slow nearby enemies, +25% HP"
 material: SNOWBALL
 enabled: true
+art: card11.png
 variations:
   - rarity: RARE
     effects:

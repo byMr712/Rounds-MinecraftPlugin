@@ -7,6 +7,7 @@ description:
   en: "Bullets seek target on bounce, +1 bounce, -40% DMG"
 material: ARROW
 enabled: true
+art: card46.png
 variations:
   - rarity: RARE
     effects:

@@ -7,6 +7,7 @@ description:
   en: "Extra bullet bounces: {0}, {1} ATKSPD, {2} Reload time"
 material: DIAMOND
 enabled: true
+art: card46.png
 variations:
   - rarity: RARE
     values: ["2", "+25%", "+10%"]

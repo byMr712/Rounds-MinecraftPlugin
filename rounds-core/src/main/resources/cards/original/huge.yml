@@ -4,6 +4,7 @@ name:
   en: "&6Huge"
 material: GOLDEN_CARROT
 enabled: true
+art: card30.png
 variations:
   - rarity: COMMON
     description:

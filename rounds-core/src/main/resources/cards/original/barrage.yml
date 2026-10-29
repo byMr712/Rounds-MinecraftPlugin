@@ -7,6 +7,7 @@ description:
   en: "+4 Bullets, +5 Ammo, -70% DMG, +10% Reload time"
 material: ARROW
 enabled: true
+art: card2.png
 variations:
   - rarity: COMMON
     effects:

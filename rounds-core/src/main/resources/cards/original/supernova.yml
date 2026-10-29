@@ -7,6 +7,7 @@ description:
   en: "Pull + stun enemies, +50% HP"
 material: END_CRYSTAL
 enabled: true
+art: card22.png
 variations:
   - rarity: LEGENDARY
     effects:

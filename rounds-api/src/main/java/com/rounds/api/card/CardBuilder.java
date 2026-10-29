@@ -23,6 +23,7 @@ public final class CardBuilder {
     private Material material = Material.PAPER;
     private CardRole role = CardRole.OFFENSIVE;
     private int customModelData = 0;
+    private Character glyph = null;
 
     private final Map<String, String> names = new HashMap<>();
     private final Map<String, String> descriptions = new HashMap<>();
@@ -64,6 +65,11 @@ public final class CardBuilder {
 
     public CardBuilder customModelData(int customModelData) {
         this.customModelData = customModelData;
+        return this;
+    }
+
+    public CardBuilder glyph(char glyph) {
+        this.glyph = glyph;
         return this;
     }
 
@@ -234,6 +240,7 @@ public final class CardBuilder {
         };
 
         card.setCustomModelData(customModelData);
+        card.setGlyph(glyph);
         return card;
     }
 

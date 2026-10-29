@@ -28,11 +28,19 @@ public class Card {
     private final Map<String, Double> effects;
     private final List<String> commands;
     private final String customScript;
+    private final List<CardTriggerAction> triggers;
 
     public Card(int id, int familyId, Map<String, String> names, Map<String, String> descriptions,
                 Material material,
                 CardRegistry.Rarity rarity, boolean enabled, Map<String, Double> effects,
                 List<String> commands, String customScript) {
+        this(id, familyId, names, descriptions, material, rarity, enabled, effects, commands, customScript, Collections.emptyList());
+    }
+
+    public Card(int id, int familyId, Map<String, String> names, Map<String, String> descriptions,
+                Material material,
+                CardRegistry.Rarity rarity, boolean enabled, Map<String, Double> effects,
+                List<String> commands, String customScript, List<CardTriggerAction> triggers) {
         this.id = id;
         this.familyId = familyId;
         this.names = names;
@@ -43,12 +51,16 @@ public class Card {
         this.effects = effects;
         this.commands = commands;
         this.customScript = customScript;
+        this.triggers = triggers != null ? Collections.unmodifiableList(new ArrayList<>(triggers)) : Collections.emptyList();
     }
 
     public void apply(Player player, PlayerData data) { apply(player, data, true); }
     public void apply(Player player, PlayerData data, boolean runCommands) {
         for (Map.Entry<String, Double> entry : effects.entrySet()) {
             applyEffect(data, entry.getKey().replace('_', '-'), entry.getValue());
+        }
+        if (data != null && !triggers.isEmpty()) {
+            data.addTriggerActions(triggers);
         }
 
         if (runCommands && player != null && !commands.isEmpty()) {
@@ -306,4 +318,5 @@ public class Card {
     public Map<String, Double> getEffects() { return Collections.unmodifiableMap(effects); }
     public List<String> getCommands() { return Collections.unmodifiableList(commands); }
     public String getCustomScript() { return customScript; }
+    public List<CardTriggerAction> getTriggers() { return triggers; }
 }

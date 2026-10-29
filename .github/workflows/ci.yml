@@ -1,0 +1,40 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ "master", "main", "dev*" ]
+  pull_request:
+    branches: [ "master", "main" ]
+
+jobs:
+  build-and-test:
+    name: Build & Test (Java 17)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Make Gradle Wrapper Executable
+        run: chmod +x ./gradlew
+
+      - name: Run Core & API Unit Tests
+        run: ./gradlew :rounds-api:test :rounds-core:test --no-daemon
+
+      - name: Quick Build Target NMS (1.20.4)
+        run: ./gradlew quickBuild -PtargetNms=1204 --no-daemon
+
+      - name: Build Cross-Platform Resource Packs
+        run: ./gradlew buildCardPack --no-daemon
+
+      - name: Archive Resource Packs
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rounds-CardPacks
+          path: build/distributions/cardpacks/*.zip

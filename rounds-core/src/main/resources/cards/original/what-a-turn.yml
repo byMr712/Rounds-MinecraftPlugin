@@ -7,6 +7,7 @@ description:
   en: "Extra bullet bounces: {v}"
 material: PISTON
 enabled: true
+art: card46.png
 variations:
   - rarity: COMMON
     value: "1"

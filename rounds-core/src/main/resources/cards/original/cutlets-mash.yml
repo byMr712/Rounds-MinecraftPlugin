@@ -7,6 +7,7 @@ description:
   en: "+{v} HP"
 material: COOKED_BEEF
 enabled: true
+art: card30.png
 variations:
   - rarity: COMMON
     value: "20%"

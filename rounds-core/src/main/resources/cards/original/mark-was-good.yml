@@ -7,6 +7,7 @@ description:
   en: "Nearby enemies are highlighted"
 material: POPPY
 enabled: true
+art: card15.png
 variations:
   - rarity: UNCOMMON
     effects:

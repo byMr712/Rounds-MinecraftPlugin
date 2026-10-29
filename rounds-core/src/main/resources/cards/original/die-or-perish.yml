@@ -7,6 +7,7 @@ description:
   en: "+{0} damage, {1} HP per shot"
 material: WITHER_ROSE
 enabled: true
+art: card17.png
 variations:
   - rarity: EPIC
     values: ["40%", "5%"]

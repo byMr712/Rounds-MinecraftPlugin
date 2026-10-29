@@ -60,6 +60,22 @@ public interface RoundsService {
      */
     Optional<CustomDataContainer> getCustomData(UUID playerUuid);
 
+    /**
+     * Возвращает неизменяемый список карт, которыми владеет игрок в текущем матче.
+     *
+     * @param player игрок
+     * @return список карт или пустой список, если игрок не в матче / не имеет карт.
+     */
+    List<CustomCard> getPlayerCards(Player player);
+
+    /**
+     * Возвращает текущий множитель размера модели игрока (нативный атрибут SCALE на 1.20.5+).
+     *
+     * @param player игрок
+     * @return масштаб (1.0 по умолчанию).
+     */
+    double getPlayerScale(Player player);
+
     // Состояние игры
     int getCurrentRound(); // 0 - лобби, N >= 1 - активный раунд, -1 - сброс/ошибка
     boolean isMatchRunning();

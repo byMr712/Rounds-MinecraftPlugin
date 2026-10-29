@@ -29,7 +29,7 @@ The project uses Gradle with a multi-module architecture.
   ```
 
 - **Cross-Platform Resource Pack Builder:**
-  Generates `Rounds-ResourcePack-RU.zip`, `Rounds-ResourcePack-EN.zip`, and base `Rounds-ResourcePack.zip` (clean unbaked templates, [download on Google Drive](https://drive.google.com/file/d/13Chj0DIqG81qXGdEg2IBgMq_GYeWjyPH/view?usp=sharing)) in `resourcepacks_builds/`:
+  Generates `Rounds-ResourcePack-RU.zip`, `Rounds-ResourcePack-EN.zip`, and base `Rounds-ResourcePack.zip` (clean unbaked templates, [download on Google Drive](https://drive.google.com/file/d/1pwpCzmDIfc6RpAlirZPlN_j6W_areW-v/view?usp=sharing)) in `resourcepacks_builds/`:
   ```bash
   ./gradlew buildResourcePacks
   ```

@@ -258,13 +258,17 @@ public class GameManager implements Listener {
 
         Map<GameTeam, Location> spawnAssignment = new HashMap<>();
         if (!allSpawns.isEmpty()) {
-            spawnAssignment = SpawnManager.assignSpawns(teamsWithPlayers, allSpawns);
+            spawnAssignment = SpawnManager.assignSpawns(teamsWithPlayers, allSpawns, currentZoneCenter);
         } else {
             Location base = bs.getLobbyBlock();
             if (base != null) {
                 Location ground = getGroundLocation(base);
-                spawnAssignment.put(GameTeam.RED, ground.clone().add(-2.0, 0, 0));
-                spawnAssignment.put(GameTeam.BLUE, ground.clone().add(2.0, 0, 0));
+                Location red = ground.clone().add(-2.0, 0, 0);
+                Location blue = ground.clone().add(2.0, 0, 0);
+                SpawnManager.faceLocation(red, ground);
+                SpawnManager.faceLocation(blue, ground);
+                spawnAssignment.put(GameTeam.RED, red);
+                spawnAssignment.put(GameTeam.BLUE, blue);
             }
         }
         teamSpawns.clear();
@@ -369,6 +373,7 @@ public class GameManager implements Listener {
                 com.rounds.bot.FakeBot bot = (plugin.getBotManager() != null) ? plugin.getBotManager().getBot(p.getName()) : null;
                 if (bot != null) {
                     bot.resetPhysics();
+                    bot.setRotation(spawn.getYaw(), spawn.getPitch());
                 }
                 p.setGameMode(GameMode.ADVENTURE);
                 p.setAllowFlight(false);
@@ -1086,6 +1091,7 @@ public class GameManager implements Listener {
                 com.rounds.bot.FakeBot bot = (plugin.getBotManager() != null) ? plugin.getBotManager().getBot(p.getName()) : null;
                 if (bot != null) {
                     bot.resetPhysics();
+                    bot.setRotation(spawn.getYaw(), spawn.getPitch());
                 }
                 p.setAllowFlight(false);
                 p.setFlying(false);
@@ -1152,6 +1158,9 @@ public class GameManager implements Listener {
         double oz = Math.sin(angle) * radius;
 
         Location candidate = baseSpawn.clone().add(ox, 0, oz);
+        if (currentZoneCenter != null) {
+            SpawnManager.faceLocation(candidate, currentZoneCenter);
+        }
         Block feet = candidate.getBlock();
         Block head = candidate.clone().add(0, 1, 0).getBlock();
         Block floor = candidate.clone().subtract(0, 1, 0).getBlock();
@@ -1193,7 +1202,7 @@ public class GameManager implements Listener {
 
             List<Location> spawns = bs.getSpawnBlocksInZone(zones.get(chosen));
             if (!spawns.isEmpty()) {
-                teamSpawns.putAll(SpawnManager.assignSpawns(teams, spawns));
+                teamSpawns.putAll(SpawnManager.assignSpawns(teams, spawns, currentZoneCenter));
                 return;
             }
         }
@@ -1206,8 +1215,12 @@ public class GameManager implements Listener {
         if (base != null) {
             Location ground = getGroundLocation(base);
             currentZoneCenter = ground.clone();
-            teamSpawns.put(GameTeam.RED, ground.clone().add(-2.0, 0, 0));
-            teamSpawns.put(GameTeam.BLUE, ground.clone().add(2.0, 0, 0));
+            Location red = ground.clone().add(-2.0, 0, 0);
+            Location blue = ground.clone().add(2.0, 0, 0);
+            SpawnManager.faceLocation(red, currentZoneCenter);
+            SpawnManager.faceLocation(blue, currentZoneCenter);
+            teamSpawns.put(GameTeam.RED, red);
+            teamSpawns.put(GameTeam.BLUE, blue);
         }
     }
 
@@ -1390,7 +1403,14 @@ public class GameManager implements Listener {
                 GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
                 if (team != null) {
                     Location spawn = teamSpawns.get(team);
-                    if (spawn != null) p.teleport(spawn);
+                    if (spawn != null) {
+                        p.teleport(spawn);
+                        com.rounds.bot.FakeBot bot = (plugin.getBotManager() != null) ? plugin.getBotManager().getBot(p.getName()) : null;
+                        if (bot != null) {
+                            bot.resetPhysics();
+                            bot.setRotation(spawn.getYaw(), spawn.getPitch());
+                        }
+                    }
                     p.setFireTicks(0);
                     p.setHealth(p.getMaxHealth());
                     p.setInvulnerable(true);
@@ -1436,7 +1456,14 @@ public class GameManager implements Listener {
                 GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
                 if (team != null) {
                     Location spawn = teamSpawns.get(team);
-                    if (spawn != null) p.teleport(spawn);
+                    if (spawn != null) {
+                        p.teleport(spawn);
+                        com.rounds.bot.FakeBot bot = (plugin.getBotManager() != null) ? plugin.getBotManager().getBot(p.getName()) : null;
+                        if (bot != null) {
+                            bot.resetPhysics();
+                            bot.setRotation(spawn.getYaw(), spawn.getPitch());
+                        }
+                    }
                     p.setFireTicks(0);
                     p.setHealth(p.getMaxHealth());
                     p.setInvulnerable(true);

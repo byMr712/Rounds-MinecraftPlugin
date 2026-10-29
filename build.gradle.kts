@@ -1,9 +1,15 @@
 // Root multi-project build file
 
-tasks.register("buildCardPack") {
+tasks.register("buildResourcePacks") {
     group = "rounds"
     description = "Builds cross-platform universal resource packs via rounds-core."
-    dependsOn(":rounds-core:buildCardPack")
+    dependsOn(":rounds-core:buildResourcePacks")
+}
+
+tasks.register("buildCardPack") {
+    group = "rounds"
+    description = "Alias for buildResourcePacks."
+    dependsOn("buildResourcePacks")
 }
 
 tasks.register("quickBuild") {

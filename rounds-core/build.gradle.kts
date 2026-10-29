@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.rounds"
-version = "1.7"
+version = "1.8"
 
 java {
     toolchain {
@@ -54,7 +54,7 @@ tasks.named<JavaCompile>("compileTestJava") {
     options.release.set(17)
 }
 
-tasks.register<JavaExec>("buildCardPack") {
+tasks.register<JavaExec>("buildResourcePacks") {
     group = "rounds"
     description = "Cross-platform universal resource pack generator (RU, EN, Default)."
     classpath = sourceSets["main"].runtimeClasspath
@@ -63,6 +63,12 @@ tasks.register<JavaExec>("buildCardPack") {
     if (project.hasProperty("deployDesktop")) packArgs.add("--deploy-desktop")
     if (project.hasProperty("deployInstances")) packArgs.add("--deploy-instances")
     args = packArgs
+}
+
+tasks.register("buildCardPack") {
+    group = "rounds"
+    description = "Alias for buildResourcePacks."
+    dependsOn("buildResourcePacks")
 }
 
 publishing {

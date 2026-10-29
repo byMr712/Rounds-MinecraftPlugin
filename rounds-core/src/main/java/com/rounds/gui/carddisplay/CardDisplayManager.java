@@ -312,6 +312,7 @@ public class CardDisplayManager implements Listener {
                 display.setViewRange(0.6f);
                 display.setGlowing(true);
                 display.setGlowColorOverride(rarityColor(card.getRarity()));
+                display.setSeeThrough(true);
                 display.addScoreboardTag("rounds_card_display");
                 display.addScoreboardTag("owner_" + playerId);
                 displays[i] = display;

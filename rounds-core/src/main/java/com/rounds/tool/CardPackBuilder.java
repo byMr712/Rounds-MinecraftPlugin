@@ -57,20 +57,20 @@ public class CardPackBuilder {
             Map<Integer, FamilyCard> familyArt = collectFamilyCards(projectRoot);
             System.out.println("Discovered " + familyArt.size() + " card definitions with explicit art mappings.");
 
-            Path outDir = projectRoot.resolve("build").resolve("distributions").resolve("cardpacks");
+            Path outDir = projectRoot.resolve("resourcepacks_builds");
             Files.createDirectories(outDir);
 
             // 1. Build RU
-            Path ruZip = outDir.resolve("Rounds-CardPack-RU.zip");
+            Path ruZip = outDir.resolve("Rounds-ResourcePack-RU.zip");
             buildPack(projectRoot, familyArt, "RU", "[RU]", ruZip);
 
             // 2. Build EN
-            Path enZip = outDir.resolve("Rounds-CardPack-EN.zip");
+            Path enZip = outDir.resolve("Rounds-ResourcePack-EN.zip");
             buildPack(projectRoot, familyArt, "EN", "[EN]", enZip);
 
-            // 3. Build Universal Default
-            Path defaultZip = outDir.resolve("Rounds-CardPack.zip");
-            buildPack(projectRoot, familyArt, "DEFAULT", "", defaultZip);
+            // 3. Build Base / Clean Template Pack (blank cards without text)
+            Path defaultZip = outDir.resolve("Rounds-ResourcePack.zip");
+            buildPack(projectRoot, familyArt, "BASE", "[Base]", defaultZip);
 
             // Optional Deploy
             if (deployDesktop) {
@@ -184,10 +184,11 @@ public class CardPackBuilder {
     private static void buildPack(Path root, Map<Integer, FamilyCard> familyArt, String lang, String label, Path outZip) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+            zos.setLevel(java.util.zip.Deflater.BEST_COMPRESSION);
             // 1. pack.mcmeta
             String desc = label.isEmpty()
-                    ? "Rounds CardPack (1.20.4 - 26.3)"
-                    : "Rounds CardPack " + label + " (1.20.4 - 26.3)";
+                    ? "Rounds ResourcePack by ifrit & Mr712"
+                    : "Rounds ResourcePack " + label + " by ifrit & Mr712";
 
             String mcmeta = "{\n" +
                     "  \"pack\": {\n" +
@@ -221,7 +222,7 @@ public class CardPackBuilder {
             Path targetCardsDir = baseCardsDir;
             if ("RU".equalsIgnoreCase(lang) && Files.isDirectory(baseCardsDir.resolve("ru"))) {
                 targetCardsDir = baseCardsDir.resolve("ru");
-            } else if (("EN".equalsIgnoreCase(lang) || "DEFAULT".equalsIgnoreCase(lang)) && Files.isDirectory(baseCardsDir.resolve("en"))) {
+            } else if ("EN".equalsIgnoreCase(lang) && Files.isDirectory(baseCardsDir.resolve("en"))) {
                 targetCardsDir = baseCardsDir.resolve("en");
             }
 
@@ -271,25 +272,34 @@ public class CardPackBuilder {
                     providers.add("    { \"type\": \"bitmap\", \"file\": \"rounds:font/" + texName + ".png\", \"ascent\": 87, \"height\": 88, \"chars\": [\"\\u" + hex + "\"] }");
 
                     Path cardFile = null;
-                    if (fc.variations.isEmpty()) {
-                        // Legacy single card: prefer the baked texture generated for the family id.
-                        cardFile = resolveCardPng("card_" + fc.id, targetCardsDir, baseCardsDir);
-                        if (cardFile == null) cardFile = resolveCardPng("card" + fc.id, targetCardsDir, baseCardsDir);
-                    }
-                    if (cardFile == null) {
-                        cardFile = resolveCardPng(artName, targetCardsDir, baseCardsDir);
-                    }
-                    if (cardFile == null && fc.art != null && !fc.art.equals(artName)) {
-                        cardFile = resolveCardPng(fc.art, targetCardsDir, baseCardsDir);
-                    }
-                    if (cardFile == null) {
-                        cardFile = resolveCardPng("card_default", targetCardsDir, baseCardsDir);
-                    }
-                    if (cardFile == null) {
-                        cardFile = resolveCardPng("card_missing", targetCardsDir, baseCardsDir);
-                    }
-                    if (cardFile == null && !sourceImages.isEmpty()) {
-                        cardFile = sourceImages.get(idx % imgCount);
+                    if ("BASE".equalsIgnoreCase(lang) || "BLANK".equalsIgnoreCase(lang)) {
+                        // Base / clean template pack: strictly use clean original unbaked card art
+                        if (fc.art != null) cardFile = resolveCardPng(fc.art, baseCardsDir, null);
+                        if (cardFile == null) cardFile = resolveCardPng("card" + fc.id, baseCardsDir, null);
+                        if (cardFile == null) cardFile = resolveCardPng("card_" + fc.id, baseCardsDir, null);
+                        if (cardFile == null) cardFile = resolveCardPng("card_default", baseCardsDir, null);
+                        if (cardFile == null && !sourceImages.isEmpty()) cardFile = sourceImages.get(idx % imgCount);
+                    } else {
+                        if (fc.variations.isEmpty()) {
+                            // Legacy single card: prefer the baked texture generated for the family id.
+                            cardFile = resolveCardPng("card_" + fc.id, targetCardsDir, baseCardsDir);
+                            if (cardFile == null) cardFile = resolveCardPng("card" + fc.id, targetCardsDir, baseCardsDir);
+                        }
+                        if (cardFile == null) {
+                            cardFile = resolveCardPng(artName, targetCardsDir, baseCardsDir);
+                        }
+                        if (cardFile == null && fc.art != null && !fc.art.equals(artName)) {
+                            cardFile = resolveCardPng(fc.art, targetCardsDir, baseCardsDir);
+                        }
+                        if (cardFile == null) {
+                            cardFile = resolveCardPng("card_default", targetCardsDir, baseCardsDir);
+                        }
+                        if (cardFile == null) {
+                            cardFile = resolveCardPng("card_missing", targetCardsDir, baseCardsDir);
+                        }
+                        if (cardFile == null && !sourceImages.isEmpty()) {
+                            cardFile = sourceImages.get(idx % imgCount);
+                        }
                     }
                     if (cardFile != null) {
                         writeEntry(zos, "assets/rounds/textures/font/" + texName + ".png", Files.readAllBytes(cardFile));
@@ -355,10 +365,14 @@ public class CardPackBuilder {
     private static Path resolveCardPng(String artName, Path targetCardsDir, Path baseCardsDir) {
         if (artName == null || artName.isBlank()) return null;
         String base = artName.endsWith(".png") ? artName : artName + ".png";
-        Path p = targetCardsDir.resolve(base);
-        if (Files.exists(p)) return p;
-        p = baseCardsDir.resolve(base);
-        if (Files.exists(p)) return p;
+        if (targetCardsDir != null) {
+            Path p = targetCardsDir.resolve(base);
+            if (Files.exists(p)) return p;
+        }
+        if (baseCardsDir != null) {
+            Path p = baseCardsDir.resolve(base);
+            if (Files.exists(p)) return p;
+        }
         return null;
     }
 

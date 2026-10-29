@@ -20,15 +20,15 @@ A Minecraft plugin for the competitive mini-game [**ROUNDS**](https://store.stea
   - **Right Click:** Raises shield to deflect bullets and trigger explosive counter-abilities.
   - **Q (Drop Key):** Manually reload your magazine with a live Action Bar progress bar.
 - **Card System and Combat Abilities:**
-  - **In-World 3D Card Selection Scene:** Instead of a flat GUI inventory, players experience an interactive 3D semicircular showcase floating in the world via Text Display entities. Cards display their real graphic art through the custom bitmap font. The floating text description can be toggled via `card-display.show-floating-description: false` in `config.yml` when descriptions are drawn directly onto card face textures. Players can freely step closer to cards (up to 1.5m forward) for detailed inspection while remaining within the selection area boundary. Epic and Legendary cards feature active flame particles, selection is accompanied by carousel animation, and expiring timers trigger automatic random selection without kicking players from the server.
-  - **Official Cross-Version Resource Pack (Rounds-CardPack.zip, -RU.zip, -EN.zip):**
-    - Localized packs with language text on card faces: `Rounds-CardPack-RU.zip`, `Rounds-CardPack-EN.zip`, and default `Rounds-CardPack.zip` (source textures located in `test-servers/original_mod/cards/ru` and `en`).
+  - **In-World 3D Card Selection Scene:** Instead of a flat GUI inventory, players experience an interactive 3D semicircular showcase floating in the world via Text Display entities. Cards display their real graphic art through the custom bitmap font: every rarity variation gets its own glyph and texture. Card titles and ability descriptions are drawn directly onto the card face textures. Players can freely step closer to cards (up to 1.5m forward) for detailed inspection while remaining within the selection area boundary. Epic and Legendary cards feature active flame particles, selection is accompanied by carousel animation, and expiring timers trigger automatic random selection without kicking players from the server.
+  - **Official Cross-Version Resource Pack (Rounds-ResourcePack.zip, -RU.zip, -EN.zip):**
+    - Localized packs with language text on card faces: `Rounds-ResourcePack-RU.zip`, `Rounds-ResourcePack-EN.zip`, and default `Rounds-ResourcePack.zip` (source textures located in `test-servers/original_mod/cards/ru` and `en`).
     - 236 raster card textures (one per rarity variation) at the standard 160x250 resolution (original art size, no resampling) mapped to the `rounds:default` font (codepoints `0xE000 + familyId*10 + rarity ordinal`). Each variation gets its own texture via the `art` key inside `variations` (e.g. `art: card5-common`). Text is rendered with high-contrast drop shadows without backdrop boxes (`tools/generate_card_textures.py`), with `{0}` placeholders filled from each variation's `values` list, leaving central artwork 100% visible.
     - Dynamic round soundtracks: streamed background music tracks `music1` .. `music4` during combat rounds.
     - Combat sound effects: shield parry sound (`block.ogg`) and saw continuous cutting sound (`saw.ogg`).
     - Vanilla Minecraft background music silencer (32 sound events muted in `assets/minecraft/sounds.json`), preventing audio clashes.
     - Universal `pack.mcmeta` specification guaranteeing zero compatibility errors across all clients and servers from 1.20.4 to 26.3 (`pack_format: 22`, `supported_formats: [22, 99]`, `min_format: 22`, `max_format: 99`).
-    - Cross-platform resource pack builder via Gradle (`./gradlew buildCardPack -PdeployDesktop -PdeployInstances`) and `build-cardpack.ps1` script with automatic deployment to Desktop and ATLauncher client instances.
+    - Cross-platform resource pack builder via Gradle (`./gradlew buildResourcePacks -PdeployDesktop -PdeployInstances`) and `build-cardpack.ps1` script with automatic deployment to Desktop and ATLauncher client instances.
   - **New Cards and Combat Mechanics:**
     - **Decay:** Buffers all incoming player damage and distributes it as gradual damage-over-time ticks across 4 seconds (softening burst damage and one-shots). Features 4 stacking variations (3, 4, 5, 6 seconds).
     - **Echo:** When blocking with the shield, automatically triggers a second shield block pulse 1 second (20 ticks) later without consuming extra cooldowns.
@@ -496,28 +496,40 @@ triggers:
 The plugin provides a self-contained, cross-platform resource pack infrastructure capable of building both graphics and audio packages on any operating system.
 
 ### 1. Multi-Language Resource Packs with Baked Text (Option 3)
-To eliminate visual clutter from floating holograms in the arena (`card-display.show-floating-description: false`), card titles and ability descriptions are rendered directly onto card face textures. Separate language-specific packages are generated:
-- `Rounds-CardPack-RU.zip`: Card textures with baked Russian translations.
-- `Rounds-CardPack-EN.zip`: Card textures with baked English translations.
-- `Rounds-CardPack.zip`: Universal fallback pack.
+The official plugin resource pack is based on the original resource pack by **ifrit**, with subsequent modifications: restructured layout, added texture variations, adaptive localization (RU/EN), palette quantization, and optimization by **Mr712**.
 
-The private-use font glyph codepoints (`` + `familyId`) are identical across all language packs. Players simply activate their preferred language pack in Minecraft settings without requiring any server configuration changes.
+Card titles and ability descriptions are rendered directly onto card face textures. Separate language-specific packages are generated:
+- `Rounds-ResourcePack-RU.zip`: Card textures with baked Russian translations.
+- `Rounds-ResourcePack-EN.zip`: Card textures with baked English translations.
+- `Rounds-ResourcePack.zip`: Base template pack containing clean, unbaked original card art (without text), allowing other creators to add custom translations and typography ([Download developer base pack on Google Drive](https://drive.google.com/file/d/13Chj0DIqG81qXGdEg2IBgMq_GYeWjyPH/view?usp=sharing)).
+
+The private-use font glyph codepoints (`0xE000` + `familyId`) are identical across all language packs. Players simply activate their preferred language pack in Minecraft settings without requiring any server configuration changes.
+
+#### Server-Side Auto-Download Configuration (server.properties)
+To have clients automatically download my pre-built English resource pack when connecting to the server, configure the following parameters in `server.properties`:
+
+```properties
+resource-pack=https://drive.google.com/uc?export=download&id=1XpdkUqcpIU_ScKUKpkNRV8PMHUUTmlkd
+resource-pack-id=276093b4-f5ee-3eca-8dba-2448a11ee78a
+resource-pack-prompt={"text"\:"ROUNDS cards resource pack","color"\:"gold"}
+resource-pack-sha1=37c4834066c54c1577b50c4fddc8c6cccc2dfd75
+```
 
 ### 2. Pure Java Gradle Pack Builder (`CardPackBuilder`)
 Pack building is executed in pure Java using `ZipOutputStream` and `javax.imageio.ImageIO`. It runs reliably on Windows, Linux, macOS, and automated CI runners without external dependencies:
 ```bash
-# Standard build into build/distributions/cardpacks/:
-./gradlew buildCardPack
+# Standard build into resourcepacks_builds/:
+./gradlew buildResourcePacks
 
 # Build with automatic synchronization to Desktop and ATLauncher instances:
-./gradlew buildCardPack -PdeployDesktop -PdeployInstances
+./gradlew buildResourcePacks -PdeployDesktop -PdeployInstances
 ```
 
 ### 3. Automated Card Texture Renderer (`generate_card_textures.py`)
 The Pillow-based asset generation tool in `tools/generate_card_textures.py`:
 1. Scans all card definitions across `cards/original/` and `cards/custom/`.
 2. Extracts Russian and English names and descriptions.
-3. Automatically wraps lines, draws a translucent contrast backdrop, and bakes centered typography with soft drop-shadows onto 160x250 PNG textures.
+3. Formats line breaks and bakes centered text onto 160x250 PNG images.
 4. Outputs ready textures to `cards/ru` and `cards/en`.
 
 Run the asset generator:
@@ -871,7 +883,7 @@ Requires **JDK 17+**; Gradle **8.9+** is bundled via the wrapper.
 ./gradlew quickBuild -PtargetNms=1.20.4
 
 # Cross-platform build of all localized resource packs (RU, EN, Default):
-./gradlew buildCardPack
+./gradlew buildResourcePacks
 
 # Full build of all 17 version modules:
 ./gradlew clean build
@@ -879,12 +891,12 @@ Requires **JDK 17+**; Gradle **8.9+** is bundled via the wrapper.
 
 Comprehensive guide for creating cards via YAML with `cards.schema.json` and contributing guidelines is available in [CONTRIBUTING.en.md](CONTRIBUTING.en.md).
 
-Ready plugins - one per server version - are placed in `rounds-nms*/build/libs/`:
+Ready plugins - one per server version - are placed in `rounds-nms/*/build/libs/`:
 
 ```
-RoundsPlugin-<server-version>-v1.7-byMr712.jar
+RoundsPlugin-<server-version>-v1.8-byMr712.jar
 ```
 
 - Range: every stable release **1.20.4 - 26.3**.
 - Each jar works on both Paper and Purpur of the matching Minecraft version.
-- `rounds-api` builds separately into `rounds-api/build/libs/`, the core into `rounds-core/build/libs/`; `rounds-nms1204/build/libs/intermediate/` holds intermediate build artifacts of the 1.20.4 adapter (paperweight), not meant for use.
+- `rounds-api` builds separately into `rounds-api/build/libs/`, the core into `rounds-core/build/libs/`; `rounds-nms/rounds-nms1204/build/libs/intermediate/` holds intermediate build artifacts of the 1.20.4 adapter (paperweight), not meant for use.

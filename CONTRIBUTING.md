@@ -29,66 +29,72 @@
   ```
 
 - **Сборка кроссплатформенных ресурспаков:**
-  Генерирует `Rounds-CardPack-RU.zip`, `Rounds-CardPack-EN.zip` и `Rounds-CardPack.zip` в папке `build/distributions/cardpacks/`:
+  Генерирует `Rounds-ResourcePack-RU.zip`, `Rounds-ResourcePack-EN.zip` и базовый `Rounds-ResourcePack.zip` (чистые шаблоны карт без текста, [скачать на Google Диске](https://drive.google.com/file/d/13Chj0DIqG81qXGdEg2IBgMq_GYeWjyPH/view?usp=sharing)) в папке `resourcepacks_builds/`:
   ```bash
-  ./gradlew buildCardPack
+  ./gradlew buildResourcePacks
   ```
-  Для синхронизации на рабочий стол и в клиенты ATLauncher добавьте флаги:
+  Для синхронизации на рабочий стол добавьте флаг:
   ```bash
-  ./gradlew buildCardPack -PdeployDesktop -PdeployInstances
+  ./gradlew buildResourcePacks -PdeployDesktop
   ```
 
 
-## 2. Создание новой карточки за 2 минуты (Data-Driven Cards)
+## 2. Создание новых карточек
+
+В плагине Rounds реализовано два способа добавления новых карт:
+1. **Декларативный способ через YAML за 2 минуты (Data-Driven Cards):** быстрая конфигурация без написания Java-кода.
+2. **Программный способ через написание аддона по нашему API (Rounds Addon):** создание отдельного плагина-аддона на базе `rounds-api` и класса `CardBuilder` для уникальных игровых механик любой сложности.
+
+### Способ 1. Создание карточки за 2 минуты через YAML (Data-Driven Cards)
 
 Для добавления новой карты не требуется писать Java-код. Достаточно создать YAML-файл.
 
-### Шаг 1. Создайте YAML-файл
+#### Шаг 1. Создайте YAML-файл
 Создайте файл в папке `rounds-core/src/main/resources/cards/custom/my-card.yml`.
 
-### Шаг 2. Заполните конфигурацию с автодополнением
+#### Шаг 2. Заполните конфигурацию с автодополнением
 Укажите в первой строке директиву схемы, чтобы ваша IDE (IntelliJ IDEA, VS Code) автоматически подсказывала доступные ключи:
 
 ```yaml
-# yaml-language-server: $schema=../../cards.schema.json
-id: 501
-name:
-  ru: "Громовержец"
-  en: "Storm Bringer"
-description:
-  ru: "При блоке щитом наносит 4 урона врагам и отталкивает их"
-  en: "Shield block deals 4 damage to enemies and pushes them back"
-rarity: RARE
-material: IRON_SWORD
-enabled: true
+# yaml-language-server: $schema=../../cards.schema.json # Ссылка на схему для подсветки синтаксиса и автодополнения в IDE
+id: 501 # Уникальный числовой идентификатор карты в игре (диапазон 500+ для кастомных карт)
+name: # Блок локализованных отображаемых названий карты
+  ru: "Громовержец" # Название карточки на русском языке в меню драфта
+  en: "Storm Bringer" # Название карточки на английском языке в меню драфта
+description: # Блок локализованных описаний способностей карточки
+  ru: "При блоке щитом наносит 4 урона врагам и отталкивает их" # Описание механики на русском языке
+  en: "Shield block deals 4 damage to enemies and pushes them back" # Описание механики на английском языке
+rarity: RARE # Редкость карты (COMMON, UNCOMMON, RARE, EPIC, LEGENDARY)
+material: IRON_SWORD # Предмет-иконка карты для графического интерфейса инвентаря
+enabled: true # Флаг активности карты (true — доступна в драфте, false — отключена)
 
-# Базовые модификаторы характеристик
-effects:
-  bullets: 1
-  ammo: 2
+# Базовые модификаторы характеристик оружия и игрока
+effects: # Блок постоянных бонусов к характеристикам владельца карты
+  bullets: 1 # Увеличивает количество выпускаемых пуль за один залп на +1
+  ammo: 2 # Увеличивает максимальную емкость обоймы оружия на +2 патрона
 
-# Декларативные боевые триггеры (выполняются без тикового оверхеда)
-triggers:
-  - on: ON_SHIELD_BLOCK
-    action: DAMAGE_VICTIM
-    value: 4.0
-  - on: ON_SHIELD_BLOCK
-    action: PUSH_VICTIM
-    value: 1.5
-  - on: ON_SHIELD_BLOCK
-    action: PLAY_SOUND
-    value: 1.0
-    param: "entity.lightning_bolt.thunder"
+# Декларативные триггеры боевой логики (срабатывают без тикового оверхеда)
+triggers: # Список триггеров и реакций при наступлении игровых событий
+  - on: ON_SHIELD_BLOCK # Событие-триггер: успешное отражение входящего урона щитом
+    action: DAMAGE_VICTIM # Действие: нанесение прямого урона атакующему противнику
+    value: 4.0 # Значение наносимого урона цели (4.0 HP = 2 полных сердца)
+  - on: ON_SHIELD_BLOCK # Событие-триггер: повторное срабатывание на тот же блок щитом
+    action: PUSH_VICTIM # Действие: импульсное физическое отталкивание цели назад
+    value: 1.5 # Множитель силы горизонтального импульса отталкивания
+  - on: ON_SHIELD_BLOCK # Событие-триггер: звуковой спецэффект блокирования
+    action: PLAY_SOUND # Действие: воспроизведение звука всем игрокам рядом
+    value: 1.0 # Высота тона воспроизводимого звука (pitch)
+    param: "entity.lightning_bolt.thunder" # Идентификатор звука раската грома из ванильного Minecraft
 ```
 
-### Доступные триггеры
+#### Доступные триггеры
 - `ON_SHOOT` — выстрел из оружия.
 - `ON_BULLET_HIT` — попадание пули по живому противнику.
 - `ON_DAMAGE_TAKEN` — получение входящего урона.
 - `ON_SHIELD_BLOCK` — успешное блокирование щитом.
 - `ON_RELOAD` — завершение перезарядки оружия.
 
-### Доступные действия
+#### Доступные действия
 - `RESTORE_AMMO` — восполнить патроны (параметр `value`).
 - `HEAL` — восстановить здоровье стрелку (параметр `value`).
 - `DAMAGE_VICTIM` — нанести урон цели (параметр `value`).
@@ -98,7 +104,7 @@ triggers:
 - `SPAWN_PARTICLE` — создать частицы (`param`: тип частицы, `value`: количество).
 - `APPLY_POTION` — наложить эффект зелья на цель (`param`: тип эффекта, `value`: секунды).
 
-### Шаг 3. Запекание описания на текстуру (опционально)
+#### Шаг 3. Запекание описания на текстуру (опционально)
 Запустите скрипт генерации текстур:
 ```bash
 python tools/generate_card_textures.py
@@ -106,13 +112,110 @@ python tools/generate_card_textures.py
 Скрипт автоматически отрендерит названия и описания всех 118 карт в стандартном разрешении 160x250 (исходный размер арта, без ресайзинга) прямо на PNG-текстуры в папках `cards/ru` и `cards/en` с контрастной тенью без перекрытия центрального арта. Для каждой вариации редкости создаётся отдельная текстура `card<id>-<rarity>.png` со значениями из `values`, подставленными вместо плейсхолдеров `{0}`.
 
 
+### Способ 2. Создание карточки через написание аддона по нашему API (rounds-api)
+
+Для реализации сложных механик, уникальных снарядов, партиклов или интеграций создайте отдельный Spigot/Paper плагин-аддон с подключением `rounds-api`.
+
+#### Шаг 1. Подключение rounds-api в сборщик проекта
+
+В `build.gradle.kts` вашего плагина-аддона:
+```kotlin
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    // Подключение API плагина Rounds в режиме compileOnly (предоставляется сервером)
+    compileOnly("com.rounds:rounds-api:1.1.0")
+    // Подключение Paper API
+    compileOnly("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
+}
+```
+
+В `plugin.yml` укажите зависимость от плагина Rounds:
+```yaml
+name: FrostBiteAddon
+main: com.example.frostbite.FrostBiteAddon
+version: 1.0.0
+api-version: '1.20'
+depend: [Rounds]
+```
+
+#### Шаг 2. Создание и регистрация карты в Java-коде
+
+Используйте класс `CardBuilder` для декларации параметров карты и боевых колбэков. В примере ниже каждая строчка снабжена подробным комментарием:
+
+```java
+package com.example.frostbite; // Пакет плагина-аддона
+
+import com.rounds.api.RoundsAPI; // Главный фасад для взаимодействия с API плагина Rounds
+import com.rounds.api.card.CardBuilder; // Fluent-билдер для конструирования кастомных карт
+import com.rounds.api.card.CardRarity; // Перечисление уровней редкости карт (COMMON..LEGENDARY)
+import com.rounds.api.card.CardRole; // Тактическая роль карты (OFFENSIVE, DEFENSIVE, UTILITY и др.)
+import org.bukkit.Material; // Перечисление материалов Minecraft для иконки карточки
+import org.bukkit.Particle; // Перечисление визуальных частиц Minecraft для спецэффектов
+import org.bukkit.Sound; // Перечисление ванильных звуковых эффектов Minecraft
+import org.bukkit.entity.LivingEntity; // Интерфейс живого существа для безопасного каста цели
+import org.bukkit.plugin.java.JavaPlugin; // Базовый класс для создания плагинов платформы Paper/Spigot
+
+public final class FrostBiteAddon extends JavaPlugin { // Главный класс плагина-аддона
+
+    @Override // Переопределение системного метода включения плагина
+    public void onEnable() { // Точка входа при старте и загрузке плагина сервером
+        if (!RoundsAPI.isAvailable()) { // Проверка доступности запущенного сервиса RoundsAPI
+            getLogger().warning("Rounds API не найден! Отключаем аддон..."); // Лог ошибки в серверную консоль
+            getServer().getPluginManager().disablePlugin(this); // Выключение аддона во избежание сбоев
+            return; // Досрочный выход из метода активации
+        } // Закрытие блока проверки доступности API
+
+        // Создание и мгновенная регистрация кастомной карты с комментариями к каждой строке:
+        CardBuilder.create(this, "frost_bite") // Создание билдера карты с уникальным ID frost_bite
+            .name("ru", "Ледяной Укус") // Название карточки на русском языке
+            .name("en", "Frost Bite") // Название карточки на английском языке
+            .description("ru", "Пули наносят +2 урона и замораживают цель") // Описание механики на русском
+            .description("en", "Bullets deal +2 bonus damage and freeze target") // Описание механики на английском
+            .rarity(CardRarity.UNCOMMON) // Установка категории редкости карты (необычная)
+            .material(Material.PACKED_ICE) // Предмет плотного льда в качестве иконки в инвентаре
+            .role(CardRole.OFFENSIVE) // Роль атакующей карты для приоритизации боевыми ботами-ИИ
+            .onBulletHit(event -> { // Обработчик события попадания пули во вражескую сущность
+                event.setDamage(event.getDamage() + 2.0); // Увеличение урона пули на +2 единицы (1 сердце)
+                if (event.getHitEntity() instanceof LivingEntity target) { // Проверка, что цель является живой
+                    target.setFreezeTicks(140); // Наложение эффекта заморозки рыхлого снега на 7 секунд
+                } // Закрытие условия проверки живой цели
+                var loc = event.getHitLocation(); // Координаты трехмерной точки соприкосновения пули
+                loc.getWorld().spawnParticle(Particle.SNOWFLAKE, loc, 15, 0.3, 0.3, 0.3, 0.05); // Эффект снежинок
+                loc.getWorld().playSound(loc, Sound.BLOCK_GLASS_BREAK, 1.0f, 1.4f); // Звуковой эффект раскола льда
+            }) // Закрытие лямбда-выражения перехвата попадания
+            .register(); // Сборка экземпляра карты и ее регистрация в драфте Rounds
+
+        getLogger().info("Карта Frost Bite успешно зарегистрирована в Rounds!"); // Уведомление об успехе в лог
+    } // Закрытие метода onEnable
+
+    @Override // Переопределение системного метода выключения плагина
+    public void onDisable() { // Точка входа при остановке или перезагрузке сервера
+        if (RoundsAPI.isAvailable()) { // Проверка доступности API перед обращением
+            RoundsAPI.unregisterAllCards(this); // Автоматическое удаление всех карт аддона из системы
+        } // Закрытие блока проверки API
+    } // Закрытие метода onDisable
+} // Закрытие класса плагина
+```
+
+#### Возможности CardBuilder и жизненного цикла:
+- `CardBuilder.create(plugin, id)` — регистрация карты с автоматической привязкой к вашему плагину через `NamespacedKey`.
+- `.onBulletHit(event -> ...)` — обработка попадания пули в игрока или блок (изменение урона, эффекты, заморозка).
+- `.onShoot(event -> ...)` — модификация параметров выстрела (добавление тегов пуль, отдача, звуки).
+- `.onShieldBlock(event -> ...)` — реакция на успешное блокирование удара щитом.
+- `.onRoundStart(context -> ...)` / `.onRoundEnd((context, won) -> ...)` — логика раундовых бонусов и сброса кулдаунов.
+- `RoundsAPI.unregisterAllCards(this)` — безопасная очистка карт аддона при его выгрузке.
+
+
 ## 3. Стандарты кода и правила пулл-реквестов
 
-1. **Версионная совместимость:** Байткод всех компилируемых классов обязан быть Java 17.
+1. **Версионная совместимость:** Байткод всех компилируемых классов обязан быть Java 17 для обеспечения совместимости ядра плагина на версиях 1.20.4 - 26.3.
 2. **Изоляция NMS:** Прямой импорт `net.minecraft.*` и `org.bukkit.craftbukkit.*` в модуле `rounds-core` запрещен. Все низкоуровневые взаимодействия выносятся за интерфейс `NmsBridge`.
-3. **Строгий запрет эмодзи в документации:** В файлах `readme.md`, `AGENTS.md`, `CONTRIBUTING.md` и любых других markdown-документах репозитория строго запрещено использование эмодзи и символов-смайлов.
-4. **Прохождение тестов:** Перед отправкой пулл-реквеста убедитесь, что все тесты проходят:
+3. **Прохождение тестов:** Перед отправкой пулл-реквеста убедитесь, что все тесты проходят:
    ```bash
    ./gradlew :rounds-api:test :rounds-core:test
    ```
-   В проекте настроен автоматический GitHub Actions CI, который проверяет компиляцию, тесты и сборку ресурспака при каждом PR.
+   В проекте настроена автоматическая непрерывная интеграция GitHub Actions (CI — Continuous Integration), которая проверяет компиляцию, тесты и сборку ресурспака при каждом пулл-реквесте (PR — Pull Request).

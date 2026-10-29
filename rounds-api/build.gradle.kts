@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.rounds"
-version = "1.0.0"
+version = "1.1.0"
 
 java {
     toolchain {
@@ -41,10 +41,10 @@ tasks.javadoc {
     (options as StandardJavadocDocletOptions).apply {
         encoding = "UTF-8"
         charSet = "UTF-8"
-        docTitle = "Rounds Public API v1.0.0 Documentation"
-        windowTitle = "Rounds API v1.0.0"
+        docTitle = "Rounds Public API v1.1.0 Documentation"
+        windowTitle = "Rounds API v1.1.0"
         links("https://docs.oracle.com/en/java/javase/17/docs/api/")
-        links("https://jd.papermc.io/paper/1.20/")
+        links("https://jd.papermc.io/paper/1.20.6/")
         addStringOption("Xdoclint:all,-missing", "-quiet")
     }
 }
@@ -55,7 +55,7 @@ publishing {
             from(components["java"])
             groupId = "com.rounds"
             artifactId = "rounds-api"
-            version = "1.0.0"
+            version = "1.1.0"
         }
     }
 }

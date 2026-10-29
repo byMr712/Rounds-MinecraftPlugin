@@ -312,13 +312,13 @@ public class CardGUIListener implements Listener {
             if (rawSlot == 45 && showHolder.getPage() > 1) {
                 if (target != null) {
                     openShow(player, target, showHolder.getPage() - 1);
-                    player.playSound(player.getLocation(), org.bukkit.Sound.ITEM_BOOK_PAGE_TURN, SoundCategory.RECORDS, 0.8f, 1.2f);
+                    player.playSound(player.getLocation(), org.bukkit.Sound.ITEM_BOOK_PAGE_TURN, SoundCategory.RECORDS, 0.7f, 1.2f);
                 }
                 return;
             } else if (rawSlot == 53 && showHolder.getPage() < showHolder.getMaxPage()) {
                 if (target != null) {
                     openShow(player, target, showHolder.getPage() + 1);
-                    player.playSound(player.getLocation(), org.bukkit.Sound.ITEM_BOOK_PAGE_TURN, SoundCategory.RECORDS, 0.8f, 1.2f);
+                    player.playSound(player.getLocation(), org.bukkit.Sound.ITEM_BOOK_PAGE_TURN, SoundCategory.RECORDS, 0.7f, 1.2f);
                 }
                 return;
             }
@@ -335,7 +335,7 @@ public class CardGUIListener implements Listener {
                 Card card = plugin.getCardManager().getRegistry().getCard(cardId);
                 if (card != null) {
                     openCardActionMenu(player, target, card, cardIndex, showHolder.getPage());
-                    player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, SoundCategory.RECORDS, 0.8f, 1.0f);
+                    player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, SoundCategory.RECORDS, 0.7f, 1.0f);
                 }
             }
             return;
@@ -352,20 +352,20 @@ public class CardGUIListener implements Listener {
                 if (target != null && card != null) {
                     plugin.getCardManager().applyCardToPlayer(target, card);
                     player.sendMessage(ChatColor.GREEN + Messages.get("card.action-duplicated-msg", card.getColoredName(lang), target.getName()));
-                    player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, SoundCategory.RECORDS, 0.8f, 1.2f);
+                    player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, SoundCategory.RECORDS, 0.7f, 1.2f);
                     openShow(player, target, actionHolder.getReturnPage());
                 }
             } else if (rawSlot == 15) { // Delete card
                 if (target != null && card != null) {
                     plugin.getCardManager().removeCardFromPlayer(target, actionHolder.getCardIndex());
                     player.sendMessage(ChatColor.RED + Messages.get("card.action-deleted-msg", card.getColoredName(lang), target.getName()));
-                    player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_ANVIL_BREAK, SoundCategory.RECORDS, 0.8f, 1.0f);
+                    player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_ANVIL_BREAK, SoundCategory.RECORDS, 0.7f, 1.0f);
                     openShow(player, target, actionHolder.getReturnPage());
                 }
             } else if (rawSlot == 22) { // Back
                 if (target != null) {
                     openShow(player, target, actionHolder.getReturnPage());
-                    player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, SoundCategory.RECORDS, 0.8f, 1.0f);
+                    player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, SoundCategory.RECORDS, 0.7f, 1.0f);
                 }
             }
             return;

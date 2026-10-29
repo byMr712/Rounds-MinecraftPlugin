@@ -359,7 +359,7 @@ public class CardManager {
                 plugin.getCardDisplay().open(player, cards);
             }
             startChoiceTimer(player);
-            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
+            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 0.7f, 1.0f);
         }
     }
 
@@ -403,9 +403,9 @@ public class CardManager {
                 remaining--;
 
                 if (remaining <= 5 && remaining >= 2) {
-                    p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
+                    p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 0.7f, 1.0f);
                 } else if (remaining == 1) {
-                    p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_LAND, SoundCategory.RECORDS, 1.0f, 1.0f);
+                    p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_LAND, SoundCategory.RECORDS, 0.7f, 1.0f);
                 } else if (remaining <= 0) {
                     cancel();
                     choiceTimers.remove(uuid);

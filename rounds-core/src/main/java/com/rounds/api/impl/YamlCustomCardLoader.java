@@ -215,7 +215,7 @@ public class YamlCustomCardLoader {
             if (type != null) {
                 try { ht.sound = Sound.valueOf(type.toUpperCase()); } catch (IllegalArgumentException ignored) {}
             }
-            ht.volume = (float) soundSec.getDouble("volume", 1.0);
+            ht.volume = (float) soundSec.getDouble("volume", 0.7);
             ht.pitch = (float) soundSec.getDouble("pitch", 1.0);
         }
 

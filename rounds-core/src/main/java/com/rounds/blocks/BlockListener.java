@@ -403,7 +403,7 @@ public class BlockListener implements Listener {
             String teamName = Messages.get("team.none");
             String msg = ChatColor.WHITE + "\u00A7l" + Messages.get("team.joined", teamName);
             player.sendActionBar(msg);
-            player.getWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, SoundCategory.RECORDS, 1f, 1.5f);
+            player.getWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, SoundCategory.RECORDS, 0.7f, 1.5f);
             return;
         }
 
@@ -436,7 +436,7 @@ public class BlockListener implements Listener {
                 String teamName = Messages.get("team." + team.name().toLowerCase());
                 String msg = team.getColor() + "\u00A7l" + Messages.get("team.joined", teamName);
                 player.sendActionBar(msg);
-                player.getWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, SoundCategory.RECORDS, 1f, 1.5f);
+                player.getWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, SoundCategory.RECORDS, 0.7f, 1.5f);
             }
             return;
         }
@@ -479,7 +479,7 @@ public class BlockListener implements Listener {
             }
             RoundsEntities.applyHitRedEffects(player, player.getLocation().clone().add(0, -1, 0), player.getLocation());
         } else {
-            player.getWorld().playSound(player.getLocation(), Sound.ITEM_SHIELD_BLOCK, SoundCategory.RECORDS, 1.0f, 1.2f);
+            player.getWorld().playSound(player.getLocation(), Sound.ITEM_SHIELD_BLOCK, SoundCategory.RECORDS, 0.7f, 1.2f);
         }
 
         double launchHeight = plugin.getRoundsConfig().getJumpBlockLaunchHeight();
@@ -509,7 +509,7 @@ public class BlockListener implements Listener {
                 ticks++;
             }
         }.runTaskTimer(plugin, 1L, 1L);
-        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, SoundCategory.RECORDS, 1.0f, 0.5f);
+        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, SoundCategory.RECORDS, 0.7f, 0.5f);
     }
 
     public void handleUpBlock(Player player) {

@@ -193,7 +193,7 @@ public class GunItem implements Listener {
                 double newHp = player.getHealth() - cost;
                 if (newHp > 0.5) {
                     player.setHealth(Math.max(0.5, newHp));
-                    player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_HURT, SoundCategory.RECORDS, 0.6f, 1.4f);
+                    player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_HURT, SoundCategory.RECORDS, 0.7f, 1.4f);
                     player.getWorld().spawnParticle(Particle.CRIT, player.getEyeLocation(), 6, 0.2, 0.2, 0.2, 0.05);
                     bloodShot = true;
                 } else {
@@ -321,7 +321,7 @@ public class GunItem implements Listener {
         if (!isReloading(uuid) && !reloadingPlayers.contains(uuid)) {
             player.sendActionBar(ChatColor.GRAY + Messages.get("gun.ammo-display", (int) data.ammo, (int) data.maxAmmo));
         }
-        player.getWorld().playSound(bulletOrigin, Sound.ENTITY_FIREWORK_ROCKET_BLAST, SoundCategory.RECORDS, 0.5f, 1.5f);
+        player.getWorld().playSound(bulletOrigin, Sound.ENTITY_FIREWORK_ROCKET_BLAST, SoundCategory.RECORDS, 0.7f, 1.5f);
 
         if (data.shieldsUp > 0 && data.ammo <= 0) {
             doBlock(player);
@@ -463,12 +463,12 @@ public class GunItem implements Listener {
 
         if (data.saw > 0 && !activeSawTasks.containsKey(uuid)) {
             try {
-                player.getWorld().playSound(player, "rounds:saw", SoundCategory.RECORDS, 1.0f, 1.0f);
+                player.getWorld().playSound(player, "rounds:saw", SoundCategory.RECORDS, 0.7f, 1.0f);
             } catch (Throwable t) {
                 try {
-                    player.getWorld().playSound(blockLoc, "rounds:saw", SoundCategory.RECORDS, 1.0f, 1.0f);
+                    player.getWorld().playSound(blockLoc, "rounds:saw", SoundCategory.RECORDS, 0.7f, 1.0f);
                 } catch (Throwable ignored) {
-                    player.getWorld().playSound(blockLoc, Sound.ENTITY_IRON_GOLEM_ATTACK, SoundCategory.RECORDS, 1.0f, 0.5f);
+                    player.getWorld().playSound(blockLoc, Sound.ENTITY_IRON_GOLEM_ATTACK, SoundCategory.RECORDS, 0.7f, 0.5f);
                 }
             }
             BukkitRunnable sawTask = new BukkitRunnable() {
@@ -484,10 +484,10 @@ public class GunItem implements Listener {
                     }
                     if (ticks > 0 && ticks % 52 == 0) {
                         try {
-                            p.getWorld().playSound(p, "rounds:saw", SoundCategory.RECORDS, 1.0f, 1.0f);
+                            p.getWorld().playSound(p, "rounds:saw", SoundCategory.RECORDS, 0.7f, 1.0f);
                         } catch (Throwable t) {
                             try {
-                                p.getWorld().playSound(p.getLocation(), "rounds:saw", SoundCategory.RECORDS, 1.0f, 1.0f);
+                                p.getWorld().playSound(p.getLocation(), "rounds:saw", SoundCategory.RECORDS, 0.7f, 1.0f);
                             } catch (Throwable ignored) {}
                         }
                     }
@@ -541,7 +541,7 @@ public class GunItem implements Listener {
                     }
                 }
             }
-            player.getWorld().playSound(blockLoc, Sound.BLOCK_BEACON_ACTIVATE, SoundCategory.RECORDS, 0.8f, 1.5f);
+            player.getWorld().playSound(blockLoc, Sound.BLOCK_BEACON_ACTIVATE, SoundCategory.RECORDS, 0.7f, 1.5f);
         }
 
         if (data.emp > 0) {
@@ -559,7 +559,7 @@ public class GunItem implements Listener {
             Location empCenter = blockLoc.clone().add(0, 0.5, 0);
             empCenter.getWorld().spawnParticle(Particle.SMOKE_LARGE, empCenter,
                 40, 2.5, 0.5, 2.5, 0.03);
-            player.getWorld().playSound(blockLoc, Sound.BLOCK_BEACON_POWER_SELECT, SoundCategory.RECORDS, 1.0f, 0.5f);
+            player.getWorld().playSound(blockLoc, Sound.BLOCK_BEACON_POWER_SELECT, SoundCategory.RECORDS, 0.7f, 0.5f);
         }
 
         if (data.shockwave > 0) {
@@ -583,7 +583,7 @@ public class GunItem implements Listener {
                     }
                 }
             }
-            player.getWorld().playSound(blockLoc, Sound.ENTITY_PLAYER_ATTACK_KNOCKBACK, SoundCategory.RECORDS, 1.0f, 0.5f);
+            player.getWorld().playSound(blockLoc, Sound.ENTITY_PLAYER_ATTACK_KNOCKBACK, SoundCategory.RECORDS, 0.7f, 0.5f);
         }
 
         if (data.implode > 0) {
@@ -607,7 +607,7 @@ public class GunItem implements Listener {
                     }
                 }
             }
-            player.getWorld().playSound(blockLoc, Sound.ENTITY_ENDERMAN_TELEPORT, SoundCategory.RECORDS, 1.0f, 0.5f);
+            player.getWorld().playSound(blockLoc, Sound.ENTITY_ENDERMAN_TELEPORT, SoundCategory.RECORDS, 0.7f, 0.5f);
         }
 
         if (data.silence > 0) {
@@ -625,7 +625,7 @@ public class GunItem implements Listener {
                     }
                 }
             }
-            player.getWorld().playSound(blockLoc, Sound.BLOCK_GLASS_BREAK, SoundCategory.RECORDS, 0.5f, 2.0f);
+            player.getWorld().playSound(blockLoc, Sound.BLOCK_GLASS_BREAK, SoundCategory.RECORDS, 0.7f, 2.0f);
         }
 
         if (data.overpower > 0) {
@@ -642,7 +642,7 @@ public class GunItem implements Listener {
                     }
                 }
             }
-            player.getWorld().playSound(blockLoc, Sound.ENTITY_WITHER_HURT, SoundCategory.RECORDS, 1.0f, 1.5f);
+            player.getWorld().playSound(blockLoc, Sound.ENTITY_WITHER_HURT, SoundCategory.RECORDS, 0.7f, 1.5f);
         }
 
         if (data.heal > 0) {
@@ -663,12 +663,12 @@ public class GunItem implements Listener {
         }
 
         if (isEcho) {
-            player.getWorld().playSound(blockLoc, Sound.BLOCK_CONDUIT_ACTIVATE, SoundCategory.RECORDS, 0.9f, 1.8f);
-            player.getWorld().playSound(blockLoc, Sound.BLOCK_ANVIL_PLACE, SoundCategory.RECORDS, 0.6f, 1.8f);
+            player.getWorld().playSound(blockLoc, Sound.BLOCK_CONDUIT_ACTIVATE, SoundCategory.RECORDS, 0.7f, 1.8f);
+            player.getWorld().playSound(blockLoc, Sound.BLOCK_ANVIL_PLACE, SoundCategory.RECORDS, 0.7f, 1.8f);
             player.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, blockLoc.clone().add(0, 1.0, 0), 16, 0.4, 0.4, 0.4, 0.05);
             player.sendActionBar(ChatColor.AQUA + "✦ ECHO ✦ " + ChatColor.BLUE + Messages.get("gun.shield-activated"));
         } else {
-            player.getWorld().playSound(blockLoc, Sound.BLOCK_ANVIL_PLACE, SoundCategory.RECORDS, 0.8f, 1.5f);
+            player.getWorld().playSound(blockLoc, Sound.BLOCK_ANVIL_PLACE, SoundCategory.RECORDS, 0.7f, 1.5f);
             if (recallActivated) {
                 // Action bar and title already set by tryTemporalRecall
             } else if (recallRemaining > 0) {
@@ -950,7 +950,7 @@ public class GunItem implements Listener {
                     reloadTasks.remove(uuid);
                     GunCooldowns.clear(uuid);
                     player.sendActionBar(ChatColor.GREEN + Messages.get("gun.reloaded", (int) data.ammo));
-                    player.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_LOADING_END, SoundCategory.RECORDS, 1f, 1.2f);
+                    player.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_LOADING_END, SoundCategory.RECORDS, 0.7f, 1.2f);
                     cancel();
                     return;
                 }

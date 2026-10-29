@@ -394,7 +394,7 @@ public class GameManager implements Listener {
         updateScoreboard();
         saveState();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
-            p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
+            p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 0.7f, 1.0f);
         }
     }
 
@@ -613,7 +613,7 @@ public class GameManager implements Listener {
 
         Location baseLoc = summoner.getLocation().add(0, 3, 0);
         summoner.sendTitle("", ChatColor.DARK_PURPLE + (phantomCount > 1 ? "Призвано фантомов: " + phantomCount + "!" : "Фантом призван!"), 10, 40, 10);
-        summoner.getWorld().playSound(baseLoc, Sound.ENTITY_ENDER_DRAGON_GROWL, SoundCategory.RECORDS, 1.0f, 0.5f);
+        summoner.getWorld().playSound(baseLoc, Sound.ENTITY_ENDER_DRAGON_GROWL, SoundCategory.RECORDS, 0.7f, 0.5f);
 
         for (int i = 0; i < phantomCount; i++) {
             double angle = phantomCount > 1 ? (2 * Math.PI * i / phantomCount) : 0;
@@ -772,7 +772,7 @@ public class GameManager implements Listener {
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) != null) {
                 p.sendTitle(Messages.get("title.game-won"), "", 10, 100, 20);
-                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
+                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 0.7f, 1.0f);
             }
             p.sendMessage(ChatColor.GREEN + Messages.get("game.auto-stop-single"));
         }
@@ -834,7 +834,7 @@ public class GameManager implements Listener {
             } else {
                 Bukkit.broadcastMessage(ChatColor.DARK_RED + Messages.get("game.auto-death-warning"));
                 for (Player p : Bukkit.getOnlinePlayers()) {
-                    p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
+                    p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 0.7f, 1.0f);
                 }
                 autoDeathNextIsKill = true;
             }
@@ -912,7 +912,7 @@ public class GameManager implements Listener {
         Player victim = alive.get(RANDOM.nextInt(alive.size()));
         Bukkit.broadcastMessage(ChatColor.DARK_RED + Messages.get("game.auto-death-killed", victim.getName()));
         for (Player p : Bukkit.getOnlinePlayers()) {
-            p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, SoundCategory.RECORDS, 1.0f, 1.0f);
+            p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, SoundCategory.RECORDS, 0.7f, 1.0f);
         }
 
         // The reaper applies LETHAL DAMAGE through the normal pipeline, never a direct
@@ -1151,6 +1151,9 @@ public class GameManager implements Listener {
                             || p.getLocation().distanceSquared(currentZoneCenter) > 80.0 * 80.0) {
                         p.teleport(currentZoneCenter.clone().add(0, 3.0, 0));
                     }
+                }
+                if (plugin.getRoundMusicManager() != null && plugin.getRoundMusicManager().isPlaying()) {
+                    plugin.getRoundMusicManager().playTrackForPlayer(p, plugin.getRoundMusicManager().getCurrentTrack());
                 }
             }
         }
@@ -1402,17 +1405,17 @@ public class GameManager implements Listener {
             GameTeam pTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             if (pTeam == winner) {
                 p.sendTitle(Messages.get("title.won"), "", 10, 60, 20);
-                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
+                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 0.7f, 1.0f);
             } else if (losingTeams.contains(pTeam)) {
                 p.sendTitle(Messages.get("title.lost"), "", 10, 60, 20);
-                p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_LAND, SoundCategory.RECORDS, 1.0f, 1.0f);
+                p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_LAND, SoundCategory.RECORDS, 0.7f, 1.0f);
             } else {
                 String specTitle = Messages.get("title.spectator-won", winner.getColor() + "§l", teamName.toLowerCase());
                 if (specTitle.equals("title.spectator-won")) {
                     specTitle = winner.getColor() + "§lПобедили " + teamName.toLowerCase();
                 }
                 p.sendTitle(specTitle, "", 10, 60, 20);
-                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
+                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 0.7f, 1.0f);
             }
         }
 
@@ -1478,7 +1481,7 @@ public class GameManager implements Listener {
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             p.sendTitle(Messages.get("title.draw"), "", 10, 60, 20);
-            p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
+            p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 0.7f, 1.0f);
         }
 
         scheduleDelayed(() -> {
@@ -1558,17 +1561,17 @@ public class GameManager implements Listener {
             GameTeam pTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             if (pTeam == winner) {
                 p.sendTitle(Messages.get("title.game-won"), "", 10, 100, 20);
-                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
+                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 0.7f, 1.0f);
             } else if (pTeam != null) {
                 p.sendTitle(Messages.get("title.game-lost"), "", 10, 100, 20);
-                p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_LAND, SoundCategory.RECORDS, 1.0f, 1.0f);
+                p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_LAND, SoundCategory.RECORDS, 0.7f, 1.0f);
             } else {
                 String specTitle = Messages.get("title.spectator-won", winner.getColor() + "§l", teamName.toLowerCase());
                 if (specTitle.equals("title.spectator-won")) {
                     specTitle = winner.getColor() + "§lПобедили " + teamName.toLowerCase();
                 }
                 p.sendTitle(specTitle, "", 10, 100, 20);
-                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
+                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 0.7f, 1.0f);
             }
         }
 
@@ -1677,7 +1680,7 @@ public class GameManager implements Listener {
         pendingCardJoiners.clear();
         returningJoiners.clear();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
-            p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
+            p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 0.7f, 1.0f);
         }
     }
 
@@ -1706,7 +1709,7 @@ public class GameManager implements Listener {
         pendingCardJoiners.clear();
         returningJoiners.clear();
         for (Player p : plugin.getServer().getOnlinePlayers()) {
-            p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
+            p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 0.7f, 1.0f);
         }
     }
 
@@ -1878,7 +1881,7 @@ public class GameManager implements Listener {
             dead.setNoDamageTicks(20);
             dead.addPotionEffect(new org.bukkit.potion.PotionEffect(
                 PotionEffectType.REGENERATION, 100, 2));
-            dead.getWorld().playSound(dead.getLocation(), Sound.ENTITY_BLAZE_SHOOT, SoundCategory.RECORDS, 1.0f, 1.0f);
+            dead.getWorld().playSound(dead.getLocation(), Sound.ENTITY_BLAZE_SHOOT, SoundCategory.RECORDS, 0.7f, 1.0f);
             dead.sendMessage(ChatColor.RED + Messages.get("game.phoenix-revived"));
             return;
         }
@@ -1901,7 +1904,7 @@ public class GameManager implements Listener {
                     } catch (IllegalArgumentException ignored) {}
                 }
             }
-            dead.getWorld().playSound(deathLoc, Sound.ENTITY_GENERIC_EXPLODE, SoundCategory.RECORDS, 1.5f, 0.8f);
+            dead.getWorld().playSound(deathLoc, Sound.ENTITY_GENERIC_EXPLODE, SoundCategory.RECORDS, 0.7f, 0.8f);
         }
 
         deadPlayers.add(dead.getUniqueId());
@@ -1994,6 +1997,9 @@ public class GameManager implements Listener {
                 Player target = findRandomAlivePlayer();
                 if (target != null) {
                     player.teleport(target.getLocation());
+                }
+                if (plugin.getRoundMusicManager() != null && plugin.getRoundMusicManager().isPlaying()) {
+                    plugin.getRoundMusicManager().playTrackForPlayer(player, plugin.getRoundMusicManager().getCurrentTrack());
                 }
             }, plugin.getRoundsConfig().getRespawnDelayTicks());
             return;
@@ -2162,7 +2168,7 @@ public class GameManager implements Listener {
         WrongMapTeleportTask task = new WrongMapTeleportTask(p.getUniqueId(), currentRound, gameGeneration, currentZoneCenter);
         wrongMapTasks.put(p.getUniqueId(), task);
         p.sendMessage(Messages.get("game.wrong-map-warning", task.lastAnnouncedSecond));
-        p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, SoundCategory.RECORDS, 1.0f, 1.0f);
+        p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, SoundCategory.RECORDS, 0.7f, 1.0f);
     }
 
     private void cancelAllWrongMapTasks(String reasonKey) {
@@ -2216,7 +2222,7 @@ public class GameManager implements Listener {
                         lastWrongMapCheckTime.remove(p.getUniqueId());
                         lastWrongMapResult.remove(p.getUniqueId());
                         p.sendMessage(Messages.get("game.wrong-map-teleported"));
-                        p.playSound(p.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, SoundCategory.RECORDS, 1.0f, 1.0f);
+                        p.playSound(p.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, SoundCategory.RECORDS, 0.7f, 1.0f);
                     }
                 }
             } else if (remainingSec < task.lastAnnouncedSecond) {

@@ -394,7 +394,7 @@ public class PlayerData {
             }
             case PLAY_SOUND -> {
                 if (player != null && !act.param().isEmpty()) {
-                    player.playSound(player.getLocation(), act.param(), SoundCategory.RECORDS, 1.0f, (float) (act.value() > 0 ? act.value() : 1.0f));
+                    player.playSound(player.getLocation(), act.param(), SoundCategory.RECORDS, 0.7f, (float) (act.value() > 0 ? act.value() : 1.0f));
                 }
             }
             case SPAWN_PARTICLE -> {

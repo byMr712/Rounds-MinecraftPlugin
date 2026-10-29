@@ -262,7 +262,7 @@ public class LegendaryEffects implements Listener {
             player.setFallDistance(0);
             player.setFireTicks(0);
             player.setInvulnerable(true);
-            player.getWorld().playSound(player.getLocation(), Sound.ITEM_TOTEM_USE, SoundCategory.RECORDS, 1f, 1.2f);
+            player.getWorld().playSound(player.getLocation(), Sound.ITEM_TOTEM_USE, SoundCategory.RECORDS, 0.7f, 1.2f);
             Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                 if (player.isOnline() && player.isValid()) {
                     player.setInvulnerable(false);
@@ -422,7 +422,7 @@ public class LegendaryEffects implements Listener {
                 }
             } catch (IllegalArgumentException ignored) {}
         }
-        loc.getWorld().playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, SoundCategory.RECORDS, 1.5f, 0.8f);
+        loc.getWorld().playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, SoundCategory.RECORDS, 0.7f, 0.8f);
     }
 
     // ==================== Bullet Time ====================
@@ -461,9 +461,9 @@ public class LegendaryEffects implements Listener {
 
         Location loc = owner.getLocation();
         if (loc.getWorld() != null) {
-            loc.getWorld().playSound(loc, Sound.ITEM_TOTEM_USE, SoundCategory.RECORDS, 1.0f, 1.2f);
-            loc.getWorld().playSound(loc, Sound.BLOCK_BEACON_DEACTIVATE, SoundCategory.RECORDS, 1.5f, 0.5f);
-            loc.getWorld().playSound(loc, Sound.BLOCK_BELL_RESONATE, SoundCategory.RECORDS, 1.2f, 0.6f);
+            loc.getWorld().playSound(loc, Sound.ITEM_TOTEM_USE, SoundCategory.RECORDS, 0.7f, 1.2f);
+            loc.getWorld().playSound(loc, Sound.BLOCK_BEACON_DEACTIVATE, SoundCategory.RECORDS, 0.7f, 0.5f);
+            loc.getWorld().playSound(loc, Sound.BLOCK_BELL_RESONATE, SoundCategory.RECORDS, 0.7f, 0.6f);
             try {
                 loc.getWorld().spawnParticle(Particle.FIREWORKS_SPARK, loc.clone().add(0, 1.0, 0), 25, 0.3, 0.5, 0.3, 0.15);
                 loc.getWorld().spawnParticle(Particle.TOTEM, loc.clone().add(0, 1.0, 0), 20, 0.3, 0.5, 0.3, 0.2);
@@ -494,7 +494,7 @@ public class LegendaryEffects implements Listener {
                     org.bukkit.potion.PotionEffectType.DARKNESS, 100, 0, false, false, false));
             p.sendTitle(ChatColor.DARK_GRAY + "[ " + ChatColor.RED + "§lВРЕМЯ ЗАМЕДЛЕНО" + ChatColor.DARK_GRAY + " ]",
                     ChatColor.GRAY + com.rounds.util.Messages.get("card.bullet-time-slowed"), 5, 40, 10);
-            p.playSound(p.getLocation(), Sound.BLOCK_CONDUIT_DEACTIVATE, SoundCategory.RECORDS, 1.0f, 0.5f);
+            p.playSound(p.getLocation(), Sound.BLOCK_CONDUIT_DEACTIVATE, SoundCategory.RECORDS, 0.7f, 0.5f);
         }
 
         if (instance != null && instance.plugin != null) {
@@ -544,7 +544,7 @@ public class LegendaryEffects implements Listener {
                 from.getWorld().spawnParticle(Particle.PORTAL, from, 50, 0.5, 1.0, 0.5, 0.5);
                 from.getWorld().spawnParticle(Particle.FIREWORKS_SPARK, from.clone().add(0, 1.0, 0), 15, 0.2, 0.4, 0.2, 0.1);
             } catch (Throwable ignored) {}
-            from.getWorld().playSound(from, Sound.ENTITY_ENDERMAN_TELEPORT, SoundCategory.RECORDS, 1.2f, 1.4f);
+            from.getWorld().playSound(from, Sound.ENTITY_ENDERMAN_TELEPORT, SoundCategory.RECORDS, 0.7f, 1.4f);
         }
 
         player.teleport(best.loc);
@@ -554,8 +554,8 @@ public class LegendaryEffects implements Listener {
                 best.loc.getWorld().spawnParticle(Particle.PORTAL, best.loc, 50, 0.5, 1.0, 0.5, 0.5);
                 best.loc.getWorld().spawnParticle(Particle.FIREWORKS_SPARK, best.loc.clone().add(0, 1.0, 0), 15, 0.2, 0.4, 0.2, 0.1);
             } catch (Throwable ignored) {}
-            best.loc.getWorld().playSound(best.loc, Sound.ITEM_CHORUS_FRUIT_TELEPORT, SoundCategory.RECORDS, 1.2f, 1.2f);
-            best.loc.getWorld().playSound(best.loc, Sound.BLOCK_BEACON_POWER_SELECT, SoundCategory.RECORDS, 1.2f, 1.8f);
+            best.loc.getWorld().playSound(best.loc, Sound.ITEM_CHORUS_FRUIT_TELEPORT, SoundCategory.RECORDS, 0.7f, 1.2f);
+            best.loc.getWorld().playSound(best.loc, Sound.BLOCK_BEACON_POWER_SELECT, SoundCategory.RECORDS, 0.7f, 1.8f);
 
             if (from.getWorld() != null && from.getWorld().equals(best.loc.getWorld())) {
                 org.bukkit.util.Vector line = best.loc.toVector().subtract(from.toVector());
@@ -615,8 +615,8 @@ public class LegendaryEffects implements Listener {
         org.bukkit.World world = center.getWorld();
         if (world == null || !isFiniteLocation(center)) return;
 
-        world.playSound(center, Sound.ENTITY_PLAYER_ATTACK_SWEEP, SoundCategory.RECORDS, 1.0f, 1.2f);
-        world.playSound(center, Sound.ITEM_TRIDENT_THROW, SoundCategory.RECORDS, 0.8f, 1.8f);
+        world.playSound(center, Sound.ENTITY_PLAYER_ATTACK_SWEEP, SoundCategory.RECORDS, 0.7f, 1.2f);
+        world.playSound(center, Sound.ITEM_TRIDENT_THROW, SoundCategory.RECORDS, 0.7f, 1.8f);
         world.playSound(center, Sound.ENTITY_IRON_GOLEM_HURT, SoundCategory.RECORDS, 0.7f, 1.5f);
 
         List<LivingEntity> enemies = new ArrayList<>();
@@ -666,7 +666,7 @@ public class LegendaryEffects implements Listener {
                         com.rounds.entity.RoundsEntities.safeSetHealth(target, hpBefore - shardDamage);
                     }
                     target.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, tEye, 3, 0.2, 0.2, 0.2, 0.05);
-                    target.getWorld().playSound(target.getLocation(), Sound.ENTITY_PLAYER_HURT, SoundCategory.RECORDS, 0.8f, 1.2f);
+                    target.getWorld().playSound(target.getLocation(), Sound.ENTITY_PLAYER_HURT, SoundCategory.RECORDS, 0.7f, 1.2f);
                     totalDealt += shardDamage;
                     com.rounds.stats.MatchStatsManager.recordDamageDealt(uuid, target.getUniqueId(), shardDamage);
                     com.rounds.stats.MatchStatsManager.recordLastDamager(target.getUniqueId(), uuid);

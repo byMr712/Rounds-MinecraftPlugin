@@ -745,7 +745,7 @@ public class PlayerDataManager implements Listener {
                     if (p.getUniqueId().equals(uuid)) continue;
                     if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) != null) {
                         p.sendTitle(Messages.get("title.game-won"), "", 10, 100, 20);
-                        p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 1.0f, 1.0f);
+                        p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 0.7f, 1.0f);
                         p.sendMessage(ChatColor.GREEN + Messages.get("game.auto-stop-single"));
                     }
                 }

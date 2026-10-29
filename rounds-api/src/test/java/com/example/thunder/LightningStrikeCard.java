@@ -64,7 +64,7 @@ public class LightningStrikeCard extends CustomCard {
 
         var loc = event.getHitLocation();
         loc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, loc, 25, 0.4, 0.4, 0.4, 0.1);
-        loc.getWorld().playSound(loc, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, SoundCategory.RECORDS, 0.8f, 1.5f);
+        loc.getWorld().playSound(loc, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, SoundCategory.RECORDS, 0.7f, 1.5f);
     }
 
     @Override

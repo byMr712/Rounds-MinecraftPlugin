@@ -331,8 +331,11 @@ public class GameManager implements Listener {
     }
 
     private void finishStart(List<Player> readyPlayers, Set<GameTeam> teamsWithPlayers) {
-        plugin.getServer().broadcastMessage(ChatColor.GREEN + Messages.get("game.started"));
-        plugin.getServer().broadcastMessage(ChatColor.GOLD + Messages.get("game.rounds-to-win", roundsToWin));
+        broadcastBox(
+            Messages.get("game.started"),
+            null,
+            Collections.singletonList(Messages.get("game.rounds-to-win", roundsToWin))
+        );
 
         state = GameState.CARDS;
         startGameTick();
@@ -781,8 +784,8 @@ public class GameManager implements Listener {
                 p.sendTitle(Messages.get("title.game-won"), "", 10, 100, 20);
                 p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 0.7f, 1.0f);
             }
-            p.sendMessage(ChatColor.GREEN + Messages.get("game.auto-stop-single"));
         }
+        broadcastBox(Messages.get("game.auto-stop-single"), null, null);
         stopGame();
         plugin.getTeamManager().clearAll();
         getStateManager().clear();
@@ -1402,8 +1405,11 @@ public class GameManager implements Listener {
         }
 
         String teamName = Messages.get("team." + winner.name().toLowerCase());
-        plugin.getServer().broadcastMessage(ChatColor.GREEN + winner.getColor().toString() + teamName + " " + Messages.get("game.round-won"));
-        plugin.getServer().broadcastMessage(ChatColor.GOLD + Messages.get("game.score", getScoreDisplay()));
+        broadcastBox(
+            teamName + " " + Messages.get("game.round-won"),
+            Messages.get("game.score-header", "Счёт:"),
+            getActiveTeamScores()
+        );
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam pTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
@@ -1481,7 +1487,11 @@ public class GameManager implements Listener {
         losingTeams.clear();
         saveState();
         cleanupRoundCombatState();
-        plugin.getServer().broadcastMessage(ChatColor.YELLOW + Messages.get("game.draw"));
+        broadcastBox(
+            Messages.get("game.draw-title", Messages.get("game.draw")),
+            Messages.get("game.score-header", "Счёт:"),
+            getActiveTeamScores()
+        );
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             p.sendTitle(Messages.get("title.draw"), "", 10, 60, 20);
@@ -1550,9 +1560,11 @@ public class GameManager implements Listener {
         }
 
         String teamName = Messages.get("team." + winner.name().toLowerCase());
-        plugin.getServer().broadcastMessage(ChatColor.GREEN + Messages.get("game.game-over"));
-        plugin.getServer().broadcastMessage(ChatColor.GREEN + winner.getColor().toString() + teamName + " " + Messages.get("game.game-won"));
-        plugin.getServer().broadcastMessage(ChatColor.GOLD + Messages.get("game.final-score", getScoreDisplay()));
+        broadcastBox(
+            teamName + " " + Messages.get("game.game-won"),
+            Messages.get("game.final-score-header", Messages.get("game.score-header", "Итоговый счёт:")),
+            getActiveTeamScores()
+        );
 
         scheduleDelayed(() -> {
             String notice = Messages.get("debug.statsend-notice");
@@ -1851,6 +1863,60 @@ public class GameManager implements Listener {
             sb.append(gt.getColor().toString()).append(teamName).append(": ").append((int) plugin.getTeamManager().getWins(gt)).append(" ");
         }
         return sb.toString();
+    }
+
+    // ═══ Box Broadcast Helpers (matches /rdebug status style) ═══
+    private static final String BOX_B = "\u00A76"; // ChatColor.GOLD
+    private static final String BOX_W = "\u00A7f"; // ChatColor.WHITE
+    private static final String BOX_TOP = BOX_B + "\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550";
+    private static final String BOX_SEP = BOX_B + "\u2560\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550";
+    private static final String BOX_BOT = BOX_B + "\u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550";
+    private static final String BOX_MID = BOX_B + "\u2551 ";
+
+    public void broadcastBox(String title, String sectionTitle, List<String> lines) {
+        plugin.getServer().broadcastMessage(BOX_TOP);
+        boolean hasPrev = false;
+        if (title != null && !title.isEmpty()) {
+            plugin.getServer().broadcastMessage(BOX_MID + BOX_W + "\u2502 " + BOX_W + title);
+            hasPrev = true;
+        }
+        if (sectionTitle != null && !sectionTitle.isEmpty()) {
+            if (hasPrev) {
+                plugin.getServer().broadcastMessage(BOX_SEP);
+            }
+            plugin.getServer().broadcastMessage(BOX_MID + BOX_W + "\u2502 " + BOX_W + sectionTitle);
+            hasPrev = true;
+        }
+        if (lines != null && !lines.isEmpty()) {
+            if (hasPrev) {
+                plugin.getServer().broadcastMessage(BOX_SEP);
+            }
+            for (String line : lines) {
+                plugin.getServer().broadcastMessage(BOX_MID + "  " + BOX_W + line);
+            }
+        }
+        plugin.getServer().broadcastMessage(BOX_BOT);
+    }
+
+    public List<String> getActiveTeamScores() {
+        List<String> list = new ArrayList<>();
+        TeamManager tm = plugin.getTeamManager();
+        for (GameTeam team : GameTeam.values()) {
+            boolean active = tm.getPlayerCount(team) > 0
+                    || !tm.getTeamPlayers(team).isEmpty()
+                    || tm.getWins(team) > 0;
+            if (active) {
+                String teamName = Messages.get("team." + team.name().toLowerCase());
+                list.add(team.getColor() + teamName + BOX_W + ": " + (int) tm.getWins(team));
+            }
+        }
+        if (list.isEmpty()) {
+            for (GameTeam team : new GameTeam[]{GameTeam.BLUE, GameTeam.RED}) {
+                String teamName = Messages.get("team." + team.name().toLowerCase());
+                list.add(team.getColor() + teamName + BOX_W + ": " + (int) tm.getWins(team));
+            }
+        }
+        return list;
     }
 
     private List<Player> getReadyPlayers() {

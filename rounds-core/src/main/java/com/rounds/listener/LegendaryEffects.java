@@ -139,6 +139,7 @@ public class LegendaryEffects implements Listener {
         bulletTimeUntil = 0L;
         bulletTimeOwner = null;
         lastRazorwire.clear();
+        playerHistory.clear();
     }
 
     public static void resetAll() {
@@ -570,10 +571,26 @@ public class LegendaryEffects implements Listener {
             }
         }
 
+        double baseMaxHP = data.getMaxHealth();
+        if (data.grow > 0) {
+            baseMaxHP += data.grow * 0.2 * 10;
+        }
+        double enhancedMaxHP = baseMaxHP;
+        if (data.pristinePerseverance > 0) {
+            enhancedMaxHP = com.rounds.player.PlayerData.clampMaxHealth(baseMaxHP * (1.0 + data.pristinePerseverance));
+        }
+        var maxAttr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
+        if (data.pristinePerseverance > 0 && maxAttr != null) {
+            if (best.hp >= 0.9 * enhancedMaxHP) {
+                maxAttr.setBaseValue(enhancedMaxHP);
+            }
+        }
+        double maxAllowed = (maxAttr != null) ? maxAttr.getValue() : enhancedMaxHP;
+        double targetHp = Math.min(best.hp, maxAllowed);
         double restoredHp = 0;
-        if (best.hp > player.getHealth()) {
-            restoredHp = Math.min(best.hp, data.getMaxHealth()) - player.getHealth();
-            player.setHealth(Math.min(best.hp, data.getMaxHealth()));
+        if (targetHp > player.getHealth()) {
+            restoredHp = targetHp - player.getHealth();
+            player.setHealth(targetHp);
             player.getWorld().spawnParticle(Particle.HEART, player.getEyeLocation(), 5, 0.3, 0.3, 0.3, 0.05);
         }
 

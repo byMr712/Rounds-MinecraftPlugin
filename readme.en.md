@@ -34,7 +34,7 @@ A Minecraft plugin for the competitive mini-game [**ROUNDS**](https://store.stea
 - **Custom Weapon (Gun & Shield):**
   - **Left Click:** Fires physics-driven bullets with ricochets, bullet speed, and card effects.
   - **Right Click:** Raises shield to deflect bullets and trigger explosive counter-abilities.
-  - **Automatic Reload:** When the magazine is emptied, the weapon automatically begins reloading with a visual progress bar in the Action Bar (matching original ROUNDS game mechanics).
+  - **Automatic and Manual Reload:** When the magazine is emptied or when pressing the Q key (drop item), the weapon begins reloading with a visual progress bar in the Action Bar (matching original ROUNDS game mechanics).
 - **Card System and Combat Abilities:**
   - **In-World 3D Card Selection Scene:** Instead of a flat GUI inventory, players experience an interactive 3D semicircular showcase floating in the world via Text Display entities. Cards display their real graphic art through the custom bitmap font: every rarity variation gets its own glyph and texture. Card titles and ability descriptions are drawn directly onto the card face textures, with glowing rarity stars floating above each card (from 1 to 5 stars by tier: Common - 1, Uncommon - 2, Rare - 3, Epic - 4, Legendary - 5). Players approach cards on foot (up to 2.0m forward) for close inspection; client-side barrier flooring and invisible perimeter collision prevent drops off cliffs or onto jump pads. Epic and Legendary cards feature active flame particles, selection is accompanied by carousel animation, and expiring timers trigger automatic random selection without kicking players from the server.
   - **Official Cross-Version Resource Pack (Rounds-ResourcePack.zip, -RU.zip, -EN.zip):**
@@ -476,6 +476,7 @@ description:
 rarity: RARE
 material: REDSTONE
 enabled: true
+art: card_500.png
 effects:
   bullets: 0
 triggers:
@@ -504,9 +505,9 @@ The plugin provides a self-contained, cross-platform resource pack infrastructur
 The official plugin resource pack is based on the original resource pack by **ifrit**, with subsequent modifications: restructured layout, added texture variations, adaptive localization (RU/EN), palette quantization, and optimization by **Mr712**.
 
 Card titles and ability descriptions are rendered directly onto card face textures. Separate language-specific packages are generated:
-- `Rounds-ResourcePack-RU.zip`: Card textures with baked Russian translations ([Download on Google Drive](https://drive.google.com/file/d/1aC6KKnC3pJXeoz1NZ0-Mzao0IFa_Mufi/view?usp=sharing)).
-- `Rounds-ResourcePack-EN.zip`: Card textures with baked English translations ([Download on Google Drive](https://drive.google.com/file/d/1vB3-KVbrplQvb_UzjcZj0UlQki9RR5FH/view?usp=sharing)).
-- `Rounds-ResourcePack.zip`: Base template pack containing clean, unbaked original card art (without text), allowing other creators to add custom translations and typography ([Download developer base pack on Google Drive](https://drive.google.com/file/d/1tA_Ty1WabOgRgCp2-2AlyHJIigmx1hm3/view?usp=sharing)).
+- `Rounds-ResourcePack-RU.zip`: Card textures with baked Russian translations ([Download on Google Drive](https://drive.google.com/file/d/1MURSM1-b66Zez1PNYWZviT7tBqxvFiA4/view?usp=sharing)).
+- `Rounds-ResourcePack-EN.zip`: Card textures with baked English translations ([Download on Google Drive](https://drive.google.com/file/d/1QotrmkfhCeO6sWz8H79rkCt_XhS_oV3o/view?usp=sharing)).
+- `Rounds-ResourcePack.zip`: Base template pack containing clean, unbaked original card art (without text), allowing other creators to add custom translations and typography ([Download developer base pack on Google Drive](https://drive.google.com/file/d/1Kj38TxORUtLwbn3Uy0s8-zTbH5KXy9Df/view?usp=sharing)).
 
 The private-use font glyph codepoints (`0xE000` + `familyId`) are identical across all language packs. Players simply activate their preferred language pack in Minecraft settings without requiring any server configuration changes.
 
@@ -514,10 +515,10 @@ The private-use font glyph codepoints (`0xE000` + `familyId`) are identical acro
 To have clients automatically download my pre-built English resource pack when connecting to the server, configure the following parameters in `server.properties`:
 
 ```properties
-resource-pack=https://drive.google.com/uc?export=download&id=1vB3-KVbrplQvb_UzjcZj0UlQki9RR5FH
+resource-pack=https://drive.google.com/uc?export=download&id=1QotrmkfhCeO6sWz8H79rkCt_XhS_oV3o
 resource-pack-id=276093b4-f5ee-3eca-8dba-2448a11ee78a
 resource-pack-prompt={"text"\:"ROUNDS resource pack","color"\:"gold"}
-resource-pack-sha1=76334beb678f03710bceac9e934ce5df609777f6
+resource-pack-sha1=7005ba808769d1a59ba4aeedbd46aba683e0c964
 ```
 
 ### 2. Pure Java Gradle Pack Builder (`CardPackBuilder`)
@@ -900,7 +901,7 @@ Comprehensive guide for creating cards via YAML with `cards.schema.json` and con
 Ready plugins - one per server version - are placed in `rounds-nms/*/build/libs/`:
 
 ```
-RoundsPlugin-<server-version>-v1.8-byMr712.jar
+RoundsPlugin-<server-version>-v1.9-byMr712.jar
 ```
 
 - Range: every stable release **1.20.4 - 26.3**.

@@ -309,6 +309,22 @@ public class BotManager implements Listener {
         return true;
     }
 
+    public int getBotCount(GameTeam team) {
+        if (team == null || bots.isEmpty()) return 0;
+        int count = 0;
+        for (FakeBot b : bots.values()) {
+            if (b.getAssignedTeam() == team) {
+                count++;
+            } else {
+                Player bp = b.getBukkitPlayer();
+                if (bp != null && plugin.getTeamManager().getPlayerTeam(bp.getUniqueId()) == team) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
     public int despawnAll() {
         int count = bots.size();
         for (String name : new ArrayList<>(bots.keySet())) {

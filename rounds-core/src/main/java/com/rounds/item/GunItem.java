@@ -182,7 +182,7 @@ public class GunItem implements Listener {
 
         if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
             event.setCancelled(true);
-            if (plugin.getGameManager().getState() == com.rounds.game.GameManager.GameState.CARDS) return;
+            if (plugin.getGameManager().getState() != com.rounds.game.GameManager.GameState.PLAYING) return;
             if (plugin.getCardDisplay() != null && (plugin.getCardDisplay().hasActiveScene(player.getUniqueId())
                     || plugin.getCardDisplay().isCardClickRecent(player.getUniqueId()))) {
                 return;
@@ -205,7 +205,7 @@ public class GunItem implements Listener {
             doShoot(player);
         } else if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
             event.setCancelled(true);
-            if (plugin.getGameManager().getState() == com.rounds.game.GameManager.GameState.CARDS) return;
+            if (plugin.getGameManager().getState() != com.rounds.game.GameManager.GameState.PLAYING) return;
             if (plugin.getCardDisplay() != null && plugin.getCardDisplay().hasActiveScene(player.getUniqueId())) {
                 return;
             }
@@ -496,7 +496,7 @@ public class GunItem implements Listener {
             }
         }, shieldDuration);
 
-        if (!isEcho && data.noParty > 0) {
+        if (data.noParty > 0) {
             long lastParty = noPartyCooldowns.getOrDefault(uuid, 0L);
             long nowMs = System.currentTimeMillis();
             long noPartyCd = (plugin != null) ? plugin.getRoundsConfig().getNoPartyCooldownMs() : NO_PARTY_COOLDOWN_MS;
@@ -556,7 +556,11 @@ public class GunItem implements Listener {
 
         Location blockLoc = player.getLocation();
 
-        if (data.saw > 0 && !activeSawTasks.containsKey(uuid)) {
+        if (data.saw > 0) {
+            Integer oldSawTaskId = activeSawTasks.remove(uuid);
+            if (oldSawTaskId != null) {
+                Bukkit.getScheduler().cancelTask(oldSawTaskId);
+            }
             try {
                 player.getWorld().playSound(player, "rounds:saw", SoundCategory.RECORDS, 0.7f, 1.0f);
             } catch (Throwable t) {
@@ -779,10 +783,28 @@ public class GunItem implements Listener {
     @EventHandler
     public void onDrop(PlayerDropItemEvent event) {
         ItemStack item = event.getItemDrop().getItemStack();
-        if (isGun(item) || isShield(item)) {
+        if (isGun(item)) {
             event.setCancelled(true);
+            Player player = event.getPlayer();
+            if (plugin.getGameManager().getState() != com.rounds.game.GameManager.GameState.PLAYING) return;
+            UUID uuid = player.getUniqueId();
+            if (silencedPlayers.contains(uuid) || partyLocked.contains(uuid)) return;
+            PlayerData data = plugin.getPlayerDataManager().getData(player);
+            if (data == null || isReloading(uuid)) return;
+            if (data.ammo < data.maxAmmo) {
+                startReload(player, data);
+            } else {
+                player.sendActionBar(ChatColor.GRAY + Messages.get("gun.ammo-display", (int) data.ammo, (int) data.maxAmmo));
+            }
+            return;
         }
+        if (isShield(item)) {
+            event.setCancelled(true);
+            return;
+        }
+        return;
     }
+
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onSwapHandItems(PlayerSwapHandItemsEvent event) {

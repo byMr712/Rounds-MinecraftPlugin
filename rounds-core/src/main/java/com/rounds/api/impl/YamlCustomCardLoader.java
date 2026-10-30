@@ -68,6 +68,13 @@ public class YamlCustomCardLoader {
         }
         String cleanId = "custom_" + resolvedId.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9._-]", "-");
 
+        if (plugin.getCardManager() != null && plugin.getCardManager().getRegistry() != null) {
+            if (plugin.getCardManager().getRegistry().findCardByName(resolvedId) != null
+                    || plugin.getCardManager().getRegistry().findCardByName(cleanId) != null) {
+                return;
+            }
+        }
+
         // Localized names and descriptions
         Map<String, String> names = loadLocalizedMap(config, "name");
         Map<String, String> descriptions = loadLocalizedMap(config, "description");

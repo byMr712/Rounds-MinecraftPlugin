@@ -29,7 +29,7 @@
   ```
 
 - **Сборка кроссплатформенных ресурспаков:**
-  Генерирует `Rounds-ResourcePack-RU.zip`, `Rounds-ResourcePack-EN.zip` и базовый `Rounds-ResourcePack.zip` (чистые шаблоны карт без текста, [скачать на Google Диске](https://drive.google.com/file/d/1tA_Ty1WabOgRgCp2-2AlyHJIigmx1hm3/view?usp=sharing)) в папке `resourcepacks_builds/`:
+  Генерирует `Rounds-ResourcePack-RU.zip`, `Rounds-ResourcePack-EN.zip` и базовый `Rounds-ResourcePack.zip` (чистые шаблоны карт без текста, [скачать на Google Диске](https://drive.google.com/file/d/1Kj38TxORUtLwbn3Uy0s8-zTbH5KXy9Df/view?usp=sharing)) в папке `resourcepacks_builds/`:
   ```bash
   ./gradlew buildResourcePacks
   ```

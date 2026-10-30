@@ -133,8 +133,13 @@ public class MatchStatsManager {
         return !activeStats.isEmpty();
     }
 
+    public static boolean hasLastMatchStats() {
+        return !lastMatchStats.isEmpty();
+    }
+
     public static void onGameStart() {
         activeStats.clear();
+        lastMatchStats.clear();
         clearAllLastDamagers();
     }
 

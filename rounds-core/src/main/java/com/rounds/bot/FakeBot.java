@@ -562,7 +562,15 @@ public class FakeBot {
         Player p = getBukkitPlayer();
         NmsPlayerHandle sp = getHandle();
         if (sp == null || p == null || !p.isOnline() || p.isDead() || p.getGameMode() == GameMode.SPECTATOR) return;
-        if (manager != null && manager.getPlugin() != null && manager.getPlugin().getGameManager().getState() == com.rounds.game.GameManager.GameState.CARDS) return;
+        if (manager != null && manager.getPlugin() != null) {
+            com.rounds.game.GameManager.GameState curSt = manager.getPlugin().getGameManager().getState();
+            if (curSt == com.rounds.game.GameManager.GameState.CARDS || curSt == com.rounds.game.GameManager.GameState.ROUND_END) {
+                velY = 0.0;
+                impulseX = 0.0;
+                impulseZ = 0.0;
+                return;
+            }
+        }
         if (com.rounds.listener.LegendaryEffects.isBulletTimeActiveFor(p.getUniqueId())
                 || p.hasPotionEffect(org.bukkit.potion.PotionEffectType.SLOW)) {
             dx *= 0.15;

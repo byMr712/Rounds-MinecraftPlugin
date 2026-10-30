@@ -215,6 +215,9 @@ public class CardDisplayManager implements Listener {
         if (scene == null) return;
         if (event.getAction() != Action.LEFT_CLICK_AIR && event.getAction() != Action.LEFT_CLICK_BLOCK) return;
         event.setCancelled(true);
+        if (System.currentTimeMillis() - scene.createdAt < 1500L) {
+            return;
+        }
         lastCardPickMs.put(event.getPlayer().getUniqueId(), System.currentTimeMillis());
         if (scene.hovered >= 0) {
             scene.select(scene.hovered);
@@ -285,6 +288,7 @@ public class CardDisplayManager implements Listener {
         Location[] targets = new Location[SLOT_COUNT];
         Location[] starTargets = new Location[SLOT_COUNT];
         final Set<Location> fakeBarriers = new HashSet<>();
+        final long createdAt = System.currentTimeMillis();
         int hovered = -1;
 
         BukkitTask tickTask;

@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 /**
@@ -72,6 +73,11 @@ public class CardPackBuilder {
             Path defaultZip = outDir.resolve("Rounds-ResourcePack.zip");
             buildPack(projectRoot, familyArt, "BASE", "[Base]", defaultZip);
 
+            // Clean up legacy Rounds-CardPack-*.zip aliases if present in output directory
+            Files.deleteIfExists(outDir.resolve("Rounds-CardPack-RU.zip"));
+            Files.deleteIfExists(outDir.resolve("Rounds-CardPack-EN.zip"));
+            Files.deleteIfExists(outDir.resolve("Rounds-CardPack.zip"));
+
             // Optional Deploy
             if (deployDesktop) {
                 Path desktop = Paths.get(System.getProperty("user.home"), "Desktop");
@@ -79,6 +85,9 @@ public class CardPackBuilder {
                     Files.copy(ruZip, desktop.resolve(ruZip.getFileName()), StandardCopyOption.REPLACE_EXISTING);
                     Files.copy(enZip, desktop.resolve(enZip.getFileName()), StandardCopyOption.REPLACE_EXISTING);
                     Files.copy(defaultZip, desktop.resolve(defaultZip.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+                    Files.deleteIfExists(desktop.resolve("Rounds-CardPack-RU.zip"));
+                    Files.deleteIfExists(desktop.resolve("Rounds-CardPack-EN.zip"));
+                    Files.deleteIfExists(desktop.resolve("Rounds-CardPack.zip"));
                     System.out.println("Deployed all packs to Desktop: " + desktop);
                 }
             }
@@ -96,6 +105,9 @@ public class CardPackBuilder {
                                     Files.copy(ruZip, rp.resolve(ruZip.getFileName()), StandardCopyOption.REPLACE_EXISTING);
                                     Files.copy(enZip, rp.resolve(enZip.getFileName()), StandardCopyOption.REPLACE_EXISTING);
                                     Files.copy(defaultZip, rp.resolve(defaultZip.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+                                    Files.deleteIfExists(rp.resolve("Rounds-CardPack-RU.zip"));
+                                    Files.deleteIfExists(rp.resolve("Rounds-CardPack-EN.zip"));
+                                    Files.deleteIfExists(rp.resolve("Rounds-CardPack.zip"));
                                     count++;
                                 } catch (IOException locked) {
                                     // Instance pack file is locked (game running): skip, report.
@@ -183,9 +195,10 @@ public class CardPackBuilder {
 
     private static void buildPack(Path root, Map<Integer, FamilyCard> familyArt, String lang, String label, Path outZip) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Set<String> written = new HashSet<>();
         try (ZipOutputStream zos = new ZipOutputStream(baos)) {
             zos.setLevel(java.util.zip.Deflater.BEST_COMPRESSION);
-            // 1. pack.mcmeta
+            // 1. pack.mcmeta with HUDEngine shader overlays
             String desc = label.isEmpty()
                     ? "Rounds ResourcePack by ifrit & Mr712"
                     : "Rounds ResourcePack " + label + " by ifrit & Mr712";
@@ -197,9 +210,18 @@ public class CardPackBuilder {
                     "    \"min_format\": 22,\n" +
                     "    \"max_format\": 99,\n" +
                     "    \"description\": \"" + desc + "\"\n" +
+                    "  },\n" +
+                    "  \"overlays\": {\n" +
+                    "    \"entries\": [\n" +
+                    "      {\"formats\": [63, 68], \"min_format\": 63, \"max_format\": 68, \"directory\": \"overlay_ubo150\"},\n" +
+                    "      {\"formats\": [69, 83], \"min_format\": 69, \"max_format\": 83, \"directory\": \"overlay_ubo330\"},\n" +
+                    "      {\"formats\": [84, 87], \"min_format\": 84, \"max_format\": 87, \"directory\": \"overlay_lightmap\"},\n" +
+                    "      {\"formats\": [88, 96], \"min_format\": 88, \"max_format\": 96, \"directory\": \"overlay_text\"},\n" +
+                    "      {\"formats\": [97, 99], \"min_format\": 97, \"max_format\": 99, \"directory\": \"overlay_sso\"}\n" +
+                    "    ]\n" +
                     "  }\n" +
                     "}\n";
-            writeEntry(zos, "pack.mcmeta", mcmeta.getBytes(StandardCharsets.UTF_8));
+            writeEntry(zos, written, "pack.mcmeta", mcmeta.getBytes(StandardCharsets.UTF_8));
 
             // 2. pack.png icon (resized from logo.jpg)
             Path logoPath = root.resolve("images").resolve("logo.jpg");
@@ -213,7 +235,7 @@ public class CardPackBuilder {
                     g.dispose();
                     ByteArrayOutputStream iconBaos = new ByteArrayOutputStream();
                     ImageIO.write(scaled, "PNG", iconBaos);
-                    writeEntry(zos, "pack.png", iconBaos.toByteArray());
+                    writeEntry(zos, written, "pack.png", iconBaos.toByteArray());
                 }
             }
 
@@ -307,14 +329,14 @@ public class CardPackBuilder {
                         }
                     }
                     if (cardFile != null) {
-                        writeEntry(zos, "assets/rounds/textures/font/" + texName + ".png", Files.readAllBytes(cardFile));
+                        writeEntry(zos, written, "assets/rounds/textures/font/" + texName + ".png", Files.readAllBytes(cardFile));
                     }
                     idx++;
                 }
             }
 
             String fontJson = "{\n  \"providers\": [\n" + String.join(",\n", providers) + "\n  ]\n}\n";
-            writeEntry(zos, "assets/rounds/font/default.json", fontJson.getBytes(StandardCharsets.UTF_8));
+            writeEntry(zos, written, "assets/rounds/font/default.json", fontJson.getBytes(StandardCharsets.UTF_8));
             // NOTE: never write assets/minecraft/font/default.json here — it would replace
             // the vanilla default font providers and break all regular text rendering.
 
@@ -323,7 +345,7 @@ public class CardPackBuilder {
             if (Files.isDirectory(soundsDir)) {
                 try (DirectoryStream<Path> stream = Files.newDirectoryStream(soundsDir, "*.ogg")) {
                     for (Path p : stream) {
-                        writeEntry(zos, "assets/rounds/sounds/" + p.getFileName().toString(), Files.readAllBytes(p));
+                        writeEntry(zos, written, "assets/rounds/sounds/" + p.getFileName().toString(), Files.readAllBytes(p));
                     }
                 }
 
@@ -335,7 +357,7 @@ public class CardPackBuilder {
                         "  \"block\": { \"category\": \"player\", \"sounds\": [ \"rounds:block\" ] },\n" +
                         "  \"saw\": { \"category\": \"player\", \"sounds\": [ \"rounds:saw\" ] }\n" +
                         "}\n";
-                writeEntry(zos, "assets/rounds/sounds.json", soundsJson.getBytes(StandardCharsets.UTF_8));
+                writeEntry(zos, written, "assets/rounds/sounds.json", soundsJson.getBytes(StandardCharsets.UTF_8));
 
                 // Vanilla sound silencer
                 String[] vanillaEvents = new String[]{
@@ -358,7 +380,7 @@ public class CardPackBuilder {
                     sb.append("\n");
                 }
                 sb.append("}\n");
-                writeEntry(zos, "assets/minecraft/sounds.json", sb.toString().getBytes(StandardCharsets.UTF_8));
+                writeEntry(zos, written, "assets/minecraft/sounds.json", sb.toString().getBytes(StandardCharsets.UTF_8));
             }
 
             // 5. Weapon 3D model and textures
@@ -366,8 +388,8 @@ public class CardPackBuilder {
             Path gunModelPath = gunDir.resolve("models").resolve("item").resolve("gun.json");
             Path gunTexPath = gunDir.resolve("textures").resolve("item").resolve("piton.png");
             if (Files.exists(gunModelPath) && Files.exists(gunTexPath)) {
-                writeEntry(zos, "assets/rounds/textures/item/piton.png", Files.readAllBytes(gunTexPath));
-                writeEntry(zos, "assets/rounds/models/item/gun.json", Files.readAllBytes(gunModelPath));
+                writeEntry(zos, written, "assets/rounds/textures/item/piton.png", Files.readAllBytes(gunTexPath));
+                writeEntry(zos, written, "assets/rounds/models/item/gun.json", Files.readAllBytes(gunModelPath));
 
                 // Legacy model override (Minecraft 1.20.4 - 1.21.3)
                 String stickModelJson = "{\n" +
@@ -384,7 +406,7 @@ public class CardPackBuilder {
                         "    }\n" +
                         "  ]\n" +
                         "}\n";
-                writeEntry(zos, "assets/minecraft/models/item/stick.json", stickModelJson.getBytes(StandardCharsets.UTF_8));
+                writeEntry(zos, written, "assets/minecraft/models/item/stick.json", stickModelJson.getBytes(StandardCharsets.UTF_8));
 
                 // Modern item model definition (Minecraft 1.21.4+)
                 String stickItemDefJson = "{\n" +
@@ -406,13 +428,47 @@ public class CardPackBuilder {
                         "    ]\n" +
                         "  }\n" +
                         "}\n";
-                writeEntry(zos, "assets/minecraft/items/stick.json", stickItemDefJson.getBytes(StandardCharsets.UTF_8));
+                writeEntry(zos, written, "assets/minecraft/items/stick.json", stickItemDefJson.getBytes(StandardCharsets.UTF_8));
+            }
+
+            // 6. HUDEngine HUD Overlay assets, fonts and shaders
+            Path hudEngineZip = resolveHudEngineZip(root);
+            if (hudEngineZip != null && Files.exists(hudEngineZip)) {
+                try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(hudEngineZip))) {
+                    ZipEntry ze;
+                    byte[] textVshBytes = null;
+                    while ((ze = zis.getNextEntry()) != null) {
+                        String name = ze.getName();
+                        if (!ze.isDirectory() && !"pack.mcmeta".equalsIgnoreCase(name)) {
+                            byte[] data = zis.readAllBytes();
+                            writeEntry(zos, written, name, data);
+                            if ("overlay_text/assets/minecraft/shaders/core/text.vsh".equals(name)) {
+                                textVshBytes = data;
+                            }
+                        }
+                    }
+                    if (textVshBytes != null) {
+                        writeEntry(zos, written, "assets/minecraft/shaders/core/text.vsh", textVshBytes);
+                    }
+                }
             }
         }
 
         byte[] zipBytes = baos.toByteArray();
         Files.write(outZip, zipBytes, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
         System.out.println("Generated: " + outZip.getFileName() + " (" + (zipBytes.length / 1024) + " KB)");
+    }
+
+    private static Path resolveHudEngineZip(Path root) {
+        Path[] candidates = new Path[]{
+                root.resolve("tools").resolve("assets").resolve("HUDEngine.zip"),
+                root.resolve("rounds-core").resolve("src").resolve("main").resolve("resources").resolve("hudengine").resolve("HUDEngine.zip"),
+                root.resolve("test-servers").resolve("26.2").resolve("plugins").resolve("HUDEngine").resolve("build").resolve("HUDEngine.zip")
+        };
+        for (Path c : candidates) {
+            if (Files.exists(c)) return c;
+        }
+        return null;
     }
 
     private static Path resolveCardPng(String artName, Path targetCardsDir, Path baseCardsDir) {
@@ -429,8 +485,12 @@ public class CardPackBuilder {
         return null;
     }
 
-    private static void writeEntry(ZipOutputStream zos, String entryName, byte[] data) throws IOException {
-        ZipEntry entry = new ZipEntry(entryName.replace('\\', '/'));
+    private static void writeEntry(ZipOutputStream zos, Set<String> written, String entryName, byte[] data) throws IOException {
+        String normalized = entryName.replace('\\', '/');
+        if (written != null && !written.add(normalized)) {
+            return;
+        }
+        ZipEntry entry = new ZipEntry(normalized);
         zos.putNextEntry(entry);
         zos.write(data);
         zos.closeEntry();

@@ -583,7 +583,7 @@ public class GameManager implements Listener {
                 double currentHP = p.getHealth();
                 boolean pristineActive = currentMaxHP > baseMaxHP + 0.5;
 
-                if (currentHP >= 0.9 * currentMaxHP) {
+                if (currentHP >= 0.9 * enhancedMaxHP) {
                     if (!pristineActive && currentMaxHP < enhancedMaxHP - 0.5) {
                         attr.setBaseValue(enhancedMaxHP);
                         p.setHealth(Math.min(p.getHealth(), attr.getValue()));
@@ -1408,6 +1408,9 @@ public class GameManager implements Listener {
         losingTeams.clear();
         saveState();
         cleanupRoundCombatState();
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            p.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
+        }
 
         List<Player> winners = new ArrayList<>();
         if (winner != null) {
@@ -1555,6 +1558,9 @@ public class GameManager implements Listener {
         losingTeams.clear();
         saveState();
         cleanupRoundCombatState();
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            p.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
+        }
         com.rounds.hud.HudEngineCustomRealisation.refresh();
         broadcastBox(
             ChatColor.YELLOW + "\u2502 " + Messages.get("game.draw-title", Messages.get("game.draw")),
@@ -1632,6 +1638,8 @@ public class GameManager implements Listener {
         }
         com.rounds.stats.MatchStatsManager.onGameEnd(plugin.getPlayerDataManager());
 
+        List<String> finalScores = getActiveTeamScores();
+
         if (plugin.getBotManager() != null) {
             plugin.getBotManager().despawnAll();
         }
@@ -1640,7 +1648,7 @@ public class GameManager implements Listener {
         broadcastBox(
             ChatColor.WHITE + "\u2502 " + teamName + " " + Messages.get("game.game-won"),
             null,
-            getActiveTeamScores()
+            finalScores
         );
 
         scheduleDelayed(() -> {
@@ -1893,7 +1901,7 @@ public class GameManager implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerMove(PlayerMoveEvent event) {
-        if (state != GameState.CARDS) return;
+        if (state != GameState.CARDS && state != GameState.ROUND_END) return;
         Player player = event.getPlayer();
         if (player.getGameMode() == GameMode.SPECTATOR) return;
         if (!isParticipant(player.getUniqueId()) && plugin.getTeamManager().getPlayerTeam(player.getUniqueId()) == null) return;
@@ -1901,6 +1909,16 @@ public class GameManager implements Listener {
         Location from = event.getFrom();
         Location to = event.getTo();
         if (to == null) return;
+
+        if (state == GameState.ROUND_END) {
+            if (event.hasChangedPosition()) {
+                Location lockLoc = from.clone();
+                lockLoc.setYaw(to.getYaw());
+                lockLoc.setPitch(to.getPitch());
+                event.setTo(lockLoc);
+            }
+            return;
+        }
 
         // Freeze position (X, Y, Z) while cards are being picked, allow looking around (yaw, pitch).
         // Keep player strictly on the draft horizontal plane (origin.getY()) while picking cards,
@@ -2034,30 +2052,40 @@ public class GameManager implements Listener {
     }
 
     public void sendClickableStatsPrompt() {
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            sendClickableStatsPrompt(p);
+        }
+
+        String header = Messages.get("debug.statsend-prompt-header");
+        String clickText = Messages.get("debug.statsend-click");
+        plugin.getServer().getConsoleSender().sendMessage(BOX_MID + BOX_W + header);
+        plugin.getServer().getConsoleSender().sendMessage(BOX_MID + clickText + " (/rdebug statsend)");
+        plugin.getServer().getConsoleSender().sendMessage(BOX_BOT);
+    }
+
+    public void sendClickableStatsPrompt(Player p) {
+        if (p == null || !p.isOnline()) return;
+        if (p.hasMetadata("NPC")) return;
+        if (plugin.getBotManager() != null && plugin.getBotManager().isBot(p)) return;
+
         String header = Messages.get("debug.statsend-prompt-header");
         String clickText = Messages.get("debug.statsend-click");
         String hoverText = Messages.get("debug.statsend-hover");
 
-        for (Player p : plugin.getServer().getOnlinePlayers()) {
-            p.sendMessage(BOX_MID + BOX_W + header);
+        p.sendMessage(BOX_MID + BOX_W + header);
 
-            net.md_5.bungee.api.chat.TextComponent midComp = new net.md_5.bungee.api.chat.TextComponent(BOX_MID);
-            net.md_5.bungee.api.chat.BaseComponent[] extras = net.md_5.bungee.api.chat.TextComponent.fromLegacyText(clickText);
-            for (net.md_5.bungee.api.chat.BaseComponent extra : extras) {
-                extra.setClickEvent(new net.md_5.bungee.api.chat.ClickEvent(
-                        net.md_5.bungee.api.chat.ClickEvent.Action.RUN_COMMAND, "/rdebug statsend"));
-                extra.setHoverEvent(new net.md_5.bungee.api.chat.HoverEvent(
-                        net.md_5.bungee.api.chat.HoverEvent.Action.SHOW_TEXT,
-                        new net.md_5.bungee.api.chat.ComponentBuilder(hoverText).create()));
-                midComp.addExtra(extra);
-            }
-            p.spigot().sendMessage(midComp);
-            p.sendMessage(BOX_BOT);
+        net.md_5.bungee.api.chat.TextComponent midComp = new net.md_5.bungee.api.chat.TextComponent(BOX_MID);
+        net.md_5.bungee.api.chat.BaseComponent[] extras = net.md_5.bungee.api.chat.TextComponent.fromLegacyText(clickText);
+        for (net.md_5.bungee.api.chat.BaseComponent extra : extras) {
+            extra.setClickEvent(new net.md_5.bungee.api.chat.ClickEvent(
+                    net.md_5.bungee.api.chat.ClickEvent.Action.RUN_COMMAND, "/rdebug statsend"));
+            extra.setHoverEvent(new net.md_5.bungee.api.chat.HoverEvent(
+                    net.md_5.bungee.api.chat.HoverEvent.Action.SHOW_TEXT,
+                    new net.md_5.bungee.api.chat.ComponentBuilder(hoverText).create()));
+            midComp.addExtra(extra);
         }
-
-        plugin.getServer().getConsoleSender().sendMessage(BOX_MID + BOX_W + header);
-        plugin.getServer().getConsoleSender().sendMessage(BOX_MID + clickText + " (/rdebug statsend)");
-        plugin.getServer().getConsoleSender().sendMessage(BOX_BOT);
+        p.spigot().sendMessage(midComp);
+        p.sendMessage(BOX_BOT);
     }
 
     public static boolean isAdmin(Player player) {
@@ -2124,13 +2152,17 @@ public class GameManager implements Listener {
         } else if (isGameStarted() && plugin.getTeamManager().getPlayerTeam(player.getUniqueId()) == null) {
             sendJoinPrompt(player);
         }
+        if (!isGameStarted() && com.rounds.stats.MatchStatsManager.hasLastMatchStats()) {
+            sendClickableStatsPrompt(player);
+        }
     }
 
     public List<String> getActiveTeamScores() {
         List<String> list = new ArrayList<>();
         TeamManager tm = plugin.getTeamManager();
         for (GameTeam team : GameTeam.values()) {
-            boolean active = tm.getPlayerCount(team) > 0;
+            boolean active = tm.getPlayerCount(team) > 0 || tm.getWins(team) > 0
+                    || (plugin.getBotManager() != null && plugin.getBotManager().getBotCount(team) > 0);
             if (active) {
                 String teamName = Messages.get("team." + team.name().toLowerCase());
                 list.add(team.getColor() + "\u2502 " + team.getColor() + teamName + BOX_W + ": " + (int) tm.getWins(team));

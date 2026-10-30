@@ -43,6 +43,17 @@ public class GameStateManager {
         }
 
         final String serialized = yml.saveToString();
+        if (plugin == null || !plugin.isEnabled()) {
+            try {
+                java.nio.file.Files.writeString(file.toPath(), serialized, java.nio.charset.StandardCharsets.UTF_8);
+            } catch (IOException e) {
+                if (plugin != null) {
+                    plugin.getLogger().warning("Failed to save game state: " + e.getMessage());
+                }
+            }
+            return;
+        }
+
         org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 java.nio.file.Files.writeString(file.toPath(), serialized, java.nio.charset.StandardCharsets.UTF_8);
@@ -104,6 +115,10 @@ public class GameStateManager {
     }
 
     public void clear() {
+        if (plugin == null || !plugin.isEnabled()) {
+            if (file.exists()) file.delete();
+            return;
+        }
         org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             if (file.exists()) file.delete();
         });

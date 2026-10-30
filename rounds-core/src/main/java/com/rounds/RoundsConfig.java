@@ -97,7 +97,9 @@ public final class RoundsConfig {
         baseGunCooldown = c.contains("gun.base-cooldown")
                 ? c.getDouble("gun.base-cooldown")
                 : c.getDouble("defaults.attack-speed", 20);
-        gunMaterial = c.getString("gun.material", "STICK");
+        if (gunMaterial == null) {
+            gunMaterial = "STICK";
+        }
 
         cardSelectionCount = c.getInt("cards.selection-count", 5);
         weightedRarity = c.getBoolean("cards.weighted-rarity", true);

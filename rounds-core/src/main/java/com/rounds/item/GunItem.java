@@ -128,7 +128,11 @@ public class GunItem implements Listener {
                 double effectiveAtkSpeed = Math.max(1.0 + pData.atkSpeed, 0.5);
                 double cooldownTicks = Math.max(pData.atks / effectiveAtkSpeed + pData.atksReload, 1);
                 if (!GunCooldowns.canShoot(player.getUniqueId(), cooldownTicks) || isReloading(player.getUniqueId()) || reloadingPlayers.contains(player.getUniqueId())) {
-                    player.setCooldown(item.getType(), Math.max(1, (int) Math.ceil(cooldownTicks)));
+                    if (!player.hasCooldown(item.getType())) {
+                        long remMs = GunCooldowns.getRemainingMs(player.getUniqueId(), cooldownTicks);
+                        int remTicks = (int) Math.ceil(remMs / 50.0);
+                        if (remTicks > 0) player.setCooldown(item.getType(), remTicks);
+                    }
                     return;
                 }
             }
@@ -157,7 +161,11 @@ public class GunItem implements Listener {
         double cooldownTicks = Math.max(data.atks / effectiveAtkSpeed + data.atksReload, 1);
         if (!GunCooldowns.canShoot(uuid, cooldownTicks) || isReloading(uuid) || reloadingPlayers.contains(uuid)) {
             event.setCancelled(true);
-            player.setCooldown(item.getType(), Math.max(1, (int) Math.ceil(cooldownTicks)));
+            if (!player.hasCooldown(item.getType())) {
+                long remMs = GunCooldowns.getRemainingMs(uuid, cooldownTicks);
+                int remTicks = (int) Math.ceil(remMs / 50.0);
+                if (remTicks > 0) player.setCooldown(item.getType(), remTicks);
+            }
         }
     }
 

@@ -28,7 +28,10 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
+import org.joml.AxisAngle4f;
+import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -56,12 +59,18 @@ public class CardDisplayManager implements Listener {
     private static final int SLOT_COUNT = 5;
     private static final double RADIUS = 2.2;
     private static final double FAN_TOTAL_DEG = 160.0;
-    private static final double CARD_CENTER_OFFSET = 1.2;
+    private static final float CARD_SCALE = 0.75f;
+    private static final Transformation CARD_TRANSFORMATION = new Transformation(
+            new Vector3f(0f, 0f, 0f),
+            new AxisAngle4f(),
+            new Vector3f(CARD_SCALE, CARD_SCALE, CARD_SCALE),
+            new AxisAngle4f()
+    );
+    private static final double CARD_CENTER_OFFSET = 1.2 * CARD_SCALE;
     // Card glyph is 88 font units tall (bitmap provider) rendered at ~0.025 blocks/unit,
-    // source images are 160x250 (width = 0.64 * height). A small margin is added so the
-    // edges of the card are comfortably selectable.
-    private static final double CARD_HALF_WIDTH = 0.76;
-    private static final double CARD_HALF_HEIGHT = 1.16;
+    // source images are 160x250 (width = 0.64 * height). Scaled to 75% size (-25%).
+    private static final double CARD_HALF_WIDTH = 0.76 * CARD_SCALE;
+    private static final double CARD_HALF_HEIGHT = 1.16 * CARD_SCALE;
     private static final Key CARD_FONT = Key.key("rounds", "default");
 
     public CardDisplayManager(RoundsPlugin plugin) {
@@ -415,7 +424,7 @@ public class CardDisplayManager implements Listener {
         }
 
         Location starPosition(Location cardLoc) {
-            return cardLoc.clone().add(0, CARD_CENTER_OFFSET + CARD_HALF_HEIGHT + 0.20, 0);
+            return cardLoc.clone().add(0, CARD_CENTER_OFFSET + CARD_HALF_HEIGHT + 0.15, 0);
         }
 
         void spawnCard(int i, Location loc) {
@@ -423,6 +432,7 @@ public class CardDisplayManager implements Listener {
             TextDisplay display = player.getWorld().spawn(loc, TextDisplay.class);
             if (display != null) {
                 display.text(cardGlyph(card));
+                display.setTransformation(CARD_TRANSFORMATION);
                 display.setBillboard(Display.Billboard.FIXED);
                 display.setViewRange(0.6f);
                 display.setGlowing(true);
@@ -437,6 +447,7 @@ public class CardDisplayManager implements Listener {
             TextDisplay starDisplay = player.getWorld().spawn(starLoc, TextDisplay.class);
             if (starDisplay != null) {
                 starDisplay.text(starComponent(card));
+                starDisplay.setTransformation(CARD_TRANSFORMATION);
                 starDisplay.setBillboard(Display.Billboard.FIXED);
                 starDisplay.setViewRange(0.6f);
                 starDisplay.setSeeThrough(true);

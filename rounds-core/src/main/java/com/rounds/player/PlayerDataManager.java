@@ -913,6 +913,13 @@ public class PlayerDataManager implements Listener {
             return now - last >= cooldownMs;
         }
 
+        public static long getRemainingMs(UUID uuid, double cooldownTicks) {
+            long now = System.currentTimeMillis();
+            long last = LAST_SHOT.getOrDefault(uuid, 0L);
+            long cooldownMs = (long) (cooldownTicks * 50);
+            return Math.max(0L, cooldownMs - (now - last));
+        }
+
         public static void recordShot(UUID uuid) {
             LAST_SHOT.put(uuid, System.currentTimeMillis());
         }

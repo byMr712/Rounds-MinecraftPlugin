@@ -406,8 +406,15 @@ public class GameManager implements Listener {
                 player.getInventory().setItem(slot, gun.clone());
             }
         } else {
+            for (int i = 0; i < player.getInventory().getSize(); i++) {
+                ItemStack cur = player.getInventory().getItem(i);
+                if (GunItem.isGun(cur) && cur.getType() != gun.getType()) {
+                    player.getInventory().setItem(i, null);
+                }
+            }
             player.getInventory().setItem(0, gun.clone());
-            if (!GunItem.isGun(player.getInventory().getItem(22))) {
+            ItemStack slot22 = player.getInventory().getItem(22);
+            if (!GunItem.isGun(slot22) || slot22.getType() != gun.getType()) {
                 player.getInventory().setItem(22, gun.clone());
             }
         }
@@ -1120,10 +1127,7 @@ public class GameManager implements Listener {
                         giveGun(p);
                     }
                 } else {
-                    p.getInventory().setItem(0, GunItem.createGunItem());
-                    if (!GunItem.isGun(p.getInventory().getItem(22))) {
-                        p.getInventory().setItem(22, GunItem.createGunItem());
-                    }
+                    giveGun(p);
                 }
                 PlayerData roundData = plugin.getPlayerDataManager().getData(p);
                 if (roundData != null) {

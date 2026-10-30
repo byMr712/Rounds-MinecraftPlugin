@@ -284,7 +284,8 @@ public class BotManager implements Listener {
         for (int i = 0; i < count && !bots.isEmpty(); i++) {
             Map<GameTeam, List<FakeBot>> botsByTeam = new HashMap<>();
             for (FakeBot b : bots.values()) {
-                GameTeam gt = plugin.getTeamManager().getPlayerTeam(b.getBukkitPlayer().getUniqueId());
+                Player bp = b.getBukkitPlayer();
+                GameTeam gt = (bp != null) ? plugin.getTeamManager().getPlayerTeam(bp.getUniqueId()) : null;
                 if (gt == null) gt = GameTeam.BLUE;
                 botsByTeam.computeIfAbsent(gt, k -> new ArrayList<>()).add(b);
             }

@@ -333,8 +333,8 @@ public class GameManager implements Listener {
     private void finishStart(List<Player> readyPlayers, Set<GameTeam> teamsWithPlayers) {
         broadcastBox(
             Messages.get("game.started"),
-            null,
-            Collections.singletonList(Messages.get("game.rounds-to-win", roundsToWin))
+            Messages.get("game.rounds-to-win", roundsToWin),
+            null
         );
 
         state = GameState.CARDS;
@@ -1407,7 +1407,7 @@ public class GameManager implements Listener {
         String teamName = Messages.get("team." + winner.name().toLowerCase());
         broadcastBox(
             teamName + " " + Messages.get("game.round-won"),
-            Messages.get("game.score-header", "Счёт:"),
+            null,
             getActiveTeamScores()
         );
 
@@ -1489,7 +1489,7 @@ public class GameManager implements Listener {
         cleanupRoundCombatState();
         broadcastBox(
             Messages.get("game.draw-title", Messages.get("game.draw")),
-            Messages.get("game.score-header", "Счёт:"),
+            null,
             getActiveTeamScores()
         );
 
@@ -1562,7 +1562,7 @@ public class GameManager implements Listener {
         String teamName = Messages.get("team." + winner.name().toLowerCase());
         broadcastBox(
             teamName + " " + Messages.get("game.game-won"),
-            Messages.get("game.final-score-header", Messages.get("game.score-header", "Итоговый счёт:")),
+            null,
             getActiveTeamScores()
         );
 

@@ -697,8 +697,8 @@ public class BotAI extends BukkitRunnable {
 
     @Override
     public void run() {
-        if (bot == null) {
-            cancel();
+        if (bot == null || isCancelled()) {
+            try { cancel(); } catch (Throwable ignored) {}
             return;
         }
         Player player = bot.getBukkitPlayer();
@@ -1074,7 +1074,10 @@ public class BotAI extends BukkitRunnable {
         // Tactical combat jumping (dodging bullet fire while strafing/moving, realistic cooldown)
         if (bot.isOnGround() && tacticalJumpCooldown <= 0 && tactic != CombatTactic.SNIPE) {
             if (ThreadLocalRandom.current().nextDouble() < profile.tacticalJumpChance) {
-                bot.getBukkitPlayer().setVelocity(bot.getBukkitPlayer().getVelocity().setY(0.38 * bot.getJumpMultiplier()));
+                Player bp = bot.getBukkitPlayer();
+                if (bp != null) {
+                    bp.setVelocity(bp.getVelocity().setY(0.38 * bot.getJumpMultiplier()));
+                }
                 tacticalJumpCooldown = ThreadLocalRandom.current().nextInt(50, 90);
             }
         }
@@ -1240,7 +1243,9 @@ public class BotAI extends BukkitRunnable {
     }
 
     private void moveCombatRel(double mX, double mZ) {
-        Location myLoc = bot.getBukkitPlayer().getLocation();
+        Player player = bot.getBukkitPlayer();
+        if (player == null) return;
+        Location myLoc = player.getLocation();
         double dist = Math.sqrt(mX * mX + mZ * mZ);
         if (dist < 0.001) {
             bot.moveRel(0.0, 0.0, 0.0);
@@ -1841,8 +1846,10 @@ public class BotAI extends BukkitRunnable {
 
         // Avoid walking directly into another bot or player in front (avoids snake/conga line)
         if (checkPlayers && dist <= 1.5 && loc.getWorld() != null) {
+            Player myPlayer = bot.getBukkitPlayer();
             for (Player other : loc.getWorld().getPlayers()) {
-                if (other.getUniqueId().equals(bot.getBukkitPlayer().getUniqueId()) || other.getGameMode() == GameMode.SPECTATOR || other.isDead()) continue;
+                if (myPlayer != null && other.getUniqueId().equals(myPlayer.getUniqueId())) continue;
+                if (other.getGameMode() == GameMode.SPECTATOR || other.isDead()) continue;
                 Location otherLoc = other.getLocation();
                 if (Math.abs(otherLoc.getY() - loc.getY()) > 1.5) continue;
                 double odx = otherLoc.getX() - feet.getX();
@@ -2185,7 +2192,9 @@ public class BotAI extends BukkitRunnable {
     }
 
     private void tickCooldowns() {
-        boolean bulletTimeSlow = com.rounds.listener.LegendaryEffects.isBulletTimeActiveFor(bot.getBukkitPlayer().getUniqueId());
+        Player p = bot.getBukkitPlayer();
+        if (p == null) return;
+        boolean bulletTimeSlow = com.rounds.listener.LegendaryEffects.isBulletTimeActiveFor(p.getUniqueId());
         if (bulletTimeSlow && (tickCount % 6 != 0)) {
             return;
         }
@@ -2231,6 +2240,7 @@ public class BotAI extends BukkitRunnable {
 
     private Player findVisibleTarget() {
         Player player = bot.getBukkitPlayer();
+        if (player == null) return null;
         Location myLoc = player.getLocation();
         Player closest = null;
         double maxDist = (bot.getPlugin() != null) ? bot.getPlugin().getRoundsConfig().getBotMaxVisionDistance() : 60.0;

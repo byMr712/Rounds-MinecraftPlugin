@@ -24,6 +24,7 @@ public class FakeBot {
 
     private final BotManager manager;
     private Player bukkitPlayer;
+    private UUID uuid;
     private NmsPlayerHandle handle;
     private final BotAI ai;
     private BotStrategy strategy = BotStrategy.BALANCED;
@@ -68,33 +69,47 @@ public class FakeBot {
         this.manager = manager;
         this.handle = handle;
         this.bukkitPlayer = (handle != null) ? handle.getBukkitEntity() : null;
+        this.uuid = (this.bukkitPlayer != null) ? this.bukkitPlayer.getUniqueId() : null;
         this.level = ThreadLocalRandom.current().nextInt(1, 11); // Random difficulty level 1..10
         resetAttemptDecision();
         this.ai = new BotAI(this);
         this.ai.runTaskTimer(manager.getPlugin(), 1L, 1L);
     }
 
+    public UUID getUniqueId() {
+        return uuid != null ? uuid : (bukkitPlayer != null ? bukkitPlayer.getUniqueId() : null);
+    }
+
     public String getName() {
-        return bukkitPlayer.getName();
+        Player p = getBukkitPlayer();
+        return p != null ? p.getName() : "Bot";
     }
 
     public Player getBukkitPlayer() {
-        Player p = Bukkit.getPlayer(bukkitPlayer.getUniqueId());
-        if (p != null) {
-            this.bukkitPlayer = p;
+        UUID id = (uuid != null) ? uuid : (bukkitPlayer != null ? bukkitPlayer.getUniqueId() : null);
+        if (id != null) {
+            Player p = Bukkit.getPlayer(id);
+            if (p != null) {
+                this.bukkitPlayer = p;
+                this.uuid = id;
+            }
         }
         return bukkitPlayer;
     }
 
     public NmsPlayerHandle getHandle() {
         NmsBridge bridge = (manager != null && manager.getPlugin() != null) ? manager.getPlugin().getNmsBridge() : null;
-        if (bridge != null && bukkitPlayer != null) {
-            Player p = Bukkit.getPlayer(bukkitPlayer.getUniqueId());
-            if (p != null) {
-                this.bukkitPlayer = p;
-                NmsPlayerHandle fresh = bridge.getHandle(p);
-                if (fresh != null) {
-                    this.handle = fresh;
+        if (bridge != null) {
+            UUID id = (uuid != null) ? uuid : (bukkitPlayer != null ? bukkitPlayer.getUniqueId() : null);
+            if (id != null) {
+                Player p = Bukkit.getPlayer(id);
+                if (p != null) {
+                    this.bukkitPlayer = p;
+                    this.uuid = id;
+                    NmsPlayerHandle fresh = bridge.getHandle(p);
+                    if (fresh != null) {
+                        this.handle = fresh;
+                    }
                 }
             }
         }
@@ -104,6 +119,7 @@ public class FakeBot {
     public void updatePlayer(Player player) {
         if (player != null) {
             this.bukkitPlayer = player;
+            this.uuid = player.getUniqueId();
             player.setInvulnerable(false);
             player.setNoDamageTicks(0);
             getHandle();
@@ -295,12 +311,13 @@ public class FakeBot {
     }
 
     public boolean isAirborne() {
-        return !isOnGround() && (Math.abs(velY) > 0.15 || getBukkitPlayer().getFallDistance() > 0.2);
+        Player p = getBukkitPlayer();
+        return !isOnGround() && (Math.abs(velY) > 0.15 || (p != null && p.getFallDistance() > 0.2));
     }
 
     public boolean hasGun() {
         Player p = getBukkitPlayer();
-        if (p.isDead() || !p.isOnline()) return false;
+        if (p == null || p.isDead() || !p.isOnline()) return false;
         ItemStack hand = p.getInventory().getItemInMainHand();
         if (GunItem.isGun(hand)) return true;
 
@@ -316,7 +333,7 @@ public class FakeBot {
 
     public void shoot() {
         Player p = getBukkitPlayer();
-        if (p.isDead() || !p.isOnline()) return;
+        if (p == null || p.isDead() || !p.isOnline()) return;
         if (!hasGun()) return;
         p.swingMainHand();
         GunItem.getInstance().doShoot(p);
@@ -324,7 +341,7 @@ public class FakeBot {
 
     public void block() {
         Player p = getBukkitPlayer();
-        if (p.isDead() || !p.isOnline()) return;
+        if (p == null || p.isDead() || !p.isOnline()) return;
         if (!hasGun()) return;
         GunItem.getInstance().doBlock(p);
     }
@@ -857,7 +874,9 @@ public class FakeBot {
     public Location findNearestJumpPad(double maxDist) {
         Location best = null;
         double minD = maxDist * maxDist;
-        Location myLoc = getBukkitPlayer().getLocation();
+        Player p = getBukkitPlayer();
+        if (p == null) return null;
+        Location myLoc = p.getLocation();
 
         // Direct check of registered jump blocks from RoundsPlugin BlockListener (O(K), fast)
         BlockListener bl = manager.getPlugin().getBlockListener();
@@ -930,6 +949,7 @@ public class FakeBot {
     public void pickCard(int slotIndex) {
         if (slotIndex < 0 || slotIndex > 4) return;
         Player p = getBukkitPlayer();
+        if (p == null) return;
         manager.getPlugin().getCardManager().selectCard(p, slotIndex);
         p.closeInventory();
     }

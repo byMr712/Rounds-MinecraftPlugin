@@ -13,6 +13,8 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Team;
@@ -66,7 +68,7 @@ public class BotAI extends BukkitRunnable {
     private int coverSeekTicks = 0;
 
     // Realistic Vision and Pursuit Tracking (No wallhacks)
-    private Player currentTarget = null;
+    private LivingEntity currentTarget = null;
     private Location lastKnownTargetLoc = null;
     private int searchTicks = 0;
     private float searchScanYaw = 0f;
@@ -462,18 +464,18 @@ public class BotAI extends BukkitRunnable {
         }
     }
 
-    public Player getCurrentTarget() {
+    public LivingEntity getCurrentTarget() {
         return currentTarget;
     }
 
     public boolean canSeeTarget() {
-        Player target = currentTarget;
+        LivingEntity target = currentTarget;
         Player p = bot.getBukkitPlayer();
         return (target != null && p != null && canSee(p, target));
     }
 
     public double getDistanceToTarget() {
-        Player target = currentTarget;
+        LivingEntity target = currentTarget;
         Player p = bot.getBukkitPlayer();
         if (target == null || p == null) return -1.0;
         return p.getLocation().distance(target.getLocation());
@@ -565,9 +567,11 @@ public class BotAI extends BukkitRunnable {
     /**
      * Realistic vision cone (130 degrees), 40m distance, 2.5m footstep proximity, and block raycast LOS.
      */
-    public boolean canSee(Player botPlayer, Player target) {
-        if (target == null || !target.isOnline() || target.isDead()) return false;
-        if (target.getGameMode() == GameMode.SPECTATOR || target.getGameMode() == GameMode.CREATIVE) return false;
+    public boolean canSee(Player botPlayer, LivingEntity target) {
+        if (target == null || !target.isValid() || target.isDead()) return false;
+        if (target instanceof Player p) {
+            if (!p.isOnline() || p.getGameMode() == GameMode.SPECTATOR || p.getGameMode() == GameMode.CREATIVE) return false;
+        }
 
         Location botEye = botPlayer.getEyeLocation();
         Location targetEye = target.getEyeLocation();
@@ -596,10 +600,10 @@ public class BotAI extends BukkitRunnable {
      * Checks if there is a clear physical line of fire from shooter's eyes to target's head or chest,
      * ensuring bots do not shoot directly into walls/obstacles.
      */
-    public boolean hasClearLineOfFire(Player shooter, Player target) {
-        if (shooter == null || target == null) return false;
+    public boolean hasClearLineOfFire(Player shooter, LivingEntity target) {
+        if (shooter == null || target == null || !target.isValid() || target.isDead()) return false;
         Location eye = shooter.getEyeLocation();
-        Location targetCenter = target.getLocation().add(0, 1.0, 0);
+        Location targetCenter = target.getLocation().add(0, target.getHeight() * 0.5, 0);
         Location targetEye = target.getEyeLocation();
 
         World world = eye.getWorld();
@@ -635,8 +639,8 @@ public class BotAI extends BukkitRunnable {
         Player player = bot.getBukkitPlayer();
         if (attackerId != null) {
             if (attackerId.equals(player.getUniqueId())) return;
-            Player attacker = Bukkit.getPlayer(attackerId);
-            if (attacker != null && isTeammate(player, attacker)) return;
+            Entity attacker = Bukkit.getEntity(attackerId);
+            if (attacker instanceof LivingEntity livingAttacker && isTeammate(player, livingAttacker)) return;
         }
 
         long now = System.currentTimeMillis();
@@ -685,12 +689,12 @@ public class BotAI extends BukkitRunnable {
         }
 
         if (attackerId != null) {
-            Player attacker = Bukkit.getPlayer(attackerId);
-            if (attacker != null && !isTeammate(player, attacker)) {
-                if (currentTarget != attacker) {
+            Entity attacker = Bukkit.getEntity(attackerId);
+            if (attacker instanceof LivingEntity livingAttacker && !isTeammate(player, livingAttacker)) {
+                if (currentTarget != livingAttacker) {
                     reactionTicks = Math.max(1, (int) Math.round((3 + (1.0 - bot.getSkillFactor()) * 4.0) * 0.90));
                 }
-                currentTarget = attacker;
+                currentTarget = livingAttacker;
             }
         }
     }
@@ -711,10 +715,20 @@ public class BotAI extends BukkitRunnable {
         }
 
         if (currentTarget != null) {
-            if (!currentTarget.isOnline() || currentTarget.isDead()
-                    || currentTarget.getGameMode() == GameMode.SPECTATOR
-                    || currentTarget.getGameMode() == GameMode.CREATIVE
-                    || isTeammate(player, currentTarget)) {
+            if (!currentTarget.isValid() || currentTarget.isDead()) {
+                currentTarget = null;
+                isPursuing = false;
+                lastKnownTargetLoc = null;
+            } else if (currentTarget instanceof Player targetPlayer) {
+                if (!targetPlayer.isOnline()
+                        || targetPlayer.getGameMode() == GameMode.SPECTATOR
+                        || targetPlayer.getGameMode() == GameMode.CREATIVE
+                        || isTeammate(player, targetPlayer)) {
+                    currentTarget = null;
+                    isPursuing = false;
+                    lastKnownTargetLoc = null;
+                }
+            } else if (isTeammate(player, currentTarget)) {
                 currentTarget = null;
                 isPursuing = false;
                 lastKnownTargetLoc = null;
@@ -821,7 +835,7 @@ public class BotAI extends BukkitRunnable {
             int botId = Math.abs(player.getUniqueId().hashCode());
             boolean shouldScan = (tickCount + botId) % 2 == 0 || currentTarget == null;
             if (shouldScan) {
-                Player spotted = findVisibleTarget();
+                LivingEntity spotted = findVisibleTarget();
                 if (spotted != null) {
                     if (currentTarget != spotted) {
                         reactionTicks = Math.max(1, (int) Math.round((3 + (1.0 - bot.getSkillFactor()) * 5.0) * 0.90));
@@ -931,7 +945,7 @@ public class BotAI extends BukkitRunnable {
         // 4. If target is NOT directly visible: handle pursuit or patrol search mode
         if (!targetCurrentlyVisible) {
             if (isPursuing && lastKnownTargetLoc != null) {
-                if (searchTicks == 0) {
+                if (searchTicks > 20) {
                     boolean keepChasing = ThreadLocalRandom.current().nextDouble() < getPursuitChance();
                     if (!keepChasing) {
                         isPursuing = false;
@@ -957,7 +971,7 @@ public class BotAI extends BukkitRunnable {
         }
 
         // 5. Target IS visible: Tactical combat execution
-        Player target = currentTarget;
+        LivingEntity target = currentTarget;
         boolean hasLos = player.hasLineOfSight(target);
 
         Location p1Loc = player.getLocation();
@@ -999,7 +1013,7 @@ public class BotAI extends BukkitRunnable {
         double strafeSpeed = profile.strafeSpeed * speedMult;
         int jukeThreshold = profile.jukeThreshold;
         double maxShootDist = profile.maxShootDist;
-        boolean distanceShootAllowed = (dist3D <= 8.0) || (ThreadLocalRandom.current().nextDouble() < factor);
+        boolean distanceShootAllowed = (dist3D <= 12.0) || (ThreadLocalRandom.current().nextDouble() < Math.max(0.35, factor));
         boolean canShootAtTarget = hasLos && hasClearLineOfFire(player, target) && bot.hasGun() && (dist3D <= maxShootDist) && distanceShootAllowed && !isTeammate(player, target);
 
         // Card ability synergies: Intelligent block usage
@@ -1023,7 +1037,12 @@ public class BotAI extends BukkitRunnable {
         boolean isTargetLow = targetHealthRatio <= 0.40;
         boolean isBerserkOrRaging = (data != null && (data.berserk > 0 || data.bloodFurry > 0 || com.rounds.listener.LegendaryEffects.isRaging(player.getUniqueId())));
 
-        if (attemptSawRush) {
+        if (target instanceof org.bukkit.entity.Phantom) {
+            tactic = CombatTactic.STRAFE;
+            if (dist3D <= 4.0 && bot.canBlock()) {
+                bot.block();
+            }
+        } else if (attemptSawRush) {
             // Saw active: close in to shred enemy with saw blades!
             tactic = CombatTactic.RUSH;
         } else if (data != null && data.lifestealAura > 0 && dist3D > 2.5 && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
@@ -1123,6 +1142,10 @@ public class BotAI extends BukkitRunnable {
                     }
                     moveCombatRel(p1_x * (currentStrafeVal * strafeSpeed * 0.6), p1_z * (currentStrafeVal * strafeSpeed * 0.6));
                     bot.aimAt(p2Loc, turnSpeed * 0.7f, aimInaccuracy);
+                    if (shootCooldown <= 0 && canShootAtTarget && reactionTicks <= 0) {
+                        bot.shoot();
+                        shootCooldown = minShootCooldown;
+                    }
                 }
                 case SNIPE -> {
                     if (dist3D < 8.0) {
@@ -1220,13 +1243,11 @@ public class BotAI extends BukkitRunnable {
         // 9. Empower: buff next shot right before firing
         if (data.empower > 0 && !data.shieldActive && shootCooldown <= 1 && hasLos && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
             bot.block();
-            return;
         }
 
         // 10. Homing on block: grant homing right before shooting burst
         if (data.homingOnBlock > 0 && shootCooldown <= 1 && hasLos && (ThreadLocalRandom.current().nextDouble() < smartChance)) {
             bot.block();
-            return;
         }
 
         // 11. Heal on block: damaged bot heals up
@@ -2222,27 +2243,40 @@ public class BotAI extends BukkitRunnable {
         tickCount++;
     }
 
-    public boolean isTeammate(Player p1, Player p2) {
+    public boolean isTeammate(Player p1, LivingEntity p2) {
         if (p1 == null || p2 == null) return false;
         if (p1.equals(p2) || p1.getUniqueId().equals(p2.getUniqueId())) return true;
-        // Fast path for this bot: avoid map lookups
-        if (p1.equals(bot.getBukkitPlayer())) {
-            GameTeam myTeam = bot.getAssignedTeam();
-            if (myTeam != null) {
-                FakeBot otherBot = (bot.getManager() != null) ? bot.getManager().getBot(p2.getName()) : null;
-                if (otherBot != null) {
-                    return myTeam == otherBot.getAssignedTeam();
+        if (p2 instanceof Player p2Player) {
+            // Fast path for this bot: avoid map lookups
+            if (p1.equals(bot.getBukkitPlayer())) {
+                GameTeam myTeam = bot.getAssignedTeam();
+                if (myTeam != null) {
+                    FakeBot otherBot = (bot.getManager() != null) ? bot.getManager().getBot(p2Player.getName()) : null;
+                    if (otherBot != null) {
+                        return myTeam == otherBot.getAssignedTeam();
+                    }
                 }
             }
+            return RoundsEntities.isTeammate(p1.getUniqueId(), p2Player.getUniqueId());
         }
-        return RoundsEntities.isTeammate(p1.getUniqueId(), p2.getUniqueId());
+        if (p2.getPersistentDataContainer().has(com.rounds.RoundsKeys.SUMMONED_PHANTOM, org.bukkit.persistence.PersistentDataType.STRING)) {
+            String summonerIdStr = p2.getPersistentDataContainer().get(com.rounds.RoundsKeys.SUMMONED_PHANTOM, org.bukkit.persistence.PersistentDataType.STRING);
+            if (summonerIdStr != null) {
+                try {
+                    UUID summonerId = UUID.fromString(summonerIdStr);
+                    if (summonerId.equals(p1.getUniqueId())) return true;
+                    return RoundsEntities.isTeammate(p1.getUniqueId(), summonerId);
+                } catch (IllegalArgumentException ignored) {}
+            }
+        }
+        return false;
     }
 
-    private Player findVisibleTarget() {
+    private LivingEntity findVisibleTarget() {
         Player player = bot.getBukkitPlayer();
         if (player == null) return null;
         Location myLoc = player.getLocation();
-        Player closest = null;
+        LivingEntity closest = null;
         double maxDist = (bot.getPlugin() != null) ? bot.getPlugin().getRoundsConfig().getBotMaxVisionDistance() : 60.0;
         double closestDistSq = maxDist * maxDist;
 
@@ -2251,6 +2285,25 @@ public class BotAI extends BukkitRunnable {
         double fovHalf = (bot.getPlugin() != null) ? (bot.getPlugin().getRoundsConfig().getBotVisionFov() / 2.0) : FOV_HALF_ANGLE_DEG;
         double minDot = Math.cos(Math.toRadians(fovHalf));
 
+        // 1. Phantoms / hostile summons check
+        for (org.bukkit.entity.Phantom phantom : player.getWorld().getEntitiesByClass(org.bukkit.entity.Phantom.class)) {
+            if (!phantom.isValid() || phantom.isDead() || isTeammate(player, phantom)) continue;
+            double distSq = phantom.getLocation().distanceSquared(myLoc);
+            if (distSq > 30.0 * 30.0) continue;
+            // Prioritize phantom targeting this bot
+            if (player.equals(phantom.getTarget()) && player.hasLineOfSight(phantom)) {
+                return phantom;
+            }
+            if (distSq < closestDistSq && player.hasLineOfSight(phantom)) {
+                closestDistSq = distSq;
+                closest = phantom;
+            }
+        }
+        if (closest != null) {
+            return closest;
+        }
+
+        // 2. Players check
         for (Player other : player.getWorld().getPlayers()) {
             if (other.equals(player)) continue;
             if (other.isDead() || !other.isOnline()) continue;

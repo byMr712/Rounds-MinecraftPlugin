@@ -32,7 +32,7 @@ public class CombatProfile {
             float turnSpeed = (float) ((6.0f + 8.0f * factor) * 1.10f);
             int minShootCooldown = Math.max(3, (int) Math.round((4 + (1.0 - factor) * 14.0) * 0.90));
             double strafeSpeed = (0.12 + 0.04 * factor) * 1.10;
-            double maxShootDist = 10.0 + 30.0 * factor;
+            double maxShootDist = 20.0 + 20.0 * factor;
             double baseSmartChance = (lvl <= 2) ? 0.50 : ((lvl <= 4) ? 0.60 : ((lvl <= 7) ? 0.70 : ((lvl <= 9) ? 0.80 : 0.90)));
             double smartChance = Math.min(1.0, baseSmartChance * 1.10);
             double pursuitChance = Math.min(1.0, (smartChance * 1.20) * 1.15);

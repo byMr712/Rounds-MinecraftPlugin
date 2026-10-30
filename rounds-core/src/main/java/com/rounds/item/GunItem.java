@@ -191,7 +191,8 @@ public class GunItem implements Listener {
             if (pData != null) {
                 double effectiveAtkSpeed = Math.max(1.0 + pData.atkSpeed, 0.5);
                 double cooldownTicks = Math.max(pData.atks / effectiveAtkSpeed + pData.atksReload, 1);
-                if (!GunCooldowns.canShoot(player.getUniqueId(), cooldownTicks) || isReloading(player.getUniqueId()) || reloadingPlayers.contains(player.getUniqueId())) {
+                boolean isReload = isReloading(player.getUniqueId()) || reloadingPlayers.contains(player.getUniqueId());
+                if (!GunCooldowns.canShoot(player.getUniqueId(), cooldownTicks) || (isReload && pData.bloodCartridge <= 0)) {
                     if (!player.hasCooldown(item.getType())) {
                         long remMs = GunCooldowns.getRemainingMs(player.getUniqueId(), cooldownTicks);
                         int remTicks = (int) Math.ceil(remMs / 50.0);
@@ -223,7 +224,8 @@ public class GunItem implements Listener {
         if (data == null) return;
         double effectiveAtkSpeed = Math.max(1.0 + data.atkSpeed, 0.5);
         double cooldownTicks = Math.max(data.atks / effectiveAtkSpeed + data.atksReload, 1);
-        if (!GunCooldowns.canShoot(uuid, cooldownTicks) || isReloading(uuid) || reloadingPlayers.contains(uuid)) {
+        boolean isReload = isReloading(uuid) || reloadingPlayers.contains(uuid);
+        if (!GunCooldowns.canShoot(uuid, cooldownTicks) || (isReload && data.bloodCartridge <= 0)) {
             event.setCancelled(true);
             if (!player.hasCooldown(item.getType())) {
                 long remMs = GunCooldowns.getRemainingMs(uuid, cooldownTicks);
@@ -244,19 +246,19 @@ public class GunItem implements Listener {
             return;
         }
 
-        if (isReloading(uuid)) {
-            return;
-        }
-
-        if (reloadingPlayers.contains(uuid)) {
-            return;
-        }
-
         PlayerData data = plugin.getPlayerDataManager().getData(player);
+        if (data == null) {
+            return;
+        }
+
+        boolean isReload = isReloading(uuid) || reloadingPlayers.contains(uuid);
+        if (isReload && data.bloodCartridge <= 0) {
+            return;
+        }
 
         boolean overheated = false;
         boolean bloodShot = false;
-        if (data.ammo < 1.0) {
+        if (data.ammo < 1.0 || isReload) {
             if (data.overheat > 0) {
                 overheated = true;
             } else if (data.bloodCartridge > 0) {
@@ -331,7 +333,9 @@ public class GunItem implements Listener {
         GunCooldowns.recordShot(uuid);
         player.setCooldown(player.getInventory().getItemInMainHand().getType(), Math.max(1, (int) Math.ceil(cooldownTicks)));
         com.rounds.stats.MatchStatsManager.recordShot(uuid);
-        cancelReload(uuid);
+        if (!bloodShot) {
+            cancelReload(uuid);
+        }
         data.executeTriggers(com.rounds.cards.CardTrigger.ON_SHOOT, player, null, 1.0);
 
         int configuredBulletCount = shootEvent.getBulletCount();

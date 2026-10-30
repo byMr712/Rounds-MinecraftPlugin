@@ -648,7 +648,7 @@ public class GameManager implements Listener {
                 var dmgAttr = p.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
                 if (dmgAttr != null) dmgAttr.setBaseValue(12.0);
                 p.getPersistentDataContainer().set(RoundsKeys.SUMMONED_PHANTOM,
-                    org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
+                    org.bukkit.persistence.PersistentDataType.STRING, summoner.getUniqueId().toString());
             });
 
             BukkitRunnable phantomTask = new BukkitRunnable() {
@@ -693,7 +693,8 @@ public class GameManager implements Listener {
                         }
                         double dist = phantom.getLocation().distance(target.getLocation());
                         if (dist < 3.0 && ticks % 20 == 0) {
-                            target.damage(12.0);
+                            com.rounds.stats.MatchStatsManager.recordLastDamager(target.getUniqueId(), summoner.getUniqueId());
+                            target.damage(12.0, phantom);
                             RoundsEntities.applyHitRedEffects(target, phantom.getLocation(), target.getLocation());
                             if (!hasDamaged) {
                                 hasDamaged = true;
@@ -720,6 +721,8 @@ public class GameManager implements Listener {
         for (World world : Bukkit.getWorlds()) {
             for (Phantom phantom : world.getEntitiesByClass(Phantom.class)) {
                 if (phantom.getPersistentDataContainer().has(RoundsKeys.SUMMONED_PHANTOM,
+                        org.bukkit.persistence.PersistentDataType.STRING)
+                        || phantom.getPersistentDataContainer().has(RoundsKeys.SUMMONED_PHANTOM,
                         org.bukkit.persistence.PersistentDataType.BYTE)) {
                     phantom.remove();
                 }

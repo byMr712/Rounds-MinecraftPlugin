@@ -244,721 +244,4561 @@ rounds_score:
       condition: rounds_red_win_20
     41:
       name: frame_empty
+      x: 240
+      y: 0
+      layer: 0
+      condition: rounds_slot_21_active
+    42:
+      name: frame_red
+      x: 240
+      y: 0
+      layer: 1
+      condition: rounds_red_win_21
+    43:
+      name: frame_empty
+      x: 252
+      y: 0
+      layer: 0
+      condition: rounds_slot_22_active
+    44:
+      name: frame_red
+      x: 252
+      y: 0
+      layer: 1
+      condition: rounds_red_win_22
+    45:
+      name: frame_empty
+      x: 264
+      y: 0
+      layer: 0
+      condition: rounds_slot_23_active
+    46:
+      name: frame_red
+      x: 264
+      y: 0
+      layer: 1
+      condition: rounds_red_win_23
+    47:
+      name: frame_empty
+      x: 276
+      y: 0
+      layer: 0
+      condition: rounds_slot_24_active
+    48:
+      name: frame_red
+      x: 276
+      y: 0
+      layer: 1
+      condition: rounds_red_win_24
+    49:
+      name: frame_empty
+      x: 288
+      y: 0
+      layer: 0
+      condition: rounds_slot_25_active
+    50:
+      name: frame_red
+      x: 288
+      y: 0
+      layer: 1
+      condition: rounds_red_win_25
+    51:
+      name: frame_empty
+      x: 300
+      y: 0
+      layer: 0
+      condition: rounds_slot_26_active
+    52:
+      name: frame_red
+      x: 300
+      y: 0
+      layer: 1
+      condition: rounds_red_win_26
+    53:
+      name: frame_empty
+      x: 312
+      y: 0
+      layer: 0
+      condition: rounds_slot_27_active
+    54:
+      name: frame_red
+      x: 312
+      y: 0
+      layer: 1
+      condition: rounds_red_win_27
+    55:
+      name: frame_empty
+      x: 324
+      y: 0
+      layer: 0
+      condition: rounds_slot_28_active
+    56:
+      name: frame_red
+      x: 324
+      y: 0
+      layer: 1
+      condition: rounds_red_win_28
+    57:
+      name: frame_empty
+      x: 336
+      y: 0
+      layer: 0
+      condition: rounds_slot_29_active
+    58:
+      name: frame_red
+      x: 336
+      y: 0
+      layer: 1
+      condition: rounds_red_win_29
+    59:
+      name: frame_empty
+      x: 348
+      y: 0
+      layer: 0
+      condition: rounds_slot_30_active
+    60:
+      name: frame_red
+      x: 348
+      y: 0
+      layer: 1
+      condition: rounds_red_win_30
+    61:
+      name: frame_empty
+      x: 360
+      y: 0
+      layer: 0
+      condition: rounds_slot_31_active
+    62:
+      name: frame_red
+      x: 360
+      y: 0
+      layer: 1
+      condition: rounds_red_win_31
+    63:
+      name: frame_empty
+      x: 372
+      y: 0
+      layer: 0
+      condition: rounds_slot_32_active
+    64:
+      name: frame_red
+      x: 372
+      y: 0
+      layer: 1
+      condition: rounds_red_win_32
+    65:
+      name: frame_empty
+      x: 384
+      y: 0
+      layer: 0
+      condition: rounds_slot_33_active
+    66:
+      name: frame_red
+      x: 384
+      y: 0
+      layer: 1
+      condition: rounds_red_win_33
+    67:
+      name: frame_empty
+      x: 396
+      y: 0
+      layer: 0
+      condition: rounds_slot_34_active
+    68:
+      name: frame_red
+      x: 396
+      y: 0
+      layer: 1
+      condition: rounds_red_win_34
+    69:
+      name: frame_empty
+      x: 408
+      y: 0
+      layer: 0
+      condition: rounds_slot_35_active
+    70:
+      name: frame_red
+      x: 408
+      y: 0
+      layer: 1
+      condition: rounds_red_win_35
+    71:
+      name: frame_empty
+      x: 420
+      y: 0
+      layer: 0
+      condition: rounds_slot_36_active
+    72:
+      name: frame_red
+      x: 420
+      y: 0
+      layer: 1
+      condition: rounds_red_win_36
+    73:
+      name: frame_empty
+      x: 432
+      y: 0
+      layer: 0
+      condition: rounds_slot_37_active
+    74:
+      name: frame_red
+      x: 432
+      y: 0
+      layer: 1
+      condition: rounds_red_win_37
+    75:
+      name: frame_empty
+      x: 444
+      y: 0
+      layer: 0
+      condition: rounds_slot_38_active
+    76:
+      name: frame_red
+      x: 444
+      y: 0
+      layer: 1
+      condition: rounds_red_win_38
+    77:
+      name: frame_empty
+      x: 456
+      y: 0
+      layer: 0
+      condition: rounds_slot_39_active
+    78:
+      name: frame_red
+      x: 456
+      y: 0
+      layer: 1
+      condition: rounds_red_win_39
+    79:
+      name: frame_empty
+      x: 468
+      y: 0
+      layer: 0
+      condition: rounds_slot_40_active
+    80:
+      name: frame_red
+      x: 468
+      y: 0
+      layer: 1
+      condition: rounds_red_win_40
+    81:
+      name: frame_empty
+      x: 480
+      y: 0
+      layer: 0
+      condition: rounds_slot_41_active
+    82:
+      name: frame_red
+      x: 480
+      y: 0
+      layer: 1
+      condition: rounds_red_win_41
+    83:
+      name: frame_empty
+      x: 492
+      y: 0
+      layer: 0
+      condition: rounds_slot_42_active
+    84:
+      name: frame_red
+      x: 492
+      y: 0
+      layer: 1
+      condition: rounds_red_win_42
+    85:
+      name: frame_empty
+      x: 504
+      y: 0
+      layer: 0
+      condition: rounds_slot_43_active
+    86:
+      name: frame_red
+      x: 504
+      y: 0
+      layer: 1
+      condition: rounds_red_win_43
+    87:
+      name: frame_empty
+      x: 516
+      y: 0
+      layer: 0
+      condition: rounds_slot_44_active
+    88:
+      name: frame_red
+      x: 516
+      y: 0
+      layer: 1
+      condition: rounds_red_win_44
+    89:
+      name: frame_empty
+      x: 528
+      y: 0
+      layer: 0
+      condition: rounds_slot_45_active
+    90:
+      name: frame_red
+      x: 528
+      y: 0
+      layer: 1
+      condition: rounds_red_win_45
+    91:
+      name: frame_empty
+      x: 540
+      y: 0
+      layer: 0
+      condition: rounds_slot_46_active
+    92:
+      name: frame_red
+      x: 540
+      y: 0
+      layer: 1
+      condition: rounds_red_win_46
+    93:
+      name: frame_empty
+      x: 552
+      y: 0
+      layer: 0
+      condition: rounds_slot_47_active
+    94:
+      name: frame_red
+      x: 552
+      y: 0
+      layer: 1
+      condition: rounds_red_win_47
+    95:
+      name: frame_empty
+      x: 564
+      y: 0
+      layer: 0
+      condition: rounds_slot_48_active
+    96:
+      name: frame_red
+      x: 564
+      y: 0
+      layer: 1
+      condition: rounds_red_win_48
+    97:
+      name: frame_empty
+      x: 576
+      y: 0
+      layer: 0
+      condition: rounds_slot_49_active
+    98:
+      name: frame_red
+      x: 576
+      y: 0
+      layer: 1
+      condition: rounds_red_win_49
+    99:
+      name: frame_empty
+      x: 588
+      y: 0
+      layer: 0
+      condition: rounds_slot_50_active
+    100:
+      name: frame_red
+      x: 588
+      y: 0
+      layer: 1
+      condition: rounds_red_win_50
+    101:
+      name: frame_empty
+      x: 600
+      y: 0
+      layer: 0
+      condition: rounds_slot_51_active
+    102:
+      name: frame_red
+      x: 600
+      y: 0
+      layer: 1
+      condition: rounds_red_win_51
+    103:
+      name: frame_empty
+      x: 612
+      y: 0
+      layer: 0
+      condition: rounds_slot_52_active
+    104:
+      name: frame_red
+      x: 612
+      y: 0
+      layer: 1
+      condition: rounds_red_win_52
+    105:
+      name: frame_empty
+      x: 624
+      y: 0
+      layer: 0
+      condition: rounds_slot_53_active
+    106:
+      name: frame_red
+      x: 624
+      y: 0
+      layer: 1
+      condition: rounds_red_win_53
+    107:
+      name: frame_empty
+      x: 636
+      y: 0
+      layer: 0
+      condition: rounds_slot_54_active
+    108:
+      name: frame_red
+      x: 636
+      y: 0
+      layer: 1
+      condition: rounds_red_win_54
+    109:
+      name: frame_empty
+      x: 648
+      y: 0
+      layer: 0
+      condition: rounds_slot_55_active
+    110:
+      name: frame_red
+      x: 648
+      y: 0
+      layer: 1
+      condition: rounds_red_win_55
+    111:
+      name: frame_empty
+      x: 660
+      y: 0
+      layer: 0
+      condition: rounds_slot_56_active
+    112:
+      name: frame_red
+      x: 660
+      y: 0
+      layer: 1
+      condition: rounds_red_win_56
+    113:
+      name: frame_empty
+      x: 672
+      y: 0
+      layer: 0
+      condition: rounds_slot_57_active
+    114:
+      name: frame_red
+      x: 672
+      y: 0
+      layer: 1
+      condition: rounds_red_win_57
+    115:
+      name: frame_empty
+      x: 684
+      y: 0
+      layer: 0
+      condition: rounds_slot_58_active
+    116:
+      name: frame_red
+      x: 684
+      y: 0
+      layer: 1
+      condition: rounds_red_win_58
+    117:
+      name: frame_empty
+      x: 696
+      y: 0
+      layer: 0
+      condition: rounds_slot_59_active
+    118:
+      name: frame_red
+      x: 696
+      y: 0
+      layer: 1
+      condition: rounds_red_win_59
+    119:
+      name: frame_empty
+      x: 708
+      y: 0
+      layer: 0
+      condition: rounds_slot_60_active
+    120:
+      name: frame_red
+      x: 708
+      y: 0
+      layer: 1
+      condition: rounds_red_win_60
+    121:
+      name: frame_empty
+      x: 720
+      y: 0
+      layer: 0
+      condition: rounds_slot_61_active
+    122:
+      name: frame_red
+      x: 720
+      y: 0
+      layer: 1
+      condition: rounds_red_win_61
+    123:
+      name: frame_empty
+      x: 732
+      y: 0
+      layer: 0
+      condition: rounds_slot_62_active
+    124:
+      name: frame_red
+      x: 732
+      y: 0
+      layer: 1
+      condition: rounds_red_win_62
+    125:
+      name: frame_empty
+      x: 744
+      y: 0
+      layer: 0
+      condition: rounds_slot_63_active
+    126:
+      name: frame_red
+      x: 744
+      y: 0
+      layer: 1
+      condition: rounds_red_win_63
+    127:
+      name: frame_empty
+      x: 756
+      y: 0
+      layer: 0
+      condition: rounds_slot_64_active
+    128:
+      name: frame_red
+      x: 756
+      y: 0
+      layer: 1
+      condition: rounds_red_win_64
+    129:
+      name: frame_empty
+      x: 768
+      y: 0
+      layer: 0
+      condition: rounds_slot_65_active
+    130:
+      name: frame_red
+      x: 768
+      y: 0
+      layer: 1
+      condition: rounds_red_win_65
+    131:
+      name: frame_empty
+      x: 780
+      y: 0
+      layer: 0
+      condition: rounds_slot_66_active
+    132:
+      name: frame_red
+      x: 780
+      y: 0
+      layer: 1
+      condition: rounds_red_win_66
+    133:
+      name: frame_empty
+      x: 792
+      y: 0
+      layer: 0
+      condition: rounds_slot_67_active
+    134:
+      name: frame_red
+      x: 792
+      y: 0
+      layer: 1
+      condition: rounds_red_win_67
+    135:
+      name: frame_empty
+      x: 804
+      y: 0
+      layer: 0
+      condition: rounds_slot_68_active
+    136:
+      name: frame_red
+      x: 804
+      y: 0
+      layer: 1
+      condition: rounds_red_win_68
+    137:
+      name: frame_empty
+      x: 816
+      y: 0
+      layer: 0
+      condition: rounds_slot_69_active
+    138:
+      name: frame_red
+      x: 816
+      y: 0
+      layer: 1
+      condition: rounds_red_win_69
+    139:
+      name: frame_empty
+      x: 828
+      y: 0
+      layer: 0
+      condition: rounds_slot_70_active
+    140:
+      name: frame_red
+      x: 828
+      y: 0
+      layer: 1
+      condition: rounds_red_win_70
+    141:
+      name: frame_empty
+      x: 840
+      y: 0
+      layer: 0
+      condition: rounds_slot_71_active
+    142:
+      name: frame_red
+      x: 840
+      y: 0
+      layer: 1
+      condition: rounds_red_win_71
+    143:
+      name: frame_empty
+      x: 852
+      y: 0
+      layer: 0
+      condition: rounds_slot_72_active
+    144:
+      name: frame_red
+      x: 852
+      y: 0
+      layer: 1
+      condition: rounds_red_win_72
+    145:
+      name: frame_empty
+      x: 864
+      y: 0
+      layer: 0
+      condition: rounds_slot_73_active
+    146:
+      name: frame_red
+      x: 864
+      y: 0
+      layer: 1
+      condition: rounds_red_win_73
+    147:
+      name: frame_empty
+      x: 876
+      y: 0
+      layer: 0
+      condition: rounds_slot_74_active
+    148:
+      name: frame_red
+      x: 876
+      y: 0
+      layer: 1
+      condition: rounds_red_win_74
+    149:
+      name: frame_empty
+      x: 888
+      y: 0
+      layer: 0
+      condition: rounds_slot_75_active
+    150:
+      name: frame_red
+      x: 888
+      y: 0
+      layer: 1
+      condition: rounds_red_win_75
+    151:
+      name: frame_empty
+      x: 900
+      y: 0
+      layer: 0
+      condition: rounds_slot_76_active
+    152:
+      name: frame_red
+      x: 900
+      y: 0
+      layer: 1
+      condition: rounds_red_win_76
+    153:
+      name: frame_empty
+      x: 912
+      y: 0
+      layer: 0
+      condition: rounds_slot_77_active
+    154:
+      name: frame_red
+      x: 912
+      y: 0
+      layer: 1
+      condition: rounds_red_win_77
+    155:
+      name: frame_empty
+      x: 924
+      y: 0
+      layer: 0
+      condition: rounds_slot_78_active
+    156:
+      name: frame_red
+      x: 924
+      y: 0
+      layer: 1
+      condition: rounds_red_win_78
+    157:
+      name: frame_empty
+      x: 936
+      y: 0
+      layer: 0
+      condition: rounds_slot_79_active
+    158:
+      name: frame_red
+      x: 936
+      y: 0
+      layer: 1
+      condition: rounds_red_win_79
+    159:
+      name: frame_empty
+      x: 948
+      y: 0
+      layer: 0
+      condition: rounds_slot_80_active
+    160:
+      name: frame_red
+      x: 948
+      y: 0
+      layer: 1
+      condition: rounds_red_win_80
+    161:
+      name: frame_empty
+      x: 960
+      y: 0
+      layer: 0
+      condition: rounds_slot_81_active
+    162:
+      name: frame_red
+      x: 960
+      y: 0
+      layer: 1
+      condition: rounds_red_win_81
+    163:
+      name: frame_empty
+      x: 972
+      y: 0
+      layer: 0
+      condition: rounds_slot_82_active
+    164:
+      name: frame_red
+      x: 972
+      y: 0
+      layer: 1
+      condition: rounds_red_win_82
+    165:
+      name: frame_empty
+      x: 984
+      y: 0
+      layer: 0
+      condition: rounds_slot_83_active
+    166:
+      name: frame_red
+      x: 984
+      y: 0
+      layer: 1
+      condition: rounds_red_win_83
+    167:
+      name: frame_empty
+      x: 996
+      y: 0
+      layer: 0
+      condition: rounds_slot_84_active
+    168:
+      name: frame_red
+      x: 996
+      y: 0
+      layer: 1
+      condition: rounds_red_win_84
+    169:
+      name: frame_empty
+      x: 1008
+      y: 0
+      layer: 0
+      condition: rounds_slot_85_active
+    170:
+      name: frame_red
+      x: 1008
+      y: 0
+      layer: 1
+      condition: rounds_red_win_85
+    171:
+      name: frame_empty
+      x: 1020
+      y: 0
+      layer: 0
+      condition: rounds_slot_86_active
+    172:
+      name: frame_red
+      x: 1020
+      y: 0
+      layer: 1
+      condition: rounds_red_win_86
+    173:
+      name: frame_empty
+      x: 1032
+      y: 0
+      layer: 0
+      condition: rounds_slot_87_active
+    174:
+      name: frame_red
+      x: 1032
+      y: 0
+      layer: 1
+      condition: rounds_red_win_87
+    175:
+      name: frame_empty
+      x: 1044
+      y: 0
+      layer: 0
+      condition: rounds_slot_88_active
+    176:
+      name: frame_red
+      x: 1044
+      y: 0
+      layer: 1
+      condition: rounds_red_win_88
+    177:
+      name: frame_empty
+      x: 1056
+      y: 0
+      layer: 0
+      condition: rounds_slot_89_active
+    178:
+      name: frame_red
+      x: 1056
+      y: 0
+      layer: 1
+      condition: rounds_red_win_89
+    179:
+      name: frame_empty
+      x: 1068
+      y: 0
+      layer: 0
+      condition: rounds_slot_90_active
+    180:
+      name: frame_red
+      x: 1068
+      y: 0
+      layer: 1
+      condition: rounds_red_win_90
+    181:
+      name: frame_empty
+      x: 1080
+      y: 0
+      layer: 0
+      condition: rounds_slot_91_active
+    182:
+      name: frame_red
+      x: 1080
+      y: 0
+      layer: 1
+      condition: rounds_red_win_91
+    183:
+      name: frame_empty
+      x: 1092
+      y: 0
+      layer: 0
+      condition: rounds_slot_92_active
+    184:
+      name: frame_red
+      x: 1092
+      y: 0
+      layer: 1
+      condition: rounds_red_win_92
+    185:
+      name: frame_empty
+      x: 1104
+      y: 0
+      layer: 0
+      condition: rounds_slot_93_active
+    186:
+      name: frame_red
+      x: 1104
+      y: 0
+      layer: 1
+      condition: rounds_red_win_93
+    187:
+      name: frame_empty
+      x: 1116
+      y: 0
+      layer: 0
+      condition: rounds_slot_94_active
+    188:
+      name: frame_red
+      x: 1116
+      y: 0
+      layer: 1
+      condition: rounds_red_win_94
+    189:
+      name: frame_empty
+      x: 1128
+      y: 0
+      layer: 0
+      condition: rounds_slot_95_active
+    190:
+      name: frame_red
+      x: 1128
+      y: 0
+      layer: 1
+      condition: rounds_red_win_95
+    191:
+      name: frame_empty
+      x: 1140
+      y: 0
+      layer: 0
+      condition: rounds_slot_96_active
+    192:
+      name: frame_red
+      x: 1140
+      y: 0
+      layer: 1
+      condition: rounds_red_win_96
+    193:
+      name: frame_empty
+      x: 1152
+      y: 0
+      layer: 0
+      condition: rounds_slot_97_active
+    194:
+      name: frame_red
+      x: 1152
+      y: 0
+      layer: 1
+      condition: rounds_red_win_97
+    195:
+      name: frame_empty
+      x: 1164
+      y: 0
+      layer: 0
+      condition: rounds_slot_98_active
+    196:
+      name: frame_red
+      x: 1164
+      y: 0
+      layer: 1
+      condition: rounds_red_win_98
+    197:
+      name: frame_empty
+      x: 1176
+      y: 0
+      layer: 0
+      condition: rounds_slot_99_active
+    198:
+      name: frame_red
+      x: 1176
+      y: 0
+      layer: 1
+      condition: rounds_red_win_99
+    199:
+      name: frame_empty
+      x: 1188
+      y: 0
+      layer: 0
+      condition: rounds_slot_100_active
+    200:
+      name: frame_red
+      x: 1188
+      y: 0
+      layer: 1
+      condition: rounds_red_win_100
+    201:
+      name: frame_empty
       x: 0
       y: 12
       layer: 0
       condition: rounds_slot_1_active
-    42:
+    202:
       name: frame_green
       x: 0
       y: 12
       layer: 1
       condition: rounds_green_win_1
-    43:
+    203:
       name: frame_empty
       x: 12
       y: 12
       layer: 0
       condition: rounds_slot_2_active
-    44:
+    204:
       name: frame_green
       x: 12
       y: 12
       layer: 1
       condition: rounds_green_win_2
-    45:
+    205:
       name: frame_empty
       x: 24
       y: 12
       layer: 0
       condition: rounds_slot_3_active
-    46:
+    206:
       name: frame_green
       x: 24
       y: 12
       layer: 1
       condition: rounds_green_win_3
-    47:
+    207:
       name: frame_empty
       x: 36
       y: 12
       layer: 0
       condition: rounds_slot_4_active
-    48:
+    208:
       name: frame_green
       x: 36
       y: 12
       layer: 1
       condition: rounds_green_win_4
-    49:
+    209:
       name: frame_empty
       x: 48
       y: 12
       layer: 0
       condition: rounds_slot_5_active
-    50:
+    210:
       name: frame_green
       x: 48
       y: 12
       layer: 1
       condition: rounds_green_win_5
-    51:
+    211:
       name: frame_empty
       x: 60
       y: 12
       layer: 0
       condition: rounds_slot_6_active
-    52:
+    212:
       name: frame_green
       x: 60
       y: 12
       layer: 1
       condition: rounds_green_win_6
-    53:
+    213:
       name: frame_empty
       x: 72
       y: 12
       layer: 0
       condition: rounds_slot_7_active
-    54:
+    214:
       name: frame_green
       x: 72
       y: 12
       layer: 1
       condition: rounds_green_win_7
-    55:
+    215:
       name: frame_empty
       x: 84
       y: 12
       layer: 0
       condition: rounds_slot_8_active
-    56:
+    216:
       name: frame_green
       x: 84
       y: 12
       layer: 1
       condition: rounds_green_win_8
-    57:
+    217:
       name: frame_empty
       x: 96
       y: 12
       layer: 0
       condition: rounds_slot_9_active
-    58:
+    218:
       name: frame_green
       x: 96
       y: 12
       layer: 1
       condition: rounds_green_win_9
-    59:
+    219:
       name: frame_empty
       x: 108
       y: 12
       layer: 0
       condition: rounds_slot_10_active
-    60:
+    220:
       name: frame_green
       x: 108
       y: 12
       layer: 1
       condition: rounds_green_win_10
-    61:
+    221:
       name: frame_empty
       x: 120
       y: 12
       layer: 0
       condition: rounds_slot_11_active
-    62:
+    222:
       name: frame_green
       x: 120
       y: 12
       layer: 1
       condition: rounds_green_win_11
-    63:
+    223:
       name: frame_empty
       x: 132
       y: 12
       layer: 0
       condition: rounds_slot_12_active
-    64:
+    224:
       name: frame_green
       x: 132
       y: 12
       layer: 1
       condition: rounds_green_win_12
-    65:
+    225:
       name: frame_empty
       x: 144
       y: 12
       layer: 0
       condition: rounds_slot_13_active
-    66:
+    226:
       name: frame_green
       x: 144
       y: 12
       layer: 1
       condition: rounds_green_win_13
-    67:
+    227:
       name: frame_empty
       x: 156
       y: 12
       layer: 0
       condition: rounds_slot_14_active
-    68:
+    228:
       name: frame_green
       x: 156
       y: 12
       layer: 1
       condition: rounds_green_win_14
-    69:
+    229:
       name: frame_empty
       x: 168
       y: 12
       layer: 0
       condition: rounds_slot_15_active
-    70:
+    230:
       name: frame_green
       x: 168
       y: 12
       layer: 1
       condition: rounds_green_win_15
-    71:
+    231:
       name: frame_empty
       x: 180
       y: 12
       layer: 0
       condition: rounds_slot_16_active
-    72:
+    232:
       name: frame_green
       x: 180
       y: 12
       layer: 1
       condition: rounds_green_win_16
-    73:
+    233:
       name: frame_empty
       x: 192
       y: 12
       layer: 0
       condition: rounds_slot_17_active
-    74:
+    234:
       name: frame_green
       x: 192
       y: 12
       layer: 1
       condition: rounds_green_win_17
-    75:
+    235:
       name: frame_empty
       x: 204
       y: 12
       layer: 0
       condition: rounds_slot_18_active
-    76:
+    236:
       name: frame_green
       x: 204
       y: 12
       layer: 1
       condition: rounds_green_win_18
-    77:
+    237:
       name: frame_empty
       x: 216
       y: 12
       layer: 0
       condition: rounds_slot_19_active
-    78:
+    238:
       name: frame_green
       x: 216
       y: 12
       layer: 1
       condition: rounds_green_win_19
-    79:
+    239:
       name: frame_empty
       x: 228
       y: 12
       layer: 0
       condition: rounds_slot_20_active
-    80:
+    240:
       name: frame_green
       x: 228
       y: 12
       layer: 1
       condition: rounds_green_win_20
-    81:
+    241:
+      name: frame_empty
+      x: 240
+      y: 12
+      layer: 0
+      condition: rounds_slot_21_active
+    242:
+      name: frame_green
+      x: 240
+      y: 12
+      layer: 1
+      condition: rounds_green_win_21
+    243:
+      name: frame_empty
+      x: 252
+      y: 12
+      layer: 0
+      condition: rounds_slot_22_active
+    244:
+      name: frame_green
+      x: 252
+      y: 12
+      layer: 1
+      condition: rounds_green_win_22
+    245:
+      name: frame_empty
+      x: 264
+      y: 12
+      layer: 0
+      condition: rounds_slot_23_active
+    246:
+      name: frame_green
+      x: 264
+      y: 12
+      layer: 1
+      condition: rounds_green_win_23
+    247:
+      name: frame_empty
+      x: 276
+      y: 12
+      layer: 0
+      condition: rounds_slot_24_active
+    248:
+      name: frame_green
+      x: 276
+      y: 12
+      layer: 1
+      condition: rounds_green_win_24
+    249:
+      name: frame_empty
+      x: 288
+      y: 12
+      layer: 0
+      condition: rounds_slot_25_active
+    250:
+      name: frame_green
+      x: 288
+      y: 12
+      layer: 1
+      condition: rounds_green_win_25
+    251:
+      name: frame_empty
+      x: 300
+      y: 12
+      layer: 0
+      condition: rounds_slot_26_active
+    252:
+      name: frame_green
+      x: 300
+      y: 12
+      layer: 1
+      condition: rounds_green_win_26
+    253:
+      name: frame_empty
+      x: 312
+      y: 12
+      layer: 0
+      condition: rounds_slot_27_active
+    254:
+      name: frame_green
+      x: 312
+      y: 12
+      layer: 1
+      condition: rounds_green_win_27
+    255:
+      name: frame_empty
+      x: 324
+      y: 12
+      layer: 0
+      condition: rounds_slot_28_active
+    256:
+      name: frame_green
+      x: 324
+      y: 12
+      layer: 1
+      condition: rounds_green_win_28
+    257:
+      name: frame_empty
+      x: 336
+      y: 12
+      layer: 0
+      condition: rounds_slot_29_active
+    258:
+      name: frame_green
+      x: 336
+      y: 12
+      layer: 1
+      condition: rounds_green_win_29
+    259:
+      name: frame_empty
+      x: 348
+      y: 12
+      layer: 0
+      condition: rounds_slot_30_active
+    260:
+      name: frame_green
+      x: 348
+      y: 12
+      layer: 1
+      condition: rounds_green_win_30
+    261:
+      name: frame_empty
+      x: 360
+      y: 12
+      layer: 0
+      condition: rounds_slot_31_active
+    262:
+      name: frame_green
+      x: 360
+      y: 12
+      layer: 1
+      condition: rounds_green_win_31
+    263:
+      name: frame_empty
+      x: 372
+      y: 12
+      layer: 0
+      condition: rounds_slot_32_active
+    264:
+      name: frame_green
+      x: 372
+      y: 12
+      layer: 1
+      condition: rounds_green_win_32
+    265:
+      name: frame_empty
+      x: 384
+      y: 12
+      layer: 0
+      condition: rounds_slot_33_active
+    266:
+      name: frame_green
+      x: 384
+      y: 12
+      layer: 1
+      condition: rounds_green_win_33
+    267:
+      name: frame_empty
+      x: 396
+      y: 12
+      layer: 0
+      condition: rounds_slot_34_active
+    268:
+      name: frame_green
+      x: 396
+      y: 12
+      layer: 1
+      condition: rounds_green_win_34
+    269:
+      name: frame_empty
+      x: 408
+      y: 12
+      layer: 0
+      condition: rounds_slot_35_active
+    270:
+      name: frame_green
+      x: 408
+      y: 12
+      layer: 1
+      condition: rounds_green_win_35
+    271:
+      name: frame_empty
+      x: 420
+      y: 12
+      layer: 0
+      condition: rounds_slot_36_active
+    272:
+      name: frame_green
+      x: 420
+      y: 12
+      layer: 1
+      condition: rounds_green_win_36
+    273:
+      name: frame_empty
+      x: 432
+      y: 12
+      layer: 0
+      condition: rounds_slot_37_active
+    274:
+      name: frame_green
+      x: 432
+      y: 12
+      layer: 1
+      condition: rounds_green_win_37
+    275:
+      name: frame_empty
+      x: 444
+      y: 12
+      layer: 0
+      condition: rounds_slot_38_active
+    276:
+      name: frame_green
+      x: 444
+      y: 12
+      layer: 1
+      condition: rounds_green_win_38
+    277:
+      name: frame_empty
+      x: 456
+      y: 12
+      layer: 0
+      condition: rounds_slot_39_active
+    278:
+      name: frame_green
+      x: 456
+      y: 12
+      layer: 1
+      condition: rounds_green_win_39
+    279:
+      name: frame_empty
+      x: 468
+      y: 12
+      layer: 0
+      condition: rounds_slot_40_active
+    280:
+      name: frame_green
+      x: 468
+      y: 12
+      layer: 1
+      condition: rounds_green_win_40
+    281:
+      name: frame_empty
+      x: 480
+      y: 12
+      layer: 0
+      condition: rounds_slot_41_active
+    282:
+      name: frame_green
+      x: 480
+      y: 12
+      layer: 1
+      condition: rounds_green_win_41
+    283:
+      name: frame_empty
+      x: 492
+      y: 12
+      layer: 0
+      condition: rounds_slot_42_active
+    284:
+      name: frame_green
+      x: 492
+      y: 12
+      layer: 1
+      condition: rounds_green_win_42
+    285:
+      name: frame_empty
+      x: 504
+      y: 12
+      layer: 0
+      condition: rounds_slot_43_active
+    286:
+      name: frame_green
+      x: 504
+      y: 12
+      layer: 1
+      condition: rounds_green_win_43
+    287:
+      name: frame_empty
+      x: 516
+      y: 12
+      layer: 0
+      condition: rounds_slot_44_active
+    288:
+      name: frame_green
+      x: 516
+      y: 12
+      layer: 1
+      condition: rounds_green_win_44
+    289:
+      name: frame_empty
+      x: 528
+      y: 12
+      layer: 0
+      condition: rounds_slot_45_active
+    290:
+      name: frame_green
+      x: 528
+      y: 12
+      layer: 1
+      condition: rounds_green_win_45
+    291:
+      name: frame_empty
+      x: 540
+      y: 12
+      layer: 0
+      condition: rounds_slot_46_active
+    292:
+      name: frame_green
+      x: 540
+      y: 12
+      layer: 1
+      condition: rounds_green_win_46
+    293:
+      name: frame_empty
+      x: 552
+      y: 12
+      layer: 0
+      condition: rounds_slot_47_active
+    294:
+      name: frame_green
+      x: 552
+      y: 12
+      layer: 1
+      condition: rounds_green_win_47
+    295:
+      name: frame_empty
+      x: 564
+      y: 12
+      layer: 0
+      condition: rounds_slot_48_active
+    296:
+      name: frame_green
+      x: 564
+      y: 12
+      layer: 1
+      condition: rounds_green_win_48
+    297:
+      name: frame_empty
+      x: 576
+      y: 12
+      layer: 0
+      condition: rounds_slot_49_active
+    298:
+      name: frame_green
+      x: 576
+      y: 12
+      layer: 1
+      condition: rounds_green_win_49
+    299:
+      name: frame_empty
+      x: 588
+      y: 12
+      layer: 0
+      condition: rounds_slot_50_active
+    300:
+      name: frame_green
+      x: 588
+      y: 12
+      layer: 1
+      condition: rounds_green_win_50
+    301:
+      name: frame_empty
+      x: 600
+      y: 12
+      layer: 0
+      condition: rounds_slot_51_active
+    302:
+      name: frame_green
+      x: 600
+      y: 12
+      layer: 1
+      condition: rounds_green_win_51
+    303:
+      name: frame_empty
+      x: 612
+      y: 12
+      layer: 0
+      condition: rounds_slot_52_active
+    304:
+      name: frame_green
+      x: 612
+      y: 12
+      layer: 1
+      condition: rounds_green_win_52
+    305:
+      name: frame_empty
+      x: 624
+      y: 12
+      layer: 0
+      condition: rounds_slot_53_active
+    306:
+      name: frame_green
+      x: 624
+      y: 12
+      layer: 1
+      condition: rounds_green_win_53
+    307:
+      name: frame_empty
+      x: 636
+      y: 12
+      layer: 0
+      condition: rounds_slot_54_active
+    308:
+      name: frame_green
+      x: 636
+      y: 12
+      layer: 1
+      condition: rounds_green_win_54
+    309:
+      name: frame_empty
+      x: 648
+      y: 12
+      layer: 0
+      condition: rounds_slot_55_active
+    310:
+      name: frame_green
+      x: 648
+      y: 12
+      layer: 1
+      condition: rounds_green_win_55
+    311:
+      name: frame_empty
+      x: 660
+      y: 12
+      layer: 0
+      condition: rounds_slot_56_active
+    312:
+      name: frame_green
+      x: 660
+      y: 12
+      layer: 1
+      condition: rounds_green_win_56
+    313:
+      name: frame_empty
+      x: 672
+      y: 12
+      layer: 0
+      condition: rounds_slot_57_active
+    314:
+      name: frame_green
+      x: 672
+      y: 12
+      layer: 1
+      condition: rounds_green_win_57
+    315:
+      name: frame_empty
+      x: 684
+      y: 12
+      layer: 0
+      condition: rounds_slot_58_active
+    316:
+      name: frame_green
+      x: 684
+      y: 12
+      layer: 1
+      condition: rounds_green_win_58
+    317:
+      name: frame_empty
+      x: 696
+      y: 12
+      layer: 0
+      condition: rounds_slot_59_active
+    318:
+      name: frame_green
+      x: 696
+      y: 12
+      layer: 1
+      condition: rounds_green_win_59
+    319:
+      name: frame_empty
+      x: 708
+      y: 12
+      layer: 0
+      condition: rounds_slot_60_active
+    320:
+      name: frame_green
+      x: 708
+      y: 12
+      layer: 1
+      condition: rounds_green_win_60
+    321:
+      name: frame_empty
+      x: 720
+      y: 12
+      layer: 0
+      condition: rounds_slot_61_active
+    322:
+      name: frame_green
+      x: 720
+      y: 12
+      layer: 1
+      condition: rounds_green_win_61
+    323:
+      name: frame_empty
+      x: 732
+      y: 12
+      layer: 0
+      condition: rounds_slot_62_active
+    324:
+      name: frame_green
+      x: 732
+      y: 12
+      layer: 1
+      condition: rounds_green_win_62
+    325:
+      name: frame_empty
+      x: 744
+      y: 12
+      layer: 0
+      condition: rounds_slot_63_active
+    326:
+      name: frame_green
+      x: 744
+      y: 12
+      layer: 1
+      condition: rounds_green_win_63
+    327:
+      name: frame_empty
+      x: 756
+      y: 12
+      layer: 0
+      condition: rounds_slot_64_active
+    328:
+      name: frame_green
+      x: 756
+      y: 12
+      layer: 1
+      condition: rounds_green_win_64
+    329:
+      name: frame_empty
+      x: 768
+      y: 12
+      layer: 0
+      condition: rounds_slot_65_active
+    330:
+      name: frame_green
+      x: 768
+      y: 12
+      layer: 1
+      condition: rounds_green_win_65
+    331:
+      name: frame_empty
+      x: 780
+      y: 12
+      layer: 0
+      condition: rounds_slot_66_active
+    332:
+      name: frame_green
+      x: 780
+      y: 12
+      layer: 1
+      condition: rounds_green_win_66
+    333:
+      name: frame_empty
+      x: 792
+      y: 12
+      layer: 0
+      condition: rounds_slot_67_active
+    334:
+      name: frame_green
+      x: 792
+      y: 12
+      layer: 1
+      condition: rounds_green_win_67
+    335:
+      name: frame_empty
+      x: 804
+      y: 12
+      layer: 0
+      condition: rounds_slot_68_active
+    336:
+      name: frame_green
+      x: 804
+      y: 12
+      layer: 1
+      condition: rounds_green_win_68
+    337:
+      name: frame_empty
+      x: 816
+      y: 12
+      layer: 0
+      condition: rounds_slot_69_active
+    338:
+      name: frame_green
+      x: 816
+      y: 12
+      layer: 1
+      condition: rounds_green_win_69
+    339:
+      name: frame_empty
+      x: 828
+      y: 12
+      layer: 0
+      condition: rounds_slot_70_active
+    340:
+      name: frame_green
+      x: 828
+      y: 12
+      layer: 1
+      condition: rounds_green_win_70
+    341:
+      name: frame_empty
+      x: 840
+      y: 12
+      layer: 0
+      condition: rounds_slot_71_active
+    342:
+      name: frame_green
+      x: 840
+      y: 12
+      layer: 1
+      condition: rounds_green_win_71
+    343:
+      name: frame_empty
+      x: 852
+      y: 12
+      layer: 0
+      condition: rounds_slot_72_active
+    344:
+      name: frame_green
+      x: 852
+      y: 12
+      layer: 1
+      condition: rounds_green_win_72
+    345:
+      name: frame_empty
+      x: 864
+      y: 12
+      layer: 0
+      condition: rounds_slot_73_active
+    346:
+      name: frame_green
+      x: 864
+      y: 12
+      layer: 1
+      condition: rounds_green_win_73
+    347:
+      name: frame_empty
+      x: 876
+      y: 12
+      layer: 0
+      condition: rounds_slot_74_active
+    348:
+      name: frame_green
+      x: 876
+      y: 12
+      layer: 1
+      condition: rounds_green_win_74
+    349:
+      name: frame_empty
+      x: 888
+      y: 12
+      layer: 0
+      condition: rounds_slot_75_active
+    350:
+      name: frame_green
+      x: 888
+      y: 12
+      layer: 1
+      condition: rounds_green_win_75
+    351:
+      name: frame_empty
+      x: 900
+      y: 12
+      layer: 0
+      condition: rounds_slot_76_active
+    352:
+      name: frame_green
+      x: 900
+      y: 12
+      layer: 1
+      condition: rounds_green_win_76
+    353:
+      name: frame_empty
+      x: 912
+      y: 12
+      layer: 0
+      condition: rounds_slot_77_active
+    354:
+      name: frame_green
+      x: 912
+      y: 12
+      layer: 1
+      condition: rounds_green_win_77
+    355:
+      name: frame_empty
+      x: 924
+      y: 12
+      layer: 0
+      condition: rounds_slot_78_active
+    356:
+      name: frame_green
+      x: 924
+      y: 12
+      layer: 1
+      condition: rounds_green_win_78
+    357:
+      name: frame_empty
+      x: 936
+      y: 12
+      layer: 0
+      condition: rounds_slot_79_active
+    358:
+      name: frame_green
+      x: 936
+      y: 12
+      layer: 1
+      condition: rounds_green_win_79
+    359:
+      name: frame_empty
+      x: 948
+      y: 12
+      layer: 0
+      condition: rounds_slot_80_active
+    360:
+      name: frame_green
+      x: 948
+      y: 12
+      layer: 1
+      condition: rounds_green_win_80
+    361:
+      name: frame_empty
+      x: 960
+      y: 12
+      layer: 0
+      condition: rounds_slot_81_active
+    362:
+      name: frame_green
+      x: 960
+      y: 12
+      layer: 1
+      condition: rounds_green_win_81
+    363:
+      name: frame_empty
+      x: 972
+      y: 12
+      layer: 0
+      condition: rounds_slot_82_active
+    364:
+      name: frame_green
+      x: 972
+      y: 12
+      layer: 1
+      condition: rounds_green_win_82
+    365:
+      name: frame_empty
+      x: 984
+      y: 12
+      layer: 0
+      condition: rounds_slot_83_active
+    366:
+      name: frame_green
+      x: 984
+      y: 12
+      layer: 1
+      condition: rounds_green_win_83
+    367:
+      name: frame_empty
+      x: 996
+      y: 12
+      layer: 0
+      condition: rounds_slot_84_active
+    368:
+      name: frame_green
+      x: 996
+      y: 12
+      layer: 1
+      condition: rounds_green_win_84
+    369:
+      name: frame_empty
+      x: 1008
+      y: 12
+      layer: 0
+      condition: rounds_slot_85_active
+    370:
+      name: frame_green
+      x: 1008
+      y: 12
+      layer: 1
+      condition: rounds_green_win_85
+    371:
+      name: frame_empty
+      x: 1020
+      y: 12
+      layer: 0
+      condition: rounds_slot_86_active
+    372:
+      name: frame_green
+      x: 1020
+      y: 12
+      layer: 1
+      condition: rounds_green_win_86
+    373:
+      name: frame_empty
+      x: 1032
+      y: 12
+      layer: 0
+      condition: rounds_slot_87_active
+    374:
+      name: frame_green
+      x: 1032
+      y: 12
+      layer: 1
+      condition: rounds_green_win_87
+    375:
+      name: frame_empty
+      x: 1044
+      y: 12
+      layer: 0
+      condition: rounds_slot_88_active
+    376:
+      name: frame_green
+      x: 1044
+      y: 12
+      layer: 1
+      condition: rounds_green_win_88
+    377:
+      name: frame_empty
+      x: 1056
+      y: 12
+      layer: 0
+      condition: rounds_slot_89_active
+    378:
+      name: frame_green
+      x: 1056
+      y: 12
+      layer: 1
+      condition: rounds_green_win_89
+    379:
+      name: frame_empty
+      x: 1068
+      y: 12
+      layer: 0
+      condition: rounds_slot_90_active
+    380:
+      name: frame_green
+      x: 1068
+      y: 12
+      layer: 1
+      condition: rounds_green_win_90
+    381:
+      name: frame_empty
+      x: 1080
+      y: 12
+      layer: 0
+      condition: rounds_slot_91_active
+    382:
+      name: frame_green
+      x: 1080
+      y: 12
+      layer: 1
+      condition: rounds_green_win_91
+    383:
+      name: frame_empty
+      x: 1092
+      y: 12
+      layer: 0
+      condition: rounds_slot_92_active
+    384:
+      name: frame_green
+      x: 1092
+      y: 12
+      layer: 1
+      condition: rounds_green_win_92
+    385:
+      name: frame_empty
+      x: 1104
+      y: 12
+      layer: 0
+      condition: rounds_slot_93_active
+    386:
+      name: frame_green
+      x: 1104
+      y: 12
+      layer: 1
+      condition: rounds_green_win_93
+    387:
+      name: frame_empty
+      x: 1116
+      y: 12
+      layer: 0
+      condition: rounds_slot_94_active
+    388:
+      name: frame_green
+      x: 1116
+      y: 12
+      layer: 1
+      condition: rounds_green_win_94
+    389:
+      name: frame_empty
+      x: 1128
+      y: 12
+      layer: 0
+      condition: rounds_slot_95_active
+    390:
+      name: frame_green
+      x: 1128
+      y: 12
+      layer: 1
+      condition: rounds_green_win_95
+    391:
+      name: frame_empty
+      x: 1140
+      y: 12
+      layer: 0
+      condition: rounds_slot_96_active
+    392:
+      name: frame_green
+      x: 1140
+      y: 12
+      layer: 1
+      condition: rounds_green_win_96
+    393:
+      name: frame_empty
+      x: 1152
+      y: 12
+      layer: 0
+      condition: rounds_slot_97_active
+    394:
+      name: frame_green
+      x: 1152
+      y: 12
+      layer: 1
+      condition: rounds_green_win_97
+    395:
+      name: frame_empty
+      x: 1164
+      y: 12
+      layer: 0
+      condition: rounds_slot_98_active
+    396:
+      name: frame_green
+      x: 1164
+      y: 12
+      layer: 1
+      condition: rounds_green_win_98
+    397:
+      name: frame_empty
+      x: 1176
+      y: 12
+      layer: 0
+      condition: rounds_slot_99_active
+    398:
+      name: frame_green
+      x: 1176
+      y: 12
+      layer: 1
+      condition: rounds_green_win_99
+    399:
+      name: frame_empty
+      x: 1188
+      y: 12
+      layer: 0
+      condition: rounds_slot_100_active
+    400:
+      name: frame_green
+      x: 1188
+      y: 12
+      layer: 1
+      condition: rounds_green_win_100
+    401:
       name: frame_empty
       x: 0
       y: 24
       layer: 0
       condition: rounds_slot_1_active
-    82:
+    402:
       name: frame_yellow
       x: 0
       y: 24
       layer: 1
       condition: rounds_yellow_win_1
-    83:
+    403:
       name: frame_empty
       x: 12
       y: 24
       layer: 0
       condition: rounds_slot_2_active
-    84:
+    404:
       name: frame_yellow
       x: 12
       y: 24
       layer: 1
       condition: rounds_yellow_win_2
-    85:
+    405:
       name: frame_empty
       x: 24
       y: 24
       layer: 0
       condition: rounds_slot_3_active
-    86:
+    406:
       name: frame_yellow
       x: 24
       y: 24
       layer: 1
       condition: rounds_yellow_win_3
-    87:
+    407:
       name: frame_empty
       x: 36
       y: 24
       layer: 0
       condition: rounds_slot_4_active
-    88:
+    408:
       name: frame_yellow
       x: 36
       y: 24
       layer: 1
       condition: rounds_yellow_win_4
-    89:
+    409:
       name: frame_empty
       x: 48
       y: 24
       layer: 0
       condition: rounds_slot_5_active
-    90:
+    410:
       name: frame_yellow
       x: 48
       y: 24
       layer: 1
       condition: rounds_yellow_win_5
-    91:
+    411:
       name: frame_empty
       x: 60
       y: 24
       layer: 0
       condition: rounds_slot_6_active
-    92:
+    412:
       name: frame_yellow
       x: 60
       y: 24
       layer: 1
       condition: rounds_yellow_win_6
-    93:
+    413:
       name: frame_empty
       x: 72
       y: 24
       layer: 0
       condition: rounds_slot_7_active
-    94:
+    414:
       name: frame_yellow
       x: 72
       y: 24
       layer: 1
       condition: rounds_yellow_win_7
-    95:
+    415:
       name: frame_empty
       x: 84
       y: 24
       layer: 0
       condition: rounds_slot_8_active
-    96:
+    416:
       name: frame_yellow
       x: 84
       y: 24
       layer: 1
       condition: rounds_yellow_win_8
-    97:
+    417:
       name: frame_empty
       x: 96
       y: 24
       layer: 0
       condition: rounds_slot_9_active
-    98:
+    418:
       name: frame_yellow
       x: 96
       y: 24
       layer: 1
       condition: rounds_yellow_win_9
-    99:
+    419:
       name: frame_empty
       x: 108
       y: 24
       layer: 0
       condition: rounds_slot_10_active
-    100:
+    420:
       name: frame_yellow
       x: 108
       y: 24
       layer: 1
       condition: rounds_yellow_win_10
-    101:
+    421:
       name: frame_empty
       x: 120
       y: 24
       layer: 0
       condition: rounds_slot_11_active
-    102:
+    422:
       name: frame_yellow
       x: 120
       y: 24
       layer: 1
       condition: rounds_yellow_win_11
-    103:
+    423:
       name: frame_empty
       x: 132
       y: 24
       layer: 0
       condition: rounds_slot_12_active
-    104:
+    424:
       name: frame_yellow
       x: 132
       y: 24
       layer: 1
       condition: rounds_yellow_win_12
-    105:
+    425:
       name: frame_empty
       x: 144
       y: 24
       layer: 0
       condition: rounds_slot_13_active
-    106:
+    426:
       name: frame_yellow
       x: 144
       y: 24
       layer: 1
       condition: rounds_yellow_win_13
-    107:
+    427:
       name: frame_empty
       x: 156
       y: 24
       layer: 0
       condition: rounds_slot_14_active
-    108:
+    428:
       name: frame_yellow
       x: 156
       y: 24
       layer: 1
       condition: rounds_yellow_win_14
-    109:
+    429:
       name: frame_empty
       x: 168
       y: 24
       layer: 0
       condition: rounds_slot_15_active
-    110:
+    430:
       name: frame_yellow
       x: 168
       y: 24
       layer: 1
       condition: rounds_yellow_win_15
-    111:
+    431:
       name: frame_empty
       x: 180
       y: 24
       layer: 0
       condition: rounds_slot_16_active
-    112:
+    432:
       name: frame_yellow
       x: 180
       y: 24
       layer: 1
       condition: rounds_yellow_win_16
-    113:
+    433:
       name: frame_empty
       x: 192
       y: 24
       layer: 0
       condition: rounds_slot_17_active
-    114:
+    434:
       name: frame_yellow
       x: 192
       y: 24
       layer: 1
       condition: rounds_yellow_win_17
-    115:
+    435:
       name: frame_empty
       x: 204
       y: 24
       layer: 0
       condition: rounds_slot_18_active
-    116:
+    436:
       name: frame_yellow
       x: 204
       y: 24
       layer: 1
       condition: rounds_yellow_win_18
-    117:
+    437:
       name: frame_empty
       x: 216
       y: 24
       layer: 0
       condition: rounds_slot_19_active
-    118:
+    438:
       name: frame_yellow
       x: 216
       y: 24
       layer: 1
       condition: rounds_yellow_win_19
-    119:
+    439:
       name: frame_empty
       x: 228
       y: 24
       layer: 0
       condition: rounds_slot_20_active
-    120:
+    440:
       name: frame_yellow
       x: 228
       y: 24
       layer: 1
       condition: rounds_yellow_win_20
-    121:
+    441:
+      name: frame_empty
+      x: 240
+      y: 24
+      layer: 0
+      condition: rounds_slot_21_active
+    442:
+      name: frame_yellow
+      x: 240
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_21
+    443:
+      name: frame_empty
+      x: 252
+      y: 24
+      layer: 0
+      condition: rounds_slot_22_active
+    444:
+      name: frame_yellow
+      x: 252
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_22
+    445:
+      name: frame_empty
+      x: 264
+      y: 24
+      layer: 0
+      condition: rounds_slot_23_active
+    446:
+      name: frame_yellow
+      x: 264
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_23
+    447:
+      name: frame_empty
+      x: 276
+      y: 24
+      layer: 0
+      condition: rounds_slot_24_active
+    448:
+      name: frame_yellow
+      x: 276
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_24
+    449:
+      name: frame_empty
+      x: 288
+      y: 24
+      layer: 0
+      condition: rounds_slot_25_active
+    450:
+      name: frame_yellow
+      x: 288
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_25
+    451:
+      name: frame_empty
+      x: 300
+      y: 24
+      layer: 0
+      condition: rounds_slot_26_active
+    452:
+      name: frame_yellow
+      x: 300
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_26
+    453:
+      name: frame_empty
+      x: 312
+      y: 24
+      layer: 0
+      condition: rounds_slot_27_active
+    454:
+      name: frame_yellow
+      x: 312
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_27
+    455:
+      name: frame_empty
+      x: 324
+      y: 24
+      layer: 0
+      condition: rounds_slot_28_active
+    456:
+      name: frame_yellow
+      x: 324
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_28
+    457:
+      name: frame_empty
+      x: 336
+      y: 24
+      layer: 0
+      condition: rounds_slot_29_active
+    458:
+      name: frame_yellow
+      x: 336
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_29
+    459:
+      name: frame_empty
+      x: 348
+      y: 24
+      layer: 0
+      condition: rounds_slot_30_active
+    460:
+      name: frame_yellow
+      x: 348
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_30
+    461:
+      name: frame_empty
+      x: 360
+      y: 24
+      layer: 0
+      condition: rounds_slot_31_active
+    462:
+      name: frame_yellow
+      x: 360
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_31
+    463:
+      name: frame_empty
+      x: 372
+      y: 24
+      layer: 0
+      condition: rounds_slot_32_active
+    464:
+      name: frame_yellow
+      x: 372
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_32
+    465:
+      name: frame_empty
+      x: 384
+      y: 24
+      layer: 0
+      condition: rounds_slot_33_active
+    466:
+      name: frame_yellow
+      x: 384
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_33
+    467:
+      name: frame_empty
+      x: 396
+      y: 24
+      layer: 0
+      condition: rounds_slot_34_active
+    468:
+      name: frame_yellow
+      x: 396
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_34
+    469:
+      name: frame_empty
+      x: 408
+      y: 24
+      layer: 0
+      condition: rounds_slot_35_active
+    470:
+      name: frame_yellow
+      x: 408
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_35
+    471:
+      name: frame_empty
+      x: 420
+      y: 24
+      layer: 0
+      condition: rounds_slot_36_active
+    472:
+      name: frame_yellow
+      x: 420
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_36
+    473:
+      name: frame_empty
+      x: 432
+      y: 24
+      layer: 0
+      condition: rounds_slot_37_active
+    474:
+      name: frame_yellow
+      x: 432
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_37
+    475:
+      name: frame_empty
+      x: 444
+      y: 24
+      layer: 0
+      condition: rounds_slot_38_active
+    476:
+      name: frame_yellow
+      x: 444
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_38
+    477:
+      name: frame_empty
+      x: 456
+      y: 24
+      layer: 0
+      condition: rounds_slot_39_active
+    478:
+      name: frame_yellow
+      x: 456
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_39
+    479:
+      name: frame_empty
+      x: 468
+      y: 24
+      layer: 0
+      condition: rounds_slot_40_active
+    480:
+      name: frame_yellow
+      x: 468
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_40
+    481:
+      name: frame_empty
+      x: 480
+      y: 24
+      layer: 0
+      condition: rounds_slot_41_active
+    482:
+      name: frame_yellow
+      x: 480
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_41
+    483:
+      name: frame_empty
+      x: 492
+      y: 24
+      layer: 0
+      condition: rounds_slot_42_active
+    484:
+      name: frame_yellow
+      x: 492
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_42
+    485:
+      name: frame_empty
+      x: 504
+      y: 24
+      layer: 0
+      condition: rounds_slot_43_active
+    486:
+      name: frame_yellow
+      x: 504
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_43
+    487:
+      name: frame_empty
+      x: 516
+      y: 24
+      layer: 0
+      condition: rounds_slot_44_active
+    488:
+      name: frame_yellow
+      x: 516
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_44
+    489:
+      name: frame_empty
+      x: 528
+      y: 24
+      layer: 0
+      condition: rounds_slot_45_active
+    490:
+      name: frame_yellow
+      x: 528
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_45
+    491:
+      name: frame_empty
+      x: 540
+      y: 24
+      layer: 0
+      condition: rounds_slot_46_active
+    492:
+      name: frame_yellow
+      x: 540
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_46
+    493:
+      name: frame_empty
+      x: 552
+      y: 24
+      layer: 0
+      condition: rounds_slot_47_active
+    494:
+      name: frame_yellow
+      x: 552
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_47
+    495:
+      name: frame_empty
+      x: 564
+      y: 24
+      layer: 0
+      condition: rounds_slot_48_active
+    496:
+      name: frame_yellow
+      x: 564
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_48
+    497:
+      name: frame_empty
+      x: 576
+      y: 24
+      layer: 0
+      condition: rounds_slot_49_active
+    498:
+      name: frame_yellow
+      x: 576
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_49
+    499:
+      name: frame_empty
+      x: 588
+      y: 24
+      layer: 0
+      condition: rounds_slot_50_active
+    500:
+      name: frame_yellow
+      x: 588
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_50
+    501:
+      name: frame_empty
+      x: 600
+      y: 24
+      layer: 0
+      condition: rounds_slot_51_active
+    502:
+      name: frame_yellow
+      x: 600
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_51
+    503:
+      name: frame_empty
+      x: 612
+      y: 24
+      layer: 0
+      condition: rounds_slot_52_active
+    504:
+      name: frame_yellow
+      x: 612
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_52
+    505:
+      name: frame_empty
+      x: 624
+      y: 24
+      layer: 0
+      condition: rounds_slot_53_active
+    506:
+      name: frame_yellow
+      x: 624
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_53
+    507:
+      name: frame_empty
+      x: 636
+      y: 24
+      layer: 0
+      condition: rounds_slot_54_active
+    508:
+      name: frame_yellow
+      x: 636
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_54
+    509:
+      name: frame_empty
+      x: 648
+      y: 24
+      layer: 0
+      condition: rounds_slot_55_active
+    510:
+      name: frame_yellow
+      x: 648
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_55
+    511:
+      name: frame_empty
+      x: 660
+      y: 24
+      layer: 0
+      condition: rounds_slot_56_active
+    512:
+      name: frame_yellow
+      x: 660
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_56
+    513:
+      name: frame_empty
+      x: 672
+      y: 24
+      layer: 0
+      condition: rounds_slot_57_active
+    514:
+      name: frame_yellow
+      x: 672
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_57
+    515:
+      name: frame_empty
+      x: 684
+      y: 24
+      layer: 0
+      condition: rounds_slot_58_active
+    516:
+      name: frame_yellow
+      x: 684
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_58
+    517:
+      name: frame_empty
+      x: 696
+      y: 24
+      layer: 0
+      condition: rounds_slot_59_active
+    518:
+      name: frame_yellow
+      x: 696
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_59
+    519:
+      name: frame_empty
+      x: 708
+      y: 24
+      layer: 0
+      condition: rounds_slot_60_active
+    520:
+      name: frame_yellow
+      x: 708
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_60
+    521:
+      name: frame_empty
+      x: 720
+      y: 24
+      layer: 0
+      condition: rounds_slot_61_active
+    522:
+      name: frame_yellow
+      x: 720
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_61
+    523:
+      name: frame_empty
+      x: 732
+      y: 24
+      layer: 0
+      condition: rounds_slot_62_active
+    524:
+      name: frame_yellow
+      x: 732
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_62
+    525:
+      name: frame_empty
+      x: 744
+      y: 24
+      layer: 0
+      condition: rounds_slot_63_active
+    526:
+      name: frame_yellow
+      x: 744
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_63
+    527:
+      name: frame_empty
+      x: 756
+      y: 24
+      layer: 0
+      condition: rounds_slot_64_active
+    528:
+      name: frame_yellow
+      x: 756
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_64
+    529:
+      name: frame_empty
+      x: 768
+      y: 24
+      layer: 0
+      condition: rounds_slot_65_active
+    530:
+      name: frame_yellow
+      x: 768
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_65
+    531:
+      name: frame_empty
+      x: 780
+      y: 24
+      layer: 0
+      condition: rounds_slot_66_active
+    532:
+      name: frame_yellow
+      x: 780
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_66
+    533:
+      name: frame_empty
+      x: 792
+      y: 24
+      layer: 0
+      condition: rounds_slot_67_active
+    534:
+      name: frame_yellow
+      x: 792
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_67
+    535:
+      name: frame_empty
+      x: 804
+      y: 24
+      layer: 0
+      condition: rounds_slot_68_active
+    536:
+      name: frame_yellow
+      x: 804
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_68
+    537:
+      name: frame_empty
+      x: 816
+      y: 24
+      layer: 0
+      condition: rounds_slot_69_active
+    538:
+      name: frame_yellow
+      x: 816
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_69
+    539:
+      name: frame_empty
+      x: 828
+      y: 24
+      layer: 0
+      condition: rounds_slot_70_active
+    540:
+      name: frame_yellow
+      x: 828
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_70
+    541:
+      name: frame_empty
+      x: 840
+      y: 24
+      layer: 0
+      condition: rounds_slot_71_active
+    542:
+      name: frame_yellow
+      x: 840
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_71
+    543:
+      name: frame_empty
+      x: 852
+      y: 24
+      layer: 0
+      condition: rounds_slot_72_active
+    544:
+      name: frame_yellow
+      x: 852
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_72
+    545:
+      name: frame_empty
+      x: 864
+      y: 24
+      layer: 0
+      condition: rounds_slot_73_active
+    546:
+      name: frame_yellow
+      x: 864
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_73
+    547:
+      name: frame_empty
+      x: 876
+      y: 24
+      layer: 0
+      condition: rounds_slot_74_active
+    548:
+      name: frame_yellow
+      x: 876
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_74
+    549:
+      name: frame_empty
+      x: 888
+      y: 24
+      layer: 0
+      condition: rounds_slot_75_active
+    550:
+      name: frame_yellow
+      x: 888
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_75
+    551:
+      name: frame_empty
+      x: 900
+      y: 24
+      layer: 0
+      condition: rounds_slot_76_active
+    552:
+      name: frame_yellow
+      x: 900
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_76
+    553:
+      name: frame_empty
+      x: 912
+      y: 24
+      layer: 0
+      condition: rounds_slot_77_active
+    554:
+      name: frame_yellow
+      x: 912
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_77
+    555:
+      name: frame_empty
+      x: 924
+      y: 24
+      layer: 0
+      condition: rounds_slot_78_active
+    556:
+      name: frame_yellow
+      x: 924
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_78
+    557:
+      name: frame_empty
+      x: 936
+      y: 24
+      layer: 0
+      condition: rounds_slot_79_active
+    558:
+      name: frame_yellow
+      x: 936
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_79
+    559:
+      name: frame_empty
+      x: 948
+      y: 24
+      layer: 0
+      condition: rounds_slot_80_active
+    560:
+      name: frame_yellow
+      x: 948
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_80
+    561:
+      name: frame_empty
+      x: 960
+      y: 24
+      layer: 0
+      condition: rounds_slot_81_active
+    562:
+      name: frame_yellow
+      x: 960
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_81
+    563:
+      name: frame_empty
+      x: 972
+      y: 24
+      layer: 0
+      condition: rounds_slot_82_active
+    564:
+      name: frame_yellow
+      x: 972
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_82
+    565:
+      name: frame_empty
+      x: 984
+      y: 24
+      layer: 0
+      condition: rounds_slot_83_active
+    566:
+      name: frame_yellow
+      x: 984
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_83
+    567:
+      name: frame_empty
+      x: 996
+      y: 24
+      layer: 0
+      condition: rounds_slot_84_active
+    568:
+      name: frame_yellow
+      x: 996
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_84
+    569:
+      name: frame_empty
+      x: 1008
+      y: 24
+      layer: 0
+      condition: rounds_slot_85_active
+    570:
+      name: frame_yellow
+      x: 1008
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_85
+    571:
+      name: frame_empty
+      x: 1020
+      y: 24
+      layer: 0
+      condition: rounds_slot_86_active
+    572:
+      name: frame_yellow
+      x: 1020
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_86
+    573:
+      name: frame_empty
+      x: 1032
+      y: 24
+      layer: 0
+      condition: rounds_slot_87_active
+    574:
+      name: frame_yellow
+      x: 1032
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_87
+    575:
+      name: frame_empty
+      x: 1044
+      y: 24
+      layer: 0
+      condition: rounds_slot_88_active
+    576:
+      name: frame_yellow
+      x: 1044
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_88
+    577:
+      name: frame_empty
+      x: 1056
+      y: 24
+      layer: 0
+      condition: rounds_slot_89_active
+    578:
+      name: frame_yellow
+      x: 1056
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_89
+    579:
+      name: frame_empty
+      x: 1068
+      y: 24
+      layer: 0
+      condition: rounds_slot_90_active
+    580:
+      name: frame_yellow
+      x: 1068
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_90
+    581:
+      name: frame_empty
+      x: 1080
+      y: 24
+      layer: 0
+      condition: rounds_slot_91_active
+    582:
+      name: frame_yellow
+      x: 1080
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_91
+    583:
+      name: frame_empty
+      x: 1092
+      y: 24
+      layer: 0
+      condition: rounds_slot_92_active
+    584:
+      name: frame_yellow
+      x: 1092
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_92
+    585:
+      name: frame_empty
+      x: 1104
+      y: 24
+      layer: 0
+      condition: rounds_slot_93_active
+    586:
+      name: frame_yellow
+      x: 1104
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_93
+    587:
+      name: frame_empty
+      x: 1116
+      y: 24
+      layer: 0
+      condition: rounds_slot_94_active
+    588:
+      name: frame_yellow
+      x: 1116
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_94
+    589:
+      name: frame_empty
+      x: 1128
+      y: 24
+      layer: 0
+      condition: rounds_slot_95_active
+    590:
+      name: frame_yellow
+      x: 1128
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_95
+    591:
+      name: frame_empty
+      x: 1140
+      y: 24
+      layer: 0
+      condition: rounds_slot_96_active
+    592:
+      name: frame_yellow
+      x: 1140
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_96
+    593:
+      name: frame_empty
+      x: 1152
+      y: 24
+      layer: 0
+      condition: rounds_slot_97_active
+    594:
+      name: frame_yellow
+      x: 1152
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_97
+    595:
+      name: frame_empty
+      x: 1164
+      y: 24
+      layer: 0
+      condition: rounds_slot_98_active
+    596:
+      name: frame_yellow
+      x: 1164
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_98
+    597:
+      name: frame_empty
+      x: 1176
+      y: 24
+      layer: 0
+      condition: rounds_slot_99_active
+    598:
+      name: frame_yellow
+      x: 1176
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_99
+    599:
+      name: frame_empty
+      x: 1188
+      y: 24
+      layer: 0
+      condition: rounds_slot_100_active
+    600:
+      name: frame_yellow
+      x: 1188
+      y: 24
+      layer: 1
+      condition: rounds_yellow_win_100
+    601:
       name: frame_empty
       x: 0
       y: 36
       layer: 0
       condition: rounds_slot_1_active
-    122:
+    602:
       name: frame_blue
       x: 0
       y: 36
       layer: 1
       condition: rounds_blue_win_1
-    123:
+    603:
       name: frame_empty
       x: 12
       y: 36
       layer: 0
       condition: rounds_slot_2_active
-    124:
+    604:
       name: frame_blue
       x: 12
       y: 36
       layer: 1
       condition: rounds_blue_win_2
-    125:
+    605:
       name: frame_empty
       x: 24
       y: 36
       layer: 0
       condition: rounds_slot_3_active
-    126:
+    606:
       name: frame_blue
       x: 24
       y: 36
       layer: 1
       condition: rounds_blue_win_3
-    127:
+    607:
       name: frame_empty
       x: 36
       y: 36
       layer: 0
       condition: rounds_slot_4_active
-    128:
+    608:
       name: frame_blue
       x: 36
       y: 36
       layer: 1
       condition: rounds_blue_win_4
-    129:
+    609:
       name: frame_empty
       x: 48
       y: 36
       layer: 0
       condition: rounds_slot_5_active
-    130:
+    610:
       name: frame_blue
       x: 48
       y: 36
       layer: 1
       condition: rounds_blue_win_5
-    131:
+    611:
       name: frame_empty
       x: 60
       y: 36
       layer: 0
       condition: rounds_slot_6_active
-    132:
+    612:
       name: frame_blue
       x: 60
       y: 36
       layer: 1
       condition: rounds_blue_win_6
-    133:
+    613:
       name: frame_empty
       x: 72
       y: 36
       layer: 0
       condition: rounds_slot_7_active
-    134:
+    614:
       name: frame_blue
       x: 72
       y: 36
       layer: 1
       condition: rounds_blue_win_7
-    135:
+    615:
       name: frame_empty
       x: 84
       y: 36
       layer: 0
       condition: rounds_slot_8_active
-    136:
+    616:
       name: frame_blue
       x: 84
       y: 36
       layer: 1
       condition: rounds_blue_win_8
-    137:
+    617:
       name: frame_empty
       x: 96
       y: 36
       layer: 0
       condition: rounds_slot_9_active
-    138:
+    618:
       name: frame_blue
       x: 96
       y: 36
       layer: 1
       condition: rounds_blue_win_9
-    139:
+    619:
       name: frame_empty
       x: 108
       y: 36
       layer: 0
       condition: rounds_slot_10_active
-    140:
+    620:
       name: frame_blue
       x: 108
       y: 36
       layer: 1
       condition: rounds_blue_win_10
-    141:
+    621:
       name: frame_empty
       x: 120
       y: 36
       layer: 0
       condition: rounds_slot_11_active
-    142:
+    622:
       name: frame_blue
       x: 120
       y: 36
       layer: 1
       condition: rounds_blue_win_11
-    143:
+    623:
       name: frame_empty
       x: 132
       y: 36
       layer: 0
       condition: rounds_slot_12_active
-    144:
+    624:
       name: frame_blue
       x: 132
       y: 36
       layer: 1
       condition: rounds_blue_win_12
-    145:
+    625:
       name: frame_empty
       x: 144
       y: 36
       layer: 0
       condition: rounds_slot_13_active
-    146:
+    626:
       name: frame_blue
       x: 144
       y: 36
       layer: 1
       condition: rounds_blue_win_13
-    147:
+    627:
       name: frame_empty
       x: 156
       y: 36
       layer: 0
       condition: rounds_slot_14_active
-    148:
+    628:
       name: frame_blue
       x: 156
       y: 36
       layer: 1
       condition: rounds_blue_win_14
-    149:
+    629:
       name: frame_empty
       x: 168
       y: 36
       layer: 0
       condition: rounds_slot_15_active
-    150:
+    630:
       name: frame_blue
       x: 168
       y: 36
       layer: 1
       condition: rounds_blue_win_15
-    151:
+    631:
       name: frame_empty
       x: 180
       y: 36
       layer: 0
       condition: rounds_slot_16_active
-    152:
+    632:
       name: frame_blue
       x: 180
       y: 36
       layer: 1
       condition: rounds_blue_win_16
-    153:
+    633:
       name: frame_empty
       x: 192
       y: 36
       layer: 0
       condition: rounds_slot_17_active
-    154:
+    634:
       name: frame_blue
       x: 192
       y: 36
       layer: 1
       condition: rounds_blue_win_17
-    155:
+    635:
       name: frame_empty
       x: 204
       y: 36
       layer: 0
       condition: rounds_slot_18_active
-    156:
+    636:
       name: frame_blue
       x: 204
       y: 36
       layer: 1
       condition: rounds_blue_win_18
-    157:
+    637:
       name: frame_empty
       x: 216
       y: 36
       layer: 0
       condition: rounds_slot_19_active
-    158:
+    638:
       name: frame_blue
       x: 216
       y: 36
       layer: 1
       condition: rounds_blue_win_19
-    159:
+    639:
       name: frame_empty
       x: 228
       y: 36
       layer: 0
       condition: rounds_slot_20_active
-    160:
+    640:
       name: frame_blue
       x: 228
       y: 36
       layer: 1
       condition: rounds_blue_win_20
+    641:
+      name: frame_empty
+      x: 240
+      y: 36
+      layer: 0
+      condition: rounds_slot_21_active
+    642:
+      name: frame_blue
+      x: 240
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_21
+    643:
+      name: frame_empty
+      x: 252
+      y: 36
+      layer: 0
+      condition: rounds_slot_22_active
+    644:
+      name: frame_blue
+      x: 252
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_22
+    645:
+      name: frame_empty
+      x: 264
+      y: 36
+      layer: 0
+      condition: rounds_slot_23_active
+    646:
+      name: frame_blue
+      x: 264
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_23
+    647:
+      name: frame_empty
+      x: 276
+      y: 36
+      layer: 0
+      condition: rounds_slot_24_active
+    648:
+      name: frame_blue
+      x: 276
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_24
+    649:
+      name: frame_empty
+      x: 288
+      y: 36
+      layer: 0
+      condition: rounds_slot_25_active
+    650:
+      name: frame_blue
+      x: 288
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_25
+    651:
+      name: frame_empty
+      x: 300
+      y: 36
+      layer: 0
+      condition: rounds_slot_26_active
+    652:
+      name: frame_blue
+      x: 300
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_26
+    653:
+      name: frame_empty
+      x: 312
+      y: 36
+      layer: 0
+      condition: rounds_slot_27_active
+    654:
+      name: frame_blue
+      x: 312
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_27
+    655:
+      name: frame_empty
+      x: 324
+      y: 36
+      layer: 0
+      condition: rounds_slot_28_active
+    656:
+      name: frame_blue
+      x: 324
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_28
+    657:
+      name: frame_empty
+      x: 336
+      y: 36
+      layer: 0
+      condition: rounds_slot_29_active
+    658:
+      name: frame_blue
+      x: 336
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_29
+    659:
+      name: frame_empty
+      x: 348
+      y: 36
+      layer: 0
+      condition: rounds_slot_30_active
+    660:
+      name: frame_blue
+      x: 348
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_30
+    661:
+      name: frame_empty
+      x: 360
+      y: 36
+      layer: 0
+      condition: rounds_slot_31_active
+    662:
+      name: frame_blue
+      x: 360
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_31
+    663:
+      name: frame_empty
+      x: 372
+      y: 36
+      layer: 0
+      condition: rounds_slot_32_active
+    664:
+      name: frame_blue
+      x: 372
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_32
+    665:
+      name: frame_empty
+      x: 384
+      y: 36
+      layer: 0
+      condition: rounds_slot_33_active
+    666:
+      name: frame_blue
+      x: 384
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_33
+    667:
+      name: frame_empty
+      x: 396
+      y: 36
+      layer: 0
+      condition: rounds_slot_34_active
+    668:
+      name: frame_blue
+      x: 396
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_34
+    669:
+      name: frame_empty
+      x: 408
+      y: 36
+      layer: 0
+      condition: rounds_slot_35_active
+    670:
+      name: frame_blue
+      x: 408
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_35
+    671:
+      name: frame_empty
+      x: 420
+      y: 36
+      layer: 0
+      condition: rounds_slot_36_active
+    672:
+      name: frame_blue
+      x: 420
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_36
+    673:
+      name: frame_empty
+      x: 432
+      y: 36
+      layer: 0
+      condition: rounds_slot_37_active
+    674:
+      name: frame_blue
+      x: 432
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_37
+    675:
+      name: frame_empty
+      x: 444
+      y: 36
+      layer: 0
+      condition: rounds_slot_38_active
+    676:
+      name: frame_blue
+      x: 444
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_38
+    677:
+      name: frame_empty
+      x: 456
+      y: 36
+      layer: 0
+      condition: rounds_slot_39_active
+    678:
+      name: frame_blue
+      x: 456
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_39
+    679:
+      name: frame_empty
+      x: 468
+      y: 36
+      layer: 0
+      condition: rounds_slot_40_active
+    680:
+      name: frame_blue
+      x: 468
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_40
+    681:
+      name: frame_empty
+      x: 480
+      y: 36
+      layer: 0
+      condition: rounds_slot_41_active
+    682:
+      name: frame_blue
+      x: 480
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_41
+    683:
+      name: frame_empty
+      x: 492
+      y: 36
+      layer: 0
+      condition: rounds_slot_42_active
+    684:
+      name: frame_blue
+      x: 492
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_42
+    685:
+      name: frame_empty
+      x: 504
+      y: 36
+      layer: 0
+      condition: rounds_slot_43_active
+    686:
+      name: frame_blue
+      x: 504
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_43
+    687:
+      name: frame_empty
+      x: 516
+      y: 36
+      layer: 0
+      condition: rounds_slot_44_active
+    688:
+      name: frame_blue
+      x: 516
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_44
+    689:
+      name: frame_empty
+      x: 528
+      y: 36
+      layer: 0
+      condition: rounds_slot_45_active
+    690:
+      name: frame_blue
+      x: 528
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_45
+    691:
+      name: frame_empty
+      x: 540
+      y: 36
+      layer: 0
+      condition: rounds_slot_46_active
+    692:
+      name: frame_blue
+      x: 540
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_46
+    693:
+      name: frame_empty
+      x: 552
+      y: 36
+      layer: 0
+      condition: rounds_slot_47_active
+    694:
+      name: frame_blue
+      x: 552
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_47
+    695:
+      name: frame_empty
+      x: 564
+      y: 36
+      layer: 0
+      condition: rounds_slot_48_active
+    696:
+      name: frame_blue
+      x: 564
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_48
+    697:
+      name: frame_empty
+      x: 576
+      y: 36
+      layer: 0
+      condition: rounds_slot_49_active
+    698:
+      name: frame_blue
+      x: 576
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_49
+    699:
+      name: frame_empty
+      x: 588
+      y: 36
+      layer: 0
+      condition: rounds_slot_50_active
+    700:
+      name: frame_blue
+      x: 588
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_50
+    701:
+      name: frame_empty
+      x: 600
+      y: 36
+      layer: 0
+      condition: rounds_slot_51_active
+    702:
+      name: frame_blue
+      x: 600
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_51
+    703:
+      name: frame_empty
+      x: 612
+      y: 36
+      layer: 0
+      condition: rounds_slot_52_active
+    704:
+      name: frame_blue
+      x: 612
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_52
+    705:
+      name: frame_empty
+      x: 624
+      y: 36
+      layer: 0
+      condition: rounds_slot_53_active
+    706:
+      name: frame_blue
+      x: 624
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_53
+    707:
+      name: frame_empty
+      x: 636
+      y: 36
+      layer: 0
+      condition: rounds_slot_54_active
+    708:
+      name: frame_blue
+      x: 636
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_54
+    709:
+      name: frame_empty
+      x: 648
+      y: 36
+      layer: 0
+      condition: rounds_slot_55_active
+    710:
+      name: frame_blue
+      x: 648
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_55
+    711:
+      name: frame_empty
+      x: 660
+      y: 36
+      layer: 0
+      condition: rounds_slot_56_active
+    712:
+      name: frame_blue
+      x: 660
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_56
+    713:
+      name: frame_empty
+      x: 672
+      y: 36
+      layer: 0
+      condition: rounds_slot_57_active
+    714:
+      name: frame_blue
+      x: 672
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_57
+    715:
+      name: frame_empty
+      x: 684
+      y: 36
+      layer: 0
+      condition: rounds_slot_58_active
+    716:
+      name: frame_blue
+      x: 684
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_58
+    717:
+      name: frame_empty
+      x: 696
+      y: 36
+      layer: 0
+      condition: rounds_slot_59_active
+    718:
+      name: frame_blue
+      x: 696
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_59
+    719:
+      name: frame_empty
+      x: 708
+      y: 36
+      layer: 0
+      condition: rounds_slot_60_active
+    720:
+      name: frame_blue
+      x: 708
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_60
+    721:
+      name: frame_empty
+      x: 720
+      y: 36
+      layer: 0
+      condition: rounds_slot_61_active
+    722:
+      name: frame_blue
+      x: 720
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_61
+    723:
+      name: frame_empty
+      x: 732
+      y: 36
+      layer: 0
+      condition: rounds_slot_62_active
+    724:
+      name: frame_blue
+      x: 732
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_62
+    725:
+      name: frame_empty
+      x: 744
+      y: 36
+      layer: 0
+      condition: rounds_slot_63_active
+    726:
+      name: frame_blue
+      x: 744
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_63
+    727:
+      name: frame_empty
+      x: 756
+      y: 36
+      layer: 0
+      condition: rounds_slot_64_active
+    728:
+      name: frame_blue
+      x: 756
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_64
+    729:
+      name: frame_empty
+      x: 768
+      y: 36
+      layer: 0
+      condition: rounds_slot_65_active
+    730:
+      name: frame_blue
+      x: 768
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_65
+    731:
+      name: frame_empty
+      x: 780
+      y: 36
+      layer: 0
+      condition: rounds_slot_66_active
+    732:
+      name: frame_blue
+      x: 780
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_66
+    733:
+      name: frame_empty
+      x: 792
+      y: 36
+      layer: 0
+      condition: rounds_slot_67_active
+    734:
+      name: frame_blue
+      x: 792
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_67
+    735:
+      name: frame_empty
+      x: 804
+      y: 36
+      layer: 0
+      condition: rounds_slot_68_active
+    736:
+      name: frame_blue
+      x: 804
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_68
+    737:
+      name: frame_empty
+      x: 816
+      y: 36
+      layer: 0
+      condition: rounds_slot_69_active
+    738:
+      name: frame_blue
+      x: 816
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_69
+    739:
+      name: frame_empty
+      x: 828
+      y: 36
+      layer: 0
+      condition: rounds_slot_70_active
+    740:
+      name: frame_blue
+      x: 828
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_70
+    741:
+      name: frame_empty
+      x: 840
+      y: 36
+      layer: 0
+      condition: rounds_slot_71_active
+    742:
+      name: frame_blue
+      x: 840
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_71
+    743:
+      name: frame_empty
+      x: 852
+      y: 36
+      layer: 0
+      condition: rounds_slot_72_active
+    744:
+      name: frame_blue
+      x: 852
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_72
+    745:
+      name: frame_empty
+      x: 864
+      y: 36
+      layer: 0
+      condition: rounds_slot_73_active
+    746:
+      name: frame_blue
+      x: 864
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_73
+    747:
+      name: frame_empty
+      x: 876
+      y: 36
+      layer: 0
+      condition: rounds_slot_74_active
+    748:
+      name: frame_blue
+      x: 876
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_74
+    749:
+      name: frame_empty
+      x: 888
+      y: 36
+      layer: 0
+      condition: rounds_slot_75_active
+    750:
+      name: frame_blue
+      x: 888
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_75
+    751:
+      name: frame_empty
+      x: 900
+      y: 36
+      layer: 0
+      condition: rounds_slot_76_active
+    752:
+      name: frame_blue
+      x: 900
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_76
+    753:
+      name: frame_empty
+      x: 912
+      y: 36
+      layer: 0
+      condition: rounds_slot_77_active
+    754:
+      name: frame_blue
+      x: 912
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_77
+    755:
+      name: frame_empty
+      x: 924
+      y: 36
+      layer: 0
+      condition: rounds_slot_78_active
+    756:
+      name: frame_blue
+      x: 924
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_78
+    757:
+      name: frame_empty
+      x: 936
+      y: 36
+      layer: 0
+      condition: rounds_slot_79_active
+    758:
+      name: frame_blue
+      x: 936
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_79
+    759:
+      name: frame_empty
+      x: 948
+      y: 36
+      layer: 0
+      condition: rounds_slot_80_active
+    760:
+      name: frame_blue
+      x: 948
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_80
+    761:
+      name: frame_empty
+      x: 960
+      y: 36
+      layer: 0
+      condition: rounds_slot_81_active
+    762:
+      name: frame_blue
+      x: 960
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_81
+    763:
+      name: frame_empty
+      x: 972
+      y: 36
+      layer: 0
+      condition: rounds_slot_82_active
+    764:
+      name: frame_blue
+      x: 972
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_82
+    765:
+      name: frame_empty
+      x: 984
+      y: 36
+      layer: 0
+      condition: rounds_slot_83_active
+    766:
+      name: frame_blue
+      x: 984
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_83
+    767:
+      name: frame_empty
+      x: 996
+      y: 36
+      layer: 0
+      condition: rounds_slot_84_active
+    768:
+      name: frame_blue
+      x: 996
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_84
+    769:
+      name: frame_empty
+      x: 1008
+      y: 36
+      layer: 0
+      condition: rounds_slot_85_active
+    770:
+      name: frame_blue
+      x: 1008
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_85
+    771:
+      name: frame_empty
+      x: 1020
+      y: 36
+      layer: 0
+      condition: rounds_slot_86_active
+    772:
+      name: frame_blue
+      x: 1020
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_86
+    773:
+      name: frame_empty
+      x: 1032
+      y: 36
+      layer: 0
+      condition: rounds_slot_87_active
+    774:
+      name: frame_blue
+      x: 1032
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_87
+    775:
+      name: frame_empty
+      x: 1044
+      y: 36
+      layer: 0
+      condition: rounds_slot_88_active
+    776:
+      name: frame_blue
+      x: 1044
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_88
+    777:
+      name: frame_empty
+      x: 1056
+      y: 36
+      layer: 0
+      condition: rounds_slot_89_active
+    778:
+      name: frame_blue
+      x: 1056
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_89
+    779:
+      name: frame_empty
+      x: 1068
+      y: 36
+      layer: 0
+      condition: rounds_slot_90_active
+    780:
+      name: frame_blue
+      x: 1068
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_90
+    781:
+      name: frame_empty
+      x: 1080
+      y: 36
+      layer: 0
+      condition: rounds_slot_91_active
+    782:
+      name: frame_blue
+      x: 1080
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_91
+    783:
+      name: frame_empty
+      x: 1092
+      y: 36
+      layer: 0
+      condition: rounds_slot_92_active
+    784:
+      name: frame_blue
+      x: 1092
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_92
+    785:
+      name: frame_empty
+      x: 1104
+      y: 36
+      layer: 0
+      condition: rounds_slot_93_active
+    786:
+      name: frame_blue
+      x: 1104
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_93
+    787:
+      name: frame_empty
+      x: 1116
+      y: 36
+      layer: 0
+      condition: rounds_slot_94_active
+    788:
+      name: frame_blue
+      x: 1116
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_94
+    789:
+      name: frame_empty
+      x: 1128
+      y: 36
+      layer: 0
+      condition: rounds_slot_95_active
+    790:
+      name: frame_blue
+      x: 1128
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_95
+    791:
+      name: frame_empty
+      x: 1140
+      y: 36
+      layer: 0
+      condition: rounds_slot_96_active
+    792:
+      name: frame_blue
+      x: 1140
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_96
+    793:
+      name: frame_empty
+      x: 1152
+      y: 36
+      layer: 0
+      condition: rounds_slot_97_active
+    794:
+      name: frame_blue
+      x: 1152
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_97
+    795:
+      name: frame_empty
+      x: 1164
+      y: 36
+      layer: 0
+      condition: rounds_slot_98_active
+    796:
+      name: frame_blue
+      x: 1164
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_98
+    797:
+      name: frame_empty
+      x: 1176
+      y: 36
+      layer: 0
+      condition: rounds_slot_99_active
+    798:
+      name: frame_blue
+      x: 1176
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_99
+    799:
+      name: frame_empty
+      x: 1188
+      y: 36
+      layer: 0
+      condition: rounds_slot_100_active
+    800:
+      name: frame_blue
+      x: 1188
+      y: 36
+      layer: 1
+      condition: rounds_blue_win_100

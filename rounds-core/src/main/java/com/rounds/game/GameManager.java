@@ -342,8 +342,13 @@ public class GameManager implements Listener {
         );
 
         state = GameState.CARDS;
+        cardDraftStartTime = System.currentTimeMillis();
+        int limitSec = (plugin != null) ? plugin.getRoundsConfig().getCardChoiceTimeSeconds() : 30;
+        if (limitSec < 10) limitSec = 30;
+        cardDraftDurationMs = limitSec * 1000L;
         startGameTick();
         currentRound = 0;
+        updateMatchBossBar(cardDraftStartTime);
 
         pickRandomZoneAndAssignSpawns();
 
@@ -864,22 +869,39 @@ public class GameManager implements Listener {
             }
         }
         if (now - autoDeathNextEvent > intervalMs * 10) autoDeathNextEvent = now;
-        updateAutoDeathBossBar(now);
+        updateMatchBossBar(now);
     }
 
-    private void updateAutoDeathBossBar(long now) {
-        if (plugin == null || !plugin.getRoundsConfig().isAutoDeathBossBarEnabled()) {
+    public void updateMatchBossBar(long now) {
+        if (!isGameActive() || state == GameState.WAITING || state == GameState.GAME_END) {
             hideAutoDeathBossBar();
             return;
         }
-        if (state != GameState.PLAYING) {
-            hideAutoDeathBossBar();
-            return;
+
+        String title;
+        BarColor color;
+        double progress;
+
+        if (state == GameState.CARDS) {
+            long remainingMs = Math.max(0, (cardDraftStartTime + cardDraftDurationMs) - now);
+            int remainingSec = (int) Math.ceil(remainingMs / 1000.0);
+            progress = Math.max(0.0, Math.min(1.0, (double) remainingMs / cardDraftDurationMs));
+            title = ChatColor.GREEN + Messages.get("game.bossbar-cards") + " " + ChatColor.YELLOW + "(" + remainingSec + "s)";
+            color = BarColor.GREEN;
+        } else if (state == GameState.ROUND_END) {
+            title = Messages.get("game.bossbar-round-end");
+            color = BarColor.YELLOW;
+            progress = 1.0;
+        } else {
+            // PLAYING
+            title = autoDeathInitialPhase
+                    ? Messages.get("game.round-start", currentRound)
+                    : Messages.get("game.bossbar-auto-death");
+            color = autoDeathInitialPhase ? BarColor.YELLOW : BarColor.RED;
+            double remainingMs = Math.max(0, autoDeathNextEvent - now);
+            double durationMs = Math.max(1000L, autoDeathPhaseDurationMs);
+            progress = Math.max(0.0, Math.min(1.0, remainingMs / durationMs));
         }
-        String title = autoDeathInitialPhase
-                ? Messages.get("game.round-start", currentRound)
-                : Messages.get("game.bossbar-auto-death");
-        BarColor color = autoDeathInitialPhase ? BarColor.YELLOW : BarColor.RED;
 
         if (autoDeathBossBar == null) {
             autoDeathBossBar = Bukkit.createBossBar(title, color, BarStyle.SOLID);
@@ -888,9 +910,6 @@ public class GameManager implements Listener {
             autoDeathBossBar.setColor(color);
         }
 
-        double remainingMs = Math.max(0, autoDeathNextEvent - now);
-        double durationMs = Math.max(1000L, autoDeathPhaseDurationMs);
-        double progress = Math.max(0.0, Math.min(1.0, remainingMs / durationMs));
         autoDeathBossBar.setProgress(progress);
         autoDeathBossBar.setVisible(true);
 
@@ -898,6 +917,11 @@ public class GameManager implements Listener {
             if (plugin.getBotManager() != null && plugin.getBotManager().isBot(p)) continue;
             if (!autoDeathBossBar.getPlayers().contains(p)) {
                 autoDeathBossBar.addPlayer(p);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (isGameActive()) {
+                        com.rounds.hud.HudEngineHook.setHudVisible(p, true);
+                    }
+                }, 1L);
             }
         }
         for (Player p : autoDeathBossBar.getPlayers()) {
@@ -974,6 +998,7 @@ public class GameManager implements Listener {
 
     private void cardTick() {
         musicTick++;
+        updateMatchBossBar(System.currentTimeMillis());
         if (wheelEnabled && musicTick % 120 == 0) {
             plugin.getCardGUI().rotateAllCards();
         }
@@ -1329,7 +1354,7 @@ public class GameManager implements Listener {
         if (plugin.getRoundMusicManager() != null) {
             plugin.getRoundMusicManager().stop();
         }
-        hideAutoDeathBossBar();
+        updateMatchBossBar(System.currentTimeMillis());
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             clearCardEffects(p);
             p.setNoDamageTicks(0);
@@ -1445,10 +1470,15 @@ public class GameManager implements Listener {
 
         scheduleDelayed(() -> {
             state = GameState.CARDS;
+            cardDraftStartTime = System.currentTimeMillis();
+            int limitSec = (plugin != null) ? plugin.getRoundsConfig().getCardChoiceTimeSeconds() : 30;
+            if (limitSec < 10) limitSec = 30;
+            cardDraftDurationMs = limitSec * 1000L;
             deadPlayers.clear();
             saveState();
             musicTick = 0;
             plugin.getCardManager().clearPendingPicks();
+            updateMatchBossBar(cardDraftStartTime);
             pickRandomZoneAndAssignSpawns();
             applyDarkness();
             for (Player p : plugin.getServer().getOnlinePlayers()) {
@@ -1507,10 +1537,15 @@ public class GameManager implements Listener {
 
         scheduleDelayed(() -> {
             state = GameState.CARDS;
+            cardDraftStartTime = System.currentTimeMillis();
+            int limitSec = (plugin != null) ? plugin.getRoundsConfig().getCardChoiceTimeSeconds() : 30;
+            if (limitSec < 10) limitSec = 30;
+            cardDraftDurationMs = limitSec * 1000L;
             deadPlayers.clear();
             saveState();
             musicTick = 0;
             plugin.getCardManager().clearPendingPicks();
+            updateMatchBossBar(cardDraftStartTime);
             pickRandomZoneAndAssignSpawns();
             applyDarkness();
             for (Player p : plugin.getServer().getOnlinePlayers()) {

@@ -215,8 +215,8 @@ public final class HudEngineHook implements Listener {
                 return (gm != null && gm.isGameActive()) ? "1" : "0";
             });
 
-            // 2. slots 1..20
-            for (int i = 1; i <= 20; i++) {
+            // 2. slots 1..100
+            for (int i = 1; i <= 100; i++) {
                 final int slot = i;
                 registerKey(hudValues, registerMethod, "rounds_slot_" + slot + "_active", p -> {
                     GameManager gm = plugin.getGameManager();

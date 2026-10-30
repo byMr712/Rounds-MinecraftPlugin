@@ -27,7 +27,7 @@ variations:
   - rarity: RARE
     art: card123-rare
     description:
-      ru: "При пустой обойме позволяет продолжать стрельбу, тратя 12% текущего здоровья за каждый выстрел. Аварийные пули наносят на 30% больше урона."
+      ru: "При пустой обойме позволяет продолжать стрельбу, тратя 12% текущего здоровья за каждый выстрел. Такие пули наносят на 30% больше урона."
       en: "When ammo is empty, allows you to continue shooting by sacrificing 12% of your current health per emergency shot. Emergency bullets deal +30% damage."
     effects:
       blood_cartridge: 3

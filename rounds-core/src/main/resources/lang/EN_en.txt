@@ -116,7 +116,7 @@ card:
   timeout-kick: "You did not choose an upgrade card in {0} seconds"
   click-to-select: "Click to select"
   applied: "Applied card: {0}"
-  picked: "{0} picks card \u2014 {1}: {2}"
+  picked: "{0} picks card — {1}: {2}"
   bonus-received: "&6You also received: {0}"
 
   show-prev: "← Previous page ({0}/{1})"

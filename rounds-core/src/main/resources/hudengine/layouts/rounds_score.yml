@@ -1,6 +1,6 @@
 rounds_score:
   x: 0
-  y: 24
+  y: 60
   images:
     1:
       name: frame_empty

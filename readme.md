@@ -502,9 +502,9 @@ triggers:
 Официальный ресурспак плагина основан на оригинальном ресурспаке от автора **ifrit**, с последующими изменениями: переработкой структуры, добавлением вариаций текстур, адаптивной локализацией (RU/EN), квантованием палитры и оптимизацией от **Mr712**.
 
 Текст названия и описания наносится непосредственно на текстуры карточек. Чтобы поддерживать несколько языков, формируются отдельные ресурспаки:
-- `Rounds-ResourcePack-RU.zip` — текстуры с запеченным русским переводом ([Скачать на Google Диске](https://drive.google.com/file/d/1_YBaPEACYcMhLVVjmz_PZxIcbQ-hxZjC/view?usp=sharing)).
-- `Rounds-ResourcePack-EN.zip` — текстуры с запеченным английским переводом ([Скачать на Google Диске](https://drive.google.com/file/d/1RPBAPUhNVZ5lJpLoMnnbbQA_fYVl9dns/view?usp=sharing)).
-- `Rounds-ResourcePack.zip` — базовый пакет с оригинальными чистыми карточками (без текста) для добавления своих переводов и кастомного текста сторонними авторами ([Скачать версию для разработчиков на Google Диске](https://drive.google.com/file/d/1Md7Z03MQUDq9nUsf4VzUVpoBpgPFiYK8/view?usp=sharing)).
+- `Rounds-ResourcePack-RU.zip` — текстуры с запеченным русским переводом ([Скачать на Google Диске](https://drive.google.com/file/d/1aC6KKnC3pJXeoz1NZ0-Mzao0IFa_Mufi/view?usp=sharing)).
+- `Rounds-ResourcePack-EN.zip` — текстуры с запеченным английским переводом ([Скачать на Google Диске](https://drive.google.com/file/d/1vB3-KVbrplQvb_UzjcZj0UlQki9RR5FH/view?usp=sharing)).
+- `Rounds-ResourcePack.zip` — базовый пакет с оригинальными чистыми карточками (без текста) для добавления своих переводов и кастомного текста сторонними авторами ([Скачать версию для разработчиков на Google Диске](https://drive.google.com/file/d/1tA_Ty1WabOgRgCp2-2AlyHJIigmx1hm3/view?usp=sharing)).
 
 Кодовые позиции растровых глифов шрифта (`0xE000` + `familyId`) идентичны во всех пакетах. Игрок просто выбирает ресурспак своего языка в настройках Minecraft без необходимости менять что-либо на сервере.
 
@@ -512,10 +512,10 @@ triggers:
 Чтобы игроки автоматически скачивали мой уже готовый русскоязычный ресурспак при подключении к серверу, укажите следующие параметры в файле `server.properties`:
 
 ```properties
-resource-pack=https://drive.google.com/uc?export=download&id=1_YBaPEACYcMhLVVjmz_PZxIcbQ-hxZjC
+resource-pack=https://drive.google.com/uc?export=download&id=1aC6KKnC3pJXeoz1NZ0-Mzao0IFa_Mufi
 resource-pack-id=276093b4-f5ee-3eca-8dba-2448a11ee78a
-resource-pack-prompt={"text"\:"Ресурспак на карточки ROUNDS","color"\:"gold"}
-resource-pack-sha1=5397225d927e0a7cba411a5f5894834e26e88b03
+resource-pack-prompt={"text"\:"Ресурспак ROUNDS","color"\:"gold"}
+resource-pack-sha1=8ab96deb602faf63c4d07cb6cee1a0d3c3f86817
 ```
 
 ### 2. Кроссплатформенный билдер в Gradle (`CardPackBuilder`)

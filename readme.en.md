@@ -504,9 +504,9 @@ The plugin provides a self-contained, cross-platform resource pack infrastructur
 The official plugin resource pack is based on the original resource pack by **ifrit**, with subsequent modifications: restructured layout, added texture variations, adaptive localization (RU/EN), palette quantization, and optimization by **Mr712**.
 
 Card titles and ability descriptions are rendered directly onto card face textures. Separate language-specific packages are generated:
-- `Rounds-ResourcePack-RU.zip`: Card textures with baked Russian translations ([Download on Google Drive](https://drive.google.com/file/d/1_YBaPEACYcMhLVVjmz_PZxIcbQ-hxZjC/view?usp=sharing)).
-- `Rounds-ResourcePack-EN.zip`: Card textures with baked English translations ([Download on Google Drive](https://drive.google.com/file/d/1RPBAPUhNVZ5lJpLoMnnbbQA_fYVl9dns/view?usp=sharing)).
-- `Rounds-ResourcePack.zip`: Base template pack containing clean, unbaked original card art (without text), allowing other creators to add custom translations and typography ([Download developer base pack on Google Drive](https://drive.google.com/file/d/1Md7Z03MQUDq9nUsf4VzUVpoBpgPFiYK8/view?usp=sharing)).
+- `Rounds-ResourcePack-RU.zip`: Card textures with baked Russian translations ([Download on Google Drive](https://drive.google.com/file/d/1aC6KKnC3pJXeoz1NZ0-Mzao0IFa_Mufi/view?usp=sharing)).
+- `Rounds-ResourcePack-EN.zip`: Card textures with baked English translations ([Download on Google Drive](https://drive.google.com/file/d/1vB3-KVbrplQvb_UzjcZj0UlQki9RR5FH/view?usp=sharing)).
+- `Rounds-ResourcePack.zip`: Base template pack containing clean, unbaked original card art (without text), allowing other creators to add custom translations and typography ([Download developer base pack on Google Drive](https://drive.google.com/file/d/1tA_Ty1WabOgRgCp2-2AlyHJIigmx1hm3/view?usp=sharing)).
 
 The private-use font glyph codepoints (`0xE000` + `familyId`) are identical across all language packs. Players simply activate their preferred language pack in Minecraft settings without requiring any server configuration changes.
 
@@ -514,10 +514,10 @@ The private-use font glyph codepoints (`0xE000` + `familyId`) are identical acro
 To have clients automatically download my pre-built English resource pack when connecting to the server, configure the following parameters in `server.properties`:
 
 ```properties
-resource-pack=https://drive.google.com/uc?export=download&id=1RPBAPUhNVZ5lJpLoMnnbbQA_fYVl9dns
+resource-pack=https://drive.google.com/uc?export=download&id=1vB3-KVbrplQvb_UzjcZj0UlQki9RR5FH
 resource-pack-id=276093b4-f5ee-3eca-8dba-2448a11ee78a
-resource-pack-prompt={"text"\:"ROUNDS cards resource pack","color"\:"gold"}
-resource-pack-sha1=f6be49ba16d35d5fbdeacb90e4c53f9bca6a1c1f
+resource-pack-prompt={"text"\:"ROUNDS resource pack","color"\:"gold"}
+resource-pack-sha1=76334beb678f03710bceac9e934ce5df609777f6
 ```
 
 ### 2. Pure Java Gradle Pack Builder (`CardPackBuilder`)

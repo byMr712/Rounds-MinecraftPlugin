@@ -66,7 +66,7 @@ public class YamlCustomCardLoader {
             String fname = file.getName();
             resolvedId = fname.substring(0, fname.length() - 4);
         }
-        String cleanId = "custom/" + resolvedId.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9._-]", "-");
+        String cleanId = "custom_" + resolvedId.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9._-]", "-");
 
         // Localized names and descriptions
         Map<String, String> names = loadLocalizedMap(config, "name");

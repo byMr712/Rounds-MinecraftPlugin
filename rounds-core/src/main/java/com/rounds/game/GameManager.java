@@ -886,8 +886,15 @@ public class GameManager implements Listener {
             long remainingMs = Math.max(0, (cardDraftStartTime + cardDraftDurationMs) - now);
             int remainingSec = (int) Math.ceil(remainingMs / 1000.0);
             progress = Math.max(0.0, Math.min(1.0, (double) remainingMs / cardDraftDurationMs));
-            title = ChatColor.GREEN + Messages.get("game.bossbar-cards") + " " + ChatColor.YELLOW + "(" + remainingSec + "s)";
-            color = BarColor.GREEN;
+            net.md_5.bungee.api.ChatColor timerColor = getCardDraftTimerColor(remainingMs, cardDraftDurationMs);
+            title = timerColor + Messages.get("game.bossbar-cards") + " (" + remainingSec + "s)";
+            if (remainingMs <= 5000L) {
+                color = BarColor.RED;
+            } else if (remainingMs <= 15000L) {
+                color = BarColor.YELLOW;
+            } else {
+                color = BarColor.GREEN;
+            }
         } else if (state == GameState.ROUND_END) {
             title = Messages.get("game.bossbar-round-end");
             color = BarColor.YELLOW;
@@ -936,6 +943,29 @@ public class GameManager implements Listener {
             autoDeathBossBar.setVisible(false);
             autoDeathBossBar.removeAll();
         }
+    }
+
+    private net.md_5.bungee.api.ChatColor getCardDraftTimerColor(long remainingMs, long totalMs) {
+        long redThresholdMs = 5000L;
+        if (remainingMs <= redThresholdMs) {
+            return net.md_5.bungee.api.ChatColor.of("#FF4444");
+        }
+        double t = (double) (remainingMs - redThresholdMs) / Math.max(1000L, totalMs - redThresholdMs);
+        t = Math.max(0.0, Math.min(1.0, t));
+
+        int r, g, b;
+        if (t >= 0.5) {
+            double p = (t - 0.5) / 0.5;
+            r = (int) Math.round(255 - 170 * p);
+            g = (int) Math.round(230 + 25 * p);
+            b = (int) Math.round(60 + 25 * p);
+        } else {
+            double p = t / 0.5;
+            r = 255;
+            g = (int) Math.round(68 + 162 * p);
+            b = (int) Math.round(68 - 8 * p);
+        }
+        return net.md_5.bungee.api.ChatColor.of(String.format("#%02X%02X%02X", r, g, b));
     }
 
     private void killRandomPlayer() {
@@ -1445,7 +1475,7 @@ public class GameManager implements Listener {
 
         String teamName = Messages.get("team." + winner.name().toLowerCase());
         broadcastBox(
-            teamName + " " + Messages.get("game.round-won"),
+            winner.getColor() + "\u2502 " + winner.getColor() + teamName + " " + Messages.get("game.round-won"),
             null,
             getActiveTeamScores()
         );
@@ -1525,7 +1555,7 @@ public class GameManager implements Listener {
         saveState();
         cleanupRoundCombatState();
         broadcastBox(
-            Messages.get("game.draw-title", Messages.get("game.draw")),
+            ChatColor.YELLOW + "\u2502 " + Messages.get("game.draw-title", Messages.get("game.draw")),
             null,
             getActiveTeamScores()
         );
@@ -1605,7 +1635,7 @@ public class GameManager implements Listener {
 
         String teamName = Messages.get("team." + winner.name().toLowerCase());
         broadcastBox(
-            teamName + " " + Messages.get("game.game-won"),
+            winner.getColor() + "\u2502 " + winner.getColor() + teamName + " " + Messages.get("game.game-won"),
             null,
             getActiveTeamScores()
         );
@@ -1920,14 +1950,22 @@ public class GameManager implements Listener {
         plugin.getServer().broadcastMessage(BOX_TOP);
         boolean hasPrev = false;
         if (title != null && !title.isEmpty()) {
-            plugin.getServer().broadcastMessage(BOX_MID + BOX_W + "\u2502 " + BOX_W + title);
+            if (title.contains("\u2502")) {
+                plugin.getServer().broadcastMessage(BOX_MID + title);
+            } else {
+                plugin.getServer().broadcastMessage(BOX_MID + BOX_W + "\u2502 " + BOX_W + title);
+            }
             hasPrev = true;
         }
         if (sectionTitle != null && !sectionTitle.isEmpty()) {
             if (hasPrev) {
                 plugin.getServer().broadcastMessage(BOX_SEP);
             }
-            plugin.getServer().broadcastMessage(BOX_MID + BOX_W + "\u2502 " + BOX_W + sectionTitle);
+            if (sectionTitle.contains("\u2502")) {
+                plugin.getServer().broadcastMessage(BOX_MID + sectionTitle);
+            } else {
+                plugin.getServer().broadcastMessage(BOX_MID + BOX_W + "\u2502 " + BOX_W + sectionTitle);
+            }
             hasPrev = true;
         }
         if (lines != null && !lines.isEmpty()) {
@@ -1935,7 +1973,11 @@ public class GameManager implements Listener {
                 plugin.getServer().broadcastMessage(BOX_SEP);
             }
             for (String line : lines) {
-                plugin.getServer().broadcastMessage(BOX_MID + "  " + BOX_W + line);
+                if (line.contains("\u2502")) {
+                    plugin.getServer().broadcastMessage(BOX_MID + line);
+                } else {
+                    plugin.getServer().broadcastMessage(BOX_MID + "  " + BOX_W + line);
+                }
             }
         }
         plugin.getServer().broadcastMessage(BOX_BOT);
@@ -2019,13 +2061,13 @@ public class GameManager implements Listener {
                     || tm.getWins(team) > 0;
             if (active) {
                 String teamName = Messages.get("team." + team.name().toLowerCase());
-                list.add(team.getColor() + teamName + BOX_W + ": " + (int) tm.getWins(team));
+                list.add(team.getColor() + "\u2502 " + team.getColor() + teamName + BOX_W + ": " + (int) tm.getWins(team));
             }
         }
         if (list.isEmpty()) {
             for (GameTeam team : new GameTeam[]{GameTeam.BLUE, GameTeam.RED}) {
                 String teamName = Messages.get("team." + team.name().toLowerCase());
-                list.add(team.getColor() + teamName + BOX_W + ": " + (int) tm.getWins(team));
+                list.add(team.getColor() + "\u2502 " + team.getColor() + teamName + BOX_W + ": " + (int) tm.getWins(team));
             }
         }
         return list;

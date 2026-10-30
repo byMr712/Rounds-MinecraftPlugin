@@ -139,7 +139,7 @@ name: FrostBiteAddon
 main: com.example.frostbite.FrostBiteAddon
 version: 1.0.0
 api-version: '1.20'
-depend: [Rounds]
+depend: [RoundsPlugin]
 ```
 
 #### Step 2. Create and Register the Card in Java Code
@@ -156,6 +156,7 @@ import com.rounds.api.card.CardRole; // Tactical role of the card (OFFENSIVE, DE
 import org.bukkit.Material; // Enum of Minecraft materials for the card icon item
 import org.bukkit.Particle; // Enum of Minecraft visual particles for special effects
 import org.bukkit.Sound; // Enum of vanilla Minecraft sound effects
+import org.bukkit.SoundCategory; // Sound category enum for records/noteblocks
 import org.bukkit.entity.LivingEntity; // LivingEntity interface for safe target casting
 import org.bukkit.plugin.java.JavaPlugin; // Base class for creating Paper/Spigot plugins
 
@@ -180,7 +181,7 @@ public final class FrostBiteAddon extends JavaPlugin { // Main addon plugin clas
             .role(CardRole.OFFENSIVE) // Offensive card role for bot AI tactical prioritization
             .onBulletHit(event -> { // Combat event callback when a bullet hits an entity
                 event.setDamage(event.getDamage() + 2.0); // Increase bullet damage by +2 HP (1 heart)
-                if (event.getHitEntity() instanceof LivingEntity target) { // Check that hit target is a living entity
+                if (event.getHitEntity().orElse(null) instanceof LivingEntity target) { // Check that hit target is a living entity
                     target.setFreezeTicks(140); // Apply powder snow freeze effect for 7 seconds
                 } // End of living target check
                 var loc = event.getHitLocation(); // Get 3D hit coordinates in the world

@@ -1,0 +1,6 @@
+name: SampleRoundsAddon
+version: 1.0.0
+main: com.rounds.addon.SampleAddon
+api-version: '1.20'
+depend: [RoundsPlugin]
+description: Sample addon for RoundsPlugin demonstrating RoundsAPI integration

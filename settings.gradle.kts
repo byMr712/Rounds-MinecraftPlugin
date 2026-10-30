@@ -1,6 +1,7 @@
 rootProject.name = "RoundsPlugin"
 include("rounds-api")
 include("rounds-core")
+include("sample-addon")
 
 val nmsModules = listOf(
     "rounds-nms1204",

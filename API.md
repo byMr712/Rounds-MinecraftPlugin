@@ -85,9 +85,9 @@ name: MyRoundsAddon
 main: com.example.myrdaddon.MyRoundsAddon
 version: 1.0.0
 api-version: '1.20'
-depend: [Rounds]        # Если аддон не имеет смысла без Rounds
+depend: [RoundsPlugin]        # Если аддон не имеет смысла без RoundsPlugin
 # или
-softdepend: [Rounds]   # Если аддон опционально интегрируется с Rounds
+softdepend: [RoundsPlugin]   # Если аддон опционально интегрируется с RoundsPlugin
 ```
 
 ## Точка входа

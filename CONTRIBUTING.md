@@ -139,7 +139,7 @@ name: FrostBiteAddon
 main: com.example.frostbite.FrostBiteAddon
 version: 1.0.0
 api-version: '1.20'
-depend: [Rounds]
+depend: [RoundsPlugin]
 ```
 
 #### Шаг 2. Создание и регистрация карты в Java-коде
@@ -156,6 +156,7 @@ import com.rounds.api.card.CardRole; // Тактическая роль карт
 import org.bukkit.Material; // Перечисление материалов Minecraft для иконки карточки
 import org.bukkit.Particle; // Перечисление визуальных частиц Minecraft для спецэффектов
 import org.bukkit.Sound; // Перечисление ванильных звуковых эффектов Minecraft
+import org.bukkit.SoundCategory; // Категория звуковых эффектов
 import org.bukkit.entity.LivingEntity; // Интерфейс живого существа для безопасного каста цели
 import org.bukkit.plugin.java.JavaPlugin; // Базовый класс для создания плагинов платформы Paper/Spigot
 
@@ -180,7 +181,7 @@ public final class FrostBiteAddon extends JavaPlugin { // Главный кла�
             .role(CardRole.OFFENSIVE) // Роль атакующей карты для приоритизации боевыми ботами-ИИ
             .onBulletHit(event -> { // Обработчик события попадания пули во вражескую сущность
                 event.setDamage(event.getDamage() + 2.0); // Увеличение урона пули на +2 единицы (1 сердце)
-                if (event.getHitEntity() instanceof LivingEntity target) { // Проверка, что цель является живой
+                if (event.getHitEntity().orElse(null) instanceof LivingEntity target) { // Проверка, что цель является живой
                     target.setFreezeTicks(140); // Наложение эффекта заморозки рыхлого снега на 7 секунд
                 } // Закрытие условия проверки живой цели
                 var loc = event.getHitLocation(); // Координаты трехмерной точки соприкосновения пули

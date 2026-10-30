@@ -85,9 +85,9 @@ name: MyRoundsAddon
 main: com.example.myrdaddon.MyRoundsAddon
 version: 1.0.0
 api-version: '1.20'
-depend: [Rounds]        # Required dependency
+depend: [RoundsPlugin]        # Required dependency
 # or
-softdepend: [Rounds]   # Optional integration
+softdepend: [RoundsPlugin]   # Optional integration
 ```
 
 ## Entry Point

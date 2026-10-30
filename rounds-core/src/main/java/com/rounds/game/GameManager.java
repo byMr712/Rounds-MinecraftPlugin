@@ -2111,8 +2111,8 @@ public class GameManager implements Listener {
 
         if ((state == GameState.PLAYING || state == GameState.ROUND_END) && deadPlayers.contains(player.getUniqueId())) {
             Location specSpawn = (currentZoneCenter != null && currentZoneCenter.getWorld() != null)
-                    ? currentZoneCenter.clone().add(0, 40.0, 0)
-                    : player.getWorld().getSpawnLocation().clone().add(0, 40.0, 0);
+                    ? currentZoneCenter.clone().add(0, 20.0, 0)
+                    : player.getWorld().getSpawnLocation().clone().add(0, 20.0, 0);
             specSpawn.setYaw(player.getLocation().getYaw());
             specSpawn.setPitch(90.0f);
             event.setRespawnLocation(specSpawn);
@@ -2142,7 +2142,7 @@ public class GameManager implements Listener {
                 if (target != null) {
                     player.teleport(target.getLocation());
                 } else if (currentZoneCenter != null && currentZoneCenter.getWorld() != null) {
-                    Location specSpawn = currentZoneCenter.clone().add(0, 40.0, 0);
+                    Location specSpawn = currentZoneCenter.clone().add(0, 20.0, 0);
                     specSpawn.setPitch(90.0f);
                     player.teleport(specSpawn);
                 }

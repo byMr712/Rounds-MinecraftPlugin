@@ -1590,6 +1590,8 @@ public class GameManager implements Listener {
         state = GameState.GAME_END;
         saveState();
         stopGameTick();
+        hideAutoDeathBossBar();
+        com.rounds.hud.HudEngineHook.hideAll();
         cleanupRoundCombatState();
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
@@ -1633,6 +1635,7 @@ public class GameManager implements Listener {
         scheduleDelayed(() -> {
             state = GameState.WAITING;
             gameActive = false;
+            hideAutoDeathBossBar();
             com.rounds.hud.HudEngineHook.hideAll();
             clearAllSpectatorGlow();
             saveState();
@@ -2516,6 +2519,7 @@ public class GameManager implements Listener {
         chameleonStillTicks.clear();
         com.rounds.listener.LegendaryEffects.resetAll();
         state = GameState.WAITING;
+        hideAutoDeathBossBar();
         com.rounds.hud.HudEngineHook.hideAll();
         clearAllSpectatorGlow();
         if (plugin.getCustomDataManager() != null) {

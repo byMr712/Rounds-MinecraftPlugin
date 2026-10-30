@@ -67,6 +67,7 @@ public class LegendaryEffects implements Listener {
 
     private static final Map<UUID, List<DecaySlice>> decaySlices = new ConcurrentHashMap<>();
     private static final Set<UUID> isApplyingDecay = ConcurrentHashMap.newKeySet();
+    public static final Set<UUID> isExecuting = ConcurrentHashMap.newKeySet();
 
     public static void clearDecay(UUID uuid) {
         decaySlices.remove(uuid);
@@ -132,6 +133,7 @@ public class LegendaryEffects implements Listener {
     public static void clearRoundState() {
         decaySlices.clear();
         isApplyingDecay.clear();
+        isExecuting.clear();
         secondWindUses.clear();
         skyfallCooldowns.clear();
         fallPeakY.clear();
@@ -145,6 +147,7 @@ public class LegendaryEffects implements Listener {
     public static void resetAll() {
         decaySlices.clear();
         isApplyingDecay.clear();
+        isExecuting.clear();
         rageUntil.clear();
         secondWindUses.clear();
         fallPeakY.clear();
@@ -167,6 +170,7 @@ public class LegendaryEffects implements Listener {
         recallCooldowns.remove(uuid);
         bulletTimeUsedThisRound.remove(uuid);
         lastRazorwire.remove(uuid);
+        isExecuting.remove(uuid);
     }
 
     public static Long getRecallCooldown(UUID uuid) {
@@ -209,6 +213,10 @@ public class LegendaryEffects implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onDamage(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Player player)) return;
+
+        if (isExecuting.contains(player.getUniqueId())) {
+            return;
+        }
 
         boolean isDecayTick = isApplyingDecay.contains(player.getUniqueId());
 

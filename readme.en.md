@@ -934,7 +934,7 @@ Comprehensive guide for creating cards via YAML with `cards.schema.json` and con
 Ready plugins - one per server version - are placed in `rounds-nms/*/build/libs/`:
 
 ```
-RoundsPlugin-<server-version>-v1.9-byMr712.jar
+RoundsPlugin-<server-version>-v2.0-byMr712.jar
 ```
 
 - Range: every stable release **1.20.4 - 26.3**.

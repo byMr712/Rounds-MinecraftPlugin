@@ -398,8 +398,9 @@ public class RoundsEntities implements Listener {
                         return;
                     }
                     nearest.setNoDamageTicks(0);
-                    if (shouldExecute(shooterData, nearest)) {
-                        executeTarget(nearest);
+                    if (shouldExecute(shooterData, nearest, finalDamage)) {
+                        Player shooter = Bukkit.getPlayer(b.ownerId);
+                        executeTarget(nearest, (shooter != null && shooter.isOnline()) ? shooter : null);
                     } else {
                         if (nearest instanceof Player victim) {
                             PlayerData victimData = plugin.getPlayerDataManager().getData(victim.getUniqueId());
@@ -631,8 +632,9 @@ public class RoundsEntities implements Listener {
                 return;
             }
             hitEnt.setNoDamageTicks(0);
-            if (shouldExecute(shooterData, hitEnt)) {
-                executeTarget(hitEnt);
+            if (shouldExecute(shooterData, hitEnt, finalDmg)) {
+                Player shooter = Bukkit.getPlayer(b.ownerId);
+                executeTarget(hitEnt, (shooter != null && shooter.isOnline()) ? shooter : null);
             } else {
                 if (hitEnt instanceof Player victim) {
                     PlayerData victimData = plugin.getPlayerDataManager().getData(victim.getUniqueId());
@@ -873,19 +875,48 @@ public class RoundsEntities implements Listener {
         return dmg;
     }
 
-    private static boolean shouldExecute(PlayerData shooter, LivingEntity target) {
+    private static boolean shouldExecute(PlayerData shooter, LivingEntity target, double damage) {
         if (shooter == null) return false;
         if (!(target instanceof Player tp)) return false;
         if (tp.getMaxHealth() <= 0) return false;
-        double ratio = tp.getHealth() / tp.getMaxHealth();
-        if (shooter.chikibamboni > 0 && ratio < Math.min(0.15 * shooter.chikibamboni, 0.5)) return true;
-        if (shooter.executioner > 0 && ratio < 0.2 && Math.random() < 0.01 * shooter.executioner) return true;
+        double maxHp = tp.getMaxHealth();
+        double currentRatio = tp.getHealth() / maxHp;
+        double threshold = Math.min(0.15 * Math.max(shooter.chikibamboni, 1.0), 0.5) + 1e-4;
+        if (shooter.chikibamboni > 0) {
+            if (currentRatio <= threshold || ((tp.getHealth() - damage) / maxHp) <= threshold) {
+                return true;
+            }
+        }
+        if (shooter.executioner > 0 && currentRatio < 0.2 && Math.random() < 0.01 * shooter.executioner) {
+            return true;
+        }
         return false;
     }
 
-    private static void executeTarget(LivingEntity target) {
+    private static void executeTarget(LivingEntity target, Player shooter) {
         target.setNoDamageTicks(0);
-        target.damage(Math.max(target.getHealth(), 1) * 100.0);
+        if (target instanceof Player victim) {
+            com.rounds.listener.LegendaryEffects.clearDecay(victim.getUniqueId());
+            com.rounds.listener.LegendaryEffects.isExecuting.add(victim.getUniqueId());
+            if (shooter != null) {
+                com.rounds.stats.MatchStatsManager.recordLastDamager(victim.getUniqueId(), shooter.getUniqueId());
+            }
+        }
+        try {
+            double lethal = Math.max(target.getHealth(), 1.0) * 100.0;
+            if (shooter != null && shooter.isOnline()) {
+                applyDirectDamage(target, lethal, shooter);
+            } else {
+                applyDirectDamage(target, lethal, null);
+            }
+            if (!target.isDead() && target.getHealth() > 0.0) {
+                target.setHealth(0.0);
+            }
+        } finally {
+            if (target instanceof Player victim) {
+                com.rounds.listener.LegendaryEffects.isExecuting.remove(victim.getUniqueId());
+            }
+        }
         target.getWorld().playSound(target.getLocation(), Sound.ENTITY_WITHER_SPAWN, SoundCategory.RECORDS, 0.7f, 1.8f);
     }
 

@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.rounds"
-version = "1.9"
+version = "2.0"
 
 repositories {
     mavenCentral()
@@ -48,7 +48,7 @@ tasks.named<org.gradle.api.tasks.bundling.Jar>("jar") {
 tasks.register<org.gradle.api.tasks.bundling.Zip>("pluginJar") {
     dependsOn(reobfJar)
     destinationDirectory.set(layout.buildDirectory.dir("libs"))
-    archiveFileName.set("RoundsPlugin-1.20.4-v1.9-byMr712.jar")
+    archiveFileName.set("RoundsPlugin-1.20.4-v2.0-byMr712.jar")
     from(project(":rounds-api").sourceSets["main"].output)
     from(project(":rounds-core").sourceSets["main"].output)
     from(zipTree(reobfJar.map { it.outputJar.get().asFile }))

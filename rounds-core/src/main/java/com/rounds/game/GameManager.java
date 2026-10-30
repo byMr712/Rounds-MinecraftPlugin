@@ -1212,9 +1212,14 @@ public class GameManager implements Listener {
                 if (plugin.getRoundMusicManager() != null && plugin.getRoundMusicManager().isPlaying()) {
                     plugin.getRoundMusicManager().playTrackForPlayer(p, plugin.getRoundMusicManager().getCurrentTrack());
                 }
-                if (!isAdmin(p)) {
-                    sendJoinPrompt(p);
-                }
+                UUID pUuid = p.getUniqueId();
+                scheduleDelayed(() -> {
+                    Player target = Bukkit.getPlayer(pUuid);
+                    if (target != null && target.isOnline() && isGameStarted()
+                            && plugin.getTeamManager().getPlayerTeam(pUuid) == null) {
+                        sendJoinPrompt(target);
+                    }
+                }, 200L);
             }
         }
         clearAllSpectatorGlow();
@@ -2147,13 +2152,17 @@ public class GameManager implements Listener {
         if (player.hasMetadata("NPC")) return;
         if (plugin.getBotManager() != null && plugin.getBotManager().isBot(player)) return;
 
-        if (isAdmin(player)) {
-            sendAdminPrompt(player);
-        } else if (isGameStarted() && plugin.getTeamManager().getPlayerTeam(player.getUniqueId()) == null) {
-            sendJoinPrompt(player);
-        }
-        if (!isGameStarted() && com.rounds.stats.MatchStatsManager.hasLastMatchStats()) {
-            sendClickableStatsPrompt(player);
+        if (isGameStarted()) {
+            if (plugin.getTeamManager().getPlayerTeam(player.getUniqueId()) == null) {
+                sendJoinPrompt(player);
+            }
+        } else {
+            if (isAdmin(player)) {
+                sendAdminPrompt(player);
+            }
+            if (com.rounds.stats.MatchStatsManager.hasLastMatchStats()) {
+                sendClickableStatsPrompt(player);
+            }
         }
     }
 

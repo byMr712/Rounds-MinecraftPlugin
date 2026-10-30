@@ -146,4 +146,35 @@ class DecayEchoTest {
         org.mockito.Mockito.verify(mockTarget).setNoDamageTicks(0);
         org.mockito.Mockito.verify(mockTarget).damage(10.0, mockDamager);
     }
+
+    @Test
+    void testChikibamboniYamlAndExecutionLifecycle() {
+        InputStream is = getClass().getResourceAsStream("/cards/original/chikibamboni.yml");
+        assertNotNull(is, "chikibamboni.yml must exist in resources");
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(new InputStreamReader(is, StandardCharsets.UTF_8));
+        assertEquals(91, yaml.getInt("id"));
+        assertTrue(yaml.getBoolean("enabled"));
+
+        List<Map<?, ?>> variations = yaml.getMapList("variations");
+        assertEquals(1, variations.size());
+        Map<?, ?> v = variations.get(0);
+        assertEquals("LEGENDARY", v.get("rarity"));
+        Map<?, ?> effects = (Map<?, ?>) v.get("effects");
+        assertNotNull(effects);
+        assertEquals(1, ((Number) effects.get("chikibamboni")).intValue());
+
+        PlayerData pd = new PlayerData();
+        assertEquals(0.0, pd.chikibamboni, 0.001);
+        pd.chikibamboni = 1.0;
+        assertEquals(1.0, pd.chikibamboni, 0.001);
+        pd.resetStats();
+        assertEquals(0.0, pd.chikibamboni, 0.001);
+
+        java.util.UUID testId = java.util.UUID.randomUUID();
+        assertFalse(com.rounds.listener.LegendaryEffects.isExecuting.contains(testId));
+        com.rounds.listener.LegendaryEffects.isExecuting.add(testId);
+        assertTrue(com.rounds.listener.LegendaryEffects.isExecuting.contains(testId));
+        com.rounds.listener.LegendaryEffects.clearRoundState();
+        assertFalse(com.rounds.listener.LegendaryEffects.isExecuting.contains(testId));
+    }
 }

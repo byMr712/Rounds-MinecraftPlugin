@@ -1,0 +1,24 @@
+frame_red:
+  file: frame_red.png
+  setting:
+    scale: 1
+
+frame_green:
+  file: frame_green.png
+  setting:
+    scale: 1
+
+frame_yellow:
+  file: frame_yellow.png
+  setting:
+    scale: 1
+
+frame_blue:
+  file: frame_blue.png
+  setting:
+    scale: 1
+
+frame_empty:
+  file: frame_empty.png
+  setting:
+    scale: 1

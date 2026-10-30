@@ -1,0 +1,6 @@
+rounds_score:
+  layouts:
+    1:
+      name: rounds_score
+      x: 2
+      y: 4

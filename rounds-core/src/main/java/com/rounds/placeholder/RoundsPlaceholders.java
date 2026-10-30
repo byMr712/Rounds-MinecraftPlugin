@@ -169,6 +169,24 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
         if (params.equalsIgnoreCase("round")) {
             return String.valueOf((int) gm.getCurrentRound());
         }
+        if (params.equalsIgnoreCase("active")) {
+            return (gm != null && gm.isGameActive()) ? "1" : "0";
+        }
+        if (params.startsWith("slot_") && params.endsWith("_active")) {
+            try {
+                int slot = Integer.parseInt(params.substring(5, params.length() - 7));
+                return (gm != null && gm.isGameActive() && slot <= gm.getRounds()) ? "1" : "0";
+            } catch (NumberFormatException ignored) {}
+        }
+        for (GameTeam team : GameTeam.values()) {
+            String pfx = team.name().toLowerCase() + "_win_";
+            if (params.startsWith(pfx)) {
+                try {
+                    int slot = Integer.parseInt(params.substring(pfx.length()));
+                    return (gm != null && gm.isGameActive() && tm != null && slot <= gm.getRounds() && slot <= tm.getWins(team)) ? "1" : "0";
+                } catch (NumberFormatException ignored) {}
+            }
+        }
         if (params.equalsIgnoreCase("rounds_to_win")) {
             return String.valueOf((int) gm.getRounds());
         }

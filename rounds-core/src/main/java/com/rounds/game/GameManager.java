@@ -348,6 +348,7 @@ public class GameManager implements Listener {
         cardDraftDurationMs = limitSec * 1000L;
         startGameTick();
         currentRound = 0;
+        com.rounds.hud.HudEngineCustomRealisation.refresh();
         updateMatchBossBar(cardDraftStartTime);
 
         pickRandomZoneAndAssignSpawns();
@@ -1072,7 +1073,7 @@ public class GameManager implements Listener {
     private void startRound() {
         currentRound++;
         state = GameState.PLAYING;
-        com.rounds.hud.HudEngineCustomRealisation.showAll();
+        com.rounds.hud.HudEngineCustomRealisation.refresh();
         deadPlayers.clear();
         pendingCardJoiners.clear();
         returningJoiners.clear();
@@ -1399,7 +1400,7 @@ public class GameManager implements Listener {
             }
         } catch (Throwable ignored) {}
         plugin.getTeamManager().addWin(winner);
-        com.rounds.hud.HudEngineCustomRealisation.update();
+        com.rounds.hud.HudEngineCustomRealisation.refresh();
         state = GameState.ROUND_END;
         losingTeams.clear();
         saveState();
@@ -1551,6 +1552,7 @@ public class GameManager implements Listener {
         losingTeams.clear();
         saveState();
         cleanupRoundCombatState();
+        com.rounds.hud.HudEngineCustomRealisation.refresh();
         broadcastBox(
             ChatColor.YELLOW + "\u2502 " + Messages.get("game.draw-title", Messages.get("game.draw")),
             null,
@@ -1619,6 +1621,7 @@ public class GameManager implements Listener {
         stopGameTick();
         hideAutoDeathBossBar();
         com.rounds.hud.HudEngineCustomRealisation.hideAll();
+        com.rounds.hud.HudEngineCustomRealisation.refresh();
         cleanupRoundCombatState();
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
@@ -2053,9 +2056,7 @@ public class GameManager implements Listener {
         List<String> list = new ArrayList<>();
         TeamManager tm = plugin.getTeamManager();
         for (GameTeam team : GameTeam.values()) {
-            boolean active = tm.getPlayerCount(team) > 0
-                    || !tm.getTeamPlayers(team).isEmpty()
-                    || tm.getWins(team) > 0;
+            boolean active = tm.getPlayerCount(team) > 0;
             if (active) {
                 String teamName = Messages.get("team." + team.name().toLowerCase());
                 list.add(team.getColor() + "\u2502 " + team.getColor() + teamName + BOX_W + ": " + (int) tm.getWins(team));

@@ -128,6 +128,19 @@ public final class HudEngineCustomRealisation implements Listener {
         update();
     }
 
+    public static void refresh() {
+        lastActive = false;
+        lastRounds = -1;
+        lastActiveTeams = Collections.emptyList();
+        lastWins = Collections.emptyList();
+        if (plugin != null && plugin.getGameManager() != null && plugin.getGameManager().isGameActive()) {
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                setHudVisible(p, true);
+            }
+        }
+        update();
+    }
+
     public static void hideAll() {
         for (Player p : Bukkit.getOnlinePlayers()) {
             setHudVisible(p, false);
@@ -174,7 +187,7 @@ public final class HudEngineCustomRealisation implements Listener {
         List<GameTeam> active = new ArrayList<>();
         if (tm == null) return active;
         for (GameTeam team : TEAM_ORDER) {
-            if (tm.getPlayerCount(team) > 0 || !tm.getTeamPlayers(team).isEmpty() || tm.getWins(team) > 0) {
+            if (tm.getPlayerCount(team) > 0) {
                 active.add(team);
             }
         }

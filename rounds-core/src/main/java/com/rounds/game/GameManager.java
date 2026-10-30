@@ -123,6 +123,8 @@ public class GameManager implements Listener {
     private boolean autoDeathInitialPhase = true;
     private long autoDeathPhaseDurationMs = 180000L;
     private BossBar autoDeathBossBar = null;
+    private long cardDraftStartTime = 0L;
+    private long cardDraftDurationMs = 30000L;
     private static final long AUTO_DEATH_DELAY_MS = 240_000L;
     private static final long AUTO_DEATH_INTERVAL_MS = 60_000L;
 

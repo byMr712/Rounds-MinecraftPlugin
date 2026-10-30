@@ -1,4 +1,4 @@
-# Rounds Plugin - Language Pack: RU_ru
+﻿# Rounds Plugin - Language Pack: RU_ru
 # Имя файла без .txt = id языка для /rdebug setlanguage.
 # Новый язык = новый файл <Идентификатор>.txt рядом с этими (или в plugins/<Plugin>/lang/), затем /rdebug reload.
 # Плейсхолдеры: {0}, {1}, {2}...
@@ -44,6 +44,9 @@ game:
   auto-death-warning: "Если вы будете продолжать выживать, то через 1 минуту будет уничтожен случайный игрок."
   # Сообщение после убийства случайного игрока ({0} - ник жертвы)
   auto-death-killed: "Случайный игрок ({0}) был уничтожен. Если вы будете продолжать выживать, то через 1 минуту будет уничтожен следующий."
+  bossbar-cards: "Выбор карт"
+  bossbar-round-end: "Конец раунда"
+  bossbar-countdown: "Старт матча..."
   bossbar-auto-death: "До случайной смерти осталось"
   enemy-picking-cards: "Противник\nвыбирает карты"
   auto-stop-single: "Игра была завершена, так как остался один игрок"

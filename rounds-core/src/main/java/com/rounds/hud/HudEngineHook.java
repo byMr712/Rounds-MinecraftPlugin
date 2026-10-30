@@ -165,6 +165,10 @@ public final class HudEngineHook implements Listener {
                     config.set("boss-bar-color", "pink");
                     deployed = true;
                 }
+                if (config.getInt("boss-bar-line", 1) != 2) {
+                    config.set("boss-bar-line", 2);
+                    deployed = true;
+                }
                 if (deployed) {
                     config.save(configFile);
                 }

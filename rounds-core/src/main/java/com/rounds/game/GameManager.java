@@ -932,7 +932,10 @@ public class GameManager implements Listener {
             }
         }
 
-        if (Math.abs(progress - autoDeathBossBar.getProgress()) > 0.005) {
+        double curProg = autoDeathBossBar.getProgress();
+        if ((progress <= 0.0 && curProg > 0.0)
+                || (progress >= 1.0 && curProg < 1.0)
+                || Math.abs(progress - curProg) > 0.005) {
             autoDeathBossBar.setProgress(progress);
         }
         autoDeathBossBar.setVisible(true);

@@ -404,7 +404,7 @@ public class RoundsEntities implements Listener {
                         }
                         if (!nearest.isInvulnerable() && nearest.getHealth() >= hpBefore && finalDamage > 0.0 && !nearest.isDead()) {
                             if (nearest instanceof Player p && com.rounds.listener.LegendaryEffects.hasDecay(p.getUniqueId())) {
-                                com.rounds.listener.LegendaryEffects.addDecayDamage(p, finalDamage, b.ownerId);
+                                // Handled by LegendaryEffects.onDamage: damage converted to damage-over-time
                             } else {
                                 safeSetHealth(nearest, hpBefore - finalDamage);
                             }
@@ -641,7 +641,7 @@ public class RoundsEntities implements Listener {
                 }
                 if (!hitEnt.isInvulnerable() && hitEnt.getHealth() >= hpBefore && finalDmg > 0.0 && !hitEnt.isDead()) {
                     if (hitEnt instanceof Player victim && com.rounds.listener.LegendaryEffects.hasDecay(victim.getUniqueId())) {
-                        try { com.rounds.listener.LegendaryEffects.addDecayDamage(victim, finalDmg, b.ownerId); } catch (Throwable ignored) {}
+                        // Handled by LegendaryEffects.onDamage: damage converted to damage-over-time
                     } else {
                         safeSetHealth(hitEnt, hpBefore - finalDmg);
                     }

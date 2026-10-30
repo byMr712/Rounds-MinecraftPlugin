@@ -408,7 +408,11 @@ public class LegendaryEffects implements Listener {
                     entity.setNoDamageTicks(0);
                     entity.damage(maxDmg);
                     if (!entity.isInvulnerable() && entity.getHealth() >= hpBefore && maxDmg > 0.0 && !entity.isDead()) {
-                        com.rounds.entity.RoundsEntities.safeSetHealth(entity, hpBefore - maxDmg);
+                        if (entity instanceof Player p && hasDecay(p.getUniqueId())) {
+                            // Handled by onDamage: damage converted to damage-over-time
+                        } else {
+                            com.rounds.entity.RoundsEntities.safeSetHealth(entity, hpBefore - maxDmg);
+                        }
                     }
                     com.rounds.stats.MatchStatsManager.recordDamageDealt(player.getUniqueId(), entity.getUniqueId(), maxDmg);
                     com.rounds.stats.MatchStatsManager.recordLastDamager(entity.getUniqueId(), player.getUniqueId());
@@ -679,7 +683,11 @@ public class LegendaryEffects implements Listener {
                     target.setNoDamageTicks(0);
                     target.damage(shardDamage, player);
                     if (!target.isInvulnerable() && target.getHealth() >= hpBefore && shardDamage > 0.0 && !target.isDead()) {
-                        com.rounds.entity.RoundsEntities.safeSetHealth(target, hpBefore - shardDamage);
+                        if (hasDecay(target.getUniqueId())) {
+                            // Handled by onDamage: damage converted to damage-over-time
+                        } else {
+                            com.rounds.entity.RoundsEntities.safeSetHealth(target, hpBefore - shardDamage);
+                        }
                     }
                     target.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, tEye, 3, 0.2, 0.2, 0.2, 0.05);
                     target.getWorld().playSound(target.getLocation(), Sound.ENTITY_PLAYER_HURT, SoundCategory.RECORDS, 0.7f, 1.2f);

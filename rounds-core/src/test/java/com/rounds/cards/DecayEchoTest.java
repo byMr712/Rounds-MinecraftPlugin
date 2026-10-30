@@ -1,5 +1,6 @@
 package com.rounds.cards;
 
+import com.rounds.listener.DecaySlice;
 import com.rounds.player.PlayerData;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,27 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 class DecayEchoTest {
+
+    @Test
+    void testDecaySliceCalculation() {
+        // Jump block damage: 20% of 20 HP = 4.0 damage
+        double totalDamage = 4.0;
+        int[] durations = {3, 4, 5, 6};
+
+        for (int seconds : durations) {
+            DecaySlice slice = new DecaySlice(totalDamage, seconds, null);
+            assertEquals(seconds, slice.secondsRemaining);
+            assertEquals(20, slice.ticksUntilNextSecond);
+            assertEquals(totalDamage / seconds, slice.damagePerSecond, 0.0001);
+
+            double accumulatedDamage = 0.0;
+            for (int s = 0; s < seconds; s++) {
+                accumulatedDamage += slice.damagePerSecond;
+            }
+            assertEquals(totalDamage, accumulatedDamage, 0.0001,
+                    "Total damage distributed over " + seconds + "s must equal original incoming damage");
+        }
+    }
 
     @Test
     void testPlayerDataStats() {

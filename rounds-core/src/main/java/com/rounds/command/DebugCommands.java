@@ -84,6 +84,11 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         sender.sendMessage(B + "\u2560\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
     }
 
+    private void boxAttachedHeader(CommandSender sender, String title) {
+        sender.sendMessage(B + "\u2551 " + BOLD + RESET + B + "\u2502 " + BOLD + title);
+        sender.sendMessage(B + "\u2560\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
+    }
+
     private void boxLine(CommandSender sender, String text) {
         sender.sendMessage(B + "\u2551 " + RESET + text);
     }
@@ -1125,7 +1130,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             return;
         }
 
-        boxHeader(sender, Messages.get("debug.statsend-title", stats.playerName));
+        boxAttachedHeader(sender, Messages.get("debug.statsend-title", stats.playerName));
         boxKv(sender, Messages.get("debug.stat-cards-count"), String.valueOf(stats.cardsCount));
         boxKv(sender, Messages.get("debug.stat-kills"), String.valueOf(stats.kills));
         boxKv(sender, Messages.get("debug.stat-deaths"), String.valueOf(stats.deaths));

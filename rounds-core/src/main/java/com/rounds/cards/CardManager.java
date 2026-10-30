@@ -14,6 +14,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -181,17 +182,7 @@ public class CardManager {
         boolean revealed = grantChainedCards(player, data, card);
 
         if (!revealed) {
-            String lang = Messages.getLanguageCode();
-            ChatColor teamColor = (team != null) ? team.getColor() : ChatColor.YELLOW;
-            String cardName = stripAllColors(card.getName(lang));
-            String cardDesc = stripAllColors(card.getDescription(lang));
-            String playerText = teamColor + player.getName() + "\u00A7f";
-            String rawMsg = Messages.get("card.picked", playerText, cardName, cardDesc);
-            if (plugin.getGameManager() != null) {
-                plugin.getGameManager().broadcastAttachedBox(rawMsg);
-            } else {
-                plugin.getServer().broadcastMessage(rawMsg);
-            }
+            broadcastCardPicked(player, team, card);
         }
 
         if (allPicksDone()) {
@@ -317,19 +308,46 @@ public class CardManager {
                 bonus.apply(player, data);
                 data.setCard(bonus.getId(), true);
                 syncPlayerHP(player, data);
-                String cardName = stripAllColors(bonus.getName(lang));
-                String cardDesc = stripAllColors(bonus.getDescription(lang));
-                String playerText = teamColor + player.getName() + "\u00A7f";
-                String rawMsg = Messages.get("card.picked", playerText, cardName, cardDesc);
-                if (plugin.getGameManager() != null) {
-                    plugin.getGameManager().broadcastAttachedBox(rawMsg);
-                } else {
-                    plugin.getServer().broadcastMessage(rawMsg);
-                }
+                broadcastCardPicked(player, team, bonus);
                 revealedAny = true;
             }
         }
         return revealedAny;
+    }
+
+    private void broadcastCardPicked(Player player, GameTeam team, Card card) {
+        String lang = Messages.getLanguageCode();
+        ChatColor teamColor = (team != null) ? team.getColor() : ChatColor.YELLOW;
+        String cardName = stripAllColors(card.getName(lang));
+        String cardDesc = stripAllColors(card.getDescription(lang));
+        String playerText = teamColor + player.getName() + "\u00A7f";
+        String rawHeader = Messages.get("card.picked", playerText, cardName, "");
+        String header = rawHeader.replace(": {2}", ":").replace(" {2}", "").replace("{2}", "").trim();
+
+        List<String> boxLines = new ArrayList<>();
+        boxLines.add(header);
+
+        if (cardDesc != null && !cardDesc.trim().isEmpty()) {
+            List<String> wrapped = Card.wrapText(cardDesc, 45);
+            if (wrapped.isEmpty()) {
+                boxLines.add("\u00A7f" + cardDesc.trim());
+            } else {
+                for (String w : wrapped) {
+                    String clean = stripAllColors(w).trim();
+                    if (!clean.isEmpty()) {
+                        boxLines.add("\u00A7f" + clean);
+                    }
+                }
+            }
+        }
+
+        if (plugin.getGameManager() != null) {
+            plugin.getGameManager().broadcastAttachedBox(boxLines);
+        } else {
+            for (String l : boxLines) {
+                plugin.getServer().broadcastMessage(l);
+            }
+        }
     }
 
     private static String stripAllColors(String text) {

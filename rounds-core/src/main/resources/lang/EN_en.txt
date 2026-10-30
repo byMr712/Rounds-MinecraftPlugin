@@ -116,7 +116,7 @@ card:
   timeout-kick: "You did not choose an upgrade card in {0} seconds"
   click-to-select: "Click to select"
   applied: "Applied card: {0}"
-  picked: "{0} picks card — {1}: {2}"
+  picked: "{0} picks card — {1}:"
   bonus-received: "&6You also received: {0}"
 
   show-prev: "← Previous page ({0}/{1})"
@@ -364,6 +364,9 @@ debug:
   statsend-no-game: "No completed games yet!"
   statsend-player-not-found: "Player {0} did not participate in the last game"
   statsend-notice: "You can view your last game stats using /rdebug statsend"
+  statsend-prompt-header: "To view your game statistics:"
+  statsend-click: "§a§l>> Click here <<"
+  statsend-hover: "§7Click to view your game statistics"
   stat-cards-count: "Cards Count"
   stat-kills: "Kills"
   stat-deaths: "Deaths"

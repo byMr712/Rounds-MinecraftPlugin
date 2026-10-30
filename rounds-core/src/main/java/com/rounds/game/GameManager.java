@@ -1404,6 +1404,13 @@ public class GameManager implements Listener {
             }
         }
 
+        for (GameTeam team : GameTeam.values()) {
+            if (plugin.getTeamManager().getWins(team) >= roundsToWin) {
+                endGame(team);
+                return;
+            }
+        }
+
         String teamName = Messages.get("team." + winner.name().toLowerCase());
         broadcastBox(
             teamName + " " + Messages.get("game.round-won"),
@@ -1426,13 +1433,6 @@ public class GameManager implements Listener {
                 }
                 p.sendTitle(specTitle, "", 10, 60, 20);
                 p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 0.7f, 1.0f);
-            }
-        }
-
-        for (GameTeam team : GameTeam.values()) {
-            if (plugin.getTeamManager().getWins(team) >= roundsToWin) {
-                endGame(team);
-                return;
             }
         }
 
@@ -1567,10 +1567,7 @@ public class GameManager implements Listener {
         );
 
         scheduleDelayed(() -> {
-            String notice = Messages.get("debug.statsend-notice");
-            if (notice != null && !notice.isEmpty()) {
-                plugin.getServer().broadcastMessage(ChatColor.GOLD + notice);
-            }
+            sendClickableStatsPrompt();
         }, 60L);
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
@@ -1898,14 +1895,46 @@ public class GameManager implements Listener {
         plugin.getServer().broadcastMessage(BOX_BOT);
     }
 
-    public void broadcastAttachedBox(String... lines) {
-        if (lines == null || lines.length == 0) return;
+    public void broadcastAttachedBox(List<String> lines) {
+        if (lines == null || lines.isEmpty()) return;
         for (String line : lines) {
             if (line != null && !line.isEmpty()) {
-                plugin.getServer().broadcastMessage(BOX_MID + BOX_W + "\u2502 " + BOX_W + line);
+                plugin.getServer().broadcastMessage(BOX_MID + line);
             }
         }
         plugin.getServer().broadcastMessage(BOX_BOT);
+    }
+
+    public void broadcastAttachedBox(String... lines) {
+        if (lines == null || lines.length == 0) return;
+        broadcastAttachedBox(Arrays.asList(lines));
+    }
+
+    public void sendClickableStatsPrompt() {
+        String header = Messages.get("debug.statsend-prompt-header");
+        String clickText = Messages.get("debug.statsend-click");
+        String hoverText = Messages.get("debug.statsend-hover");
+
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            p.sendMessage(BOX_MID + BOX_W + header);
+
+            net.md_5.bungee.api.chat.TextComponent midComp = new net.md_5.bungee.api.chat.TextComponent(BOX_MID);
+            net.md_5.bungee.api.chat.BaseComponent[] extras = net.md_5.bungee.api.chat.TextComponent.fromLegacyText(clickText);
+            for (net.md_5.bungee.api.chat.BaseComponent extra : extras) {
+                extra.setClickEvent(new net.md_5.bungee.api.chat.ClickEvent(
+                        net.md_5.bungee.api.chat.ClickEvent.Action.RUN_COMMAND, "/rdebug statsend"));
+                extra.setHoverEvent(new net.md_5.bungee.api.chat.HoverEvent(
+                        net.md_5.bungee.api.chat.HoverEvent.Action.SHOW_TEXT,
+                        new net.md_5.bungee.api.chat.ComponentBuilder(hoverText).create()));
+                midComp.addExtra(extra);
+            }
+            p.spigot().sendMessage(midComp);
+            p.sendMessage(BOX_BOT);
+        }
+
+        plugin.getServer().getConsoleSender().sendMessage(BOX_MID + BOX_W + header);
+        plugin.getServer().getConsoleSender().sendMessage(BOX_MID + clickText + " (/rdebug statsend)");
+        plugin.getServer().getConsoleSender().sendMessage(BOX_BOT);
     }
 
     public List<String> getActiveTeamScores() {

@@ -1028,6 +1028,7 @@ public class GameManager implements Listener {
     private void startRound() {
         currentRound++;
         state = GameState.PLAYING;
+        com.rounds.hud.HudEngineHook.showAll();
         deadPlayers.clear();
         pendingCardJoiners.clear();
         returningJoiners.clear();
@@ -1595,6 +1596,7 @@ public class GameManager implements Listener {
         scheduleDelayed(() -> {
             state = GameState.WAITING;
             gameActive = false;
+            com.rounds.hud.HudEngineHook.hideAll();
             clearAllSpectatorGlow();
             saveState();
             removeScoreboard();
@@ -2477,6 +2479,7 @@ public class GameManager implements Listener {
         chameleonStillTicks.clear();
         com.rounds.listener.LegendaryEffects.resetAll();
         state = GameState.WAITING;
+        com.rounds.hud.HudEngineHook.hideAll();
         clearAllSpectatorGlow();
         if (plugin.getCustomDataManager() != null) {
             plugin.getCustomDataManager().clearAll();

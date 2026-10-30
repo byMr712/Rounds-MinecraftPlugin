@@ -504,7 +504,8 @@ public class BlockListener implements Listener {
         boolean parried = GunItem.isShieldActive(uuid);
 
         if (!parried) {
-            double maxHp = player.getMaxHealth();
+            try {
+                double maxHp = player.getMaxHealth();
             double damage = maxHp * plugin.getRoundsConfig().getJumpBlockDamagePercent() / 100.0;
             double hpBefore = player.getHealth();
             player.setNoDamageTicks(0);
@@ -517,6 +518,7 @@ public class BlockListener implements Listener {
                 }
             }
             RoundsEntities.applyHitRedEffects(player, player.getLocation().clone().add(0, -1, 0), player.getLocation());
+            } catch (Throwable ignored) {}
         } else {
             player.getWorld().playSound(player.getLocation(), Sound.ITEM_SHIELD_BLOCK, SoundCategory.RECORDS, 0.7f, 1.2f);
         }

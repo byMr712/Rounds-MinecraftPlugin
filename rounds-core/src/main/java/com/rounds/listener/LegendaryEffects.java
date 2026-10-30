@@ -65,20 +65,6 @@ public class LegendaryEffects implements Listener {
 
     private static final Map<UUID, Long> lastRazorwire = new ConcurrentHashMap<>();
 
-    public static class DecaySlice {
-        public final double damagePerSecond;
-        public final UUID attackerId;
-        public int secondsRemaining;
-        public int ticksUntilNextSecond;
-
-        public DecaySlice(double totalDamage, int totalSeconds, UUID attackerId) {
-            this.damagePerSecond = totalDamage / (double) totalSeconds;
-            this.secondsRemaining = totalSeconds;
-            this.ticksUntilNextSecond = 20; // 1 second interval
-            this.attackerId = attackerId;
-        }
-    }
-
     private static final Map<UUID, List<DecaySlice>> decaySlices = new ConcurrentHashMap<>();
     private static final Set<UUID> isApplyingDecay = ConcurrentHashMap.newKeySet();
 

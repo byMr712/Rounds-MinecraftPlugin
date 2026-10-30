@@ -3,986 +3,962 @@ rounds_score:
   y: 0
   images:
     1:
-      name: frame_red
+      name: frame_empty
       x: 0
       y: 0
       layer: 0
-      condition: rounds_active
-    2:
-      name: frame_empty
-      x: 15
-      y: 0
-      layer: 0
       condition: rounds_slot_1_active
-    3:
+    2:
       name: frame_red
-      x: 15
+      x: 0
       y: 0
       layer: 1
       condition: rounds_red_win_1
-    4:
+    3:
       name: frame_empty
-      x: 30
+      x: 10
       y: 0
       layer: 0
       condition: rounds_slot_2_active
-    5:
+    4:
       name: frame_red
-      x: 30
+      x: 10
       y: 0
       layer: 1
       condition: rounds_red_win_2
-    6:
+    5:
       name: frame_empty
-      x: 45
+      x: 20
       y: 0
       layer: 0
       condition: rounds_slot_3_active
-    7:
+    6:
       name: frame_red
-      x: 45
+      x: 20
       y: 0
       layer: 1
       condition: rounds_red_win_3
-    8:
+    7:
       name: frame_empty
-      x: 60
+      x: 30
       y: 0
       layer: 0
       condition: rounds_slot_4_active
-    9:
+    8:
       name: frame_red
-      x: 60
+      x: 30
       y: 0
       layer: 1
       condition: rounds_red_win_4
-    10:
+    9:
       name: frame_empty
-      x: 75
+      x: 40
       y: 0
       layer: 0
       condition: rounds_slot_5_active
-    11:
+    10:
       name: frame_red
-      x: 75
+      x: 40
       y: 0
       layer: 1
       condition: rounds_red_win_5
-    12:
+    11:
       name: frame_empty
-      x: 90
+      x: 50
       y: 0
       layer: 0
       condition: rounds_slot_6_active
-    13:
+    12:
       name: frame_red
-      x: 90
+      x: 50
       y: 0
       layer: 1
       condition: rounds_red_win_6
-    14:
+    13:
       name: frame_empty
-      x: 105
+      x: 60
       y: 0
       layer: 0
       condition: rounds_slot_7_active
-    15:
+    14:
       name: frame_red
-      x: 105
+      x: 60
       y: 0
       layer: 1
       condition: rounds_red_win_7
-    16:
+    15:
       name: frame_empty
-      x: 120
+      x: 70
       y: 0
       layer: 0
       condition: rounds_slot_8_active
-    17:
+    16:
       name: frame_red
-      x: 120
+      x: 70
       y: 0
       layer: 1
       condition: rounds_red_win_8
-    18:
+    17:
       name: frame_empty
-      x: 135
+      x: 80
       y: 0
       layer: 0
       condition: rounds_slot_9_active
-    19:
+    18:
       name: frame_red
-      x: 135
+      x: 80
       y: 0
       layer: 1
       condition: rounds_red_win_9
-    20:
+    19:
       name: frame_empty
-      x: 150
+      x: 90
       y: 0
       layer: 0
       condition: rounds_slot_10_active
-    21:
+    20:
       name: frame_red
-      x: 150
+      x: 90
       y: 0
       layer: 1
       condition: rounds_red_win_10
-    22:
+    21:
       name: frame_empty
-      x: 165
+      x: 100
       y: 0
       layer: 0
       condition: rounds_slot_11_active
-    23:
+    22:
       name: frame_red
-      x: 165
+      x: 100
       y: 0
       layer: 1
       condition: rounds_red_win_11
-    24:
+    23:
       name: frame_empty
-      x: 180
+      x: 110
       y: 0
       layer: 0
       condition: rounds_slot_12_active
-    25:
+    24:
       name: frame_red
-      x: 180
+      x: 110
       y: 0
       layer: 1
       condition: rounds_red_win_12
-    26:
+    25:
       name: frame_empty
-      x: 195
+      x: 120
       y: 0
       layer: 0
       condition: rounds_slot_13_active
-    27:
+    26:
       name: frame_red
-      x: 195
+      x: 120
       y: 0
       layer: 1
       condition: rounds_red_win_13
-    28:
+    27:
       name: frame_empty
-      x: 210
+      x: 130
       y: 0
       layer: 0
       condition: rounds_slot_14_active
-    29:
+    28:
       name: frame_red
-      x: 210
+      x: 130
       y: 0
       layer: 1
       condition: rounds_red_win_14
-    30:
+    29:
       name: frame_empty
-      x: 225
+      x: 140
       y: 0
       layer: 0
       condition: rounds_slot_15_active
-    31:
+    30:
       name: frame_red
-      x: 225
+      x: 140
       y: 0
       layer: 1
       condition: rounds_red_win_15
-    32:
+    31:
       name: frame_empty
-      x: 240
+      x: 150
       y: 0
       layer: 0
       condition: rounds_slot_16_active
-    33:
+    32:
       name: frame_red
-      x: 240
+      x: 150
       y: 0
       layer: 1
       condition: rounds_red_win_16
-    34:
+    33:
       name: frame_empty
-      x: 255
+      x: 160
       y: 0
       layer: 0
       condition: rounds_slot_17_active
-    35:
+    34:
       name: frame_red
-      x: 255
+      x: 160
       y: 0
       layer: 1
       condition: rounds_red_win_17
-    36:
+    35:
       name: frame_empty
-      x: 270
+      x: 170
       y: 0
       layer: 0
       condition: rounds_slot_18_active
-    37:
+    36:
       name: frame_red
-      x: 270
+      x: 170
       y: 0
       layer: 1
       condition: rounds_red_win_18
-    38:
+    37:
       name: frame_empty
-      x: 285
+      x: 180
       y: 0
       layer: 0
       condition: rounds_slot_19_active
-    39:
+    38:
       name: frame_red
-      x: 285
+      x: 180
       y: 0
       layer: 1
       condition: rounds_red_win_19
-    40:
+    39:
       name: frame_empty
-      x: 300
+      x: 190
       y: 0
       layer: 0
       condition: rounds_slot_20_active
-    41:
+    40:
       name: frame_red
-      x: 300
+      x: 190
       y: 0
       layer: 1
       condition: rounds_red_win_20
+    41:
+      name: frame_empty
+      x: 0
+      y: 10
+      layer: 0
+      condition: rounds_slot_1_active
     42:
       name: frame_green
       x: 0
-      y: 16
-      layer: 0
-      condition: rounds_active
-    43:
-      name: frame_empty
-      x: 15
-      y: 16
-      layer: 0
-      condition: rounds_slot_1_active
-    44:
-      name: frame_green
-      x: 15
-      y: 16
+      y: 10
       layer: 1
       condition: rounds_green_win_1
-    45:
+    43:
       name: frame_empty
-      x: 30
-      y: 16
+      x: 10
+      y: 10
       layer: 0
       condition: rounds_slot_2_active
-    46:
+    44:
       name: frame_green
-      x: 30
-      y: 16
+      x: 10
+      y: 10
       layer: 1
       condition: rounds_green_win_2
-    47:
+    45:
       name: frame_empty
-      x: 45
-      y: 16
+      x: 20
+      y: 10
       layer: 0
       condition: rounds_slot_3_active
-    48:
+    46:
       name: frame_green
-      x: 45
-      y: 16
+      x: 20
+      y: 10
       layer: 1
       condition: rounds_green_win_3
-    49:
+    47:
       name: frame_empty
-      x: 60
-      y: 16
+      x: 30
+      y: 10
       layer: 0
       condition: rounds_slot_4_active
-    50:
+    48:
       name: frame_green
-      x: 60
-      y: 16
+      x: 30
+      y: 10
       layer: 1
       condition: rounds_green_win_4
-    51:
+    49:
       name: frame_empty
-      x: 75
-      y: 16
+      x: 40
+      y: 10
       layer: 0
       condition: rounds_slot_5_active
-    52:
+    50:
       name: frame_green
-      x: 75
-      y: 16
+      x: 40
+      y: 10
       layer: 1
       condition: rounds_green_win_5
-    53:
+    51:
       name: frame_empty
-      x: 90
-      y: 16
+      x: 50
+      y: 10
       layer: 0
       condition: rounds_slot_6_active
-    54:
+    52:
       name: frame_green
-      x: 90
-      y: 16
+      x: 50
+      y: 10
       layer: 1
       condition: rounds_green_win_6
-    55:
+    53:
       name: frame_empty
-      x: 105
-      y: 16
+      x: 60
+      y: 10
       layer: 0
       condition: rounds_slot_7_active
-    56:
+    54:
       name: frame_green
-      x: 105
-      y: 16
+      x: 60
+      y: 10
       layer: 1
       condition: rounds_green_win_7
-    57:
+    55:
       name: frame_empty
-      x: 120
-      y: 16
+      x: 70
+      y: 10
       layer: 0
       condition: rounds_slot_8_active
-    58:
+    56:
       name: frame_green
-      x: 120
-      y: 16
+      x: 70
+      y: 10
       layer: 1
       condition: rounds_green_win_8
-    59:
+    57:
       name: frame_empty
-      x: 135
-      y: 16
+      x: 80
+      y: 10
       layer: 0
       condition: rounds_slot_9_active
-    60:
+    58:
       name: frame_green
-      x: 135
-      y: 16
+      x: 80
+      y: 10
       layer: 1
       condition: rounds_green_win_9
-    61:
+    59:
       name: frame_empty
-      x: 150
-      y: 16
+      x: 90
+      y: 10
       layer: 0
       condition: rounds_slot_10_active
-    62:
+    60:
       name: frame_green
-      x: 150
-      y: 16
+      x: 90
+      y: 10
       layer: 1
       condition: rounds_green_win_10
-    63:
+    61:
       name: frame_empty
-      x: 165
-      y: 16
+      x: 100
+      y: 10
       layer: 0
       condition: rounds_slot_11_active
-    64:
+    62:
       name: frame_green
-      x: 165
-      y: 16
+      x: 100
+      y: 10
       layer: 1
       condition: rounds_green_win_11
-    65:
+    63:
       name: frame_empty
-      x: 180
-      y: 16
+      x: 110
+      y: 10
       layer: 0
       condition: rounds_slot_12_active
-    66:
+    64:
       name: frame_green
-      x: 180
-      y: 16
+      x: 110
+      y: 10
       layer: 1
       condition: rounds_green_win_12
-    67:
+    65:
       name: frame_empty
-      x: 195
-      y: 16
+      x: 120
+      y: 10
       layer: 0
       condition: rounds_slot_13_active
-    68:
+    66:
       name: frame_green
-      x: 195
-      y: 16
+      x: 120
+      y: 10
       layer: 1
       condition: rounds_green_win_13
-    69:
+    67:
       name: frame_empty
-      x: 210
-      y: 16
+      x: 130
+      y: 10
       layer: 0
       condition: rounds_slot_14_active
-    70:
+    68:
       name: frame_green
-      x: 210
-      y: 16
+      x: 130
+      y: 10
       layer: 1
       condition: rounds_green_win_14
-    71:
+    69:
       name: frame_empty
-      x: 225
-      y: 16
+      x: 140
+      y: 10
       layer: 0
       condition: rounds_slot_15_active
-    72:
+    70:
       name: frame_green
-      x: 225
-      y: 16
+      x: 140
+      y: 10
       layer: 1
       condition: rounds_green_win_15
-    73:
+    71:
       name: frame_empty
-      x: 240
-      y: 16
+      x: 150
+      y: 10
       layer: 0
       condition: rounds_slot_16_active
-    74:
+    72:
       name: frame_green
-      x: 240
-      y: 16
+      x: 150
+      y: 10
       layer: 1
       condition: rounds_green_win_16
-    75:
+    73:
       name: frame_empty
-      x: 255
-      y: 16
+      x: 160
+      y: 10
       layer: 0
       condition: rounds_slot_17_active
-    76:
+    74:
       name: frame_green
-      x: 255
-      y: 16
+      x: 160
+      y: 10
       layer: 1
       condition: rounds_green_win_17
-    77:
+    75:
       name: frame_empty
-      x: 270
-      y: 16
+      x: 170
+      y: 10
       layer: 0
       condition: rounds_slot_18_active
-    78:
+    76:
       name: frame_green
-      x: 270
-      y: 16
+      x: 170
+      y: 10
       layer: 1
       condition: rounds_green_win_18
-    79:
+    77:
       name: frame_empty
-      x: 285
-      y: 16
+      x: 180
+      y: 10
       layer: 0
       condition: rounds_slot_19_active
-    80:
+    78:
       name: frame_green
-      x: 285
-      y: 16
+      x: 180
+      y: 10
       layer: 1
       condition: rounds_green_win_19
-    81:
+    79:
       name: frame_empty
-      x: 300
-      y: 16
+      x: 190
+      y: 10
       layer: 0
       condition: rounds_slot_20_active
-    82:
+    80:
       name: frame_green
-      x: 300
-      y: 16
+      x: 190
+      y: 10
       layer: 1
       condition: rounds_green_win_20
-    83:
-      name: frame_yellow
-      x: 0
-      y: 32
-      layer: 0
-      condition: rounds_active
-    84:
+    81:
       name: frame_empty
-      x: 15
-      y: 32
+      x: 0
+      y: 20
       layer: 0
       condition: rounds_slot_1_active
-    85:
+    82:
       name: frame_yellow
-      x: 15
-      y: 32
+      x: 0
+      y: 20
       layer: 1
       condition: rounds_yellow_win_1
-    86:
+    83:
       name: frame_empty
-      x: 30
-      y: 32
+      x: 10
+      y: 20
       layer: 0
       condition: rounds_slot_2_active
-    87:
+    84:
       name: frame_yellow
-      x: 30
-      y: 32
+      x: 10
+      y: 20
       layer: 1
       condition: rounds_yellow_win_2
-    88:
+    85:
       name: frame_empty
-      x: 45
-      y: 32
+      x: 20
+      y: 20
       layer: 0
       condition: rounds_slot_3_active
-    89:
+    86:
       name: frame_yellow
-      x: 45
-      y: 32
+      x: 20
+      y: 20
       layer: 1
       condition: rounds_yellow_win_3
-    90:
+    87:
       name: frame_empty
-      x: 60
-      y: 32
+      x: 30
+      y: 20
       layer: 0
       condition: rounds_slot_4_active
-    91:
+    88:
       name: frame_yellow
-      x: 60
-      y: 32
+      x: 30
+      y: 20
       layer: 1
       condition: rounds_yellow_win_4
-    92:
+    89:
       name: frame_empty
-      x: 75
-      y: 32
+      x: 40
+      y: 20
       layer: 0
       condition: rounds_slot_5_active
-    93:
+    90:
       name: frame_yellow
-      x: 75
-      y: 32
+      x: 40
+      y: 20
       layer: 1
       condition: rounds_yellow_win_5
-    94:
+    91:
       name: frame_empty
-      x: 90
-      y: 32
+      x: 50
+      y: 20
       layer: 0
       condition: rounds_slot_6_active
-    95:
+    92:
       name: frame_yellow
-      x: 90
-      y: 32
+      x: 50
+      y: 20
       layer: 1
       condition: rounds_yellow_win_6
-    96:
+    93:
       name: frame_empty
-      x: 105
-      y: 32
+      x: 60
+      y: 20
       layer: 0
       condition: rounds_slot_7_active
-    97:
+    94:
       name: frame_yellow
-      x: 105
-      y: 32
+      x: 60
+      y: 20
       layer: 1
       condition: rounds_yellow_win_7
-    98:
+    95:
       name: frame_empty
-      x: 120
-      y: 32
+      x: 70
+      y: 20
       layer: 0
       condition: rounds_slot_8_active
-    99:
+    96:
       name: frame_yellow
-      x: 120
-      y: 32
+      x: 70
+      y: 20
       layer: 1
       condition: rounds_yellow_win_8
-    100:
+    97:
       name: frame_empty
-      x: 135
-      y: 32
+      x: 80
+      y: 20
       layer: 0
       condition: rounds_slot_9_active
-    101:
+    98:
       name: frame_yellow
-      x: 135
-      y: 32
+      x: 80
+      y: 20
       layer: 1
       condition: rounds_yellow_win_9
-    102:
+    99:
       name: frame_empty
-      x: 150
-      y: 32
+      x: 90
+      y: 20
       layer: 0
       condition: rounds_slot_10_active
-    103:
+    100:
       name: frame_yellow
-      x: 150
-      y: 32
+      x: 90
+      y: 20
       layer: 1
       condition: rounds_yellow_win_10
-    104:
+    101:
       name: frame_empty
-      x: 165
-      y: 32
+      x: 100
+      y: 20
       layer: 0
       condition: rounds_slot_11_active
-    105:
+    102:
       name: frame_yellow
-      x: 165
-      y: 32
+      x: 100
+      y: 20
       layer: 1
       condition: rounds_yellow_win_11
-    106:
+    103:
       name: frame_empty
-      x: 180
-      y: 32
+      x: 110
+      y: 20
       layer: 0
       condition: rounds_slot_12_active
-    107:
+    104:
       name: frame_yellow
-      x: 180
-      y: 32
+      x: 110
+      y: 20
       layer: 1
       condition: rounds_yellow_win_12
-    108:
+    105:
       name: frame_empty
-      x: 195
-      y: 32
+      x: 120
+      y: 20
       layer: 0
       condition: rounds_slot_13_active
-    109:
+    106:
       name: frame_yellow
-      x: 195
-      y: 32
+      x: 120
+      y: 20
       layer: 1
       condition: rounds_yellow_win_13
-    110:
+    107:
       name: frame_empty
-      x: 210
-      y: 32
+      x: 130
+      y: 20
       layer: 0
       condition: rounds_slot_14_active
-    111:
+    108:
       name: frame_yellow
-      x: 210
-      y: 32
+      x: 130
+      y: 20
       layer: 1
       condition: rounds_yellow_win_14
-    112:
+    109:
       name: frame_empty
-      x: 225
-      y: 32
+      x: 140
+      y: 20
       layer: 0
       condition: rounds_slot_15_active
-    113:
+    110:
       name: frame_yellow
-      x: 225
-      y: 32
+      x: 140
+      y: 20
       layer: 1
       condition: rounds_yellow_win_15
-    114:
+    111:
       name: frame_empty
-      x: 240
-      y: 32
+      x: 150
+      y: 20
       layer: 0
       condition: rounds_slot_16_active
-    115:
+    112:
       name: frame_yellow
-      x: 240
-      y: 32
+      x: 150
+      y: 20
       layer: 1
       condition: rounds_yellow_win_16
-    116:
+    113:
       name: frame_empty
-      x: 255
-      y: 32
+      x: 160
+      y: 20
       layer: 0
       condition: rounds_slot_17_active
-    117:
+    114:
       name: frame_yellow
-      x: 255
-      y: 32
+      x: 160
+      y: 20
       layer: 1
       condition: rounds_yellow_win_17
-    118:
+    115:
       name: frame_empty
-      x: 270
-      y: 32
+      x: 170
+      y: 20
       layer: 0
       condition: rounds_slot_18_active
-    119:
+    116:
       name: frame_yellow
-      x: 270
-      y: 32
+      x: 170
+      y: 20
       layer: 1
       condition: rounds_yellow_win_18
-    120:
+    117:
       name: frame_empty
-      x: 285
-      y: 32
+      x: 180
+      y: 20
       layer: 0
       condition: rounds_slot_19_active
-    121:
+    118:
       name: frame_yellow
-      x: 285
-      y: 32
+      x: 180
+      y: 20
       layer: 1
       condition: rounds_yellow_win_19
-    122:
+    119:
       name: frame_empty
-      x: 300
-      y: 32
+      x: 190
+      y: 20
       layer: 0
       condition: rounds_slot_20_active
-    123:
+    120:
       name: frame_yellow
-      x: 300
-      y: 32
+      x: 190
+      y: 20
       layer: 1
       condition: rounds_yellow_win_20
-    124:
-      name: frame_blue
-      x: 0
-      y: 48
-      layer: 0
-      condition: rounds_active
-    125:
+    121:
       name: frame_empty
-      x: 15
-      y: 48
+      x: 0
+      y: 30
       layer: 0
       condition: rounds_slot_1_active
-    126:
+    122:
       name: frame_blue
-      x: 15
-      y: 48
+      x: 0
+      y: 30
       layer: 1
       condition: rounds_blue_win_1
+    123:
+      name: frame_empty
+      x: 10
+      y: 30
+      layer: 0
+      condition: rounds_slot_2_active
+    124:
+      name: frame_blue
+      x: 10
+      y: 30
+      layer: 1
+      condition: rounds_blue_win_2
+    125:
+      name: frame_empty
+      x: 20
+      y: 30
+      layer: 0
+      condition: rounds_slot_3_active
+    126:
+      name: frame_blue
+      x: 20
+      y: 30
+      layer: 1
+      condition: rounds_blue_win_3
     127:
       name: frame_empty
       x: 30
-      y: 48
+      y: 30
       layer: 0
-      condition: rounds_slot_2_active
+      condition: rounds_slot_4_active
     128:
       name: frame_blue
       x: 30
-      y: 48
-      layer: 1
-      condition: rounds_blue_win_2
-    129:
-      name: frame_empty
-      x: 45
-      y: 48
-      layer: 0
-      condition: rounds_slot_3_active
-    130:
-      name: frame_blue
-      x: 45
-      y: 48
-      layer: 1
-      condition: rounds_blue_win_3
-    131:
-      name: frame_empty
-      x: 60
-      y: 48
-      layer: 0
-      condition: rounds_slot_4_active
-    132:
-      name: frame_blue
-      x: 60
-      y: 48
+      y: 30
       layer: 1
       condition: rounds_blue_win_4
-    133:
+    129:
       name: frame_empty
-      x: 75
-      y: 48
+      x: 40
+      y: 30
       layer: 0
       condition: rounds_slot_5_active
-    134:
+    130:
       name: frame_blue
-      x: 75
-      y: 48
+      x: 40
+      y: 30
       layer: 1
       condition: rounds_blue_win_5
-    135:
+    131:
       name: frame_empty
-      x: 90
-      y: 48
+      x: 50
+      y: 30
       layer: 0
       condition: rounds_slot_6_active
-    136:
+    132:
       name: frame_blue
-      x: 90
-      y: 48
+      x: 50
+      y: 30
       layer: 1
       condition: rounds_blue_win_6
-    137:
+    133:
       name: frame_empty
-      x: 105
-      y: 48
+      x: 60
+      y: 30
       layer: 0
       condition: rounds_slot_7_active
-    138:
+    134:
       name: frame_blue
-      x: 105
-      y: 48
+      x: 60
+      y: 30
       layer: 1
       condition: rounds_blue_win_7
-    139:
+    135:
       name: frame_empty
-      x: 120
-      y: 48
+      x: 70
+      y: 30
       layer: 0
       condition: rounds_slot_8_active
-    140:
+    136:
       name: frame_blue
-      x: 120
-      y: 48
+      x: 70
+      y: 30
       layer: 1
       condition: rounds_blue_win_8
-    141:
+    137:
       name: frame_empty
-      x: 135
-      y: 48
+      x: 80
+      y: 30
       layer: 0
       condition: rounds_slot_9_active
-    142:
+    138:
       name: frame_blue
-      x: 135
-      y: 48
+      x: 80
+      y: 30
       layer: 1
       condition: rounds_blue_win_9
-    143:
+    139:
       name: frame_empty
-      x: 150
-      y: 48
+      x: 90
+      y: 30
       layer: 0
       condition: rounds_slot_10_active
-    144:
+    140:
       name: frame_blue
-      x: 150
-      y: 48
+      x: 90
+      y: 30
       layer: 1
       condition: rounds_blue_win_10
-    145:
+    141:
       name: frame_empty
-      x: 165
-      y: 48
+      x: 100
+      y: 30
       layer: 0
       condition: rounds_slot_11_active
-    146:
+    142:
       name: frame_blue
-      x: 165
-      y: 48
+      x: 100
+      y: 30
       layer: 1
       condition: rounds_blue_win_11
-    147:
+    143:
       name: frame_empty
-      x: 180
-      y: 48
+      x: 110
+      y: 30
       layer: 0
       condition: rounds_slot_12_active
-    148:
+    144:
       name: frame_blue
-      x: 180
-      y: 48
+      x: 110
+      y: 30
       layer: 1
       condition: rounds_blue_win_12
-    149:
+    145:
       name: frame_empty
-      x: 195
-      y: 48
+      x: 120
+      y: 30
       layer: 0
       condition: rounds_slot_13_active
-    150:
+    146:
       name: frame_blue
-      x: 195
-      y: 48
+      x: 120
+      y: 30
       layer: 1
       condition: rounds_blue_win_13
-    151:
+    147:
       name: frame_empty
-      x: 210
-      y: 48
+      x: 130
+      y: 30
       layer: 0
       condition: rounds_slot_14_active
-    152:
+    148:
       name: frame_blue
-      x: 210
-      y: 48
+      x: 130
+      y: 30
       layer: 1
       condition: rounds_blue_win_14
-    153:
+    149:
       name: frame_empty
-      x: 225
-      y: 48
+      x: 140
+      y: 30
       layer: 0
       condition: rounds_slot_15_active
-    154:
+    150:
       name: frame_blue
-      x: 225
-      y: 48
+      x: 140
+      y: 30
       layer: 1
       condition: rounds_blue_win_15
-    155:
+    151:
       name: frame_empty
-      x: 240
-      y: 48
+      x: 150
+      y: 30
       layer: 0
       condition: rounds_slot_16_active
-    156:
+    152:
       name: frame_blue
-      x: 240
-      y: 48
+      x: 150
+      y: 30
       layer: 1
       condition: rounds_blue_win_16
-    157:
+    153:
       name: frame_empty
-      x: 255
-      y: 48
+      x: 160
+      y: 30
       layer: 0
       condition: rounds_slot_17_active
-    158:
+    154:
       name: frame_blue
-      x: 255
-      y: 48
+      x: 160
+      y: 30
       layer: 1
       condition: rounds_blue_win_17
-    159:
+    155:
       name: frame_empty
-      x: 270
-      y: 48
+      x: 170
+      y: 30
       layer: 0
       condition: rounds_slot_18_active
-    160:
+    156:
       name: frame_blue
-      x: 270
-      y: 48
+      x: 170
+      y: 30
       layer: 1
       condition: rounds_blue_win_18
-    161:
+    157:
       name: frame_empty
-      x: 285
-      y: 48
+      x: 180
+      y: 30
       layer: 0
       condition: rounds_slot_19_active
-    162:
+    158:
       name: frame_blue
-      x: 285
-      y: 48
+      x: 180
+      y: 30
       layer: 1
       condition: rounds_blue_win_19
-    163:
+    159:
       name: frame_empty
-      x: 300
-      y: 48
+      x: 190
+      y: 30
       layer: 0
       condition: rounds_slot_20_active
-    164:
+    160:
       name: frame_blue
-      x: 300
-      y: 48
+      x: 190
+      y: 30
       layer: 1
       condition: rounds_blue_win_20

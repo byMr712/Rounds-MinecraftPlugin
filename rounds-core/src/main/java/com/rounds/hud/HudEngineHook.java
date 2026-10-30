@@ -7,6 +7,9 @@ import com.rounds.teams.TeamManager.GameTeam;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 
@@ -19,24 +22,37 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-public final class HudEngineHook {
+public final class HudEngineHook implements Listener {
 
     private static final List<String> REGISTERED_KEYS = new ArrayList<>();
     private static boolean hooked = false;
+    private static RoundsPlugin pluginInstance;
 
     private HudEngineHook() {}
 
     public static void init(RoundsPlugin plugin) {
+        pluginInstance = plugin;
         Plugin hudPlugin = Bukkit.getPluginManager().getPlugin("HUDEngine");
         if (hudPlugin == null) {
             plugin.getLogger().info("HUDEngine not found - HUD match score overlay disabled");
             return;
         }
 
-        // Deploy configuration files and assets to HUDEngine folder if missing
+        // Deploy configuration files and assets to HUDEngine folder
         boolean deployedAny = deployAssetsAndConfigs(plugin, hudPlugin.getDataFolder());
 
-        // Run after 1 tick to let HUDEngine finish service registration
+        // Register join listener to hide boss bar when player joins in lobby
+        Bukkit.getPluginManager().registerEvents(new Listener() {
+            @EventHandler
+            public void onPlayerJoin(PlayerJoinEvent event) {
+                GameManager gm = plugin.getGameManager();
+                if (gm == null || !gm.isGameActive()) {
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> setHudVisible(event.getPlayer(), false), 2L);
+                }
+            }
+        }, plugin);
+
+        // Run after 5 ticks to let HUDEngine finish service registration
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             try {
                 if (deployedAny) {
@@ -44,10 +60,48 @@ public final class HudEngineHook {
                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "hudengine reload");
                 }
                 registerValues(plugin);
+
+                // Initial visibility check for currently online players
+                GameManager gm = plugin.getGameManager();
+                if (gm == null || !gm.isGameActive()) {
+                    hideAll();
+                } else {
+                    showAll();
+                }
             } catch (Throwable t) {
                 plugin.getLogger().warning("Failed to initialize HUDEngine hook: " + t.getMessage());
             }
         }, 5L);
+    }
+
+    public static void setHudVisible(Player player, boolean visible) {
+        if (player == null || !player.isOnline()) return;
+        try {
+            Class<?> hudEngineClass = Class.forName("io.github.nacvark.hudengine.api.HudEngine");
+            RegisteredServiceProvider<?> rsp = Bukkit.getServicesManager().getRegistration(hudEngineClass);
+            if (rsp == null) return;
+            Object engine = rsp.getProvider();
+            if (engine == null) return;
+
+            Method playerMethod = hudEngineClass.getMethod("player", Player.class);
+            Object playerHuds = playerMethod.invoke(engine, player);
+            if (playerHuds == null) return;
+
+            Method setVisibleMethod = playerHuds.getClass().getMethod("setVisible", boolean.class);
+            setVisibleMethod.invoke(playerHuds, visible);
+        } catch (Throwable ignored) {}
+    }
+
+    public static void showAll() {
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            setHudVisible(p, true);
+        }
+    }
+
+    public static void hideAll() {
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            setHudVisible(p, false);
+        }
     }
 
     private static boolean deployAssetsAndConfigs(RoundsPlugin plugin, File hudEngineDir) {
@@ -63,10 +117,8 @@ public final class HudEngineHook {
         String[] frames = {"frame_red.png", "frame_green.png", "frame_yellow.png", "frame_blue.png", "frame_empty.png"};
         for (String frame : frames) {
             File target = new File(assetsDir, frame);
-            if (!target.exists()) {
-                if (extractResource(plugin, "hudengine/assets/" + frame, target)) {
-                    deployed = true;
-                }
+            if (extractResource(plugin, "hudengine/assets/" + frame, target)) {
+                deployed = true;
             }
         }
 
@@ -84,10 +136,8 @@ public final class HudEngineHook {
         File layoutsDir = new File(hudEngineDir, "layouts");
         if (!layoutsDir.exists()) layoutsDir.mkdirs();
         File matchLayout = new File(layoutsDir, "rounds_score.yml");
-        if (!matchLayout.exists()) {
-            if (extractResource(plugin, "hudengine/layouts/rounds_score.yml", matchLayout)) {
-                deployed = true;
-            }
+        if (extractResource(plugin, "hudengine/layouts/rounds_score.yml", matchLayout)) {
+            deployed = true;
         }
 
         // Huds

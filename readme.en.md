@@ -83,6 +83,11 @@ A Minecraft plugin for the competitive mini-game [**ROUNDS**](https://store.stea
   - Automatically alternates every 5 seconds between Match Score (team wins) and Player Stats (HP, DMG, Cards, Bullets, Max Ammo).
   - Operates completely autonomously without requiring PlaceholderAPI thanks to native stat calculation, utilizing double objective buffering for zero flicker.
   - Full optional support for [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) and [**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi).
+- **Built-in Match Score HUD Overlay (Round Boxes):**
+  - Fully autonomous built-in match score overlay (`HudEngineCustomRealisation`) with zero external plugin dependencies.
+  - 100% 1:1 compatibility with all existing resource packs: uses native Adventure BossBar with transparent texture (`PINK`), custom font glyphs (`hudengine:hud`), and dynamic positioning via negative space glyphs (`hudengine:space`).
+  - Smooth dynamic real-time updates of empty round slots and filled team victory boxes with clean spacing and translucency.
+  - Dynamic row count: displays only rows for active teams participating in the match (2 teams = 2 rows, 3 = 3, 4 = 4), seamlessly growing downwards as new teams join.
 - **Localization:** Complete UI and card translation system (`lang/*.txt`).
 
 
@@ -592,6 +597,7 @@ The `freeplay.enabled` setting in `config.yml` or the `/rdebug freeplay on|off` 
 | `/rdebug givegun [player\|@a]` | `[player\|@a]` | Give gun to self, player, or all players |
 | `/rdebug tab <on\|off>` | `on/off` | Toggle built-in scoreboard |
 | `/rdebug tab name <title>` | `<text>` | Change built-in scoreboard title |
+| `/rdebug screenindicators <on\|off>` | `on/off` | Toggle round score HUD overlay (boxes). When enabled, suppresses round victory chat messages |
 | `/rdebug stats show [player]` | `<player>` | Show detailed player combat stats (if no nickname is provided, shows your own) |
 | `/rdebug stats add <player> <stat> <value>` | `<player> <stat> <val>` | Set combat stat value in human units (admin only) |
 | `/rdebug statsend [player]` | `[player]` | Previous match combat statistics (available to all players) |
@@ -900,3 +906,9 @@ RoundsPlugin-<server-version>-v1.8-byMr712.jar
 - Range: every stable release **1.20.4 - 26.3**.
 - Each jar works on both Paper and Purpur of the matching Minecraft version.
 - `rounds-api` builds separately into `rounds-api/build/libs/`, the core into `rounds-core/build/libs/`; `rounds-nms/rounds-nms1204/build/libs/intermediate/` holds intermediate build artifacts of the 1.20.4 adapter (paperweight), not meant for use.
+
+
+## Credits and Acknowledgments
+
+- [ifritchik](https://www.planetminecraft.com/member/ifritchik/) — author of the original idea and map/mod [Rounds In Minecraft](https://minecraft-inside.ru/maps/169501-rounds-in-minecraft.html), as well as creator of the original resource pack on which this plugin's official resource pack is based and optimized.
+- [HUDEngine](https://github.com/Nacvark/HUDEngine) by [Nacvark](https://github.com/Nacvark) (MIT License). The built-in match score HUD overlay implementation (`HudEngineCustomRealisation`) utilizes the font coordinate encoding, negative space glyph grid, and invisible Adventure BossBar positioning techniques from the HUDEngine project.

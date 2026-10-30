@@ -488,6 +488,9 @@ public class BotAI extends BukkitRunnable {
     private boolean isCombatAllowed() {
         RoundsPlugin plugin = bot.getPlugin();
         if (plugin == null) return true;
+        if (plugin.getGameManager() != null && plugin.getGameManager().isPendingCardJoiner(bot.getBukkitPlayer().getUniqueId())) {
+            return false;
+        }
         if (plugin.getRoundsConfig().isFreeplay()) {
             return plugin.getGameManager().isGameStarted();
         }
@@ -2308,6 +2311,8 @@ public class BotAI extends BukkitRunnable {
             if (other.equals(player)) continue;
             if (other.isDead() || !other.isOnline()) continue;
             if (other.getGameMode() == GameMode.SPECTATOR || other.getGameMode() == GameMode.CREATIVE) continue;
+            if (bot.getPlugin() != null && bot.getPlugin().getGameManager() != null
+                    && bot.getPlugin().getGameManager().isPendingCardJoiner(other.getUniqueId())) continue;
             if (isTeammate(player, other)) continue;
 
             // 1. Distance check FIRST (O(1) arithmetic, eliminates 90% of checks)

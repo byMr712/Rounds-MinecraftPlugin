@@ -103,7 +103,7 @@ public class RoundsPlugin extends JavaPlugin {
             getLogger().info("PlaceholderAPI not found - builtin scoreboard or TAB integration unavailable");
         }
 
-        com.rounds.hud.HudEngineHook.init(this);
+        com.rounds.hud.HudEngineCustomRealisation.init(this);
         gameManager.restoreGame();
 
         getLogger().info("RoundsPlugin v" + getDescription().getVersion() + " enabled!");
@@ -135,7 +135,7 @@ public class RoundsPlugin extends JavaPlugin {
         if (roundMusicManager != null) {
             roundMusicManager.stop();
         }
-        com.rounds.hud.HudEngineHook.shutdown(this);
+        com.rounds.hud.HudEngineCustomRealisation.shutdown(this);
         instance = null;
     }
 

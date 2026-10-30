@@ -891,9 +891,10 @@ public class GameManager implements Listener {
             progress = Math.max(0.0, Math.min(1.0, (double) remainingMs / cardDraftDurationMs));
             net.md_5.bungee.api.ChatColor timerColor = getCardDraftTimerColor(remainingMs, cardDraftDurationMs);
             title = timerColor + Messages.get("game.bossbar-cards") + " (" + remainingSec + "s)";
+            long yellowThresholdMs = (cardDraftDurationMs + 5000L) / 2;
             if (remainingMs <= 5000L) {
                 color = BarColor.RED;
-            } else if (remainingMs <= 15000L) {
+            } else if (remainingMs <= yellowThresholdMs) {
                 color = BarColor.YELLOW;
             } else {
                 color = BarColor.GREEN;
@@ -929,7 +930,7 @@ public class GameManager implements Listener {
                 autoDeathBossBar.addPlayer(p);
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     if (isGameActive()) {
-                        com.rounds.hud.HudEngineHook.setHudVisible(p, true);
+                        com.rounds.hud.HudEngineCustomRealisation.setHudVisible(p, true);
                     }
                 }, 1L);
             }
@@ -953,22 +954,22 @@ public class GameManager implements Listener {
         if (remainingMs <= redThresholdMs) {
             return net.md_5.bungee.api.ChatColor.of("#FF4444");
         }
-        double t = (double) (remainingMs - redThresholdMs) / Math.max(1000L, totalMs - redThresholdMs);
-        t = Math.max(0.0, Math.min(1.0, t));
-
-        int r, g, b;
-        if (t >= 0.5) {
-            double p = (t - 0.5) / 0.5;
-            r = (int) Math.round(255 - 170 * p);
-            g = (int) Math.round(230 + 25 * p);
-            b = (int) Math.round(60 + 25 * p);
+        long yellowThresholdMs = (totalMs + redThresholdMs) / 2;
+        if (remainingMs >= yellowThresholdMs) {
+            double p = (double) (remainingMs - yellowThresholdMs) / Math.max(1L, totalMs - yellowThresholdMs);
+            p = Math.max(0.0, Math.min(1.0, p));
+            int r = (int) Math.round(255 - (255 - 68) * p);
+            int g = 255;
+            int b = 68;
+            return net.md_5.bungee.api.ChatColor.of(String.format("#%02X%02X%02X", r, g, b));
         } else {
-            double p = t / 0.5;
-            r = 255;
-            g = (int) Math.round(68 + 162 * p);
-            b = (int) Math.round(68 - 8 * p);
+            double p = (double) (remainingMs - redThresholdMs) / Math.max(1L, yellowThresholdMs - redThresholdMs);
+            p = Math.max(0.0, Math.min(1.0, p));
+            int r = 255;
+            int g = (int) Math.round(68 + (255 - 68) * p);
+            int b = 68;
+            return net.md_5.bungee.api.ChatColor.of(String.format("#%02X%02X%02X", r, g, b));
         }
-        return net.md_5.bungee.api.ChatColor.of(String.format("#%02X%02X%02X", r, g, b));
     }
 
     private void killRandomPlayer() {
@@ -1088,7 +1089,7 @@ public class GameManager implements Listener {
     private void startRound() {
         currentRound++;
         state = GameState.PLAYING;
-        com.rounds.hud.HudEngineHook.showAll();
+        com.rounds.hud.HudEngineCustomRealisation.showAll();
         deadPlayers.clear();
         pendingCardJoiners.clear();
         returningJoiners.clear();
@@ -1334,9 +1335,10 @@ public class GameManager implements Listener {
         for (GameTeam team : GameTeam.values()) {
             int alive = 0;
             for (UUID uuid : plugin.getTeamManager().getTeamPlayers(team)) {
+                if (isPendingCardJoiner(uuid)) continue;
                 Player p = Bukkit.getPlayer(uuid);
                 if (p != null && p.isOnline() && p.isValid()
-                        && (p.getGameMode() != GameMode.SPECTATOR || plugin.getCardManager().isPendingPick(uuid) || isPendingCardJoiner(uuid))
+                        && (p.getGameMode() != GameMode.SPECTATOR || plugin.getCardManager().isPendingPick(uuid))
                         && p.getHealth() > 0
                         && !p.isDead()
                         && !deadPlayers.contains(uuid)) {
@@ -1355,9 +1357,14 @@ public class GameManager implements Listener {
         }
 
         if (aliveTeams.size() == 1) {
-            Set<UUID> participants = new HashSet<>(plugin.getPlayerDataManager().getActivePlayers());
+            Set<UUID> participants = new HashSet<>();
+            for (UUID uuid : plugin.getPlayerDataManager().getActivePlayers()) {
+                if (!isPendingCardJoiner(uuid)) participants.add(uuid);
+            }
             for (GameTeam team : GameTeam.values()) {
-                participants.addAll(plugin.getTeamManager().getTeamPlayers(team));
+                for (UUID uuid : plugin.getTeamManager().getTeamPlayers(team)) {
+                    if (!isPendingCardJoiner(uuid)) participants.add(uuid);
+                }
             }
             if (participants.size() > 1) {
                 GameTeam winner = aliveTeams.iterator().next();
@@ -1409,6 +1416,7 @@ public class GameManager implements Listener {
             }
         } catch (Throwable ignored) {}
         plugin.getTeamManager().addWin(winner);
+        com.rounds.hud.HudEngineCustomRealisation.update();
         state = GameState.ROUND_END;
         losingTeams.clear();
         saveState();
@@ -1477,11 +1485,14 @@ public class GameManager implements Listener {
         }
 
         String teamName = Messages.get("team." + winner.name().toLowerCase());
-        broadcastBox(
-            winner.getColor() + "\u2502 " + winner.getColor() + teamName + " " + Messages.get("game.round-won"),
-            null,
-            getActiveTeamScores()
-        );
+        boolean screenIndicators = (plugin.getRoundsConfig() != null && plugin.getRoundsConfig().isScreenIndicatorsEnabled());
+        if (!screenIndicators) {
+            broadcastBox(
+                ChatColor.WHITE + "\u2502 " + teamName + " " + Messages.get("game.round-won"),
+                null,
+                getActiveTeamScores()
+            );
+        }
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam pTeam = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
@@ -1624,7 +1635,7 @@ public class GameManager implements Listener {
         saveState();
         stopGameTick();
         hideAutoDeathBossBar();
-        com.rounds.hud.HudEngineHook.hideAll();
+        com.rounds.hud.HudEngineCustomRealisation.hideAll();
         cleanupRoundCombatState();
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
@@ -1638,7 +1649,7 @@ public class GameManager implements Listener {
 
         String teamName = Messages.get("team." + winner.name().toLowerCase());
         broadcastBox(
-            winner.getColor() + "\u2502 " + winner.getColor() + teamName + " " + Messages.get("game.game-won"),
+            ChatColor.WHITE + "\u2502 " + teamName + " " + Messages.get("game.game-won"),
             null,
             getActiveTeamScores()
         );
@@ -1669,7 +1680,7 @@ public class GameManager implements Listener {
             state = GameState.WAITING;
             gameActive = false;
             hideAutoDeathBossBar();
-            com.rounds.hud.HudEngineHook.hideAll();
+            com.rounds.hud.HudEngineCustomRealisation.hideAll();
             clearAllSpectatorGlow();
             saveState();
             removeScoreboard();
@@ -2565,7 +2576,7 @@ public class GameManager implements Listener {
         com.rounds.listener.LegendaryEffects.resetAll();
         state = GameState.WAITING;
         hideAutoDeathBossBar();
-        com.rounds.hud.HudEngineHook.hideAll();
+        com.rounds.hud.HudEngineCustomRealisation.hideAll();
         clearAllSpectatorGlow();
         if (plugin.getCustomDataManager() != null) {
             plugin.getCustomDataManager().clearAll();
@@ -2742,6 +2753,14 @@ public class GameManager implements Listener {
 
     public boolean isReturningJoiner(UUID uuid) {
         return returningJoiners.contains(uuid);
+    }
+
+    public Location getLobbySpawn() {
+        if (plugin.getBlockListener() != null && plugin.getBlockListener().getBlockStorage() != null) {
+            Location lobby = plugin.getBlockListener().getBlockStorage().getLobbyBlock();
+            if (lobby != null) return getGroundLocation(lobby);
+        }
+        return null;
     }
 
     public void showNameTagsInGame() {

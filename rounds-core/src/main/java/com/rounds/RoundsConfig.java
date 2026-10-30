@@ -25,6 +25,7 @@ public final class RoundsConfig {
     private boolean builtinScoreboard;
     private String builtinScoreboardTitle;
     private String builtinScoreboardStatsTitle;
+    private boolean screenIndicatorsEnabled = true;
 
     private boolean freeplay;
 
@@ -107,6 +108,7 @@ public final class RoundsConfig {
         builtinScoreboard = c.getBoolean("builtin-scoreboard.enabled", true);
         builtinScoreboardTitle = c.getString("builtin-scoreboard.title", "&6&lROUNDS");
         builtinScoreboardStatsTitle = c.getString("builtin-scoreboard.stats-title", "&b&lМои статы");
+        screenIndicatorsEnabled = c.getBoolean("screen-indicators.enabled", c.getBoolean("screen-indicators", true));
 
         freeplay = c.getBoolean("freeplay.enabled", false);
 
@@ -242,6 +244,16 @@ public final class RoundsConfig {
     public void setBuiltinScoreboardTitle(String title) {
         this.builtinScoreboardTitle = title;
         plugin.getConfig().set("builtin-scoreboard.title", title);
+        plugin.saveConfig();
+    }
+
+    public boolean isScreenIndicatorsEnabled() {
+        return screenIndicatorsEnabled;
+    }
+
+    public void setScreenIndicatorsEnabled(boolean enabled) {
+        this.screenIndicatorsEnabled = enabled;
+        plugin.getConfig().set("screen-indicators.enabled", enabled);
         plugin.saveConfig();
     }
 

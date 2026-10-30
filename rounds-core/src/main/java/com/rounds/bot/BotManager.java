@@ -1,6 +1,8 @@
 package com.rounds.bot;
 
 import com.rounds.RoundsPlugin;
+import com.rounds.game.GameManager;
+import com.rounds.game.GameManager.GameState;
 import com.rounds.nms.NmsPlayerHandle;
 import com.rounds.teams.TeamManager.GameTeam;
 import org.bukkit.Bukkit;
@@ -167,16 +169,56 @@ public class BotManager implements Listener {
 
         FakeBot bot = new FakeBot(this, handle);
         bot.resetPhysics();
+        GameTeam assignedTeam = null;
         try {
-            bot.setAssignedTeam(GameTeam.valueOf(targetTeam.toUpperCase()));
+            assignedTeam = GameTeam.valueOf(targetTeam.toUpperCase());
+            bot.setAssignedTeam(assignedTeam);
         } catch (Exception ignored) {}
         if (level != null && level >= 1 && level <= 10) {
             bot.setLevel(level);
         }
         bots.put(name.toLowerCase(), bot);
         com.rounds.stats.MatchStatsManager.registerParticipant(bukkitPlayer.getUniqueId(), name);
-        if (plugin.getGameManager() != null) {
-            plugin.getGameManager().showNameTagsInGame();
+
+        GameManager gm = plugin.getGameManager();
+        if (gm != null && gm.isGameActive()) {
+            if (assignedTeam != null) {
+                gm.ensureTeamSpawn(assignedTeam);
+            }
+            if (gm.getState() == GameManager.GameState.CARDS) {
+                // Spawned during card draft phase: join arena immediately with card draft in this round
+                Location spawn = (assignedTeam != null && gm.getTeamSpawns() != null)
+                        ? gm.getTeamSpawns().get(assignedTeam) : null;
+                if (spawn == null) spawn = gm.getCurrentZoneCenter();
+                if (spawn != null) {
+                    bukkitPlayer.teleport(spawn);
+                }
+                bukkitPlayer.setGameMode(GameMode.ADVENTURE);
+                bukkitPlayer.setInvulnerable(true);
+                bukkitPlayer.setAllowFlight(false);
+                bukkitPlayer.setFlying(false);
+                bot.resetPhysics();
+                if (assignedTeam != null) {
+                    plugin.getCardManager().openCardSelection(bukkitPlayer, assignedTeam);
+                }
+            } else {
+                // Spawned during combat: wait in lobby until next round
+                Location lobby = gm.getLobbySpawn();
+                if (lobby != null) {
+                    bukkitPlayer.teleport(lobby);
+                }
+                bukkitPlayer.setGameMode(GameMode.ADVENTURE);
+                bukkitPlayer.setInvulnerable(true);
+                bukkitPlayer.setAllowFlight(false);
+                bukkitPlayer.setFlying(false);
+                bot.resetPhysics();
+                gm.markPendingCardJoiner(bukkitPlayer.getUniqueId(), false);
+                gm.addDeadPlayer(bukkitPlayer.getUniqueId());
+            }
+        }
+
+        if (gm != null) {
+            gm.showNameTagsInGame();
         }
         plugin.getLogger().info("Spawned fake bot: " + name + " [team: " + targetTeam + ", level: " + bot.getLevel() + "]");
         return bot;

@@ -214,6 +214,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "cardtest" -> handleCardTest(sender, args);
             case "cardchoicetime" -> handleCardChoiceTime(sender, args);
             case "bossbar" -> handleBossBar(sender, args);
+            case "screenindicators" -> handleScreenIndicators(sender, args);
             case "music" -> handleMusic(sender, args);
             default -> sender.sendMessage(ChatColor.RED + Messages.get("debug.unknown-command", args[0]));
         }
@@ -249,6 +250,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxKv(sender, "/rdebug tab on|off", Messages.get("debug.help-tab"));
         boxKv(sender, "/rdebug tab name <title>", Messages.get("debug.help-tab-name"));
         boxKv(sender, "/rdebug bossbar on|off", Messages.get("debug.help-bossbar"));
+        boxKv(sender, "/rdebug screenindicators on|off", "Оверлей счёта раундов (квадратики)");
 
         boxSection(sender, R, Messages.get("debug.help-section-items"));
         boxKv(sender, "/rdebug givegun [player|@a]", Messages.get("debug.help-givegun"));
@@ -741,6 +743,30 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage(ChatColor.GREEN + Messages.get("debug.bossbar-off"));
         } else {
             sender.sendMessage(ChatColor.RED + Messages.get("debug.usage-bossbar"));
+        }
+    }
+
+    private void handleScreenIndicators(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            boolean current = plugin.getRoundsConfig().isScreenIndicatorsEnabled();
+            sender.sendMessage(ChatColor.GOLD + "[Rounds] " + ChatColor.YELLOW + "Screen indicators: "
+                    + (current ? ChatColor.GREEN + "ON" : ChatColor.RED + "OFF"));
+            sender.sendMessage(ChatColor.GRAY + "Usage: /rdebug screenindicators <on|off>");
+            return;
+        }
+        String arg = args[1].toLowerCase();
+        if (arg.equals("on") || arg.equals("вкл") || arg.equals("true") || arg.equals("1")) {
+            plugin.getRoundsConfig().setScreenIndicatorsEnabled(true);
+            if (plugin.getGameManager() != null && plugin.getGameManager().isGameActive()) {
+                com.rounds.hud.HudEngineCustomRealisation.showAll();
+            }
+            sender.sendMessage(ChatColor.GREEN + "[Rounds] Screen indicators ENABLED (round chat boxes hidden).");
+        } else if (arg.equals("off") || arg.equals("выкл") || arg.equals("false") || arg.equals("0")) {
+            plugin.getRoundsConfig().setScreenIndicatorsEnabled(false);
+            com.rounds.hud.HudEngineCustomRealisation.hideAll();
+            sender.sendMessage(ChatColor.RED + "[Rounds] Screen indicators DISABLED (round chat boxes shown).");
+        } else {
+            sender.sendMessage(ChatColor.RED + "Usage: /rdebug screenindicators <on|off>");
         }
     }
 
@@ -1507,7 +1533,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         "stats", "statsend", "setteam", "setlanguage", "effect", "heal",
         "resetstats", "reload", "setlobby",
         "jumppos1", "jumppos2", "jumpset", "uppos1", "uppos2", "upset",
-        "wheel", "tab", "bot", "draft", "cardchoicetime", "bossbar", "debug", "music"
+        "wheel", "tab", "bot", "draft", "cardchoicetime", "bossbar", "debug", "music", "screenindicators"
     );
 
     private List<String> getOnlinePlayerNames() {
@@ -2020,6 +2046,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "music" -> filterStartsWith(Arrays.asList("on", "off", "next", "stop", "play"), input);
             case "freeplay" -> filterStartsWith(Arrays.asList("on", "off"), input);
             case "wheel" -> filterStartsWith(Arrays.asList("on", "off"), input);
+            case "screenindicators" -> filterStartsWith(Arrays.asList("on", "off"), input);
             case "tab" -> {
                 if (args.length == 2) yield filterStartsWith(Arrays.asList("on", "off", "name"), input);
                 if (args.length == 3 && args[1].equalsIgnoreCase("name")) yield Collections.emptyList();

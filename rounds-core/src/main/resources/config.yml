@@ -159,6 +159,12 @@ game-rules:
 # Color player names in the tab list and above heads matching team color
 color-nicknames: true
 
+# Screen score indicators (custom HUD match score boxes at the top of the screen).
+# Enabled by default. When enabled, suppresses the round win chat box and active team scores
+# in chat after every round (only the final match victory is announced in chat).
+screen-indicators:
+  enabled: true
+
 # Built-in scoreboard:
 # Enabled by default when TAB plugin is NOT installed.
 # Automatically disabled if TAB is present to prevent scoreboard conflicts/flicker.

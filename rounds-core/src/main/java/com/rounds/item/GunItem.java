@@ -787,9 +787,6 @@ public class GunItem implements Listener {
         ItemStack off = player.getInventory().getItemInOffHand();
         if (isGun(main) || isGun(off) || isShield(main) || isShield(off)) {
             event.setCancelled(true);
-            if (plugin != null && plugin.getGameManager().getState() == com.rounds.game.GameManager.GameState.PLAYING) {
-                doBlock(player);
-            }
         }
     }
 

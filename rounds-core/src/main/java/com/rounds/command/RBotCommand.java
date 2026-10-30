@@ -33,7 +33,8 @@ public class RBotCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!sender.hasPermission("rounds.admin") && !botManager.getPlugin().getRoundsConfig().isFreeplay()) {
+        boolean hasAdmin = sender.hasPermission("rounds.admin") || sender.hasPermission("admin.rounds") || sender.isOp();
+        if (!hasAdmin && !botManager.getPlugin().getRoundsConfig().isFreeplay()) {
             sender.sendMessage(ChatColor.RED + "You don't have permission to manage bots.");
             return true;
         }
@@ -271,7 +272,8 @@ public class RBotCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (!sender.hasPermission("rounds.admin") && !botManager.getPlugin().getRoundsConfig().isFreeplay()) {
+        boolean hasAdmin = sender.hasPermission("rounds.admin") || sender.hasPermission("admin.rounds") || sender.isOp();
+        if (!hasAdmin && !botManager.getPlugin().getRoundsConfig().isFreeplay()) {
             return Collections.emptyList();
         }
 

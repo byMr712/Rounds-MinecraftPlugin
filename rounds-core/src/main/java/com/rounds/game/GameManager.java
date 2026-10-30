@@ -1212,6 +1212,7 @@ public class GameManager implements Listener {
                 if (plugin.getRoundMusicManager() != null && plugin.getRoundMusicManager().isPlaying()) {
                     plugin.getRoundMusicManager().playTrackForPlayer(p, plugin.getRoundMusicManager().getCurrentTrack());
                 }
+                sendJoinPrompt(p);
             }
         }
         clearAllSpectatorGlow();
@@ -1312,7 +1313,7 @@ public class GameManager implements Listener {
         }
     }
 
-    private void checkRoundEnd() {
+    public void checkRoundEnd() {
         if (state != GameState.PLAYING) return;
         Set<GameTeam> aliveTeams = new HashSet<>();
         int totalAlive = 0;
@@ -1497,6 +1498,14 @@ public class GameManager implements Listener {
         }
 
         scheduleDelayed(() -> {
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                if (isAdmin(p)) {
+                    sendAdminPrompt(p);
+                }
+            }
+        }, 60L);
+
+        scheduleDelayed(() -> {
             state = GameState.CARDS;
             cardDraftStartTime = System.currentTimeMillis();
             int limitSec = (plugin != null) ? plugin.getRoundsConfig().getCardChoiceTimeSeconds() : 30;
@@ -1563,6 +1572,14 @@ public class GameManager implements Listener {
             p.sendTitle(Messages.get("title.draw"), "", 10, 60, 20);
             p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 0.7f, 1.0f);
         }
+
+        scheduleDelayed(() -> {
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                if (isAdmin(p)) {
+                    sendAdminPrompt(p);
+                }
+            }
+        }, 60L);
 
         scheduleDelayed(() -> {
             state = GameState.CARDS;
@@ -2050,6 +2067,72 @@ public class GameManager implements Listener {
         plugin.getServer().getConsoleSender().sendMessage(BOX_MID + BOX_W + header);
         plugin.getServer().getConsoleSender().sendMessage(BOX_MID + clickText + " (/rdebug statsend)");
         plugin.getServer().getConsoleSender().sendMessage(BOX_BOT);
+    }
+
+    public static boolean isAdmin(Player player) {
+        if (player == null) return false;
+        return player.isOp() || player.hasPermission("admin.rounds") || player.hasPermission("rounds.admin");
+    }
+
+    private net.md_5.bungee.api.chat.TextComponent createClickableBoxLine(String text, String command, String hover) {
+        net.md_5.bungee.api.chat.TextComponent line = new net.md_5.bungee.api.chat.TextComponent(BOX_MID);
+        net.md_5.bungee.api.chat.BaseComponent[] extras = net.md_5.bungee.api.chat.TextComponent.fromLegacyText(text);
+        for (net.md_5.bungee.api.chat.BaseComponent extra : extras) {
+            extra.setClickEvent(new net.md_5.bungee.api.chat.ClickEvent(
+                    net.md_5.bungee.api.chat.ClickEvent.Action.RUN_COMMAND, command));
+            extra.setHoverEvent(new net.md_5.bungee.api.chat.HoverEvent(
+                    net.md_5.bungee.api.chat.HoverEvent.Action.SHOW_TEXT,
+                    new net.md_5.bungee.api.chat.ComponentBuilder(hover).create()));
+            line.addExtra(extra);
+        }
+        return line;
+    }
+
+    public void sendJoinPrompt(Player player) {
+        if (player == null || !player.isOnline()) return;
+        if (player.hasMetadata("NPC")) return;
+        if (plugin.getBotManager() != null && plugin.getBotManager().isBot(player)) return;
+
+        player.sendMessage(BOX_TOP);
+        player.sendMessage(BOX_MID + BOX_W + Messages.get("join-prompt-header"));
+        player.spigot().sendMessage(createClickableBoxLine(
+                Messages.get("join-prompt-click"),
+                "/rdebug join",
+                Messages.get("join-prompt-hover")
+        ));
+        player.sendMessage(BOX_BOT);
+    }
+
+    public void sendAdminPrompt(Player player) {
+        if (player == null || !player.isOnline()) return;
+        if (player.hasMetadata("NPC")) return;
+        if (plugin.getBotManager() != null && plugin.getBotManager().isBot(player)) return;
+
+        player.sendMessage(BOX_TOP);
+        player.sendMessage(BOX_MID + BOX_W + Messages.get("admin-prompt-header"));
+        player.spigot().sendMessage(createClickableBoxLine(
+                Messages.get("admin-prompt-start-click"),
+                "/rdebug start",
+                Messages.get("admin-prompt-start-hover")
+        ));
+        player.spigot().sendMessage(createClickableBoxLine(
+                Messages.get("admin-prompt-bot-click"),
+                "/rbot spawn",
+                Messages.get("admin-prompt-bot-hover")
+        ));
+        player.sendMessage(BOX_BOT);
+    }
+
+    public void sendWelcomePrompt(Player player) {
+        if (player == null || !player.isOnline()) return;
+        if (player.hasMetadata("NPC")) return;
+        if (plugin.getBotManager() != null && plugin.getBotManager().isBot(player)) return;
+
+        if (isAdmin(player)) {
+            sendAdminPrompt(player);
+        } else if (plugin.getTeamManager().getPlayerTeam(player.getUniqueId()) == null) {
+            sendJoinPrompt(player);
+        }
     }
 
     public List<String> getActiveTeamScores() {

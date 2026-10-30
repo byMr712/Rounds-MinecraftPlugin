@@ -654,6 +654,13 @@ public class PlayerDataManager implements Listener {
                     }, 5L);
                 }
             }
+
+            if (!player.hasMetadata("NPC") && (plugin.getBotManager() == null || !plugin.getBotManager().isBot(player))) {
+                Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                    if (!player.isOnline()) return;
+                    plugin.getGameManager().sendWelcomePrompt(player);
+                }, 60L);
+            }
         } catch (Exception e) {
             plugin.getLogger().severe("[Join] Error in onJoin for " + player.getName() + ": " + e.getMessage());
             e.printStackTrace();

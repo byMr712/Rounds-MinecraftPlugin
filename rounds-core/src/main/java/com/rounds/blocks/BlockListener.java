@@ -389,6 +389,7 @@ public class BlockListener implements Listener {
                 return;
             }
             if (plugin.getTeamManager().getPlayerTeam(player.getUniqueId()) == null) {
+                plugin.getGameManager().sendJoinPrompt(player);
                 return;
             }
             plugin.getTeamManager().leaveTeam(player.getUniqueId());
@@ -399,12 +400,16 @@ public class BlockListener implements Listener {
             }
             plugin.getPlayerDataManager().clearPDC(player);
             plugin.getPlayerDataManager().removePlayerData(player.getUniqueId());
+            plugin.getPlayerDataManager().removeActivePlayer(player.getUniqueId());
             plugin.getGameManager().applyTeamColor(player);
             plugin.getGameManager().buildScoreboard(player);
+            plugin.getGameManager().updateScoreboard();
+            com.rounds.hud.HudEngineCustomRealisation.refresh();
             String teamName = Messages.get("team.none");
             String msg = ChatColor.WHITE + "\u00A7l" + Messages.get("team.joined", teamName);
             player.sendActionBar(msg);
             player.getWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, SoundCategory.RECORDS, 0.7f, 1.5f);
+            plugin.getGameManager().sendJoinPrompt(player);
             return;
         }
 

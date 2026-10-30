@@ -16,6 +16,9 @@ permissions:
   rounds.admin:
     description: Admin permission for rounds commands
     default: op
+  admin.rounds:
+    description: Admin permission for rounds commands
+    default: op
   rounds.join:
     description: Permission to join teams
     default: true

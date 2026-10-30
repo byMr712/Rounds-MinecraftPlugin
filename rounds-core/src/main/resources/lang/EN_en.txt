@@ -1,4 +1,4 @@
-﻿# Rounds Plugin - Language Pack: EN_en
+# Rounds Plugin - Language Pack: EN_en
 # Имя файла без .txt = id языка для /rdebug setlanguage.
 # Новый язык = новый файл <Идентификатор>.txt рядом с этими (или в plugins/<Plugin>/lang/), затем /rdebug reload.
 # Плейсхолдеры: {0}, {1}, {2}...
@@ -372,6 +372,14 @@ debug:
   statsend-prompt-header: "To view your game statistics:"
   statsend-click: "§a§l>> Click here <<"
   statsend-hover: "§7Click to view your game statistics"
+  join-prompt-header: "To join the game:"
+  join-prompt-click: "§a§l>> §6§lStart game §a§l<<"
+  join-prompt-hover: "§7Click to join the game (/rdebug join)"
+  admin-prompt-header: "Admin commands:"
+  admin-prompt-start-click: "§a§l>> §6§lStart game §a§l<<"
+  admin-prompt-start-hover: "§7Click to start the game (/rdebug start)"
+  admin-prompt-bot-click: "§b§l>> §e§lAdd bot §b§l<<"
+  admin-prompt-bot-hover: "§7Click to add a bot (/rbot spawn)"
   stat-cards-count: "Cards Count"
   stat-kills: "Kills"
   stat-deaths: "Deaths"

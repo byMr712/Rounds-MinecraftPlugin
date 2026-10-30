@@ -164,7 +164,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         boolean freeplayActive = plugin.getRoundsConfig().isFreeplay();
-        boolean admin = sender.hasPermission("rounds.admin");
+        boolean admin = sender.hasPermission("rounds.admin") || sender.hasPermission("admin.rounds") || sender.isOp();
         if (!admin && !(freeplayActive && FREEPLAY_COMMANDS.contains(sub)) && !PUBLIC_COMMANDS.contains(sub)) {
             sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
             return true;
@@ -300,10 +300,6 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             return;
         }
         GameManager gm = plugin.getGameManager();
-        if (!gm.isGameStarted()) {
-            sender.sendMessage(ChatColor.RED + Messages.get("debug.game-not-started"));
-            return;
-        }
         GameTeam existingTeam = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
         if (existingTeam != null) {
             if (gm.isPendingCardJoiner(player.getUniqueId())) {
@@ -316,8 +312,6 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             return;
         }
 
-        UUID uuid = player.getUniqueId();
-        boolean returning = plugin.getPlayerDataManager().isActive(uuid);
         GameTeam team = null;
         if (args != null && args.length >= 2 && !args[1].isBlank() && !args[1].equalsIgnoreCase("auto")) {
             try {
@@ -327,6 +321,23 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         if (team == null) {
             team = gm.findSmallestTeam();
         }
+
+        if (!gm.isGameStarted()) {
+            plugin.getTeamManager().joinTeam(player.getUniqueId(), team);
+            gm.applyTeamColor(player);
+            gm.buildScoreboard(player);
+            gm.updateScoreboard();
+            com.rounds.hud.HudEngineCustomRealisation.refresh();
+            String teamName = Messages.get("team." + team.name().toLowerCase());
+            String msg = team.getColor() + "\u00A7l" + Messages.get("team.joined", teamName);
+            player.sendActionBar(msg);
+            player.sendMessage(ChatColor.GOLD + Messages.get("team.joined-team", team.getColor() + teamName));
+            player.getWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, SoundCategory.RECORDS, 0.7f, 1.5f);
+            return;
+        }
+
+        UUID uuid = player.getUniqueId();
+        boolean returning = plugin.getPlayerDataManager().isActive(uuid);
 
         if (returning) {
             PlayerDataManager.SavedPlayerData saved = plugin.getPlayerDataManager().loadPlayerFullData(uuid);
@@ -348,6 +359,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         gm.applyTeamColor(player);
         gm.buildScoreboard(player);
         gm.updateScoreboard();
+        com.rounds.hud.HudEngineCustomRealisation.refresh();
 
         if (gm.getState() == GameManager.GameState.CARDS) {
             gm.removeDeadPlayer(uuid);
@@ -1022,7 +1034,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
     // === STATS ===
 
     private void handleStats(CommandSender sender, String[] args) {
-        boolean admin = sender.hasPermission("rounds.admin");
+        boolean admin = sender.hasPermission("rounds.admin") || sender.hasPermission("admin.rounds") || sender.isOp();
         if (args.length < 2) {
             if (admin) {
                 sender.sendMessage(ChatColor.RED + "Usage: /rdebug stats show <player> OR /rdebug stats add <player> <stat> <value>");
@@ -1277,7 +1289,16 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             } else {
                 sender.sendMessage(ChatColor.RED + Messages.get("debug.specify-player")); return;
             }
-            plugin.getTeamManager().leaveTeam(target.getUniqueId());
+            UUID targetUuid = target.getUniqueId();
+            plugin.getTeamManager().leaveTeam(targetUuid);
+            plugin.getPlayerDataManager().removeActivePlayer(targetUuid);
+            plugin.getPlayerDataManager().removePlayerData(targetUuid);
+            plugin.getPlayerDataManager().clearPDC(target);
+            PlayerData pdata = plugin.getPlayerDataManager().getData(targetUuid);
+            if (pdata != null) {
+                pdata.resetStats();
+                pdata.resetAllCards();
+            }
             if (plugin.getBotManager() != null) {
                 var bot = plugin.getBotManager().getBot(target.getName());
                 if (bot != null) {
@@ -1285,9 +1306,31 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                     if (bot.getAi() != null) bot.getAi().clearTarget();
                 }
             }
-            plugin.getGameManager().applyTeamColor(target);
-            plugin.getGameManager().showNameTagsInGame();
+            GameManager gm = plugin.getGameManager();
+            if (gm.isGameStarted()) {
+                gm.removeDeadPlayer(targetUuid);
+                plugin.getCardManager().cleanupPlayer(targetUuid);
+                plugin.getCardDisplay().cleanupPlayer(targetUuid);
+                target.getInventory().clear();
+                target.setGameMode(GameMode.SPECTATOR);
+                target.setAllowFlight(true);
+                target.setFlying(true);
+                target.setInvulnerable(true);
+                target.setPlayerListName(target.getName());
+            }
+            gm.onPlayerQuit(targetUuid);
+            gm.applyTeamColor(target);
+            gm.buildScoreboard(target);
+            gm.updateScoreboard();
+            gm.showNameTagsInGame();
+            com.rounds.hud.HudEngineCustomRealisation.refresh();
+            if (gm.isGameStarted() && gm.getState() == GameManager.GameState.PLAYING) {
+                gm.checkRoundEnd();
+            }
             sender.sendMessage(ChatColor.GREEN + Messages.get("debug.team-set", target.getName(), Messages.get("team.none")));
+            if (plugin.getBotManager() == null || !plugin.getBotManager().isBot(target)) {
+                gm.sendJoinPrompt(target);
+            }
             return;
         }
 
@@ -1318,7 +1361,10 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             }
         }
         plugin.getGameManager().applyTeamColor(target);
+        plugin.getGameManager().buildScoreboard(target);
+        plugin.getGameManager().updateScoreboard();
         plugin.getGameManager().showNameTagsInGame();
+        com.rounds.hud.HudEngineCustomRealisation.refresh();
         sender.sendMessage(ChatColor.GREEN + Messages.get("debug.team-set", target.getName(), team.getColor() + team.getName()));
     }
 
@@ -1545,12 +1591,12 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         "start", "stop", "rounds", "givegun", "wheel", "bot", "bossbar"
     );
     private static final List<String> PUBLIC_COMMANDS = Arrays.asList(
-        "info", "status", "stats", "cards", "statsend"
+        "info", "status", "stats", "cards", "statsend", "join"
     );
     private static final List<String> TEAM_COLORS = Arrays.asList("BLUE", "RED", "YELLOW", "GREEN", "NONE");
 
     private void handleBot(CommandSender sender, String[] args) {
-        boolean admin = sender.hasPermission("rounds.admin");
+        boolean admin = sender.hasPermission("rounds.admin") || sender.hasPermission("admin.rounds") || sender.isOp();
         boolean freeplay = plugin.getRoundsConfig().isFreeplay();
         if (!admin && !freeplay) {
             sender.sendMessage(ChatColor.RED + "You don't have permission to spawn bots. (Requires rounds.admin or /rdebug freeplay on)");
@@ -1811,7 +1857,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        boolean admin = sender.hasPermission("rounds.admin");
+        boolean admin = sender.hasPermission("rounds.admin") || sender.hasPermission("admin.rounds") || sender.isOp();
         boolean freeplay = plugin.getRoundsConfig().isFreeplay();
         String input = args[args.length - 1].toLowerCase();
 

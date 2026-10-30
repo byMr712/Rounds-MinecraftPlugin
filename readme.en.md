@@ -550,7 +550,7 @@ Primary command: `/rdebug` (aliases `/rounds` and `/rbot`).
 
 | Command | Description |
 |---------|-------------|
-| `/rdebug join` | Join ongoing match (assigned to smallest team or restores session) |
+| `/rdebug join` | Join the game (in lobby or ongoing match: auto-assigned to smallest team or restores saved session) |
 | `/rdebug info` | Display plugin version, match status, teams, and card catalog |
 | `/rdebug status` | Show current round, match state, and team scores |
 | `/rdebug stats show [player]` | View detailed combat attributes of a player (if no nickname is provided, shows your own) |
@@ -637,7 +637,7 @@ The `freeplay.enabled` setting in `config.yml` or the `/rdebug freeplay on|off` 
 
 | Permission | Description | Default |
 |------------|-------------|---------|
-| `rounds.admin` | Full access to `/rdebug` and match controls | `op` |
+| `rounds.admin` / `admin.rounds` | Full access to `/rdebug`, `/rbot`, and match controls | `op` |
 | `rounds.join` | Ability to join teams via lobby blocks and `/rdebug join` | `true` (all players) |
 
 

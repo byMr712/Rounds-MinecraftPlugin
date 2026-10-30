@@ -1212,7 +1212,9 @@ public class GameManager implements Listener {
                 if (plugin.getRoundMusicManager() != null && plugin.getRoundMusicManager().isPlaying()) {
                     plugin.getRoundMusicManager().playTrackForPlayer(p, plugin.getRoundMusicManager().getCurrentTrack());
                 }
-                sendJoinPrompt(p);
+                if (!isAdmin(p)) {
+                    sendJoinPrompt(p);
+                }
             }
         }
         clearAllSpectatorGlow();
@@ -1498,14 +1500,6 @@ public class GameManager implements Listener {
         }
 
         scheduleDelayed(() -> {
-            for (Player p : Bukkit.getOnlinePlayers()) {
-                if (isAdmin(p)) {
-                    sendAdminPrompt(p);
-                }
-            }
-        }, 60L);
-
-        scheduleDelayed(() -> {
             state = GameState.CARDS;
             cardDraftStartTime = System.currentTimeMillis();
             int limitSec = (plugin != null) ? plugin.getRoundsConfig().getCardChoiceTimeSeconds() : 30;
@@ -1572,14 +1566,6 @@ public class GameManager implements Listener {
             p.sendTitle(Messages.get("title.draw"), "", 10, 60, 20);
             p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.RECORDS, 0.7f, 1.0f);
         }
-
-        scheduleDelayed(() -> {
-            for (Player p : Bukkit.getOnlinePlayers()) {
-                if (isAdmin(p)) {
-                    sendAdminPrompt(p);
-                }
-            }
-        }, 60L);
 
         scheduleDelayed(() -> {
             state = GameState.CARDS;
@@ -1659,6 +1645,11 @@ public class GameManager implements Listener {
 
         scheduleDelayed(() -> {
             sendClickableStatsPrompt();
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                if (isAdmin(p)) {
+                    sendAdminPrompt(p);
+                }
+            }
         }, 60L);
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
@@ -2094,11 +2085,11 @@ public class GameManager implements Listener {
         if (plugin.getBotManager() != null && plugin.getBotManager().isBot(player)) return;
 
         player.sendMessage(BOX_TOP);
-        player.sendMessage(BOX_MID + BOX_W + Messages.get("join-prompt-header"));
+        player.sendMessage(BOX_MID + BOX_W + Messages.get("debug.join-prompt-header"));
         player.spigot().sendMessage(createClickableBoxLine(
-                Messages.get("join-prompt-click"),
+                Messages.get("debug.join-prompt-click"),
                 "/rdebug join",
-                Messages.get("join-prompt-hover")
+                Messages.get("debug.join-prompt-hover")
         ));
         player.sendMessage(BOX_BOT);
     }
@@ -2109,16 +2100,16 @@ public class GameManager implements Listener {
         if (plugin.getBotManager() != null && plugin.getBotManager().isBot(player)) return;
 
         player.sendMessage(BOX_TOP);
-        player.sendMessage(BOX_MID + BOX_W + Messages.get("admin-prompt-header"));
+        player.sendMessage(BOX_MID + BOX_W + Messages.get("debug.admin-prompt-header"));
         player.spigot().sendMessage(createClickableBoxLine(
-                Messages.get("admin-prompt-start-click"),
+                Messages.get("debug.admin-prompt-start-click"),
                 "/rdebug start",
-                Messages.get("admin-prompt-start-hover")
+                Messages.get("debug.admin-prompt-start-hover")
         ));
         player.spigot().sendMessage(createClickableBoxLine(
-                Messages.get("admin-prompt-bot-click"),
+                Messages.get("debug.admin-prompt-bot-click"),
                 "/rbot spawn",
-                Messages.get("admin-prompt-bot-hover")
+                Messages.get("debug.admin-prompt-bot-hover")
         ));
         player.sendMessage(BOX_BOT);
     }

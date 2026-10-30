@@ -505,9 +505,9 @@ The plugin provides a self-contained, cross-platform resource pack infrastructur
 The official plugin resource pack is based on the original resource pack by **ifrit**, with subsequent modifications: restructured layout, added texture variations, adaptive localization (RU/EN), palette quantization, and optimization by **Mr712**.
 
 Card titles and ability descriptions are rendered directly onto card face textures. Separate language-specific packages are generated:
-- `Rounds-ResourcePack-RU.zip`: Card textures with baked Russian translations ([Download on Google Drive](https://drive.google.com/file/d/1MURSM1-b66Zez1PNYWZviT7tBqxvFiA4/view?usp=sharing)).
-- `Rounds-ResourcePack-EN.zip`: Card textures with baked English translations ([Download on Google Drive](https://drive.google.com/file/d/1QotrmkfhCeO6sWz8H79rkCt_XhS_oV3o/view?usp=sharing)).
-- `Rounds-ResourcePack.zip`: Base template pack containing clean, unbaked original card art (without text), allowing other creators to add custom translations and typography ([Download developer base pack on Google Drive](https://drive.google.com/file/d/1Kj38TxORUtLwbn3Uy0s8-zTbH5KXy9Df/view?usp=sharing)).
+- `Rounds-ResourcePack-RU.zip`: Card textures with baked Russian translations ([Download on Google Drive](https://drive.google.com/file/d/15SUc3hD3B4VsKAa1b6Sz2yIUxYG_AooC/view?usp=sharing)).
+- `Rounds-ResourcePack-EN.zip`: Card textures with baked English translations ([Download on Google Drive](https://drive.google.com/file/d/1Ui088HLMIjV7hWBEDdPNAMz-2vF-UbGa/view?usp=sharing)).
+- `Rounds-ResourcePack.zip`: Base template pack containing clean, unbaked original card art (without text), allowing other creators to add custom translations and typography ([Download developer base pack on Google Drive](https://drive.google.com/file/d/1BhPBV51Cqa4HMuu1Xpot0MJy4bXuhg8O/view?usp=sharing)).
 
 The private-use font glyph codepoints (`0xE000` + `familyId`) are identical across all language packs. Players simply activate their preferred language pack in Minecraft settings without requiring any server configuration changes.
 
@@ -515,33 +515,65 @@ The private-use font glyph codepoints (`0xE000` + `familyId`) are identical acro
 To have clients automatically download my pre-built English resource pack when connecting to the server, configure the following parameters in `server.properties`:
 
 ```properties
-resource-pack=https://drive.google.com/uc?export=download&id=1QotrmkfhCeO6sWz8H79rkCt_XhS_oV3o
+resource-pack=https://drive.google.com/uc?export=download&id=1Ui088HLMIjV7hWBEDdPNAMz-2vF-UbGa
 resource-pack-id=276093b4-f5ee-3eca-8dba-2448a11ee78a
 resource-pack-prompt={"text"\:"ROUNDS resource pack","color"\:"gold"}
-resource-pack-sha1=7005ba808769d1a59ba4aeedbd46aba683e0c964
+resource-pack-sha1=d41d0776031c7d845197dfd6bf96a71023476243
 ```
 
-### 2. Pure Java Gradle Pack Builder (`CardPackBuilder`)
-Pack building is executed in pure Java using `ZipOutputStream` and `javax.imageio.ImageIO`. It runs reliably on Windows, Linux, macOS, and automated CI runners without external dependencies:
+Current SHA-1 Checksums:
+- `Rounds-ResourcePack-RU.zip`: `3fd4def2be6a904b1db6160f0982ae39905511e7`
+- `Rounds-ResourcePack-EN.zip`: `d41d0776031c7d845197dfd6bf96a71023476243`
+- `Rounds-ResourcePack.zip`: `4a002a3aa773f62d7302444c0b90505bea009d36`
+
+### 2. Complete Resource Pack Architecture and Standards
+
+The Rounds resource pack integrates four essential subsystems that render natively on vanilla clients without external mods:
+
+1. **3D Card Draft Scene (`rounds:default`):**
+   - Card textures are located in `assets/rounds/textures/font/` at 160x250 resolution. Variations are named `card<id>-<rarity>.png`, single cards are named `card_<id>.png`.
+   - Font definition `assets/rounds/font/default.json` links textures to Private Use Area codepoints (`0xE000` + `familyId * 10 + rarityIndex`) with `height: 88` and `ascent: 87`.
+
+2. **Weapon 3D Model and Sound Effects:**
+   - Gun 3D model `assets/rounds/models/item/gun.json` and texture `assets/rounds/textures/item/piton.png`.
+   - Stick model override for Minecraft 1.20.4-1.21.3 via `assets/minecraft/models/item/stick.json` (`custom_model_data: 1` predicate) and for 1.21.4+ via `assets/minecraft/items/stick.json` (`range_dispatch`).
+   - Round music `music1`..`music4` with `stream: true`, combat sound effects `block.ogg`, `saw.ogg` in `assets/rounds/sounds/`, and vanilla music silencer covering 32 events in `assets/minecraft/sounds.json`.
+
+3. **Autonomous Score HUD Overlay (Zero-Client-Mod HUD):**
+   - **Font Providers in `hud.json` (strictly 821 providers):**
+     - 800 static glyphs `0xF5000`..`0xF531F` (100 rounds grid for 4 teams).
+     - 20 dynamic row matrix $L \times C$ glyphs `0xF5400`..`0xF5413` for `HudEngineCustomRealisation`:
+       - Line 0: `ascent = -8400907` (empty), `-8409099` (win)
+       - Line 1: `ascent = -8400919` (empty), `-8409111` (win)
+       - Line 2: `ascent = -8400931` (empty), `-8409123` (win)
+       - Line 3: `ascent = -8400943` (empty), `-8409135` (win)
+     - Font advance provider of type `space` with advances from `-8192` to `+8192` (`0xF0000`..`0xF4000`), along with `assets/hudengine/font/space.json`.
+   - **Vanilla BossBar Concealment:**
+     - BossBar frame sprites for `PINK` color in `assets/minecraft/textures/gui/sprites/boss_bar/pink_background.png` and `pink_progress.png` (as well as `yellow_*`) must be transparent 1x1 PNGs (83 bytes). Without them, the vanilla client renders a visible pink bossbar bar below the HUD overlay.
+   - **Vertex Core Shaders (`DEFAULT_OFFSET 29`):**
+     - Vertex text shaders `rendertype_text.vsh` (Minecraft <= 1.21.1) and `text.vsh` (Minecraft 1.21.2+ and Purpur 26.2) in `assets/minecraft/shaders/core/` and across all 5 overlays (`overlay_lightmap`, `overlay_sso`, `overlay_text`, `overlay_ubo150`, `overlay_ubo330`) MUST define `#define DEFAULT_OFFSET 29`. Using `10` displaces the HUD 19 pixels upward towards screen center.
+   - **Version Overlays in `pack.mcmeta`:**
+     - Multi-format support spanning formats 22 through 99 ensures shaders and font files load properly across modern and legacy clients.
+
+### 3. Resource Pack Build Instructions
+
+#### Step 1. Bake Card Texts (When updating cards or balance)
+The Pillow-based asset generator in `tools/generate_card_textures.py` reads names and descriptions from YAML card configurations, formats line wraps, and bakes text onto PNG cards:
+```bash
+python tools/generate_card_textures.py
+```
+Generated assets are written to `test-servers/original_mod/cards/ru` and `cards/en`.
+
+#### Step 2. Build Resource Packs via Gradle (`CardPackBuilder`)
+Building is executed in pure Java (`ZipOutputStream`, `ImageIO`), operating cross-platform on Windows, Linux, macOS, and CI pipelines:
 ```bash
 # Standard build into resourcepacks_builds/:
 ./gradlew buildResourcePacks
 
-# Build with automatic synchronization to Desktop and ATLauncher instances:
+# Build with automated synchronization to Desktop and ATLauncher instances:
 ./gradlew buildResourcePacks -PdeployDesktop -PdeployInstances
 ```
-
-### 3. Automated Card Texture Renderer (`generate_card_textures.py`)
-The Pillow-based asset generation tool in `tools/generate_card_textures.py`:
-1. Scans all card definitions across `cards/original/` and `cards/custom/`.
-2. Extracts Russian and English names and descriptions.
-3. Formats line breaks and bakes centered text onto 160x250 PNG images.
-4. Outputs ready textures to `cards/ru` and `cards/en`.
-
-Run the asset generator:
-```bash
-python tools/generate_card_textures.py
-```
+The builder packages all card textures, sounds, item models, and bundles HUD assets and shaders from `tools/assets/HUDEngine.zip`.
 
 ## Commands and Permissions
 

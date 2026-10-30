@@ -503,9 +503,9 @@ triggers:
 Официальный ресурспак плагина основан на оригинальном ресурспаке от автора **ifrit**, с последующими изменениями: переработкой структуры, добавлением вариаций текстур, адаптивной локализацией (RU/EN), квантованием палитры и оптимизацией от **Mr712**.
 
 Текст названия и описания наносится непосредственно на текстуры карточек. Чтобы поддерживать несколько языков, формируются отдельные ресурспаки:
-- `Rounds-ResourcePack-RU.zip` — текстуры с запеченным русским переводом ([Скачать на Google Диске](https://drive.google.com/file/d/1MURSM1-b66Zez1PNYWZviT7tBqxvFiA4/view?usp=sharing)).
-- `Rounds-ResourcePack-EN.zip` — текстуры с запеченным английским переводом ([Скачать на Google Диске](https://drive.google.com/file/d/1QotrmkfhCeO6sWz8H79rkCt_XhS_oV3o/view?usp=sharing)).
-- `Rounds-ResourcePack.zip` — базовый пакет с оригинальными чистыми карточками (без текста) для добавления своих переводов и кастомного текста сторонними авторами ([Скачать версию для разработчиков на Google Диске](https://drive.google.com/file/d/1Kj38TxORUtLwbn3Uy0s8-zTbH5KXy9Df/view?usp=sharing)).
+- `Rounds-ResourcePack-RU.zip` — текстуры с запеченным русским переводом ([Скачать на Google Диске](https://drive.google.com/file/d/15SUc3hD3B4VsKAa1b6Sz2yIUxYG_AooC/view?usp=sharing)).
+- `Rounds-ResourcePack-EN.zip` — текстуры с запеченным английским переводом ([Скачать на Google Диске](https://drive.google.com/file/d/1Ui088HLMIjV7hWBEDdPNAMz-2vF-UbGa/view?usp=sharing)).
+- `Rounds-ResourcePack.zip` — базовый пакет с оригинальными чистыми карточками (без текста) для добавления своих переводов и кастомного текста сторонними авторами ([Скачать версию для разработчиков на Google Диске](https://drive.google.com/file/d/1BhPBV51Cqa4HMuu1Xpot0MJy4bXuhg8O/view?usp=sharing)).
 
 Кодовые позиции растровых глифов шрифта (`0xE000` + `familyId`) идентичны во всех пакетах. Игрок просто выбирает ресурспак своего языка в настройках Minecraft без необходимости менять что-либо на сервере.
 
@@ -513,14 +513,57 @@ triggers:
 Чтобы игроки автоматически скачивали мой уже готовый русскоязычный ресурспак при подключении к серверу, укажите следующие параметры в файле `server.properties`:
 
 ```properties
-resource-pack=https://drive.google.com/uc?export=download&id=1MURSM1-b66Zez1PNYWZviT7tBqxvFiA4
+resource-pack=https://drive.google.com/uc?export=download&id=15SUc3hD3B4VsKAa1b6Sz2yIUxYG_AooC
 resource-pack-id=276093b4-f5ee-3eca-8dba-2448a11ee78a
 resource-pack-prompt={"text"\:"Ресурспак ROUNDS","color"\:"gold"}
-resource-pack-sha1=6fceb4242696962d726bfdd6e0dda6183bca9ba2
+resource-pack-sha1=3fd4def2be6a904b1db6160f0982ae39905511e7
 ```
 
-### 2. Кроссплатформенный билдер в Gradle (`CardPackBuilder`)
-Сборка ресурспаков перенесена в чистый Java-код на базе `ZipOutputStream` и `javax.imageio.ImageIO`, что позволяет собирать ресурспаки на Windows, Linux, macOS и в CI без PowerShell и Windows GDI+:
+Контрольные суммы SHA-1 актуальных пакетов:
+- `Rounds-ResourcePack-RU.zip`: `3fd4def2be6a904b1db6160f0982ae39905511e7`
+- `Rounds-ResourcePack-EN.zip`: `d41d0776031c7d845197dfd6bf96a71023476243`
+- `Rounds-ResourcePack.zip`: `4a002a3aa773f62d7302444c0b90505bea009d36`
+
+### 2. Полная архитектура и стандарты ресурспака
+
+Ресурспак плагина Rounds объединяет четыре ключевые подсистемы, работающие в ванильном клиенте:
+
+1. **3D Карточки способностей драфта (`rounds:default`):**
+   - Текстуры карт хранятся в `assets/rounds/textures/font/` с разрешением 160x250 пикселей. Для карт с вариациями создаются файлы вида `card<id>-<rarity>.png`, для карт без вариаций — `card_<id>.png`.
+   - Конфигурация шрифта `assets/rounds/font/default.json` связывает текстуры с символами диапазона Private Use Area (`0xE000` + `familyId * 10 + rarityIndex`), с высотой `height: 88` и подъёмом `ascent: 87`.
+
+2. **Модели оружия и звуковое сопровождение:**
+   - 3D-модель револьвера `assets/rounds/models/item/gun.json` и текстура `assets/rounds/textures/item/piton.png`.
+   - Подмена модели ванильной палочки для версий 1.20.4-1.21.3 через `assets/minecraft/models/item/stick.json` (предикат `custom_model_data: 1`) и для 1.21.4+ через `assets/minecraft/items/stick.json` (`range_dispatch`).
+   - Музыка раундов `music1`..`music4` с флагом `stream: true`, боевые звуки `block.ogg`, `saw.ogg` в `assets/rounds/sounds/` и глушитель 32 ванильных треков через `assets/minecraft/sounds.json`.
+
+3. **Автономный экранный HUD оверлей счёта (Zero-Client-Mod HUD):**
+   - **Таблица символов `hud.json` (строго 821 провайдер):**
+     - 800 статических символов `0xF5000`..`0xF531F` (сетка 100 раундов для 4 команд).
+     - 20 динамических символов матрицы строк $L \times C$ `0xF5400`..`0xF5413` для `HudEngineCustomRealisation`:
+       - Линия 0: `ascent = -8400907` (empty), `-8409099` (win)
+       - Линия 1: `ascent = -8400919` (empty), `-8409111` (win)
+       - Линия 2: `ascent = -8400931` (empty), `-8409123` (win)
+       - Линия 3: `ascent = -8400943` (empty), `-8409135` (win)
+     - Провайдер типа `space` для отрицательного и положительного позиционирования курсора от `-8192` до `+8192` (`0xF0000`..`0xF4000`), а также `assets/hudengine/font/space.json`.
+   - **Скрытие стандартной полосы BossBar:**
+     - Текстуры полосы боссбара цвета `PINK` в `assets/minecraft/textures/gui/sprites/boss_bar/pink_background.png` и `pink_progress.png` (а также `yellow_*`) обязаны быть прозрачными 1x1 PNG (83 байта). Без них ванильный клиент отрисовывает розовую полосу боссбара под оверлеем.
+   - **Вертексные Core Shaders (`DEFAULT_OFFSET 29`):**
+     - Вертексный шейдер `rendertype_text.vsh` (Minecraft до 1.21.1) и `text.vsh` (Minecraft 1.21.2+ и Purpur 26.2) в `assets/minecraft/shaders/core/` и во всех 5 оверлеях (`overlay_lightmap`, `overlay_sso`, `overlay_text`, `overlay_ubo150`, `overlay_ubo330`) ОБЯЗАНЫ использовать директиву `#define DEFAULT_OFFSET 29`. Использование значения `10` смещает интерфейс на 19 пикселей вверх к середине экрана.
+   - **Версионные оверлеи в `pack.mcmeta`:**
+     - Поддержка форматов пакетов от 22 до 99 гарантирует работу шейдеров на современных клиентах без конфликтов версий.
+
+### 3. Инструкция по сборке ресурспака
+
+#### Шаг 1. Запекание текстов карт (при изменении карт или баланса)
+Инструмент `tools/generate_card_textures.py` на базе Pillow считывает названия и описания из YAML-файлов карт, форматирует переносы строк и запекает текст на карточки:
+```bash
+python tools/generate_card_textures.py
+```
+Готовые ассеты сохраняются в `test-servers/original_mod/cards/ru` и `cards/en`.
+
+#### Шаг 2. Сборка ресурспаков через Gradle (`CardPackBuilder`)
+Сборка выполняется на чистом Java-коде (`ZipOutputStream`, `ImageIO`), работает кроссплатформенно на Windows, Linux, macOS и в CI:
 ```bash
 # Стандартная сборка в папку resourcepacks_builds/:
 ./gradlew buildResourcePacks
@@ -528,18 +571,7 @@ resource-pack-sha1=6fceb4242696962d726bfdd6e0dda6183bca9ba2
 # Сборка с автоматическим деплоем на рабочий стол и во все инстансы ATLauncher:
 ./gradlew buildResourcePacks -PdeployDesktop -PdeployInstances
 ```
-
-### 3. Автоматический рендерер текста на картах (`generate_card_textures.py`)
-Инструмент `tools/generate_card_textures.py` на базе Pillow автоматически:
-1. Сканирует все конфигурации карт в `cards/original/` и `cards/custom/`.
-2. Извлекает названия и описания для русского и английского языков.
-3. Форматирует переносы строк и запекает отцентрированный текст на PNG-картинки разрешением 160x250.
-4. Раскладывает готовые ассеты по директориям `cards/ru` и `cards/en`.
-
-Запуск генерации ассетов:
-```bash
-python tools/generate_card_textures.py
-```
+Сборщик упаковывает все текстуры, звуки, модели и автоматически объединяет HUD-ассеты и шейдеры из `tools/assets/HUDEngine.zip`.
 
 ## Команды и права
 

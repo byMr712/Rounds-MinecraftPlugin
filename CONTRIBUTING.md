@@ -29,14 +29,20 @@
   ```
 
 - **Сборка кроссплатформенных ресурспаков:**
-  Генерирует `Rounds-ResourcePack-RU.zip`, `Rounds-ResourcePack-EN.zip` и базовый `Rounds-ResourcePack.zip` (чистые шаблоны карт без текста, [скачать на Google Диске](https://drive.google.com/file/d/1Kj38TxORUtLwbn3Uy0s8-zTbH5KXy9Df/view?usp=sharing)) в папке `resourcepacks_builds/`:
+  Генерирует `Rounds-ResourcePack-RU.zip`, `Rounds-ResourcePack-EN.zip` и базовый `Rounds-ResourcePack.zip` (чистые шаблоны карт без текста, [скачать на Google Диске](https://drive.google.com/file/d/1BhPBV51Cqa4HMuu1Xpot0MJy4bXuhg8O/view?usp=sharing)) в папке `resourcepacks_builds/`:
   ```bash
+  # Сборка пакетов в resourcepacks_builds/:
   ./gradlew buildResourcePacks
+
+  # Сборка с автоматическим деплоем на рабочий стол и во все инстансы ATLauncher:
+  ./gradlew buildResourcePacks -PdeployDesktop -PdeployInstances
   ```
-  Для синхронизации на рабочий стол добавьте флаг:
-  ```bash
-  ./gradlew buildResourcePacks -PdeployDesktop
-  ```
+
+  **Стандарты структуры и генерации ресурспака:**
+  1. *Запекание текстов:* При добавлении карт или изменении описаний запустите `python tools/generate_card_textures.py`. Скрипт запекает отцентрированный текст в исходном разрешении 160x250 в `test-servers/original_mod/cards/ru` и `cards/en`.
+  2. *HUD оверлей и шрифты:* Базовые HUD-ассеты и Core Shaders упакованы в `tools/assets/HUDEngine.zip`. Файл `assets/hudengine/font/hud.json` обязан содержать ровно 821 провайдер (800 статических символов `0xF5000`..`0xF531F` + 20 динамических символов матрицы строк $L \times C$ `0xF5400`..`0xF5413` для `HudEngineCustomRealisation` + отрицательные пробелы).
+  3. *Скрытие BossBar:* В `assets/minecraft/textures/gui/sprites/boss_bar/` обязательно должны находиться прозрачные 1x1 PNG (83 байта) `pink_background.png` и `pink_progress.png`, чтобы ванильная полоса боссбара не отображалась под оверлеем.
+  4. *Шейдеры текста:* Все вертексные шейдеры `rendertype_text.vsh` и `text.vsh` обязаны использовать `#define DEFAULT_OFFSET 29` (значение `10` смещает ячейки на 19 пикселей вверх).
 
 
 ## 2. Создание новых карточек

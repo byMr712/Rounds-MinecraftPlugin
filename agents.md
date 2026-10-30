@@ -599,6 +599,10 @@ public enum BotPlaystyle {
         }
       }
       ```
+    - **Инфраструктура автономного HUD оверлея (Zero-Client-Mod HUD):**
+      - **Шрифтовой стек (`hudengine:hud`):** Конфигурация `assets/hudengine/font/hud.json` строго содержит 821 провайдер: 800 статических символов `0xF5000`..`0xF531F` (сетка 100 раундов для 4 команд) + 20 динамических символов матрицы строк $L \times C$ `0xF5400`..`0xF5413` для `HudEngineCustomRealisation` (с точными координатами `ascent = -8400907 - line * 12` для пустых рамок и `ascent = -8409099 - line * 12` для побед) + провайдер отрицательных и положительных пробелов от `-8192` до `+8192` (`0xF0000`..`0xF4000`), а также `assets/hudengine/font/space.json`.
+      - **Скрытие полосы BossBar:** В `assets/minecraft/textures/gui/sprites/boss_bar/` обязательно находятся прозрачные 1x1 PNG (83 байта) `pink_background.png` и `pink_progress.png` (а также `yellow_*`). При их отсутствии ванильный клиент отрисовывает полосу боссбара под оверлеем.
+      - **Вертексные Core Shaders (`DEFAULT_OFFSET 29`):** Все вертексные шейдеры `rendertype_text.vsh` и `text.vsh` в `assets/minecraft/shaders/core/` и оверлеях обязаны использовать директиву `#define DEFAULT_OFFSET 29`. Значение `10` приводит к смещению ячеек на 19 пикселей вверх к центру экрана.
     - **Аудиоинтеграция:** Фоновая музыка раундов (`music1`..`music4`) транслируется потоком (`stream: true`). Звуковые события `block` и `saw` сопровождают парирование щитом и распил пилой. Ванильная фоновая музыка заглушается через `assets/minecraft/sounds.json` (32 события с пустым массивом звуков).
     - **Скрипты сборки и верификации:** Кроссплатформенный Gradle-таск `./gradlew buildResourcePacks` (класс `CardPackBuilder` на базе чистого Java ImageIO/ZipOutputStream с флагами `-PdeployDesktop` и `-PdeployInstances`) и PowerShell-скрипт `build-cardpack.ps1` собирают ZIP-пакеты с прямыми слэшами `/` и синхронизируют их на Desktop и во все инстансы ATLauncher; `test-cardpack.ps1` тестирует целостность и парсинг через нативные кодеки Mojang (`PackMetadataSection`) на Paper 1.21.4, Purpur 26.2 и Paper 26.3.
 

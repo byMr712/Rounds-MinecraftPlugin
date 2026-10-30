@@ -29,14 +29,20 @@ The project uses Gradle with a multi-module architecture.
   ```
 
 - **Cross-Platform Resource Pack Builder:**
-  Generates `Rounds-ResourcePack-RU.zip`, `Rounds-ResourcePack-EN.zip`, and base `Rounds-ResourcePack.zip` (clean unbaked templates, [download on Google Drive](https://drive.google.com/file/d/1Kj38TxORUtLwbn3Uy0s8-zTbH5KXy9Df/view?usp=sharing)) in `resourcepacks_builds/`:
+  Generates `Rounds-ResourcePack-RU.zip`, `Rounds-ResourcePack-EN.zip`, and base `Rounds-ResourcePack.zip` (clean unbaked templates, [download on Google Drive](https://drive.google.com/file/d/1BhPBV51Cqa4HMuu1Xpot0MJy4bXuhg8O/view?usp=sharing)) in `resourcepacks_builds/`:
   ```bash
+  # Build packages into resourcepacks_builds/:
   ./gradlew buildResourcePacks
+
+  # Build with automatic synchronization to Desktop and ATLauncher instances:
+  ./gradlew buildResourcePacks -PdeployDesktop -PdeployInstances
   ```
-  To synchronize to Desktop, add the flag:
-  ```bash
-  ./gradlew buildResourcePacks -PdeployDesktop
-  ```
+
+  **Resource Pack Structure and Generation Standards:**
+  1. *Baking Card Texts:* When adding cards or modifying descriptions, run `python tools/generate_card_textures.py`. The script renders centered typography at native 160x250 resolution into `test-servers/original_mod/cards/ru` and `cards/en`.
+  2. *HUD Overlay and Fonts:* Base HUD assets and Core Shaders reside in `tools/assets/HUDEngine.zip`. File `assets/hudengine/font/hud.json` must declare strictly 821 providers (800 static glyphs `0xF5000`..`0xF531F` + 20 dynamic row matrix $L \times C$ glyphs `0xF5400`..`0xF5413` for `HudEngineCustomRealisation` + negative spaces).
+  3. *Concealing Vanilla BossBar:* Directory `assets/minecraft/textures/gui/sprites/boss_bar/` must contain transparent 1x1 PNGs (83 bytes) `pink_background.png` and `pink_progress.png` so vanilla bossbar frames are suppressed underneath the HUD overlay.
+  4. *Text Core Shaders:* All vertex text shaders `rendertype_text.vsh` and `text.vsh` must use `#define DEFAULT_OFFSET 29` (value `10` displaces HUD boxes 19 pixels upward).
 
 
 ## 2. Creating New Cards

@@ -437,10 +437,18 @@ public class CardPackBuilder {
                 try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(hudEngineZip))) {
                     ZipEntry ze;
                     byte[] textVshBytes = null;
+                    byte[] transparentBossBarBytes = null;
                     while ((ze = zis.getNextEntry()) != null) {
                         String name = ze.getName();
                         if (!ze.isDirectory() && !"pack.mcmeta".equalsIgnoreCase(name)) {
                             byte[] data = zis.readAllBytes();
+                            if ("assets/minecraft/textures/gui/sprites/boss_bar/yellow_background.png".equals(name)
+                                    || "assets/minecraft/textures/gui/sprites/boss_bar/pink_background.png".equals(name)) {
+                                transparentBossBarBytes = data;
+                            }
+                            if ("assets/hudengine/font/hud.json".equals(name)) {
+                                data = ensureDynamicHudGlyphs(data);
+                            }
                             writeEntry(zos, written, name, data);
                             if ("overlay_text/assets/minecraft/shaders/core/text.vsh".equals(name)) {
                                 textVshBytes = data;
@@ -449,6 +457,12 @@ public class CardPackBuilder {
                     }
                     if (textVshBytes != null) {
                         writeEntry(zos, written, "assets/minecraft/shaders/core/text.vsh", textVshBytes);
+                    }
+                    if (transparentBossBarBytes != null) {
+                        writeEntry(zos, written, "assets/minecraft/textures/gui/sprites/boss_bar/pink_background.png", transparentBossBarBytes);
+                        writeEntry(zos, written, "assets/minecraft/textures/gui/sprites/boss_bar/pink_progress.png", transparentBossBarBytes);
+                        writeEntry(zos, written, "assets/minecraft/textures/gui/sprites/boss_bar/yellow_background.png", transparentBossBarBytes);
+                        writeEntry(zos, written, "assets/minecraft/textures/gui/sprites/boss_bar/yellow_progress.png", transparentBossBarBytes);
                     }
                 }
             }
@@ -483,6 +497,41 @@ public class CardPackBuilder {
             if (Files.exists(p)) return p;
         }
         return null;
+    }
+
+    private static byte[] ensureDynamicHudGlyphs(byte[] rawJson) {
+        String jsonStr = new String(rawJson, StandardCharsets.UTF_8);
+        if (jsonStr.contains("\\udb95\\udc00") || jsonStr.contains("\uDB95\uDC00")) {
+            return rawJson;
+        }
+        int spaceIndex = jsonStr.indexOf("{\"type\":\"space\"");
+        if (spaceIndex < 0) {
+            spaceIndex = jsonStr.indexOf("{\"type\": \"space\"");
+        }
+        if (spaceIndex < 0) {
+            return rawJson;
+        }
+
+        StringBuilder dynamicProviders = new StringBuilder();
+        String[] colors = {"empty", "red", "green", "yellow", "blue"};
+        for (int line = 0; line < 4; line++) {
+            int ascentEmpty = -8400907 - line * 12;
+            int ascentWin = -8409099 - line * 12;
+            for (int c = 0; c < colors.length; c++) {
+                String color = colors[c];
+                int ascent = ("empty".equals(color)) ? ascentEmpty : ascentWin;
+                int cp = 0xF5400 + line * 5 + c;
+                int high = 0xD800 + ((cp - 0x10000) >> 10);
+                int low = 0xDC00 + ((cp - 0x10000) & 0x3FF);
+                dynamicProviders.append(String.format(
+                        "{\"type\":\"bitmap\",\"file\":\"hudengine:image_frame_%s.png\",\"ascent\":%d,\"height\":16,\"chars\":[\"\\u%04x\\u%04x\"]},",
+                        color, ascent, high, low
+                ));
+            }
+        }
+
+        String patched = jsonStr.substring(0, spaceIndex) + dynamicProviders + jsonStr.substring(spaceIndex);
+        return patched.getBytes(StandardCharsets.UTF_8);
     }
 
     private static void writeEntry(ZipOutputStream zos, Set<String> written, String entryName, byte[] data) throws IOException {

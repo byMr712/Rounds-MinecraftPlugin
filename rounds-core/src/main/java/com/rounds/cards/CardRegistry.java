@@ -100,7 +100,7 @@ public class CardRegistry {
         return false;
     }
 
-    private static final Set<String> REMOVED_BUILTIN_CARDS = new HashSet<>(List.of("remote.yml", "auto-reload.yml"));
+    private static final Set<String> REMOVED_BUILTIN_CARDS = new HashSet<>(List.of("remote.yml"));
 
     private void removeDeletedBuiltinCards() {
         for (String name : REMOVED_BUILTIN_CARDS) {
@@ -182,10 +182,6 @@ public class CardRegistry {
                 continue;
             }
             if (!file.getName().endsWith(".yml")) continue;
-            if (REMOVED_BUILTIN_CARDS.contains(file.getName().toLowerCase())) {
-                file.delete();
-                continue;
-            }
             loadedFiles++;
             YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
             try {

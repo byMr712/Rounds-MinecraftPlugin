@@ -3,8 +3,8 @@ name:
   ru: "&4Вкус крови"
   en: "&4Taste of Blood"
 description:
-  ru: "+{0} скорости после удара, +{1} вампиризм"
-  en: "+{0} speed after hit, +{1} Lifesteal"
+  ru: "+{0} скорости при попадании, +{1} вампиризм"
+  en: "+{0} speed on hit, +{1} Lifesteal"
 material: BEEF
 enabled: true
 art: card32.png

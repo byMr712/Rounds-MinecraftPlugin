@@ -409,7 +409,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
     private void handleDebugSub(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage(ChatColor.RED + "Использование: /rdebug debug start | /rdebug debug start <from> | /rdebug debug start <from> stop <to> | /rdebug debug stop | /rdebug debug stop <to> | /rdebug debug status");
+            sender.sendMessage(ChatColor.RED + "Использование: /rdebug debug start | /rdebug debug start <from> | /rdebug debug start <from> stop <to> | /rdebug debug stop | /rdebug debug stop <to> | /rdebug debug cancel | /rdebug debug status");
             return;
         }
         String sub = args[1].toLowerCase();
@@ -424,8 +424,9 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 System.arraycopy(args, 1, subArgs, 0, args.length - 1);
                 handleDebugStop(sender, subArgs);
             }
+            case "cancel" -> handleDebugCancel(sender);
             case "status" -> handleDebugStatus(sender);
-            default -> sender.sendMessage(ChatColor.RED + "Использование: /rdebug debug start | /rdebug debug start <from> | /rdebug debug start <from> stop <to> | /rdebug debug stop | /rdebug debug stop <to> | /rdebug debug status");
+            default -> sender.sendMessage(ChatColor.RED + "Использование: /rdebug debug start | /rdebug debug start <from> | /rdebug debug start <from> stop <to> | /rdebug debug stop | /rdebug debug stop <to> | /rdebug debug cancel | /rdebug debug status");
         }
     }
 
@@ -443,7 +444,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             if (com.rounds.debug.DebugSession.stopAt != -1) {
                 planned += ", автостоп в конце R#" + com.rounds.debug.DebugSession.stopAt;
             }
-            sender.sendMessage(ChatColor.RED + planned + ". Сначала /rdebug debug stop для отмены плана.");
+            sender.sendMessage(ChatColor.RED + planned + ". Сначала /rdebug debug cancel для отмены плана.");
             return;
         }
         if (args.length == 1) {
@@ -547,8 +548,13 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
             return;
         }
-        if (args.length == 2) {
+        if (args.length == 1) {
             if (!com.rounds.debug.DebugSession.active) {
+                if (!com.rounds.debug.DebugSession.triggered && com.rounds.debug.DebugSession.startAt != -1) {
+                    com.rounds.debug.DebugSession.clear();
+                    sender.sendMessage(ChatColor.GREEN + "RoundsDebug: план дебага отменён.");
+                    return;
+                }
                 sender.sendMessage(ChatColor.RED + "Дебаг не запущен. Сначала используй /rdebug debug start");
                 return;
             }
@@ -563,14 +569,14 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage(ChatColor.GRAY + "Дамп сохранён.");
             return;
         }
-        if (args.length == 3) {
+        if (args.length == 2) {
             if (!com.rounds.debug.DebugSession.active) {
                 sender.sendMessage(ChatColor.RED + "Дебаг не запущен. Сначала используй /rdebug debug start");
                 return;
             }
             int to;
             try {
-                to = Integer.parseInt(args[2]);
+                to = Integer.parseInt(args[1]);
             } catch (NumberFormatException e) {
                 sender.sendMessage(ChatColor.RED + "Неверный номер раунда");
                 return;
@@ -589,6 +595,23 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             return;
         }
         sender.sendMessage(ChatColor.RED + "Использование: /rdebug debug stop | /rdebug debug stop <to>");
+    }
+
+    private void handleDebugCancel(CommandSender sender) {
+        if (!sender.hasPermission("rounds.admin")) {
+            sender.sendMessage(ChatColor.RED + Messages.get("command.no-permission"));
+            return;
+        }
+        if (com.rounds.debug.DebugSession.active) {
+            sender.sendMessage(ChatColor.RED + "Дебаг уже запущен. Используй /rdebug debug stop для остановки.");
+            return;
+        }
+        if (com.rounds.debug.DebugSession.triggered || com.rounds.debug.DebugSession.startAt == -1) {
+            sender.sendMessage(ChatColor.RED + "Нет запланированного дебага для отмены.");
+            return;
+        }
+        com.rounds.debug.DebugSession.clear();
+        sender.sendMessage(ChatColor.GREEN + "RoundsDebug: план дебага отменён.");
     }
 
     private void handleDebugStatus(CommandSender sender) {
@@ -1905,10 +1928,10 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
         return switch (args[0].toLowerCase()) {
             case "debug" -> {
-                if (args.length == 1) {
-                    yield filterStartsWith(Arrays.asList("start", "stop", "status"), input);
-                }
                 if (args.length == 2) {
+                    yield filterStartsWith(Arrays.asList("start", "stop", "cancel", "status"), input);
+                }
+                if (args.length == 3) {
                     if (args[1].equalsIgnoreCase("start")) {
                         yield filterStartsWith(Arrays.asList("1", "10", "20", "30", "40", "50"), input);
                     }
@@ -1917,10 +1940,10 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                     }
                     yield Collections.emptyList();
                 }
-                if (args.length == 3 && args[1].equalsIgnoreCase("start")) {
+                if (args.length == 4 && args[1].equalsIgnoreCase("start")) {
                     yield filterStartsWith(Collections.singletonList("stop"), input);
                 }
-                if (args.length == 4 && args[1].equalsIgnoreCase("start") && args[2].equalsIgnoreCase("stop")) {
+                if (args.length == 5 && args[1].equalsIgnoreCase("start") && args[3].equalsIgnoreCase("stop")) {
                     yield filterStartsWith(Arrays.asList("50", "55", "60"), input);
                 }
                 yield Collections.emptyList();

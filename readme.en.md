@@ -646,6 +646,7 @@ The `freeplay.enabled` setting in `config.yml` or the `/rdebug freeplay on|off` 
 | `/rdebug debug start <round>` | `<1..N>` | Schedule automatic logging start at the beginning of the given round (if it is the current round and the match is running, it starts immediately) |
 | `/rdebug debug start <round> stop <round>` | `<1..N> stop <1..N>` | Schedule start with auto-stop: the dump is produced at the end of the given logging round, the match keeps running |
 | `/rdebug debug stop [round]` | `[1..N]` | Stop the session (dump) and close the file; only logging stops, the game continues |
+| `/rdebug debug cancel` | | Cancel the scheduled debug session |
 
 ### Combat Bot Management (`/rbot` and `/rdebug bot`)
 

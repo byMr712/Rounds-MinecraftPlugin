@@ -102,8 +102,18 @@ public class GunItem implements Listener {
         return item;
     }
 
+    public static Material getGunMaterial() {
+        if (plugin != null && plugin.getRoundsConfig() != null) {
+            try {
+                return Material.valueOf(plugin.getRoundsConfig().getGunMaterial().toUpperCase());
+            } catch (Exception ignored) {}
+        }
+        return Material.STICK;
+    }
+
     public static boolean isGun(ItemStack item) {
-        if (item == null || !item.hasItemMeta()) return false;
+        if (item == null || item.getType() != getGunMaterial()) return false;
+        if (!item.hasItemMeta()) return false;
         PersistentDataContainer pdc = item.getItemMeta().getPersistentDataContainer();
         return pdc.has(RoundsKeys.GUN, PersistentDataType.BYTE);
     }
@@ -124,10 +134,7 @@ public class GunItem implements Listener {
     }
 
     public static boolean isShield(ItemStack item) {
-        if (item == null || item.getType() != Material.SHIELD) return false;
-        if (!item.hasItemMeta()) return true;
-        PersistentDataContainer pdc = item.getItemMeta().getPersistentDataContainer();
-        return pdc.has(RoundsKeys.SHIELD, PersistentDataType.BYTE) || item.getType() == Material.SHIELD;
+        return item != null && item.getType() == Material.SHIELD;
     }
 
     public static int getMaxShieldCharges(UUID uuid) {

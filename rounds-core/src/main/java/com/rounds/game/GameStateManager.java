@@ -42,11 +42,14 @@ public class GameStateManager {
             yml.set("team-wins." + gt.name(), plugin.getTeamManager().getWins(gt));
         }
 
-        try {
-            yml.save(file);
-        } catch (IOException e) {
-            plugin.getLogger().warning("Failed to save game state: " + e.getMessage());
-        }
+        final String serialized = yml.saveToString();
+        org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                java.nio.file.Files.writeString(file.toPath(), serialized, java.nio.charset.StandardCharsets.UTF_8);
+            } catch (IOException e) {
+                plugin.getLogger().warning("Failed to save game state: " + e.getMessage());
+            }
+        });
     }
 
     public SavedState load() {
@@ -101,7 +104,9 @@ public class GameStateManager {
     }
 
     public void clear() {
-        if (file.exists()) file.delete();
+        org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            if (file.exists()) file.delete();
+        });
     }
 
     public static class SavedState {

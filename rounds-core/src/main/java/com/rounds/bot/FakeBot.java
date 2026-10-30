@@ -578,12 +578,12 @@ public class FakeBot {
         }
         BlockListener bl = (manager != null && manager.getPlugin() != null) ? manager.getPlugin().getBlockListener() : null;
 
-        // Tick and expire active potion effects for FakeBot (e.g. GLOWING, SLOW)
-        if (!p.getActivePotionEffects().isEmpty()) {
+        // Tick and expire active potion effects for FakeBot (once per second / 20 ticks)
+        if (p.getTicksLived() % 20 == 0 && !p.getActivePotionEffects().isEmpty()) {
             for (org.bukkit.potion.PotionEffect eff : new java.util.ArrayList<>(p.getActivePotionEffects())) {
                 p.removePotionEffect(eff.getType());
-                if (eff.getDuration() > 1) {
-                    p.addPotionEffect(new org.bukkit.potion.PotionEffect(eff.getType(), eff.getDuration() - 1, eff.getAmplifier(), eff.isAmbient(), eff.hasParticles(), eff.hasIcon()), true);
+                if (eff.getDuration() > 20) {
+                    p.addPotionEffect(new org.bukkit.potion.PotionEffect(eff.getType(), eff.getDuration() - 20, eff.getAmplifier(), eff.isAmbient(), eff.hasParticles(), eff.hasIcon()), true);
                 }
             }
         }
@@ -906,6 +906,9 @@ public class FakeBot {
     private void checkJumpPadAnticipation(BlockListener bl, Location currentLoc, double dx, double dz) {
         int minLevel = manager != null && manager.getPlugin() != null ? manager.getPlugin().getRoundsConfig().getBotJumpPadParryMinLevel() : 5;
         if (level < minLevel) return;
+        boolean falling = velY < -0.05;
+        boolean movingHoriz = (dx * dx + dz * dz) > 0.0001 && isOnGround();
+        if (!falling && !movingHoriz) return;
         Player p = getBukkitPlayer();
         if (p == null || !canBlock() || GunItem.isShieldActive(p.getUniqueId())) return;
 

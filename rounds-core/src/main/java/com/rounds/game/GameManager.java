@@ -924,11 +924,17 @@ public class GameManager implements Listener {
         if (autoDeathBossBar == null) {
             autoDeathBossBar = Bukkit.createBossBar(title, color, BarStyle.SOLID);
         } else {
-            autoDeathBossBar.setTitle(title);
-            autoDeathBossBar.setColor(color);
+            if (!title.equals(autoDeathBossBar.getTitle())) {
+                autoDeathBossBar.setTitle(title);
+            }
+            if (color != autoDeathBossBar.getColor()) {
+                autoDeathBossBar.setColor(color);
+            }
         }
 
-        autoDeathBossBar.setProgress(progress);
+        if (Math.abs(progress - autoDeathBossBar.getProgress()) > 0.005) {
+            autoDeathBossBar.setProgress(progress);
+        }
         autoDeathBossBar.setVisible(true);
 
         for (Player p : Bukkit.getOnlinePlayers()) {

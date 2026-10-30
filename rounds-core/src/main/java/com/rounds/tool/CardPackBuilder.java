@@ -441,9 +441,12 @@ public class CardPackBuilder {
                     while ((ze = zis.getNextEntry()) != null) {
                         String name = ze.getName();
                         if (!ze.isDirectory() && !"pack.mcmeta".equalsIgnoreCase(name)) {
-                            byte[] data = zis.readAllBytes();
                             if ("assets/minecraft/textures/gui/sprites/boss_bar/yellow_background.png".equals(name)
-                                    || "assets/minecraft/textures/gui/sprites/boss_bar/pink_background.png".equals(name)) {
+                                    || "assets/minecraft/textures/gui/sprites/boss_bar/yellow_progress.png".equals(name)) {
+                                continue; // Yellow boss bar is used for the round timer and must remain visible
+                            }
+                            byte[] data = zis.readAllBytes();
+                            if ("assets/minecraft/textures/gui/sprites/boss_bar/pink_background.png".equals(name)) {
                                 transparentBossBarBytes = data;
                             }
                             if ("assets/hudengine/font/hud.json".equals(name)) {
@@ -461,8 +464,6 @@ public class CardPackBuilder {
                     if (transparentBossBarBytes != null) {
                         writeEntry(zos, written, "assets/minecraft/textures/gui/sprites/boss_bar/pink_background.png", transparentBossBarBytes);
                         writeEntry(zos, written, "assets/minecraft/textures/gui/sprites/boss_bar/pink_progress.png", transparentBossBarBytes);
-                        writeEntry(zos, written, "assets/minecraft/textures/gui/sprites/boss_bar/yellow_background.png", transparentBossBarBytes);
-                        writeEntry(zos, written, "assets/minecraft/textures/gui/sprites/boss_bar/yellow_progress.png", transparentBossBarBytes);
                     }
                 }
             }

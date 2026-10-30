@@ -547,7 +547,7 @@ resource-pack-sha1=3fd4def2be6a904b1db6160f0982ae39905511e7
        - Линия 3: `ascent = -8400943` (empty), `-8409135` (win)
      - Провайдер типа `space` для отрицательного и положительного позиционирования курсора от `-8192` до `+8192` (`0xF0000`..`0xF4000`), а также `assets/hudengine/font/space.json`.
    - **Скрытие стандартной полосы BossBar:**
-     - Текстуры полосы боссбара цвета `PINK` в `assets/minecraft/textures/gui/sprites/boss_bar/pink_background.png` и `pink_progress.png` (а также `yellow_*`) обязаны быть прозрачными 1x1 PNG (83 байта). Без них ванильный клиент отрисовывает розовую полосу боссбара под оверлеем.
+     - Текстуры полосы боссбара цвета `PINK` в `assets/minecraft/textures/gui/sprites/boss_bar/pink_background.png` и `pink_progress.png` (только для скрытия подложки оверлея, желтая полоса `yellow_*` таймера раунда не скрывается) обязаны быть прозрачными 1x1 PNG (83 байта). Без них ванильный клиент отрисовывает розовую полосу боссбара под оверлеем.
    - **Вертексные Core Shaders (`DEFAULT_OFFSET 29`):**
      - Вертексный шейдер `rendertype_text.vsh` (Minecraft до 1.21.1) и `text.vsh` (Minecraft 1.21.2+ и Purpur 26.2) в `assets/minecraft/shaders/core/` и во всех 5 оверлеях (`overlay_lightmap`, `overlay_sso`, `overlay_text`, `overlay_ubo150`, `overlay_ubo330`) ОБЯЗАНЫ использовать директиву `#define DEFAULT_OFFSET 29`. Использование значения `10` смещает интерфейс на 19 пикселей вверх к середине экрана.
    - **Версионные оверлеи в `pack.mcmeta`:**

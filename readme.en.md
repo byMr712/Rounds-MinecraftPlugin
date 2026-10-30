@@ -549,7 +549,7 @@ The Rounds resource pack integrates four essential subsystems that render native
        - Line 3: `ascent = -8400943` (empty), `-8409135` (win)
      - Font advance provider of type `space` with advances from `-8192` to `+8192` (`0xF0000`..`0xF4000`), along with `assets/hudengine/font/space.json`.
    - **Vanilla BossBar Concealment:**
-     - BossBar frame sprites for `PINK` color in `assets/minecraft/textures/gui/sprites/boss_bar/pink_background.png` and `pink_progress.png` (as well as `yellow_*`) must be transparent 1x1 PNGs (83 bytes). Without them, the vanilla client renders a visible pink bossbar bar below the HUD overlay.
+     - BossBar frame sprites for `PINK` color in `assets/minecraft/textures/gui/sprites/boss_bar/pink_background.png` and `pink_progress.png` (solely to conceal the HUD overlay background; `yellow_*` textures must remain intact so the round timer displays normally) must be transparent 1x1 PNGs (83 bytes). Without them, the vanilla client renders a visible pink bossbar bar below the HUD overlay.
    - **Vertex Core Shaders (`DEFAULT_OFFSET 29`):**
      - Vertex text shaders `rendertype_text.vsh` (Minecraft <= 1.21.1) and `text.vsh` (Minecraft 1.21.2+ and Purpur 26.2) in `assets/minecraft/shaders/core/` and across all 5 overlays (`overlay_lightmap`, `overlay_sso`, `overlay_text`, `overlay_ubo150`, `overlay_ubo330`) MUST define `#define DEFAULT_OFFSET 29`. Using `10` displaces the HUD 19 pixels upward towards screen center.
    - **Version Overlays in `pack.mcmeta`:**

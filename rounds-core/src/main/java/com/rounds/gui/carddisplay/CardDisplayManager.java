@@ -226,13 +226,9 @@ public class CardDisplayManager implements Listener {
         Player player = event.getPlayer();
         Scene scene = scenes.get(player.getUniqueId());
         if (scene == null) return;
-        int slot = event.getNewSlot();
-        if (slot >= 0 && slot < scene.cards.size()) {
-            event.setCancelled(true);
-            player.getInventory().setHeldItemSlot(event.getPreviousSlot());
-            lastCardPickMs.put(player.getUniqueId(), System.currentTimeMillis());
-            scene.select(slot);
-        }
+        // User requested: disable selecting upgrade cards using keyboard number keys / hotbar slots
+        event.setCancelled(true);
+        player.getInventory().setHeldItemSlot(event.getPreviousSlot());
     }
 
     private TextColor rarityTextColor(CardRegistry.Rarity rarity) {

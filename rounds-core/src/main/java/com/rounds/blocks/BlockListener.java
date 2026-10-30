@@ -17,6 +17,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockIgniteEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
@@ -695,6 +696,13 @@ public class BlockListener implements Listener {
             placer.sendMessage(ChatColor.GREEN + Messages.get("block.end-placed"));
             saveBlocks();
             return;
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onBlockIgnite(BlockIgniteEvent event) {
+        if (event.getCause() == BlockIgniteEvent.IgniteCause.LIGHTNING) {
+            event.setCancelled(true);
         }
     }
 

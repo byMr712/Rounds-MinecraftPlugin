@@ -376,6 +376,10 @@ public class CardGUIListener implements Listener {
         if (!(event.getInventory().getHolder() instanceof CardGUIHolder)) return;
         event.setCancelled(true);
 
+        if (event.getClick() == org.bukkit.event.inventory.ClickType.NUMBER_KEY) {
+            return;
+        }
+
         int rawSlot = event.getRawSlot();
         if (rawSlot < 0 || rawSlot >= SIZE) return;
 

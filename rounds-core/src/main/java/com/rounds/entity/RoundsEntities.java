@@ -21,6 +21,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.entity.AreaEffectCloud;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LightningStrike;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Arrow;
@@ -709,10 +710,13 @@ public class RoundsEntities implements Listener {
             }
 
             PlayerData bd = plugin.getPlayerDataManager().getData(b.ownerId);
-            if (bd != null && (bd.toxicCloud > 0 || bd.bombBullet > 0)) {
+            if (bd != null) {
                 Location hitLoc = new Location(world, hx, hy, hz);
                 if (bd.toxicCloud > 0) spawnToxicCloud(hitLoc, b.ownerId, bd);
                 if (bd.bombBullet > 0) spawnBomb(hitLoc, b.ownerId, bd.getEffectiveDamage() * 0.3);
+                if (bd.stormCaller > 0 && Math.random() < bd.stormCaller) {
+                    spawnStormLightning(world, hitLoc, b.ownerId, b.stack);
+                }
             }
 
             if (b.bounceCount < b.maxBounce) {
@@ -1061,11 +1065,7 @@ public class RoundsEntities implements Listener {
             }
         }
         if (shooter != null && shooter.stormCaller > 0 && Math.random() < shooter.stormCaller) {
-            // Одна молния на репрезентатив с уроном за весь стек: матожидание
-            // совпадает со старым «молния на каждую пулю залпа по 5.0».
-            target.getWorld().strikeLightningEffect(target.getLocation());
-            target.setNoDamageTicks(0);
-            target.damage(5.0 * stack);
+            spawnStormLightning(target.getWorld(), target.getLocation(), ownerId, stack);
         }
     }
 
@@ -1256,6 +1256,37 @@ public class RoundsEntities implements Listener {
             if (dmg > 0) {
                 entity.setNoDamageTicks(0);
                 entity.damage(dmg);
+            }
+        }
+    }
+
+    public static void spawnStormLightning(World world, Location loc, UUID ownerId, int stack) {
+        if (world == null || loc == null) return;
+        LightningStrike strike = world.strikeLightning(loc);
+        Player attacker = ownerId != null ? Bukkit.getPlayer(ownerId) : null;
+        if (attacker != null) {
+            try { strike.setCausingPlayer(attacker); } catch (Throwable ignored) {}
+        }
+        world.playSound(loc, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, SoundCategory.WEATHER, 5.0f, 1.0f);
+        world.playSound(loc, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, SoundCategory.WEATHER, 2.0f, 1.0f);
+        try { world.spawnParticle(Particle.FLASH, loc.clone().add(0, 1, 0), 2); } catch (Throwable ignored) {}
+        try { world.spawnParticle(Particle.ELECTRIC_SPARK, loc.clone().add(0, 1, 0), 20, 0.5, 1.0, 0.5, 0.1); } catch (Throwable ignored) {}
+
+        double splashDamage = 5.0 * stack;
+        for (var living : loc.getNearbyLivingEntities(3.0)) {
+            if (living.isDead() || !living.isValid() || (living instanceof ArmorStand)) continue;
+            if (living instanceof Player p) {
+                if (ownerId != null && (p.getUniqueId().equals(ownerId) || isTeammate(ownerId, p.getUniqueId()))) {
+                    continue;
+                }
+                if (!plugin.getGameManager().isTargetable(p)) continue;
+                com.rounds.stats.MatchStatsManager.recordLastDamager(p.getUniqueId(), ownerId);
+            }
+            living.setNoDamageTicks(0);
+            if (attacker != null && attacker.isOnline()) {
+                living.damage(splashDamage, attacker);
+            } else {
+                living.damage(splashDamage);
             }
         }
     }

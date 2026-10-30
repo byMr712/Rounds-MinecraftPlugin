@@ -87,10 +87,37 @@ public class LegendaryEffects implements Listener {
         isApplyingDecay.remove(uuid);
     }
 
+    public static boolean isDecayTicking(UUID uuid) {
+        return uuid != null && isApplyingDecay.contains(uuid);
+    }
+
     public static boolean hasDecay(UUID uuid) {
         if (uuid == null || instance == null || instance.plugin == null) return false;
         PlayerData data = instance.plugin.getPlayerDataManager().getPlayerDataIfPresent(uuid);
         return data != null && data.decay > 0;
+    }
+
+    public static void addDecayDamage(Player player, double totalDamage, UUID attackerId) {
+        if (player == null || !player.isOnline() || player.isDead() || totalDamage <= 0.0) return;
+        if (instance == null || instance.plugin == null) return;
+        PlayerData data = instance.plugin.getPlayerDataManager().getPlayerDataIfPresent(player.getUniqueId());
+        if (data == null || data.decay <= 0) return;
+
+        player.setNoDamageTicks(0);
+        try { player.playHurtAnimation(0.0f); } catch (Throwable ignored) {}
+        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_HURT, SoundCategory.RECORDS, 0.7f, 1.2f);
+
+        if (attackerId != null) {
+            com.rounds.stats.MatchStatsManager.recordLastDamager(player.getUniqueId(), attackerId);
+        }
+
+        if (data.bloodFurry > 0) {
+            rageUntil.put(player.getUniqueId(), System.currentTimeMillis() + 3000L);
+        }
+
+        int totalSeconds = Math.max(1, (int) Math.round(data.decay));
+        DecaySlice slice = new DecaySlice(totalDamage, totalSeconds, attackerId);
+        decaySlices.computeIfAbsent(player.getUniqueId(), k -> Collections.synchronizedList(new ArrayList<>())).add(slice);
     }
 
     public LegendaryEffects(RoundsPlugin plugin) {
@@ -207,30 +234,16 @@ public class LegendaryEffects implements Listener {
         if (data == null) return;
 
         if (!isDecayTick && data.decay > 0 && event.getCause() != EntityDamageEvent.DamageCause.VOID) {
-            double incomingDmg = event.getFinalDamage();
+            double incomingDmg = event.getDamage();
             if (incomingDmg > 0.0) {
                 event.setCancelled(true);
-                player.setNoDamageTicks(0);
-
-                try { player.playHurtAnimation(0.0f); } catch (Throwable ignored) {}
-                player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_HURT, SoundCategory.RECORDS, 0.7f, 1.2f);
-
                 UUID attackerId = null;
                 if (event instanceof EntityDamageByEntityEvent edbe) {
                     attackerId = edbe.getDamager().getUniqueId();
-                    com.rounds.stats.MatchStatsManager.recordLastDamager(player.getUniqueId(), edbe.getDamager().getUniqueId());
                 } else {
                     attackerId = com.rounds.stats.MatchStatsManager.getLastDamager(player.getUniqueId());
                 }
-
-                if (data.bloodFurry > 0) {
-                    rageUntil.put(player.getUniqueId(), System.currentTimeMillis() + 3000L);
-                }
-
-                int totalSeconds = (data.decay > 0) ? Math.max(1, (int) Math.round(data.decay)) : 5;
-                DecaySlice slice = new DecaySlice(incomingDmg, totalSeconds, attackerId);
-
-                decaySlices.computeIfAbsent(player.getUniqueId(), k -> Collections.synchronizedList(new ArrayList<>())).add(slice);
+                addDecayDamage(player, incomingDmg, attackerId);
             }
             return;
         }
@@ -745,18 +758,32 @@ public class LegendaryEffects implements Listener {
 
             if (totalTickDmg > 0.0 && p.isOnline() && !p.isDead()) {
                 Location loc = p.getLocation().add(0, 1.0, 0);
-                loc.getWorld().spawnParticle(Particle.REDSTONE, loc, 4, 0.3, 0.4, 0.3, 0,
+                loc.getWorld().spawnParticle(Particle.REDSTONE, loc, 6, 0.3, 0.4, 0.3, 0,
                         new Particle.DustOptions(Color.fromRGB(45, 140, 35), 0.9f));
 
                 isApplyingDecay.add(uuid);
                 try {
                     p.setNoDamageTicks(0);
-                    Player attacker = (lastAttacker != null) ? Bukkit.getPlayer(lastAttacker) : null;
-                    if (attacker != null && attacker.isOnline()) {
-                        com.rounds.stats.MatchStatsManager.recordLastDamager(p.getUniqueId(), attacker.getUniqueId());
-                        p.damage(totalTickDmg, attacker);
+                    if (lastAttacker != null) {
+                        com.rounds.stats.MatchStatsManager.recordLastDamager(p.getUniqueId(), lastAttacker);
+                    }
+
+                    double curHp = p.getHealth();
+                    double newHp = curHp - totalTickDmg;
+
+                    try { p.playHurtAnimation(0.0f); } catch (Throwable ignored) {}
+                    p.getWorld().playSound(p.getLocation(), Sound.ENTITY_PLAYER_HURT, SoundCategory.RECORDS, 0.5f, 1.3f);
+                    com.rounds.entity.RoundsEntities.applyHitRedEffects(p, p.getLocation().clone().add(0, -1, 0), p.getLocation());
+
+                    if (newHp <= 0.0) {
+                        Player attacker = (lastAttacker != null) ? Bukkit.getPlayer(lastAttacker) : null;
+                        if (attacker != null && attacker.isOnline()) {
+                            p.damage(1_000_000.0, attacker);
+                        } else {
+                            p.damage(1_000_000.0);
+                        }
                     } else {
-                        p.damage(totalTickDmg);
+                        com.rounds.entity.RoundsEntities.safeSetHealth(p, newHp);
                     }
                 } catch (Throwable ignored) {
                 } finally {

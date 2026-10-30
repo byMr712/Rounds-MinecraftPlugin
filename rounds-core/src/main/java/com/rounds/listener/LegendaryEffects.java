@@ -680,8 +680,7 @@ public class LegendaryEffects implements Listener {
                     spawnShardBeam(world, center, tEye);
 
                     double hpBefore = target.getHealth();
-                    target.setNoDamageTicks(0);
-                    target.damage(shardDamage, player);
+                    com.rounds.entity.RoundsEntities.applyDirectDamage(target, shardDamage, player);
                     if (!target.isInvulnerable() && target.getHealth() >= hpBefore && shardDamage > 0.0 && !target.isDead()) {
                         if (hasDecay(target.getUniqueId())) {
                             // Handled by onDamage: damage converted to damage-over-time

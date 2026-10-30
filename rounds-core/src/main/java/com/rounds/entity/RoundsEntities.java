@@ -55,6 +55,28 @@ public class RoundsEntities implements Listener {
             new Particle.DustOptions(Color.fromRGB(255, 190, 60), 0.95f);
     private static final Map<UUID, org.bukkit.scheduler.BukkitTask> vignetteTasks = new ConcurrentHashMap<>();
 
+    private static boolean isApplyingRoundsDamage = false;
+
+    public static boolean isApplyingRoundsDamage() {
+        return isApplyingRoundsDamage;
+    }
+
+    public static void applyDirectDamage(LivingEntity target, double damage, Entity damager) {
+        if (target == null || target.isDead() || damage <= 0.0) return;
+        target.setNoDamageTicks(0);
+        boolean prev = isApplyingRoundsDamage;
+        isApplyingRoundsDamage = true;
+        try {
+            if (damager != null) {
+                target.damage(damage, damager);
+            } else {
+                target.damage(damage);
+            }
+        } finally {
+            isApplyingRoundsDamage = prev;
+        }
+    }
+
     public static void safeSetHealth(LivingEntity entity, double health) {
         if (entity == null || entity.isDead()) return;
         if (entity.isInvulnerable() && health < entity.getHealth()) return;
@@ -393,14 +415,10 @@ public class RoundsEntities implements Listener {
                         }
                         Player shooter = Bukkit.getPlayer(b.ownerId);
                         double hpBefore = nearest.getHealth();
-                        if (shooter != null && shooter.isOnline()) {
-                            nearest.damage(finalDamage, shooter);
-                            if (nearest instanceof Player victim) {
-                                com.rounds.stats.MatchStatsManager.recordDamageDealt(shooter.getUniqueId(), victim.getUniqueId(), finalDamage);
-                                com.rounds.stats.MatchStatsManager.recordLastDamager(victim.getUniqueId(), shooter.getUniqueId());
-                            }
-                        } else {
-                            nearest.damage(finalDamage);
+                        applyDirectDamage(nearest, finalDamage, (shooter != null && shooter.isOnline()) ? shooter : null);
+                        if (shooter != null && shooter.isOnline() && nearest instanceof Player victim) {
+                            com.rounds.stats.MatchStatsManager.recordDamageDealt(shooter.getUniqueId(), victim.getUniqueId(), finalDamage);
+                            com.rounds.stats.MatchStatsManager.recordLastDamager(victim.getUniqueId(), shooter.getUniqueId());
                         }
                         if (!nearest.isInvulnerable() && nearest.getHealth() >= hpBefore && finalDamage > 0.0 && !nearest.isDead()) {
                             if (nearest instanceof Player p && com.rounds.listener.LegendaryEffects.hasDecay(p.getUniqueId())) {
@@ -554,7 +572,7 @@ public class RoundsEntities implements Listener {
                         shieldPlayer.getWorld().playSound(shieldPlayer.getLocation(), Sound.BLOCK_ANVIL_USE, SoundCategory.RECORDS, 0.7f, 2.0f);
                         if (originalShooter != null && originalShooter.isOnline()) {
                             double parryDmg = blockEvent.getDamage() * 0.5;
-                            originalShooter.damage(parryDmg, shieldPlayer);
+                            applyDirectDamage(originalShooter, parryDmg, shieldPlayer);
                         }
                     }
                     reflectBulletFromPlayer(b, shieldPlayer);
@@ -630,14 +648,10 @@ public class RoundsEntities implements Listener {
                 }
                 Player shooter = Bukkit.getPlayer(b.ownerId);
                 double hpBefore = hitEnt.getHealth();
-                if (shooter != null && shooter.isOnline()) {
-                    hitEnt.damage(finalDmg, shooter);
-                    if (hitEnt instanceof Player victim) {
-                        com.rounds.stats.MatchStatsManager.recordDamageDealt(shooter.getUniqueId(), victim.getUniqueId(), finalDmg);
-                        com.rounds.stats.MatchStatsManager.recordLastDamager(victim.getUniqueId(), shooter.getUniqueId());
-                    }
-                } else {
-                    hitEnt.damage(finalDmg);
+                applyDirectDamage(hitEnt, finalDmg, (shooter != null && shooter.isOnline()) ? shooter : null);
+                if (shooter != null && shooter.isOnline() && hitEnt instanceof Player victim) {
+                    com.rounds.stats.MatchStatsManager.recordDamageDealt(shooter.getUniqueId(), victim.getUniqueId(), finalDmg);
+                    com.rounds.stats.MatchStatsManager.recordLastDamager(victim.getUniqueId(), shooter.getUniqueId());
                 }
                 if (!hitEnt.isInvulnerable() && hitEnt.getHealth() >= hpBefore && finalDmg > 0.0 && !hitEnt.isDead()) {
                     if (hitEnt instanceof Player victim && com.rounds.listener.LegendaryEffects.hasDecay(victim.getUniqueId())) {
@@ -1282,12 +1296,7 @@ public class RoundsEntities implements Listener {
                 if (!plugin.getGameManager().isTargetable(p)) continue;
                 com.rounds.stats.MatchStatsManager.recordLastDamager(p.getUniqueId(), ownerId);
             }
-            living.setNoDamageTicks(0);
-            if (attacker != null && attacker.isOnline()) {
-                living.damage(splashDamage, attacker);
-            } else {
-                living.damage(splashDamage);
-            }
+            applyDirectDamage(living, splashDamage, (attacker != null && attacker.isOnline()) ? attacker : null);
         }
     }
 
@@ -1394,6 +1403,9 @@ public class RoundsEntities implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onEntityDamage(EntityDamageByEntityEvent event) {
+        if (isApplyingRoundsDamage) {
+            return;
+        }
         if (event.getDamager() instanceof Arrow arrow) {
             PersistentDataContainer pdc = arrow.getPersistentDataContainer();
             if (pdc.has(RoundsKeys.IS_BULLET, PersistentDataType.BYTE)) {

@@ -377,7 +377,7 @@ public class PlayerData {
             }
             case DAMAGE_VICTIM -> {
                 if (target instanceof org.bukkit.entity.LivingEntity living && !living.isDead()) {
-                    living.damage(act.value(), player);
+                    com.rounds.entity.RoundsEntities.applyDirectDamage(living, act.value(), player);
                 }
             }
             case PUSH_SHOOTER -> {

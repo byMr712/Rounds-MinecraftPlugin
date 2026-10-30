@@ -124,4 +124,26 @@ class DecayEchoTest {
         assertNotNull(effects);
         assertEquals(1, ((Number) effects.get("truster")).intValue());
     }
+
+    @Test
+    void testApplyDirectDamageFlagLifecycle() {
+        assertFalse(com.rounds.entity.RoundsEntities.isApplyingRoundsDamage());
+
+        org.bukkit.entity.LivingEntity mockTarget = org.mockito.Mockito.mock(org.bukkit.entity.LivingEntity.class);
+        org.bukkit.entity.Player mockDamager = org.mockito.Mockito.mock(org.bukkit.entity.Player.class);
+        org.mockito.Mockito.when(mockTarget.isDead()).thenReturn(false);
+
+        org.mockito.Mockito.doAnswer(invocation -> {
+            assertTrue(com.rounds.entity.RoundsEntities.isApplyingRoundsDamage(),
+                    "isApplyingRoundsDamage must be true while target.damage() is running");
+            return null;
+        }).when(mockTarget).damage(org.mockito.Mockito.anyDouble(), org.mockito.Mockito.any(org.bukkit.entity.Entity.class));
+
+        com.rounds.entity.RoundsEntities.applyDirectDamage(mockTarget, 10.0, mockDamager);
+
+        assertFalse(com.rounds.entity.RoundsEntities.isApplyingRoundsDamage(),
+                "isApplyingRoundsDamage must be restored to false after damage call finishes");
+        org.mockito.Mockito.verify(mockTarget).setNoDamageTicks(0);
+        org.mockito.Mockito.verify(mockTarget).damage(10.0, mockDamager);
+    }
 }

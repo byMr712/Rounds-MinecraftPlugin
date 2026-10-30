@@ -1898,6 +1898,16 @@ public class GameManager implements Listener {
         plugin.getServer().broadcastMessage(BOX_BOT);
     }
 
+    public void broadcastAttachedBox(String... lines) {
+        if (lines == null || lines.length == 0) return;
+        for (String line : lines) {
+            if (line != null && !line.isEmpty()) {
+                plugin.getServer().broadcastMessage(BOX_MID + BOX_W + "\u2502 " + BOX_W + line);
+            }
+        }
+        plugin.getServer().broadcastMessage(BOX_BOT);
+    }
+
     public List<String> getActiveTeamScores() {
         List<String> list = new ArrayList<>();
         TeamManager tm = plugin.getTeamManager();

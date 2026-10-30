@@ -185,8 +185,13 @@ public class CardManager {
             ChatColor teamColor = (team != null) ? team.getColor() : ChatColor.YELLOW;
             String cardName = stripAllColors(card.getName(lang));
             String cardDesc = stripAllColors(card.getDescription(lang));
-            String rawMsg = Messages.get("card.picked", player.getName(), cardName, cardDesc);
-            plugin.getServer().broadcastMessage(teamColor + stripAllColors(rawMsg));
+            String playerText = teamColor + player.getName() + "\u00A7f";
+            String rawMsg = Messages.get("card.picked", playerText, cardName, cardDesc);
+            if (plugin.getGameManager() != null) {
+                plugin.getGameManager().broadcastAttachedBox(rawMsg);
+            } else {
+                plugin.getServer().broadcastMessage(rawMsg);
+            }
         }
 
         if (allPicksDone()) {
@@ -294,8 +299,13 @@ public class CardManager {
                 syncPlayerHP(player, data);
                 String cardName = stripAllColors(bonus.getName(lang));
                 String cardDesc = stripAllColors(bonus.getDescription(lang));
-                String rawMsg = Messages.get("card.picked", player.getName(), cardName, cardDesc);
-                plugin.getServer().broadcastMessage(teamColor + stripAllColors(rawMsg));
+                String playerText = teamColor + player.getName() + "\u00A7f";
+                String rawMsg = Messages.get("card.picked", playerText, cardName, cardDesc);
+                if (plugin.getGameManager() != null) {
+                    plugin.getGameManager().broadcastAttachedBox(rawMsg);
+                } else {
+                    plugin.getServer().broadcastMessage(rawMsg);
+                }
                 revealedAny = true;
             }
         }

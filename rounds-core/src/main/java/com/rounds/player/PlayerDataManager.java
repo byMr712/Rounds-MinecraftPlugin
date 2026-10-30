@@ -169,8 +169,14 @@ public class PlayerDataManager implements Listener {
         yml.set(path + ".stats.block-cd", data.blockCd);
         yml.set(path + ".stats.block-cd-mult", data.blockCdMult);
 
-        yml.set(path + ".cards", new ArrayList<>(data.getOwnedCards())); if (!flush) return;
-
+        yml.set(path + ".cards", new ArrayList<>(data.getOwnedCards()));
+        try {
+            Player onlinePlayer = Bukkit.getPlayer(uuid);
+            if (onlinePlayer != null && onlinePlayer.isOnline()) {
+                saveToPDC(onlinePlayer, data);
+            }
+        } catch (Throwable ignored) {}
+        if (!flush) return;
 
         flushStore();
     }
@@ -228,6 +234,7 @@ public class PlayerDataManager implements Listener {
                     card.apply(player, data, false);
                 }
             }
+            com.rounds.stats.MatchStatsManager.setCardsCount(uuid, data.getOwnedCards().size());
         } else if (saved.stats != null && !saved.stats.isEmpty()) {
             data.dmg = saved.stats.getOrDefault("dmg", 1.0);
             data.atks = saved.stats.getOrDefault("atks", 20.0);
@@ -334,8 +341,14 @@ public class PlayerDataManager implements Listener {
         yml.set(path + ".stats.block-cd", data.blockCd);
         yml.set(path + ".stats.block-cd-mult", data.blockCdMult);
 
-        yml.set(path + ".cards", new ArrayList<>(data.getOwnedCards())); if (!flush) return;
-
+        yml.set(path + ".cards", new ArrayList<>(data.getOwnedCards()));
+        try {
+            Player onlinePlayer = Bukkit.getPlayer(uuid);
+            if (onlinePlayer != null && onlinePlayer.isOnline()) {
+                saveToPDC(onlinePlayer, data);
+            }
+        } catch (Throwable ignored) {}
+        if (!flush) return;
 
         flushStore();
     }

@@ -350,9 +350,11 @@ public class CardGUIListener implements Listener {
 
             if (rawSlot == 11) { // Duplicate card
                 if (target != null && card != null) {
-                    plugin.getCardManager().applyCardToPlayer(target, card);
-                    player.sendMessage(ChatColor.GREEN + Messages.get("card.action-duplicated-msg", card.getColoredName(lang), target.getName()));
-                    player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, SoundCategory.RECORDS, 0.7f, 1.2f);
+                    boolean ok = plugin.getCardManager().duplicateCardToPlayer(target, card);
+                    if (ok) {
+                        player.sendMessage(ChatColor.GREEN + Messages.get("card.action-duplicated-msg", card.getColoredName(lang), target.getName()));
+                        player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, SoundCategory.RECORDS, 0.7f, 1.2f);
+                    }
                     openShow(player, target, actionHolder.getReturnPage());
                 }
             } else if (rawSlot == 15) { // Delete card

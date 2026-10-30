@@ -240,9 +240,29 @@ public class CardManager {
         data.addCard(card.getId());
         com.rounds.stats.MatchStatsManager.setCardsCount(player.getUniqueId(), data.getOwnedCards().size());
         syncPlayerHP(player, data);
-        GameTeam team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        GameTeam team = (plugin.getTeamManager() != null) ? plugin.getTeamManager().getPlayerTeam(player.getUniqueId()) : null;
         plugin.getPlayerDataManager().savePlayerFullData(player.getUniqueId(), team, null);
-        grantChainedCards(player, data, card);
+        boolean revealed = grantChainedCards(player, data, card);
+        if (revealed) {
+            plugin.getPlayerDataManager().savePlayerFullData(player.getUniqueId(), team, null);
+        }
+        return true;
+    }
+
+    public boolean duplicateCardToPlayer(Player player, Card card) {
+        if (player == null || card == null) return false;
+        PlayerData data = plugin.getPlayerDataManager().getData(player);
+
+        card.apply(player, data);
+        data.addCard(card.getId());
+        com.rounds.stats.MatchStatsManager.setCardsCount(player.getUniqueId(), data.getOwnedCards().size());
+        syncPlayerHP(player, data);
+        GameTeam team = (plugin.getTeamManager() != null) ? plugin.getTeamManager().getPlayerTeam(player.getUniqueId()) : null;
+        plugin.getPlayerDataManager().savePlayerFullData(player.getUniqueId(), team, null);
+        boolean revealed = grantChainedCards(player, data, card);
+        if (revealed) {
+            plugin.getPlayerDataManager().savePlayerFullData(player.getUniqueId(), team, null);
+        }
         return true;
     }
 
@@ -270,7 +290,7 @@ public class CardManager {
         }
 
         syncPlayerHP(player, data);
-        GameTeam team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        GameTeam team = (plugin.getTeamManager() != null) ? plugin.getTeamManager().getPlayerTeam(player.getUniqueId()) : null;
         plugin.getPlayerDataManager().savePlayerFullData(player.getUniqueId(), team, null);
     }
 

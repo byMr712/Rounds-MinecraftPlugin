@@ -1865,12 +1865,12 @@ public class GameManager implements Listener {
     }
 
     // ═══ Box Broadcast Helpers (matches /rdebug status style) ═══
-    private static final String BOX_B = "\u00A76"; // ChatColor.GOLD
-    private static final String BOX_W = "\u00A7f"; // ChatColor.WHITE
-    private static final String BOX_TOP = BOX_B + "\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550";
-    private static final String BOX_SEP = BOX_B + "\u2560\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550";
-    private static final String BOX_BOT = BOX_B + "\u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550";
-    private static final String BOX_MID = BOX_B + "\u2551 ";
+    public static final String BOX_B = "\u00A76"; // ChatColor.GOLD
+    public static final String BOX_W = "\u00A7f"; // ChatColor.WHITE
+    public static final String BOX_TOP = BOX_B + "\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550";
+    public static final String BOX_SEP = BOX_B + "\u2560\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550";
+    public static final String BOX_BOT = BOX_B + "\u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550";
+    public static final String BOX_MID = BOX_B + "\u2551 ";
 
     public void broadcastBox(String title, String sectionTitle, List<String> lines) {
         plugin.getServer().broadcastMessage(BOX_TOP);
@@ -1905,6 +1905,33 @@ public class GameManager implements Listener {
             }
         }
         plugin.getServer().broadcastMessage(BOX_BOT);
+    }
+
+    public void broadcastAttachedBox(net.md_5.bungee.api.chat.BaseComponent firstLine, List<String> lines) {
+        if (firstLine == null) {
+            broadcastAttachedBox(lines);
+            return;
+        }
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            p.spigot().sendMessage(firstLine);
+            if (lines != null) {
+                for (String line : lines) {
+                    if (line != null && !line.isEmpty()) {
+                        p.sendMessage(BOX_MID + line);
+                    }
+                }
+            }
+            p.sendMessage(BOX_BOT);
+        }
+        plugin.getServer().getConsoleSender().sendMessage(firstLine.toLegacyText());
+        if (lines != null) {
+            for (String line : lines) {
+                if (line != null && !line.isEmpty()) {
+                    plugin.getServer().getConsoleSender().sendMessage(BOX_MID + line);
+                }
+            }
+        }
+        plugin.getServer().getConsoleSender().sendMessage(BOX_BOT);
     }
 
     public void broadcastAttachedBox(String... lines) {
@@ -2082,15 +2109,19 @@ public class GameManager implements Listener {
         if (state != GameState.PLAYING && state != GameState.ROUND_END && state != GameState.CARDS) return;
         Player player = event.getPlayer();
 
-        if (state == GameState.PLAYING && deadPlayers.contains(player.getUniqueId())) {
-            event.setRespawnLocation(player.getWorld().getSpawnLocation());
+        if ((state == GameState.PLAYING || state == GameState.ROUND_END) && deadPlayers.contains(player.getUniqueId())) {
+            Location specSpawn = (currentZoneCenter != null && currentZoneCenter.getWorld() != null)
+                    ? currentZoneCenter.clone().add(0, 40.0, 0)
+                    : player.getWorld().getSpawnLocation().clone().add(0, 40.0, 0);
+            specSpawn.setYaw(player.getLocation().getYaw());
+            specSpawn.setPitch(90.0f);
+            event.setRespawnLocation(specSpawn);
             Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                 player.setGameMode(GameMode.SPECTATOR);
                 player.setInvulnerable(true);
-                GameTeam deadTeam = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
-                Location spawn = deadTeam != null ? teamSpawns.get(deadTeam) : null;
-                if (spawn == null) spawn = currentZoneCenter;
-                if (spawn != null) player.teleport(spawn);
+                player.setAllowFlight(true);
+                player.setFlying(true);
+                player.teleport(specSpawn);
                 if (plugin.getRoundMusicManager() != null && plugin.getRoundMusicManager().isPlaying()) {
                     plugin.getRoundMusicManager().playTrackForPlayer(player, plugin.getRoundMusicManager().getCurrentTrack());
                 }
@@ -2105,9 +2136,15 @@ public class GameManager implements Listener {
             Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                 player.setGameMode(GameMode.SPECTATOR);
                 player.setInvulnerable(true);
+                player.setAllowFlight(true);
+                player.setFlying(true);
                 Player target = findRandomAlivePlayer();
                 if (target != null) {
                     player.teleport(target.getLocation());
+                } else if (currentZoneCenter != null && currentZoneCenter.getWorld() != null) {
+                    Location specSpawn = currentZoneCenter.clone().add(0, 40.0, 0);
+                    specSpawn.setPitch(90.0f);
+                    player.teleport(specSpawn);
                 }
                 if (plugin.getRoundMusicManager() != null && plugin.getRoundMusicManager().isPlaying()) {
                     plugin.getRoundMusicManager().playTrackForPlayer(player, plugin.getRoundMusicManager().getCurrentTrack());

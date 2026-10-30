@@ -58,8 +58,8 @@ public class CardDisplayManager implements Listener {
 
     private static final int SLOT_COUNT = 5;
     private static final double RADIUS = 2.2;
-    private static final double FAN_TOTAL_DEG = 131.4;
-    private static final float CARD_SCALE = 0.825f;
+    private static final double FAN_TOTAL_DEG = 105.3;
+    private static final float CARD_SCALE = 0.66f;
     private static final Transformation CARD_TRANSFORMATION = new Transformation(
             new Vector3f(0f, 0f, 0f),
             new AxisAngle4f(),
@@ -68,8 +68,8 @@ public class CardDisplayManager implements Listener {
     );
     private static final double CARD_CENTER_OFFSET = 1.2 * CARD_SCALE;
     // Card glyph is 88 font units tall (bitmap provider) rendered at ~0.025 blocks/unit,
-    // source images are 160x250 (width = 0.64 * height). Scaled to 0.825 size (+10% from 0.75).
-    private static final double CARD_HALF_WIDTH = 0.605;
+    // source images are 160x250 (width = 0.64 * height). Scaled to 0.66 size (-20% from 0.825).
+    private static final double CARD_HALF_WIDTH = 0.484;
     private static final double CARD_HALF_HEIGHT = 1.16 * CARD_SCALE;
     private static final Key CARD_FONT = Key.key("rounds", "default");
 

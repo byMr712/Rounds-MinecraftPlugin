@@ -1,9 +1,14 @@
 package com.rounds.cards;
 
 import com.rounds.RoundsPlugin;
+import com.rounds.game.GameManager;
 import com.rounds.player.PlayerData;
 import com.rounds.teams.TeamManager.GameTeam;
 import com.rounds.util.Messages;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
@@ -320,36 +325,76 @@ public class CardManager {
         ChatColor teamColor = (team != null) ? team.getColor() : ChatColor.YELLOW;
         String cardName = stripAllColors(card.getName(lang));
         String cardDesc = stripAllColors(card.getDescription(lang));
-        String playerText = teamColor + player.getName() + "\u00A7f";
-        String rawHeader = Messages.get("card.picked", playerText, cardName, "");
-        String header = rawHeader.replaceAll("(?i)(?::|\\s)*(?:§[0-9a-fk-or])*\\{2\\}", "").trim();
-        if (!header.endsWith(":")) {
-            header += ":";
+
+        String rawFormat = Messages.get("card.picked", "\u0001", "\u0002");
+        if (rawFormat == null || !rawFormat.contains("\u0001") || !rawFormat.contains("\u0002")) {
+            rawFormat = "\u0001 получает карту — \u0002:";
+        }
+        rawFormat = rawFormat.replaceAll("(?i)(?::|\\s)*(?:§[0-9a-fk-or])*\\{2\\}", "").trim();
+        if (!rawFormat.endsWith(":")) {
+            rawFormat += ":";
         }
 
-        List<String> boxLines = new ArrayList<>();
-        boxLines.add(header);
+        int idx1 = rawFormat.indexOf("\u0001");
+        int idx2 = rawFormat.indexOf("\u0002");
+        if (idx1 < 0 || idx2 < 0 || idx2 < idx1) {
+            rawFormat = "\u0001 получает карту — \u0002:";
+            idx1 = rawFormat.indexOf("\u0001");
+            idx2 = rawFormat.indexOf("\u0002");
+        }
 
+        String prePlayer = stripAllColors(rawFormat.substring(0, idx1));
+        String midText = stripAllColors(rawFormat.substring(idx1 + 1, idx2));
+        String postText = stripAllColors(rawFormat.substring(idx2 + 1));
+
+        TextComponent firstLineComp = new TextComponent(GameManager.BOX_MID);
+        if (!prePlayer.isEmpty()) {
+            firstLineComp.addExtra(new TextComponent(ChatColor.WHITE + prePlayer));
+        }
+
+        TextComponent playerComp = new TextComponent(teamColor + player.getName());
+        playerComp.setClickEvent(new ClickEvent(
+                ClickEvent.Action.RUN_COMMAND,
+                "/rdebug cards show " + player.getName()
+        ));
+        String hoverText = Messages.get("card.show-player-cards-hover", player.getName());
+        if (hoverText == null || hoverText.equals("card.show-player-cards-hover")) {
+            hoverText = "ru".equalsIgnoreCase(lang)
+                    ? "§7Нажмите, чтобы посмотреть карты игрока " + player.getName()
+                    : "§7Click to view cards of " + player.getName();
+        }
+        playerComp.setHoverEvent(new HoverEvent(
+                HoverEvent.Action.SHOW_TEXT,
+                new ComponentBuilder(hoverText).create()
+        ));
+        firstLineComp.addExtra(playerComp);
+
+        String rest = ChatColor.WHITE + midText + cardName + postText;
+        firstLineComp.addExtra(new TextComponent(rest));
+
+        List<String> descLines = new ArrayList<>();
         if (cardDesc != null && !cardDesc.trim().isEmpty()) {
             List<String> wrapped = Card.wrapText(cardDesc, 45);
             if (wrapped.isEmpty()) {
-                boxLines.add("\u00A7f" + cardDesc.trim());
+                descLines.add(ChatColor.WHITE + cardDesc.trim());
             } else {
                 for (String w : wrapped) {
                     String clean = stripAllColors(w).trim();
                     if (!clean.isEmpty()) {
-                        boxLines.add("\u00A7f" + clean);
+                        descLines.add(ChatColor.WHITE + clean);
                     }
                 }
             }
         }
 
         if (plugin.getGameManager() != null) {
-            plugin.getGameManager().broadcastAttachedBox(boxLines);
+            plugin.getGameManager().broadcastAttachedBox(firstLineComp, descLines);
         } else {
-            for (String l : boxLines) {
-                plugin.getServer().broadcastMessage(l);
+            plugin.getServer().broadcastMessage(firstLineComp.toLegacyText());
+            for (String l : descLines) {
+                plugin.getServer().broadcastMessage(GameManager.BOX_MID + l);
             }
+            plugin.getServer().broadcastMessage(GameManager.BOX_BOT);
         }
     }
 

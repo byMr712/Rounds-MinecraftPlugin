@@ -118,6 +118,7 @@ card:
   applied: "Applied card: {0}"
   picked: "{0} picks card — {1}:"
   bonus-received: "&6You also received: {0}"
+  show-player-cards-hover: "§7Click to view cards of {0}"
 
   show-prev: "← Previous page ({0}/{1})"
   show-next: "Next page ({0}/{1}) →"

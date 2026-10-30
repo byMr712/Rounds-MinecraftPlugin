@@ -886,6 +886,12 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 page = Integer.parseInt(args[2]);
             } catch (NumberFormatException notANumber) {
                 target = Bukkit.getPlayer(args[2]);
+                if (target == null && plugin.getBotManager() != null) {
+                    var bot = plugin.getBotManager().getBot(args[2]);
+                    if (bot != null) {
+                        target = bot.getBukkitPlayer();
+                    }
+                }
                 if (target != null && args.length >= 4) {
                     try {
                         page = Integer.parseInt(args[3]);

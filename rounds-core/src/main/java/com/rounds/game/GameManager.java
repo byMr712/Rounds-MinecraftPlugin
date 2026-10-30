@@ -2121,7 +2121,7 @@ public class GameManager implements Listener {
 
         if (isAdmin(player)) {
             sendAdminPrompt(player);
-        } else if (plugin.getTeamManager().getPlayerTeam(player.getUniqueId()) == null) {
+        } else if (isGameStarted() && plugin.getTeamManager().getPlayerTeam(player.getUniqueId()) == null) {
             sendJoinPrompt(player);
         }
     }

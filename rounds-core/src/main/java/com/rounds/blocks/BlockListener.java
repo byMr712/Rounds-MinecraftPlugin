@@ -389,7 +389,6 @@ public class BlockListener implements Listener {
                 return;
             }
             if (plugin.getTeamManager().getPlayerTeam(player.getUniqueId()) == null) {
-                plugin.getGameManager().sendJoinPrompt(player);
                 return;
             }
             plugin.getTeamManager().leaveTeam(player.getUniqueId());

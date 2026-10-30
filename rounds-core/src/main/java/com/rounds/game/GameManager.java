@@ -889,16 +889,22 @@ public class GameManager implements Listener {
             long remainingMs = Math.max(0, (cardDraftStartTime + cardDraftDurationMs) - now);
             int remainingSec = (int) Math.ceil(remainingMs / 1000.0);
             progress = Math.max(0.0, Math.min(1.0, (double) remainingMs / cardDraftDurationMs));
-            net.md_5.bungee.api.ChatColor timerColor = getCardDraftTimerColor(remainingMs, cardDraftDurationMs);
-            title = timerColor + Messages.get("game.bossbar-cards") + " (" + remainingSec + "s)";
-            long yellowThresholdMs = (cardDraftDurationMs + 5000L) / 2;
-            if (remainingMs <= 5000L) {
+
+            long yellowThresholdMs = cardDraftDurationMs / 2;
+            long redThresholdMs = Math.min(5000L, yellowThresholdMs);
+
+            ChatColor timerColor;
+            if (remainingMs <= redThresholdMs) {
                 color = BarColor.RED;
+                timerColor = ChatColor.RED;
             } else if (remainingMs <= yellowThresholdMs) {
                 color = BarColor.YELLOW;
+                timerColor = ChatColor.YELLOW;
             } else {
                 color = BarColor.GREEN;
+                timerColor = ChatColor.GREEN;
             }
+            title = timerColor + Messages.get("game.bossbar-cards") + " (" + remainingSec + "s)";
         } else if (state == GameState.ROUND_END) {
             title = Messages.get("game.bossbar-round-end");
             color = BarColor.YELLOW;
@@ -946,29 +952,6 @@ public class GameManager implements Listener {
         if (autoDeathBossBar != null) {
             autoDeathBossBar.setVisible(false);
             autoDeathBossBar.removeAll();
-        }
-    }
-
-    private net.md_5.bungee.api.ChatColor getCardDraftTimerColor(long remainingMs, long totalMs) {
-        long redThresholdMs = 5000L;
-        if (remainingMs <= redThresholdMs) {
-            return net.md_5.bungee.api.ChatColor.of("#FF4444");
-        }
-        long yellowThresholdMs = (totalMs + redThresholdMs) / 2;
-        if (remainingMs >= yellowThresholdMs) {
-            double p = (double) (remainingMs - yellowThresholdMs) / Math.max(1L, totalMs - yellowThresholdMs);
-            p = Math.max(0.0, Math.min(1.0, p));
-            int r = (int) Math.round(255 - (255 - 68) * p);
-            int g = 255;
-            int b = 68;
-            return net.md_5.bungee.api.ChatColor.of(String.format("#%02X%02X%02X", r, g, b));
-        } else {
-            double p = (double) (remainingMs - redThresholdMs) / Math.max(1L, yellowThresholdMs - redThresholdMs);
-            p = Math.max(0.0, Math.min(1.0, p));
-            int r = 255;
-            int g = (int) Math.round(68 + (255 - 68) * p);
-            int b = 68;
-            return net.md_5.bungee.api.ChatColor.of(String.format("#%02X%02X%02X", r, g, b));
         }
     }
 

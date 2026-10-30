@@ -109,8 +109,14 @@ public final class HudEngineHook {
                 if (!defaultHuds.contains("rounds_score")) {
                     defaultHuds.add("rounds_score");
                     config.set("huds.default", defaultHuds);
-                    config.save(configFile);
                     deployed = true;
+                }
+                if (!"pink".equalsIgnoreCase(config.getString("boss-bar-color"))) {
+                    config.set("boss-bar-color", "pink");
+                    deployed = true;
+                }
+                if (deployed) {
+                    config.save(configFile);
                 }
             } catch (Exception e) {
                 plugin.getLogger().warning("Could not update HUDEngine config.yml: " + e.getMessage());

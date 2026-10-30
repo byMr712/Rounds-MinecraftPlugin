@@ -16,8 +16,11 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -105,12 +108,73 @@ public class GunItem implements Listener {
         return pdc.has(RoundsKeys.GUN, PersistentDataType.BYTE);
     }
 
+    public static ItemStack createShieldItem() {
+        ItemStack item = new ItemStack(Material.SHIELD);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(ChatColor.AQUA + Messages.get("gun.shield-name"));
+            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+            try {
+                meta.setUnbreakable(true);
+            } catch (Throwable ignored) {}
+            meta.getPersistentDataContainer().set(RoundsKeys.SHIELD, PersistentDataType.BYTE, (byte) 1);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    public static boolean isShield(ItemStack item) {
+        if (item == null || item.getType() != Material.SHIELD) return false;
+        if (!item.hasItemMeta()) return true;
+        PersistentDataContainer pdc = item.getItemMeta().getPersistentDataContainer();
+        return pdc.has(RoundsKeys.SHIELD, PersistentDataType.BYTE) || item.getType() == Material.SHIELD;
+    }
+
+    public static int getMaxShieldCharges(UUID uuid) {
+        if (plugin == null) return 1;
+        PlayerData data = plugin.getPlayerDataManager().getData(uuid);
+        if (data == null) return 1;
+        return 1 + (int) Math.max(data.shieldCharge + data.doubleBlock, 0);
+    }
+
+    public static void initPlayerShield(Player player) {
+        if (player == null || !player.isOnline()) return;
+        UUID uuid = player.getUniqueId();
+        int maxCharges = getMaxShieldCharges(uuid);
+        shieldCharges.put(uuid, maxCharges);
+        shieldCooldowns.remove(uuid);
+        player.getInventory().setItemInOffHand(createShieldItem());
+        player.setLevel(maxCharges);
+        player.setExp(1.0f);
+    }
+
+    public static void resetPlayerHud(Player player) {
+        if (player == null) return;
+        if (isShield(player.getInventory().getItemInOffHand())) {
+            player.getInventory().setItemInOffHand(null);
+        }
+        player.setLevel(0);
+        player.setExp(0.0f);
+    }
+
     @EventHandler
     public void onInteract(PlayerInteractEvent event) {
-        if (event.getHand() != EquipmentSlot.HAND) return;
-
         Player player = event.getPlayer();
         if (player.getGameMode() == GameMode.CREATIVE || player.getGameMode() == GameMode.SPECTATOR) return;
+
+        if (event.getHand() == EquipmentSlot.OFF_HAND) {
+            ItemStack offItem = player.getInventory().getItemInOffHand();
+            if (isShield(offItem)) {
+                event.setCancelled(true);
+                if (plugin != null && plugin.getGameManager().getState() == com.rounds.game.GameManager.GameState.PLAYING) {
+                    doBlock(player);
+                }
+            }
+            return;
+        }
+
+        if (event.getHand() != EquipmentSlot.HAND) return;
+
         ItemStack item = player.getInventory().getItemInMainHand();
         if (!isGun(item)) return;
 
@@ -340,6 +404,9 @@ public class GunItem implements Listener {
         if (!isGun(player.getInventory().getItemInMainHand())) {
             return;
         }
+        if (plugin != null && plugin.getGameManager().getState() != com.rounds.game.GameManager.GameState.PLAYING) {
+            return;
+        }
         UUID uuid = player.getUniqueId();
 
         if (silencedPlayers.contains(uuid)) {
@@ -362,20 +429,34 @@ public class GunItem implements Listener {
 
         Long lastUse = shieldCooldowns.get(uuid);
         long now = System.currentTimeMillis();
-        int extraCharges = (int) Math.max(data.shieldCharge + data.doubleBlock, 0);
-        int currentCharges = shieldCharges.getOrDefault(uuid, 0);
+        int maxCharges = getMaxShieldCharges(uuid);
+        int currentCharges = shieldCharges.getOrDefault(uuid, lastUse == null ? maxCharges : 0);
 
-        if (lastUse != null && now - lastUse < actualCooldown && currentCharges <= 0) {
-            long remaining = (actualCooldown - (now - lastUse)) / 1000 + 1;
+        if (lastUse != null && now - lastUse >= actualCooldown) {
+            shieldCooldowns.remove(uuid);
+            currentCharges = maxCharges;
+            shieldCharges.put(uuid, maxCharges);
+            lastUse = null;
+        }
+
+        if (currentCharges <= 0) {
+            long remaining = (lastUse != null) ? (actualCooldown - (now - lastUse)) / 1000 + 1 : 1;
             player.sendActionBar(ChatColor.YELLOW + Messages.get("gun.shield-cooldown", remaining));
             return;
         }
 
-        if (currentCharges > 0) {
-            shieldCharges.put(uuid, currentCharges - 1);
-        } else {
+        currentCharges--;
+        shieldCharges.put(uuid, currentCharges);
+        if (lastUse == null) {
             shieldCooldowns.put(uuid, now);
-            shieldCharges.put(uuid, extraCharges);
+        }
+
+        if (currentCharges <= 0) {
+            player.getInventory().setItemInOffHand(null);
+            player.setLevel(0);
+            player.setExp(0.0f);
+        } else {
+            player.setLevel(currentCharges);
         }
 
         executeBlockPulse(player, data, false);
@@ -397,6 +478,7 @@ public class GunItem implements Listener {
     public void executeBlockPulse(Player player, PlayerData data, boolean isEcho) {
         UUID uuid = player.getUniqueId();
         activeShields.add(uuid);
+        if (data != null) data.shieldActive = true;
         int token = activeShieldTokens.merge(uuid, 1, Integer::sum);
 
         long shieldDuration = (plugin != null) ? plugin.getRoundsConfig().getShieldDurationTicks() : (long) SHIELD_DURATION_TICKS;
@@ -406,6 +488,7 @@ public class GunItem implements Listener {
         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
             if (activeShieldTokens.getOrDefault(uuid, 0) == token) {
                 activeShields.remove(uuid);
+                if (data != null) data.shieldActive = false;
             }
         }, shieldDuration);
 
@@ -692,21 +775,43 @@ public class GunItem implements Listener {
     @EventHandler
     public void onDrop(PlayerDropItemEvent event) {
         ItemStack item = event.getItemDrop().getItemStack();
-        if (!isGun(item)) return;
-        event.setCancelled(true);
+        if (isGun(item) || isShield(item)) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onSwapHandItems(PlayerSwapHandItemsEvent event) {
+        Player player = event.getPlayer();
+        ItemStack main = player.getInventory().getItemInMainHand();
+        ItemStack off = player.getInventory().getItemInOffHand();
+        if (isGun(main) || isGun(off) || isShield(main) || isShield(off)) {
+            event.setCancelled(true);
+            if (plugin != null && plugin.getGameManager().getState() == com.rounds.game.GameManager.GameState.PLAYING) {
+                doBlock(player);
+            }
+        }
     }
 
     @EventHandler
-    public void onInventoryClick(org.bukkit.event.inventory.InventoryClickEvent event) {
-        if (event.getCurrentItem() != null && isGun(event.getCurrentItem())) {
-            if (event.getClick() == org.bukkit.event.inventory.ClickType.DROP
-                    || event.getClick() == org.bukkit.event.inventory.ClickType.CONTROL_DROP) {
+    public void onInventoryClick(InventoryClickEvent event) {
+        if (event.getClick() == ClickType.SWAP_OFFHAND
+                || event.getSlot() == 40 || event.getRawSlot() == 45) {
+            event.setCancelled(true);
+            return;
+        }
+        if (event.getCurrentItem() != null && (isGun(event.getCurrentItem()) || isShield(event.getCurrentItem()))) {
+            if (event.getClick() == ClickType.DROP
+                    || event.getClick() == ClickType.CONTROL_DROP
+                    || isShield(event.getCurrentItem())) {
                 event.setCancelled(true);
+                return;
             }
         }
-        if (event.getCursor() != null && isGun(event.getCursor())) {
-            if (event.getSlot() == -999) {
+        if (event.getCursor() != null && (isGun(event.getCursor()) || isShield(event.getCursor()))) {
+            if (event.getSlot() == -999 || isShield(event.getCursor())) {
                 event.setCancelled(true);
+                return;
             }
         }
     }
@@ -754,6 +859,8 @@ public class GunItem implements Listener {
         partyLocked.remove(uuid);
         noPartyCooldowns.remove(uuid);
         homingBuffUntil.remove(uuid);
+        Player p = Bukkit.getPlayer(uuid);
+        if (p != null) resetPlayerHud(p);
     }
 
     public static boolean isReloading(UUID uuid) {
@@ -800,7 +907,7 @@ public class GunItem implements Listener {
     }
 
     public static int getShieldCharges(UUID uuid) {
-        return shieldCharges.getOrDefault(uuid, 0);
+        return shieldCharges.getOrDefault(uuid, getMaxShieldCharges(uuid));
     }
 
     public static double getAttackCooldownSeconds(PlayerData data) {
@@ -822,7 +929,8 @@ public class GunItem implements Listener {
         if (silencedPlayers.contains(uuid) || activeShields.contains(uuid)) return false;
         long actualCooldown = getActualShieldCooldownMs(plugin, data);
         Long lastUse = shieldCooldowns.get(uuid);
-        int currentCharges = shieldCharges.getOrDefault(uuid, 0);
+        int maxCharges = (data != null) ? 1 + (int) Math.max(data.shieldCharge + data.doubleBlock, 0) : 1;
+        int currentCharges = shieldCharges.getOrDefault(uuid, lastUse == null ? maxCharges : 0);
         return currentCharges > 0 || lastUse == null || (System.currentTimeMillis() - lastUse >= actualCooldown);
     }
 
@@ -875,14 +983,24 @@ public class GunItem implements Listener {
         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> partyLocked.remove(uuid), durationTicks);
     }
 
-
     public static void resetBlockCooldown(UUID uuid) {
         shieldCooldowns.remove(uuid);
+        int maxCharges = getMaxShieldCharges(uuid);
+        shieldCharges.put(uuid, maxCharges);
+        Player p = Bukkit.getPlayer(uuid);
+        if (p != null && p.isOnline() && plugin != null && plugin.getGameManager().getState() == com.rounds.game.GameManager.GameState.PLAYING) {
+            p.setLevel(maxCharges);
+            p.setExp(1.0f);
+            p.getInventory().setItemInOffHand(createShieldItem());
+            p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, SoundCategory.PLAYERS, 0.6f, 1.8f);
+        }
     }
+
     public static void resetShieldActive(UUID uuid) {
         activeShields.remove(uuid);
         activeShieldTokens.remove(uuid);
     }
+
     public static void resetRoundState() {
         for (ReloadTask task : new ArrayList<>(reloadTasks.values())) {
             task.cancel();
@@ -902,6 +1020,77 @@ public class GunItem implements Listener {
         shotThisTick.clear();
         partyLocked.clear();
         noPartyCooldowns.clear();
+        if (Bukkit.getServer() != null) {
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                resetPlayerHud(p);
+            }
+        }
+    }
+
+    public static void tickShields() {
+        if (plugin == null) return;
+        long now = System.currentTimeMillis();
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            if (!p.isValid() || p.isDead() || p.getGameMode() == GameMode.SPECTATOR) continue;
+            if (plugin.getTeamManager().getPlayerTeam(p.getUniqueId()) == null) continue;
+            tickPlayerShield(p, now);
+        }
+    }
+
+    private static void tickPlayerShield(Player player, long now) {
+        UUID uuid = player.getUniqueId();
+        PlayerData data = plugin.getPlayerDataManager().getData(uuid);
+        if (data == null) return;
+
+        int maxCharges = getMaxShieldCharges(uuid);
+        Long lastUse = shieldCooldowns.get(uuid);
+
+        if (lastUse == null) {
+            int curCharges = shieldCharges.getOrDefault(uuid, maxCharges);
+            if (curCharges > 0) {
+                if (!isShield(player.getInventory().getItemInOffHand())) {
+                    player.getInventory().setItemInOffHand(createShieldItem());
+                }
+                if (player.getLevel() != curCharges) {
+                    player.setLevel(curCharges);
+                }
+                if (player.getExp() < 0.999f) {
+                    player.setExp(1.0f);
+                }
+            }
+            return;
+        }
+
+        long actualCooldown = getActualShieldCooldownMs(plugin, data);
+        long elapsed = now - lastUse;
+
+        if (elapsed < actualCooldown) {
+            float progress = (float) Math.min(1.0, Math.max(0.0, (double) elapsed / (double) Math.max(actualCooldown, 100L)));
+            player.setExp(progress);
+            int curCharges = shieldCharges.getOrDefault(uuid, 0);
+            if (curCharges <= 0) {
+                if (isShield(player.getInventory().getItemInOffHand())) {
+                    player.getInventory().setItemInOffHand(null);
+                }
+                if (player.getLevel() != 0) {
+                    player.setLevel(0);
+                }
+            } else {
+                if (!isShield(player.getInventory().getItemInOffHand())) {
+                    player.getInventory().setItemInOffHand(createShieldItem());
+                }
+                if (player.getLevel() != curCharges) {
+                    player.setLevel(curCharges);
+                }
+            }
+        } else {
+            shieldCooldowns.remove(uuid);
+            shieldCharges.put(uuid, maxCharges);
+            player.setLevel(maxCharges);
+            player.setExp(1.0f);
+            player.getInventory().setItemInOffHand(createShieldItem());
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, SoundCategory.PLAYERS, 0.6f, 1.8f);
+        }
     }
 
     private static void stopSawSound() {

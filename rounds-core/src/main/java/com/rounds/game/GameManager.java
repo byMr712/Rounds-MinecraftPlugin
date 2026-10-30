@@ -423,6 +423,7 @@ public class GameManager implements Listener {
                 player.getInventory().setItem(22, gun.clone());
             }
         }
+        GunItem.initPlayerShield(player);
     }
 
     public void applyPlayerHP(Player player) {
@@ -798,6 +799,7 @@ public class GameManager implements Listener {
 
     private void gameTick() {
         musicTick++;
+        GunItem.tickShields();
         if (autoDeathEnabled) checkAutoDeath();
         if (musicTick % 5 == 0) {
             updateSpectatorGlow();
@@ -2046,6 +2048,7 @@ public class GameManager implements Listener {
         }
 
         deadPlayers.add(dead.getUniqueId());
+        GunItem.resetPlayerHud(dead);
         com.rounds.listener.LegendaryEffects.clearDecay(dead.getUniqueId());
         com.rounds.stats.MatchStatsManager.recordDeath(dead.getUniqueId());
         highlightGlowUntil.remove(dead.getUniqueId());

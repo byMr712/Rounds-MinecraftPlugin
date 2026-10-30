@@ -10,6 +10,7 @@ public final class RoundsKeys {
     public static final NamespacedKey PLAYER_USE = key("player_use");
 
     public static final NamespacedKey GUN = key("gun");
+    public static final NamespacedKey SHIELD = key("shield");
     public static final NamespacedKey IS_BULLET = key("is_bullet");
     public static final NamespacedKey BULLET_OWNER = key("bullet_owner");
     public static final NamespacedKey BULLET_DAMAGE = key("bullet_damage");

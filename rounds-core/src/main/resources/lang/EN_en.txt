@@ -6,7 +6,8 @@
 gun:
   name: "Gun"
   lore-1: "Rounds Gun"
-  lore-2: "LMB: shoot | RMB: block"
+  lore-2: "LMB: shoot | RMB / F: block"
+  shield-name: "Shield"
   no-ammo: "No ammo! Reloading..."
   ammo-display: "Ammo: {0}/{1}"
   already-loaded: "Already fully loaded!"

@@ -1,8 +1,10 @@
 package com.rounds.game;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Locale;
@@ -2524,17 +2526,57 @@ public class GameManager implements Listener {
     }
 
     public Set<GameTeam> getAvailableTeams() {
+        Set<GameTeam> available = new LinkedHashSet<>();
         if (plugin.getBlockListener() != null) {
             Set<GameTeam> placed = plugin.getBlockListener().getJoinBlockTeams();
-            if (!placed.isEmpty()) {
-                return placed;
+            if (placed != null && !placed.isEmpty()) {
+                available.addAll(placed);
             }
         }
-        Set<GameTeam> available = new HashSet<>(plugin.getRoundsConfig().getEnabledTeams());
+        Collection<GameTeam> configTeams = plugin.getRoundsConfig().getEnabledTeams();
+        if (configTeams != null && !configTeams.isEmpty()) {
+            available.addAll(configTeams);
+        }
         if (available.isEmpty()) {
             available.addAll(Arrays.asList(GameTeam.values()));
         }
         return available;
+    }
+
+    public void ensureTeamSpawn(GameTeam team) {
+        if (team == null) return;
+        if (teamSpawns.containsKey(team) && teamSpawns.get(team) != null) return;
+        if (currentZoneCenter != null && currentZoneCenter.getWorld() != null) {
+            BlockStorage bs = plugin.getBlockListener() != null ? plugin.getBlockListener().getBlockStorage() : null;
+            if (bs != null) {
+                BlockStorage.MapBlock currentZone = null;
+                for (BlockStorage.MapBlock mb : bs.getMapBlocks()) {
+                    if (mb.centerEquals(currentZoneCenter)) {
+                        currentZone = mb;
+                        break;
+                    }
+                }
+                if (currentZone != null) {
+                    List<Location> spawns = bs.getSpawnBlocksInZone(currentZone);
+                    if (!spawns.isEmpty()) {
+                        Set<Location> used = new HashSet<>(teamSpawns.values());
+                        Location best = null;
+                        for (Location s : spawns) {
+                            if (!used.contains(s)) {
+                                best = s;
+                                break;
+                            }
+                        }
+                        if (best == null) best = spawns.get(RANDOM.nextInt(spawns.size()));
+                        Location assigned = best.clone().add(0.5, 1.0, 0.5);
+                        SpawnManager.faceLocation(assigned, currentZoneCenter);
+                        teamSpawns.put(team, assigned);
+                        return;
+                    }
+                }
+            }
+            teamSpawns.put(team, currentZoneCenter.clone());
+        }
     }
 
     public GameTeam findSmallestTeam() {

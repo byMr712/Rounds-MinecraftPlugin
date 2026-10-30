@@ -415,12 +415,51 @@ public class BlockListener implements Listener {
             Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> stepCooldown.remove(player.getUniqueId()), 20L);
 
             if (!player.hasPermission("rounds.join")) return;
-            if (plugin.getGameManager().isGameStarted()
-                    || plugin.getGameManager().isGameActive()) {
-                player.sendMessage(ChatColor.RED + Messages.get("team.game-in-progress"));
+            com.rounds.game.GameManager gm = plugin.getGameManager();
+            boolean inProgress = gm != null && (gm.isGameStarted() || gm.isGameActive());
+            GameTeam currentTeam = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+
+            if (inProgress) {
+                if (currentTeam != null) {
+                    if (currentTeam == team) return;
+                    player.sendMessage(ChatColor.GOLD + Messages.get("team.already-has-team"));
+                    return;
+                }
+                UUID uuid = player.getUniqueId();
+                boolean returning = plugin.getPlayerDataManager().isActive(uuid);
+                plugin.getTeamManager().joinTeam(uuid, team);
+                if (!returning) {
+                    plugin.getPlayerDataManager().trackPlayer(uuid);
+                    plugin.getPlayerDataManager().savePlayerFullData(uuid, team, null);
+                }
+                gm.ensureTeamSpawn(team);
+                gm.markPendingCardJoiner(uuid, returning);
+                gm.applyTeamColor(player);
+                gm.buildScoreboard(player);
+                gm.updateScoreboard();
+
+                if (gm.getState() == com.rounds.game.GameManager.GameState.CARDS) {
+                    gm.removeDeadPlayer(uuid);
+                    plugin.getCardManager().openCardSelection(player, team);
+                    player.setGameMode(GameMode.ADVENTURE);
+                    player.setAllowFlight(false);
+                    player.setFlying(false);
+                    player.setInvulnerable(true);
+                } else {
+                    player.setGameMode(GameMode.SPECTATOR);
+                    player.setInvulnerable(true);
+                    Location spawn = gm.getTeamSpawns().get(team);
+                    if (spawn == null) spawn = gm.getCurrentZoneCenter();
+                    if (spawn != null) player.teleport(spawn);
+                }
+                String teamName = Messages.get("team." + team.name().toLowerCase());
+                String msgKey = returning ? "team.restored-team" : "team.joined-team";
+                player.sendMessage(ChatColor.GOLD + Messages.get(msgKey, team.getColor() + teamName));
+                player.getWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, SoundCategory.RECORDS, 0.7f, 1.5f);
                 return;
             }
-            if (plugin.getTeamManager().getPlayerTeam(player.getUniqueId()) == team) {
+
+            if (currentTeam == team) {
                 return;
             }
             if (plugin.getTeamManager().joinTeam(player.getUniqueId(), team)) {

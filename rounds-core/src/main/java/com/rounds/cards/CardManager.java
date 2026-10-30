@@ -322,7 +322,10 @@ public class CardManager {
         String cardDesc = stripAllColors(card.getDescription(lang));
         String playerText = teamColor + player.getName() + "\u00A7f";
         String rawHeader = Messages.get("card.picked", playerText, cardName, "");
-        String header = rawHeader.replace(": {2}", ":").replace(" {2}", "").replace("{2}", "").trim();
+        String header = rawHeader.replaceAll("(?i)(?::|\\s)*(?:§[0-9a-fk-or])*\\{2\\}", "").trim();
+        if (!header.endsWith(":")) {
+            header += ":";
+        }
 
         List<String> boxLines = new ArrayList<>();
         boxLines.add(header);

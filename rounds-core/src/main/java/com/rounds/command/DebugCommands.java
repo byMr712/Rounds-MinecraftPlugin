@@ -160,7 +160,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
         String sub = args[0].toLowerCase();
         if (sub.equals("join")) {
-            handleJoin(sender);
+            handleJoin(sender, args);
             return true;
         }
         boolean freeplayActive = plugin.getRoundsConfig().isFreeplay();
@@ -292,7 +292,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         boxFooter(sender);
     }
 
-    private void handleJoin(CommandSender sender) {
+    private void handleJoin(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage(ChatColor.RED + Messages.get("command.must-be-player"));
             return;
@@ -316,7 +316,15 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
         UUID uuid = player.getUniqueId();
         boolean returning = plugin.getPlayerDataManager().isActive(uuid);
-        GameTeam team = gm.findSmallestTeam();
+        GameTeam team = null;
+        if (args != null && args.length >= 2 && !args[1].isBlank() && !args[1].equalsIgnoreCase("auto")) {
+            try {
+                team = GameTeam.valueOf(args[1].toUpperCase());
+            } catch (IllegalArgumentException ignored) {}
+        }
+        if (team == null) {
+            team = gm.findSmallestTeam();
+        }
 
         if (returning) {
             PlayerDataManager.SavedPlayerData saved = plugin.getPlayerDataManager().loadPlayerFullData(uuid);
@@ -333,9 +341,11 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
 
         GameTeam finalTeam = plugin.getTeamManager().getPlayerTeam(uuid);
+        gm.ensureTeamSpawn(finalTeam);
         gm.markPendingCardJoiner(uuid, returning);
         gm.applyTeamColor(player);
         gm.buildScoreboard(player);
+        gm.updateScoreboard();
 
         if (gm.getState() == GameManager.GameState.CARDS) {
             gm.removeDeadPlayer(uuid);
@@ -348,6 +358,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             player.setGameMode(GameMode.SPECTATOR);
             player.setInvulnerable(true);
             Location spawn = gm.getTeamSpawns().get(finalTeam);
+            if (spawn == null) spawn = gm.getCurrentZoneCenter();
             if (spawn != null) player.teleport(spawn);
         }
 

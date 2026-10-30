@@ -398,7 +398,7 @@ public class RoundsEntities implements Listener {
                         return;
                     }
                     nearest.setNoDamageTicks(0);
-                    if (shouldExecute(shooterData, nearest, finalDamage)) {
+                    if (shouldExecute(shooterData, nearest)) {
                         Player shooter = Bukkit.getPlayer(b.ownerId);
                         executeTarget(nearest, (shooter != null && shooter.isOnline()) ? shooter : null);
                     } else {
@@ -632,7 +632,7 @@ public class RoundsEntities implements Listener {
                 return;
             }
             hitEnt.setNoDamageTicks(0);
-            if (shouldExecute(shooterData, hitEnt, finalDmg)) {
+            if (shouldExecute(shooterData, hitEnt)) {
                 Player shooter = Bukkit.getPlayer(b.ownerId);
                 executeTarget(hitEnt, (shooter != null && shooter.isOnline()) ? shooter : null);
             } else {
@@ -875,17 +875,13 @@ public class RoundsEntities implements Listener {
         return dmg;
     }
 
-    private static boolean shouldExecute(PlayerData shooter, LivingEntity target, double damage) {
+    private static boolean shouldExecute(PlayerData shooter, LivingEntity target) {
         if (shooter == null) return false;
         if (!(target instanceof Player tp)) return false;
         if (tp.getMaxHealth() <= 0) return false;
-        double maxHp = tp.getMaxHealth();
-        double currentRatio = tp.getHealth() / maxHp;
-        double threshold = Math.min(0.15 * Math.max(shooter.chikibamboni, 1.0), 0.5) + 1e-4;
-        if (shooter.chikibamboni > 0) {
-            if (currentRatio <= threshold || ((tp.getHealth() - damage) / maxHp) <= threshold) {
-                return true;
-            }
+        double currentRatio = tp.getHealth() / tp.getMaxHealth();
+        if (shooter.chikibamboni > 0 && currentRatio < Math.min(0.15 * shooter.chikibamboni, 0.5)) {
+            return true;
         }
         if (shooter.executioner > 0 && currentRatio < 0.2 && Math.random() < 0.01 * shooter.executioner) {
             return true;

@@ -262,11 +262,22 @@ game-rules:
 # Name colors
 color-nicknames: true
 
+# Screen score indicators (custom HUD match score boxes at the top of the screen).
+# Enabled by default. When enabled, suppresses the round win chat box and active team scores
+# in chat after every round (only the final match victory is announced in chat).
+screen-indicators:
+  enabled: true
+
 # Built-in scoreboard (enabled by default, automatically disabled if TAB is present)
 builtin-scoreboard:
   enabled: true
   title: "&6&lROUNDS"
   stats-title: "&b&lМои статы"
+
+# Background music loop during combat rounds (music1..music4 from resource pack)
+music:
+  enabled: true
+  volume: 0.4
 
 # Allow non-admin players to execute safe commands for practice and matches
 # Unlocks keys for /rdebug command: (namely: start, stop, rounds, givegun, wheel, bossbar, bot), and enables the /rbot command
@@ -510,16 +521,6 @@ Card titles and ability descriptions are rendered directly onto card face textur
 - `Rounds-ResourcePack.zip`: Base template pack containing clean, unbaked original card art (without text), allowing other creators to add custom translations and typography ([Download developer base pack on Google Drive](https://drive.google.com/file/d/167EDDr76AEcPsOsyQsCadylcY-O1YPyQ/view?usp=sharing)).
 
 The private-use font glyph codepoints (`0xE000` + `familyId`) are identical across all language packs. Players simply activate their preferred language pack in Minecraft settings without requiring any server configuration changes.
-
-#### Server-Side Auto-Download Configuration (server.properties)
-To have clients automatically download my pre-built English resource pack when connecting to the server, configure the following parameters in `server.properties`:
-
-```properties
-resource-pack=https://drive.google.com/uc?export=download&id=1zbkjWkx8JeeoT1vGx7mAX81mnR_lltHK
-resource-pack-id=276093b4-f5ee-3eca-8dba-2448a11ee78a
-resource-pack-prompt={"text"\:"ROUNDS resource pack","color"\:"gold"}
-resource-pack-sha1=d41d0776031c7d845197dfd6bf96a71023476243
-```
 
 Current SHA-1 Checksums:
 - `Rounds-ResourcePack-RU.zip`: `3fd4def2be6a904b1db6160f0982ae39905511e7`

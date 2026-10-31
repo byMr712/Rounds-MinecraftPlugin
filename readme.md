@@ -257,11 +257,22 @@ game-rules:
 # Окрашивание ников игроков в табе и над головой в цвет команды
 color-nicknames: true
 
+# Экранные индикаторы счета (кастомные плашки раундов вверху экрана).
+# Включено по умолчанию. При включении подавляет чат-сообщение о победе в раунде
+# и счета команд после каждого раунда (в чате объявляется только финальная победа в игре).
+screen-indicators:
+  enabled: true
+
 # Встроенный Scoreboard (включен по умолчанию, отключается при установке плагина TAB)
 builtin-scoreboard:
   enabled: true
   title: "&6&lROUNDS"
   stats-title: "&b&lМои статы"
+
+# Фоновая музыка во время боевых раундов (треки music1..music4 из ресурспака)
+music:
+  enabled: true
+  volume: 0.4
 
 # Разрешить игрокам без прав OP/admin запускать безопасные команды тренировки и матча
 # Разблокируются ключи для команды: /rdebug (а именно: start, stop, rounds, givegun, wheel, bossbar, bot), а также доступна становится команда /rbot
@@ -508,16 +519,6 @@ triggers:
 - `Rounds-ResourcePack.zip` — базовый пакет с оригинальными чистыми карточками (без текста) для добавления своих переводов и кастомного текста сторонними авторами ([Скачать версию для разработчиков на Google Диске](https://drive.google.com/file/d/167EDDr76AEcPsOsyQsCadylcY-O1YPyQ/view?usp=sharing)).
 
 Кодовые позиции растровых глифов шрифта (`0xE000` + `familyId`) идентичны во всех пакетах. Игрок просто выбирает ресурспак своего языка в настройках Minecraft без необходимости менять что-либо на сервере.
-
-#### Автозагрузка ресурспака на сервере (server.properties)
-Чтобы игроки автоматически скачивали мой уже готовый русскоязычный ресурспак при подключении к серверу, укажите следующие параметры в файле `server.properties`:
-
-```properties
-resource-pack=https://drive.google.com/uc?export=download&id=1iIUzIZvINLABf8wC-efULsBi0QwQq4Uk
-resource-pack-id=276093b4-f5ee-3eca-8dba-2448a11ee78a
-resource-pack-prompt={"text"\:"Ресурспак ROUNDS","color"\:"gold"}
-resource-pack-sha1=3fd4def2be6a904b1db6160f0982ae39905511e7
-```
 
 Контрольные суммы SHA-1 актуальных пакетов:
 - `Rounds-ResourcePack-RU.zip`: `3fd4def2be6a904b1db6160f0982ae39905511e7`

@@ -1107,6 +1107,13 @@ public class BotAI extends BukkitRunnable {
         // Smooth strafe velocity interpolation (eliminates robotic instantaneous direction snaps)
         currentStrafeVal += (strafeDir - currentStrafeVal) * 0.16;
 
+        // Ensure out-of-ammo bots trigger reload immediately, even behind cover without LOS
+        if (data != null && data.ammo <= 0 && bot.hasGun()) {
+            if (!com.rounds.item.GunItem.isReloading(player.getUniqueId())) {
+                bot.shoot();
+            }
+        }
+
         // Ground tactical combat
         switch (tactic) {
             case RUSH -> {

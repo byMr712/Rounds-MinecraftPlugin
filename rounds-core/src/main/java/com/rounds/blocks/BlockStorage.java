@@ -146,7 +146,10 @@ public class BlockStorage {
         }
     }
 
-    private void load() {
+    public void load() {
+        mapBlocks.clear();
+        spawnBlocks.clear();
+        lobbyBlock = null;
         if (!file.exists()) return;
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
 

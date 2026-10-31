@@ -37,14 +37,14 @@ A Minecraft plugin for the competitive mini-game [**ROUNDS**](https://store.stea
   - **Automatic and Manual Reload:** When the magazine is emptied or when pressing the Q key (drop item), the weapon begins reloading with a visual progress bar in the Action Bar (matching original ROUNDS game mechanics).
 - **Card System and Combat Abilities:**
   - **In-World 3D Card Selection Scene:** Instead of a flat GUI inventory, players experience an interactive 3D semicircular showcase floating in the world via Text Display entities. Cards display their real graphic art through the custom bitmap font: every rarity variation gets its own glyph and texture. Card titles and ability descriptions are drawn directly onto the card face textures, with glowing rarity stars floating above each card (from 1 to 5 stars by tier: Common - 1, Uncommon - 2, Rare - 3, Epic - 4, Legendary - 5). Players approach cards on foot (up to 2.0m forward) for close inspection; client-side barrier flooring and invisible perimeter collision prevent drops off cliffs or onto jump pads. Epic and Legendary cards feature active flame particles, selection is accompanied by carousel animation, and expiring timers trigger automatic random selection without kicking players from the server.
-  - **Official Cross-Version Resource Pack (Rounds-ResourcePack.zip, -RU.zip, -EN.zip):**
-    - Localized packs with language text on card faces: `Rounds-ResourcePack-RU.zip`, `Rounds-ResourcePack-EN.zip`, and default `Rounds-ResourcePack.zip` (source textures located in `test-servers/original_mod/cards/ru` and `en`).
+  - **Official Cross-Version Resource Pack (Rounds-ResourcePack-RU.zip, -EN.zip, -For-Developers.zip):**
+    - Localized packs with language text on card faces: `Rounds-ResourcePack-RU.zip`, `Rounds-ResourcePack-EN.zip`, and developer template `Rounds-ResourcePack-For-Developers.zip` (alias `Rounds-ResourcePack.zip`, source textures located in `test-servers/original_mod/cards/ru` and `en`).
     - 236 raster card textures (one per rarity variation) at the standard 160x250 resolution (original art size, no resampling) mapped to the `rounds:default` font (codepoints `0xE000 + familyId*10 + rarity ordinal`). Each variation gets its own texture via the `art` key inside `variations` (e.g. `art: card5-common`). Text is rendered with high-contrast drop shadows without backdrop boxes (`tools/generate_card_textures.py`), with `{0}` placeholders filled from each variation's `values` list, leaving central artwork 100% visible.
     - Dynamic round soundtracks: streamed background music tracks `music1` .. `music4` during combat rounds.
     - Combat sound effects: shield parry sound (`block.ogg`) and saw continuous cutting sound (`saw.ogg`).
     - Vanilla Minecraft background music silencer (32 sound events muted in `assets/minecraft/sounds.json`), preventing audio clashes.
     - Universal `pack.mcmeta` specification guaranteeing zero compatibility errors across all clients and servers from 1.20.4 to 26.3 (`pack_format: 22`, `supported_formats: [22, 99]`, `min_format: 22`, `max_format: 99`).
-    - Cross-platform resource pack builder via Gradle (`./gradlew buildResourcePacks -PdeployDesktop -PdeployInstances`) and `build-cardpack.ps1` script with automatic deployment to Desktop and ATLauncher client instances.
+    - Cross-platform resource pack builder via Gradle (`./gradlew buildResourcePacks`) and `build-resourcepack.ps1` script into the resourcepacks_builds/ directory.
   - **New Cards and Combat Mechanics:**
     - **Decay:** Buffers all incoming player damage and distributes it as gradual damage-over-time ticks across 4 seconds (softening burst damage and one-shots). Features 4 stacking variations (3, 4, 5, 6 seconds).
     - **Echo:** When blocking with the shield, automatically triggers a second shield block pulse 1 second (20 ticks) later without consuming extra cooldowns.
@@ -518,7 +518,7 @@ The official plugin resource pack is based on the original resource pack by **if
 Card titles and ability descriptions are rendered directly onto card face textures. Separate language-specific packages are generated:
 - `Rounds-ResourcePack-RU.zip`: Card textures with baked Russian translations ([Download on Google Drive](https://drive.google.com/file/d/1iIUzIZvINLABf8wC-efULsBi0QwQq4Uk/view?usp=sharing)).
 - `Rounds-ResourcePack-EN.zip`: Card textures with baked English translations ([Download on Google Drive](https://drive.google.com/file/d/1zbkjWkx8JeeoT1vGx7mAX81mnR_lltHK/view?usp=sharing)).
-- `Rounds-ResourcePack.zip`: Base template pack containing clean, unbaked original card art (without text), allowing other creators to add custom translations and typography ([Download developer base pack on Google Drive](https://drive.google.com/file/d/167EDDr76AEcPsOsyQsCadylcY-O1YPyQ/view?usp=sharing)).
+- `Rounds-ResourcePack-For-Developers.zip` (alias `Rounds-ResourcePack.zip`): Base template pack containing clean, unbaked original card art (without text), allowing other creators to add custom translations and typography ([Download developer base pack on Google Drive](https://drive.google.com/file/d/167EDDr76AEcPsOsyQsCadylcY-O1YPyQ/view?usp=sharing)).
 
 The private-use font glyph codepoints (`0xE000` + `familyId`) are identical across all language packs. Players simply activate their preferred language pack in Minecraft settings without requiring any server configuration changes.
 
@@ -565,14 +565,14 @@ python tools/generate_card_textures.py
 ```
 Generated assets are written to `test-servers/original_mod/cards/ru` and `cards/en`.
 
-#### Step 2. Build Resource Packs via Gradle (`CardPackBuilder`)
+#### Step 2. Build Resource Packs via Gradle (`ResourcePackBuilder`)
 Building is executed in pure Java (`ZipOutputStream`, `ImageIO`), operating cross-platform on Windows, Linux, macOS, and CI pipelines:
 ```bash
 # Standard build into resourcepacks_builds/:
 ./gradlew buildResourcePacks
 
-# Build with automated synchronization to Desktop and ATLauncher instances:
-./gradlew buildResourcePacks -PdeployDesktop -PdeployInstances
+# Build into the resourcepacks_builds/ directory:
+./gradlew buildResourcePacks
 ```
 The builder packages all card textures, sounds, item models, and bundles HUD assets and shaders from `tools/assets/HUDEngine.zip`.
 

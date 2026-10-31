@@ -44,6 +44,8 @@ game:
   auto-death-warning: "If you keep surviving, a random player will be destroyed in 1 minute."
   # Message after a random player is destroyed ({0} - victim name)
   auto-death-killed: "A random player ({0}) was destroyed. If you keep surviving, another one will be destroyed in 1 minute."
+  # Message when a random player is rescued by a card save ({0} - victim name)
+  auto-death-saved: "The reaper attempted to destroy {0}, but an ability saved them from death!"
   bossbar-cards: "Card Selection"
   bossbar-round-end: "Round End"
   bossbar-countdown: "Starting match..."
@@ -501,3 +503,16 @@ scoreboard:
   stat-bullets: "Bullets"
   stat-max-ammo: "Ammo"
 
+
+map:
+  ifrit-author: "By Mr712, Ifrit"
+  ifrit-team-blue: "Blue\nteam"
+  ifrit-team-green: "Green\nteam"
+  ifrit-team-red: "Red\nteam"
+  ifrit-team-yellow: "Yellow\nTeam"
+  ifrit-start: "Start"
+  ifrit-sound-music: "The sounds of music - the (music)"
+  ifrit-sound-gun: "Sound effects are the sounds of (Note blocks)"
+  ifrit-ctrl-shield: "Right mouse button to use shield (block)"
+  ifrit-ctrl-shoot: "Left mouse button to shoot"
+  ifrit-ctrl-reload: "Press Q to reload"

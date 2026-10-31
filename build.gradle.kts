@@ -6,11 +6,6 @@ tasks.register("buildResourcePacks") {
     dependsOn(":rounds-core:buildResourcePacks")
 }
 
-tasks.register("buildCardPack") {
-    group = "rounds"
-    description = "Alias for buildResourcePacks."
-    dependsOn("buildResourcePacks")
-}
 
 tasks.register("quickBuild") {
     group = "build"

@@ -34,8 +34,8 @@ The project uses Gradle with a multi-module architecture.
   # Build packages into resourcepacks_builds/:
   ./gradlew buildResourcePacks
 
-  # Build with automatic synchronization to Desktop and ATLauncher instances:
-  ./gradlew buildResourcePacks -PdeployDesktop -PdeployInstances
+  # Build into the resourcepacks_builds/ directory:
+  ./gradlew buildResourcePacks
   ```
 
   **Resource Pack Structure and Generation Standards:**

@@ -216,6 +216,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "bossbar" -> handleBossBar(sender, args);
             case "screenindicators" -> handleScreenIndicators(sender, args);
             case "music" -> handleMusic(sender, args);
+            case "patchmap" -> handlePatchmap(sender, args);
             default -> sender.sendMessage(ChatColor.RED + Messages.get("debug.unknown-command", args[0]));
         }
         return true;
@@ -803,6 +804,23 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         } else {
             sender.sendMessage(ChatColor.RED + "Usage: /rdebug screenindicators <on|off>");
         }
+    }
+
+    private void handlePatchmap(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("rounds.admin")) {
+            sender.sendMessage(ChatColor.RED + Messages.get("debug.no-permission"));
+            return;
+        }
+        if (args.length < 2 || !args[1].equalsIgnoreCase("ifrit")) {
+            sender.sendMessage(ChatColor.RED + "Usage: /rdebug patchmap ifrit");
+            return;
+        }
+        boolean force = args.length >= 3 && args[2].equalsIgnoreCase("force");
+        org.bukkit.World targetWorld = null;
+        if (sender instanceof Player p) {
+            targetWorld = p.getWorld();
+        }
+        com.rounds.map.MapAutoPatcher.checkAndPatch(plugin, targetWorld, force, sender);
     }
 
     private void handleMusic(CommandSender sender, String[] args) {
@@ -1405,6 +1423,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         plugin.saveConfig();
         Messages.reload(lang);
         plugin.getGameManager().updateScoreboard();
+        com.rounds.map.MapAutoPatcher.applyMapTextDisplays(org.bukkit.Bukkit.getWorlds().isEmpty() ? null : org.bukkit.Bukkit.getWorlds().get(0));
         sender.sendMessage(ChatColor.GREEN + Messages.get("debug.language-set", lang));
     }
 
@@ -1602,7 +1621,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         "stats", "statsend", "setteam", "setlanguage", "effect", "heal",
         "resetstats", "reload", "setlobby",
         "jumppos1", "jumppos2", "jumpset", "uppos1", "uppos2", "upset",
-        "wheel", "tab", "bot", "draft", "cardchoicetime", "bossbar", "debug", "music", "screenindicators"
+        "wheel", "tab", "bot", "draft", "cardchoicetime", "bossbar", "debug", "music", "screenindicators", "patchmap"
     );
 
     private List<String> getOnlinePlayerNames() {
@@ -1927,6 +1946,12 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         }
 
         return switch (args[0].toLowerCase()) {
+            case "patchmap" -> {
+                if (args.length == 2) {
+                    yield filterStartsWith(Collections.singletonList("ifrit"), input);
+                }
+                yield Collections.emptyList();
+            }
             case "debug" -> {
                 if (args.length == 2) {
                     yield filterStartsWith(Arrays.asList("start", "stop", "cancel", "status"), input);

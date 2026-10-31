@@ -58,18 +58,9 @@ tasks.register<JavaExec>("buildResourcePacks") {
     group = "rounds"
     description = "Cross-platform universal resource pack generator (RU, EN, Default)."
     classpath = sourceSets["main"].runtimeClasspath
-    mainClass.set("com.rounds.tool.CardPackBuilder")
-    val packArgs = mutableListOf<String>()
-    if (project.hasProperty("deployDesktop")) packArgs.add("--deploy-desktop")
-    if (project.hasProperty("deployInstances")) packArgs.add("--deploy-instances")
-    args = packArgs
+    mainClass.set("com.rounds.tool.ResourcePackBuilder")
 }
 
-tasks.register("buildCardPack") {
-    group = "rounds"
-    description = "Alias for buildResourcePacks."
-    dependsOn("buildResourcePacks")
-}
 
 publishing {
     publications {

@@ -1,0 +1,189 @@
+lobby:
+  world: world
+  x: 1
+  y: -51
+  z: 6
+map:
+  '0':
+    world: world
+    x: -1
+    y: -57
+    z: 41
+    size: 50
+  '1':
+    world: world
+    x: 51
+    y: -56
+    z: 26
+    size: 50
+  '2':
+    world: world
+    x: 2
+    y: -52
+    z: 87
+    size: 50
+  '3':
+    world: world
+    x: -56
+    y: -61
+    z: 50
+    size: 50
+  '4':
+    world: world
+    x: 6
+    y: -50
+    z: -63
+    size: 50
+  '5':
+    world: world
+    x: 70
+    y: -56
+    z: -63
+    size: 50
+  '6':
+    world: world
+    x: -38
+    y: -61
+    z: -14
+    size: 50
+spawn:
+  '0':
+    world: world
+    x: -39
+    y: -61
+    z: 67
+  '1':
+    world: world
+    x: -73
+    y: -61
+    z: 67
+  '2':
+    world: world
+    x: -73
+    y: -61
+    z: 33
+  '3':
+    world: world
+    x: -39
+    y: -61
+    z: 33
+  '4':
+    world: world
+    x: -12
+    y: -59
+    z: 50
+  '5':
+    world: world
+    x: 7
+    y: -59
+    z: 50
+  '6':
+    world: world
+    x: 7
+    y: -59
+    z: 32
+  '7':
+    world: world
+    x: -12
+    y: -59
+    z: 32
+  '8':
+    world: world
+    x: 34
+    y: -61
+    z: 43
+  '9':
+    world: world
+    x: 68
+    y: -61
+    z: 43
+  '10':
+    world: world
+    x: 68
+    y: -61
+    z: 9
+  '11':
+    world: world
+    x: 34
+    y: -61
+    z: 9
+  '12':
+    world: world
+    x: 16
+    y: -61
+    z: 71
+  '13':
+    world: world
+    x: -11
+    y: -61
+    z: 71
+  '14':
+    world: world
+    x: -11
+    y: -61
+    z: 103
+  '15':
+    world: world
+    x: 16
+    y: -61
+    z: 103
+  '16':
+    world: world
+    x: -10
+    y: -56
+    z: -47
+  '17':
+    world: world
+    x: -10
+    y: -56
+    z: -79
+  '18':
+    world: world
+    x: 22
+    y: -56
+    z: -79
+  '19':
+    world: world
+    x: 22
+    y: -56
+    z: -47
+  '20':
+    world: world
+    x: 52
+    y: -61
+    z: -45
+  '21':
+    world: world
+    x: 88
+    y: -61
+    z: -45
+  '22':
+    world: world
+    x: 88
+    y: -61
+    z: -81
+  '23':
+    world: world
+    x: 52
+    y: -61
+    z: -81
+  '24':
+    world: world
+    x: -28
+    y: -61
+    z: -4
+  '25':
+    world: world
+    x: -49
+    y: -61
+    z: -4
+  '26':
+    world: world
+    x: -49
+    y: -61
+    z: -24
+  '27':
+    world: world
+    x: -28
+    y: -61
+    z: -24

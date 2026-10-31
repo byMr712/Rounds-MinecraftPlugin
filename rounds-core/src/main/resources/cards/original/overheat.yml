@@ -3,8 +3,8 @@ name:
   ru: "&6Да ты шуешь!"
   en: "&6Overheat"
 description:
-  ru: "Даёт возможность также стрелять без перезарядки, каждая пуля -10% ХП, лучше перезарядись."
-  en: "Also allows shooting without reloading, each bullet costs -10% HP, better reload."
+  ru: "Позволяет продолжать стрельбу во время перезарядки оружия, каждая пуля -10% ХП. Если оружие заряжено — здоровье не тратится."
+  en: "Allows continuing to shoot during weapon reload, each bullet spends the specified percent of health. If the weapon is loaded — health is not spent."
 material: MAGMA_CREAM
 enabled: true
 art: card17.png

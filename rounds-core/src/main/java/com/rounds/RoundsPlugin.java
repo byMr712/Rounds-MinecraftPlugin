@@ -61,6 +61,7 @@ public class RoundsPlugin extends JavaPlugin {
         playerDataManager = new PlayerDataManager(this);
         cardManager = new CardManager(this);
         gameManager = new GameManager(this);
+        com.rounds.map.MapAutoPatcher.checkAndPatch(this, null, false, null);
         blockListener = new BlockListener(this);
         cardGUIListener = new CardGUIListener(this);
         cardDisplayManager = new CardDisplayManager(this);
@@ -106,11 +107,14 @@ public class RoundsPlugin extends JavaPlugin {
         com.rounds.hud.HudEngineCustomRealisation.init(this);
         gameManager.restoreGame();
 
+        com.rounds.metrics.RoundsMetrics.init(this);
+
         getLogger().info("RoundsPlugin v" + getDescription().getVersion() + " enabled!");
     }
 
     @Override
     public void onDisable() {
+        com.rounds.metrics.RoundsMetrics.shutdown();
         if (botManager != null) {
             botManager.despawnAll();
         }

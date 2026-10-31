@@ -266,9 +266,10 @@ public class GunItem implements Listener {
         boolean overheated = false;
         boolean bloodShot = false;
         if (data.ammo < 1.0 || isReload) {
-            if (data.overheat > 0) {
+            if (isReload && data.overheat > 0) {
+                // Overheat: shoot during reload at HP cost only; never allow shooting without reload.
                 overheated = true;
-            } else if (data.bloodCartridge > 0) {
+            } else if (isReload && data.bloodCartridge > 0) {
                 double hpCostPercent = data.bloodCartridgeHpCost > 0 ? data.bloodCartridgeHpCost : 0.07;
                 double cost = player.getHealth() * hpCostPercent;
                 double newHp = player.getHealth() - cost;

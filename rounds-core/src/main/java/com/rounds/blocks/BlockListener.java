@@ -835,6 +835,22 @@ public class BlockListener implements Listener {
         syncBlockKeys();
     }
 
+    public void reload() {
+        joinBlocks.clear();
+        joinNoneBlocks.clear();
+        cdshootBlocks.clear();
+        endBlocks.clear();
+        jumpBlocks.clear();
+        upBlocks.clear();
+        jumpBlockKeys.clear();
+        upBlockKeys.clear();
+        loadBlocks();
+        syncBlockKeys();
+        if (blockStorage != null) {
+            blockStorage.load();
+        }
+    }
+
     private void syncBlockKeys() {
         jumpBlockKeys.clear();
         for (Location loc : jumpBlocks) {

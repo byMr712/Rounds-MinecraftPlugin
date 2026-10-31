@@ -18,7 +18,7 @@ import java.util.zip.ZipOutputStream;
  * Pure Java, cross-platform resource pack builder for Rounds Minecraft Plugin.
  * Works uniformly on Windows, Linux, macOS, and CI pipelines without PowerShell or GDI+.
  */
-public class CardPackBuilder {
+public class ResourcePackBuilder {
 
     private static final Pattern ID_PATTERN = Pattern.compile("^id\\s*:\\s*(\\d+)\\s*$");
     private static final Pattern ART_PATTERN = Pattern.compile("^art\\s*:\\s*[\"']?([^\"'\n\r]+)[\"']?");
@@ -40,20 +40,9 @@ public class CardPackBuilder {
     }
 
     public static void main(String[] args) {
-        boolean deployDesktop = false;
-        boolean deployInstances = false;
-
-        for (String arg : args) {
-            if ("--deploy-desktop".equalsIgnoreCase(arg) || "-deployDesktop".equalsIgnoreCase(arg)) {
-                deployDesktop = true;
-            } else if ("--deploy-instances".equalsIgnoreCase(arg) || "-deployInstances".equalsIgnoreCase(arg)) {
-                deployInstances = true;
-            }
-        }
-
         try {
             Path projectRoot = findProjectRoot();
-            System.out.println("CardPackBuilder running at project root: " + projectRoot);
+            System.out.println("ResourcePackBuilder running at project root: " + projectRoot);
 
             Map<Integer, FamilyCard> familyArt = collectFamilyCards(projectRoot);
             System.out.println("Discovered " + familyArt.size() + " card definitions with explicit art mappings.");
@@ -63,68 +52,36 @@ public class CardPackBuilder {
 
             // 1. Build RU
             Path ruZip = outDir.resolve("Rounds-ResourcePack-RU.zip");
-            buildPack(projectRoot, familyArt, "RU", "[RU]", ruZip);
+            buildPack(projectRoot, familyArt, "RU", "[RU]", ruZip, false);
 
             // 2. Build EN
             Path enZip = outDir.resolve("Rounds-ResourcePack-EN.zip");
-            buildPack(projectRoot, familyArt, "EN", "[EN]", enZip);
+            buildPack(projectRoot, familyArt, "EN", "[EN]", enZip, false);
 
-            // 3. Build Base / Clean Template Pack (blank cards without text)
-            Path defaultZip = outDir.resolve("Rounds-ResourcePack.zip");
-            buildPack(projectRoot, familyArt, "BASE", "[Base]", defaultZip);
 
-            // Clean up legacy Rounds-CardPack-*.zip aliases if present in output directory
-            Files.deleteIfExists(outDir.resolve("Rounds-CardPack-RU.zip"));
-            Files.deleteIfExists(outDir.resolve("Rounds-CardPack-EN.zip"));
-            Files.deleteIfExists(outDir.resolve("Rounds-CardPack.zip"));
+            // 3. Build Base / Clean Template Pack for developers (blank cards without text)
+            Path devZip = outDir.resolve("Rounds-ResourcePack-For-Developers.zip");
+            buildPack(projectRoot, familyArt, "BASE", "[For Developers]", devZip, false);
 
-            // Optional Deploy
-            if (deployDesktop) {
-                Path desktop = Paths.get(System.getProperty("user.home"), "Desktop");
-                if (Files.isDirectory(desktop)) {
-                    Files.copy(ruZip, desktop.resolve(ruZip.getFileName()), StandardCopyOption.REPLACE_EXISTING);
-                    Files.copy(enZip, desktop.resolve(enZip.getFileName()), StandardCopyOption.REPLACE_EXISTING);
-                    Files.copy(defaultZip, desktop.resolve(defaultZip.getFileName()), StandardCopyOption.REPLACE_EXISTING);
-                    Files.deleteIfExists(desktop.resolve("Rounds-CardPack-RU.zip"));
-                    Files.deleteIfExists(desktop.resolve("Rounds-CardPack-EN.zip"));
-                    Files.deleteIfExists(desktop.resolve("Rounds-CardPack.zip"));
-                    System.out.println("Deployed all packs to Desktop: " + desktop);
-                }
+            // 4. Build EXPERIMENTAL RU pack — strips ALL minecraft: shader imports (fog, sample_lightmap,
+            // dynamictransforms, projection) and replaces them with inline stubs. ONLY Russian language.
+            // Use for testing on clients where the regular pack still fails after fog fix.
+            Path ruExperimentalZip = outDir.resolve("Rounds-ResourcePack-RU-experimental-only-test.zip");
+            buildPack(projectRoot, familyArt, "RU", "[RU Experimental - Test Only]", ruExperimentalZip, true);
+
+            Path allBuildsDir = Paths.get(System.getProperty("user.home"), "Documents", "RoundsPlugin_all_builds");
+            if (Files.isDirectory(allBuildsDir)) {
+                Files.copy(ruZip, allBuildsDir.resolve("Rounds-ResourcePack-RU.zip"), StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(enZip, allBuildsDir.resolve("Rounds-ResourcePack-EN.zip"), StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(devZip, allBuildsDir.resolve("Rounds-ResourcePack-For-Developers.zip"), StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(ruExperimentalZip, allBuildsDir.resolve("Rounds-ResourcePack-RU-experimental-only-test.zip"), StandardCopyOption.REPLACE_EXISTING);
+                System.out.println("Resource packs copied to " + allBuildsDir);
             }
 
-            if (deployInstances) {
-                Path instancesRoot = Paths.get(System.getProperty("user.home"), "AppData", "Roaming", "ATLauncher", "instances");
-                if (Files.isDirectory(instancesRoot)) {
-                    int count = 0;
-                    int skipped = 0;
-                    try (DirectoryStream<Path> stream = Files.newDirectoryStream(instancesRoot)) {
-                        for (Path instance : stream) {
-                            Path rp = instance.resolve("resourcepacks");
-                            if (Files.isDirectory(rp)) {
-                                try {
-                                    Files.copy(ruZip, rp.resolve(ruZip.getFileName()), StandardCopyOption.REPLACE_EXISTING);
-                                    Files.copy(enZip, rp.resolve(enZip.getFileName()), StandardCopyOption.REPLACE_EXISTING);
-                                    Files.copy(defaultZip, rp.resolve(defaultZip.getFileName()), StandardCopyOption.REPLACE_EXISTING);
-                                    Files.deleteIfExists(rp.resolve("Rounds-CardPack-RU.zip"));
-                                    Files.deleteIfExists(rp.resolve("Rounds-CardPack-EN.zip"));
-                                    Files.deleteIfExists(rp.resolve("Rounds-CardPack.zip"));
-                                    count++;
-                                } catch (IOException locked) {
-                                    // Instance pack file is locked (game running): skip, report.
-                                    System.out.println("Skipped locked instance: " + instance.getFileName());
-                                    skipped++;
-                                }
-                            }
-                        }
-                    }
-                    System.out.println("Deployed all packs to " + count + " ATLauncher client instances"
-                            + (skipped > 0 ? " (" + skipped + " locked/skipped - close the game and re-run)" : "") + ".");
-                }
-            }
 
-            System.out.println("CardPackBuilder completed successfully.");
+            System.out.println("ResourcePackBuilder completed successfully. Output in " + outDir);
         } catch (Exception e) {
-            System.err.println("Error building card packs: " + e.getMessage());
+            System.err.println("Error building resource packs: " + e.getMessage());
             e.printStackTrace();
             System.exit(1);
         }
@@ -193,7 +150,7 @@ public class CardPackBuilder {
         };
     }
 
-    private static void buildPack(Path root, Map<Integer, FamilyCard> familyArt, String lang, String label, Path outZip) throws IOException {
+    private static void buildPack(Path root, Map<Integer, FamilyCard> familyArt, String lang, String label, Path outZip, boolean experimental) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Set<String> written = new HashSet<>();
         try (ZipOutputStream zos = new ZipOutputStream(baos)) {
@@ -446,6 +403,12 @@ public class CardPackBuilder {
                                 continue; // Yellow boss bar is used for the round timer and must remain visible
                             }
                             byte[] data = zis.readAllBytes();
+                            // Strip minecraft: shader imports. In experimental mode ALL remaining imports
+                            // (fog, sample_lightmap, dynamictransforms, projection) are replaced with inline
+                            // stubs; in normal mode only fog.glsl is stripped (the one known to break packs).
+                            if (name.endsWith(".vsh") || name.endsWith(".glsl")) {
+                                data = experimental ? stripRemainingImports(data) : stripFogImport(data);
+                            }
                             if ("assets/minecraft/textures/gui/sprites/boss_bar/pink_background.png".equals(name)) {
                                 transparentBossBarBytes = data;
                             }
@@ -544,5 +507,72 @@ public class CardPackBuilder {
         zos.putNextEntry(entry);
         zos.write(data);
         zos.closeEntry();
+    }
+
+    /**
+     * Replaces {@code #moj_import <minecraft:fog.glsl>} / {@code #include <minecraft:fog.glsl>}
+     * with inline stub functions. Some clients mishandle shader namespace resolution and turn
+     * {@code minecraft:fog.glsl} into the invalid path {@code shaders/include/minecraft:fog.glsl}
+     * (colon is not allowed in a ResourceLocation namespace), which causes the entire pack to be
+     * rejected. The stubs make shaders self-contained; fog is irrelevant for HUD/text rendering.
+     */
+    private static byte[] stripFogImport(byte[] shaderData) {
+        String src = new String(shaderData, StandardCharsets.UTF_8);
+        String fogStubs = "\n// Inline fog stubs (replaces minecraft:fog.glsl import)\n"
+                + "float fog_distance(vec3 pos, int fogShape) { return 0.0; }\n"
+                + "float fog_spherical_distance(vec3 pos) { return 0.0; }\n"
+                + "float fog_cylindrical_distance(vec3 pos) { return 0.0; }\n";
+        src = src.replace("#moj_import <minecraft:fog.glsl>", fogStubs);
+        src = src.replace("#include <minecraft:fog.glsl>", fogStubs);
+        return src.getBytes(StandardCharsets.UTF_8);
+    }
+
+    /**
+     * EXPERIMENTAL: Replaces ALL {@code minecraft:} shader imports (fog.glsl, sample_lightmap.glsl,
+     * dynamictransforms.glsl, projection.glsl) with inline stubs so the shader is fully self-contained.
+     * Used only by the {@code Rounds-ResourcePack-RU-experimental-only-test.zip} pack.
+     *
+     * <b>WARNING:</b> {@code projection.glsl} may declare {@code uniform mat4 ProjMat} and
+     * {@code uniform mat4 ModelViewMat} that the shaders reference. If those uniforms are not declared
+     * locally in the shader file, replacing this import can break shader compilation on ALL clients.
+     * Test thoroughly before shipping.
+     */
+    private static byte[] stripRemainingImports(byte[] shaderData) {
+        String src = new String(shaderData, StandardCharsets.UTF_8);
+
+        boolean hadFog = src.contains("minecraft:fog.glsl");
+        boolean hadLightmap = src.contains("minecraft:sample_lightmap.glsl");
+        boolean hadDynamic = src.contains("minecraft:dynamictransforms.glsl");
+        boolean hadProjection = src.contains("minecraft:projection.glsl");
+
+        src = src.replace("#moj_import <minecraft:fog.glsl>", "");
+        src = src.replace("#include <minecraft:fog.glsl>", "");
+        src = src.replace("#moj_import <minecraft:sample_lightmap.glsl>", "");
+        src = src.replace("#include <minecraft:sample_lightmap.glsl>", "");
+        src = src.replace("#moj_import <minecraft:dynamictransforms.glsl>", "");
+        src = src.replace("#include <minecraft:dynamictransforms.glsl>", "");
+        src = src.replace("#moj_import <minecraft:projection.glsl>", "");
+        src = src.replace("#include <minecraft:projection.glsl>", "");
+
+        if (hadFog || hadLightmap || hadDynamic || hadProjection) {
+            src += "\n// EXPERIMENTAL: minecraft: shader imports replaced with inline stubs\n";
+            if (hadFog) {
+                src += "float fog_distance(vec3 pos, int fogShape) { return 0.0; }\n";
+                src += "float fog_spherical_distance(vec3 pos) { return 0.0; }\n";
+                src += "float fog_cylindrical_distance(vec3 pos) { return 0.0; }\n";
+            }
+            if (hadLightmap) {
+                src += "vec4 sample_lightmap(sampler2D sampler, ivec2 uv) { return vec4(1.0, 1.0, 1.0, 1.0); }\n";
+            }
+            if (hadDynamic) {
+                src += "// dynamictransforms.glsl stubbed\n";
+            }
+            if (hadProjection) {
+                src += "uniform mat4 ProjMat;\n";
+                src += "uniform mat4 ModelViewMat;\n";
+                src += "// projection.glsl stubbed — ProjMat/ModelViewMat declared locally above\n";
+            }
+        }
+        return src.getBytes(StandardCharsets.UTF_8);
     }
 }

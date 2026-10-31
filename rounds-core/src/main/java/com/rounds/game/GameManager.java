@@ -965,6 +965,10 @@ public class GameManager implements Listener {
         }
     }
 
+    public boolean isPendingAutoDeath(UUID uuid) {
+        return uuid != null && pendingAutoDeaths.contains(uuid);
+    }
+
     private void killRandomPlayer() {
         List<Player> alive = new ArrayList<>();
         for (Player p : Bukkit.getOnlinePlayers()) {
@@ -977,30 +981,31 @@ public class GameManager implements Listener {
         }
         if (alive.size() <= 1) return;
         Player victim = alive.get(RANDOM.nextInt(alive.size()));
-        Bukkit.broadcastMessage(ChatColor.DARK_RED + Messages.get("game.auto-death-killed", victim.getName()));
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, SoundCategory.RECORDS, 0.7f, 1.0f);
-        }
+
+        // Mark as auto-death BEFORE dealing damage so listeners (Decay bypass, kill attribution) know
+        pendingAutoDeaths.add(victim.getUniqueId());
 
         // The reaper applies LETHAL DAMAGE through the normal pipeline, never a direct
         // health write: card saves (Bullet Time, Second Wind, Phoenix) must be able to
         // rescue the victim, each consuming its own single-use charge (no stacking).
-        // The reaper simply cannot miss: setNoDamageTicks(0) per combat rules.
+        // Clear any stuck invulnerability and i-frames so the reaper cannot miss.
+        victim.setInvulnerable(false);
         victim.setNoDamageTicks(0);
         victim.damage(1_000_000.0);
 
-        // Kill-credit marker; if a card save rescued the victim, drop it.
-        pendingAutoDeaths.add(victim.getUniqueId());
-        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-            if (!victim.isDead()) {
-                pendingAutoDeaths.remove(victim.getUniqueId());
+        if (deadPlayers.contains(victim.getUniqueId()) || victim.isDead()) {
+            Bukkit.broadcastMessage(ChatColor.DARK_RED + Messages.get("game.auto-death-killed", victim.getName()));
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, SoundCategory.RECORDS, 0.7f, 1.0f);
             }
-        }, 10L);
-
-        // Auto-death is the game itself reaping a victim: no vanilla killer exists.
-        // Mark it so onPlayerDeath credits the kill to the best candidate instead
-        // of counting it as an unattributed death (single counting point avoids doubles).
-        pendingAutoDeaths.add(victim.getUniqueId());
+        } else {
+            // A card save (Bullet Time, Second Wind, Phoenix) rescued the victim: consume charge & drop marker
+            pendingAutoDeaths.remove(victim.getUniqueId());
+            Bukkit.broadcastMessage(ChatColor.GOLD + Messages.get("game.auto-death-saved", victim.getName()));
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                p.playSound(p.getLocation(), Sound.ITEM_TOTEM_USE, SoundCategory.RECORDS, 0.7f, 1.2f);
+            }
+        }
     }
 
     /**

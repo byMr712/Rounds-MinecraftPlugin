@@ -52,7 +52,7 @@ com/google/protobuf/
 TAB config/
 .notion/
 launch-262.ps1
-build-cardpack.ps1
+build-resourcepack.ps1
 
 # Python
 __pycache__/

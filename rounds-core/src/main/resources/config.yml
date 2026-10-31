@@ -189,3 +189,12 @@ music:
 # Разблокируются ключи для команды: /rdebug (а именно: start, stop, rounds, givegun, wheel, bossbar, bot), а также доступна становится команда /rbot
 freeplay:
   enabled: false
+
+
+# ==============================================================================
+# BSTATS METRICS
+# ==============================================================================
+# Anonymous server & gameplay statistics (https://bstats.org)
+# No sensitive data is collected. You can also disable it globally in plugins/bStats/config.yml
+bstats:
+  enabled: true

@@ -1,12 +1,11 @@
-import zipfile, os, json, shutil
+import zipfile, os, json, tempfile, shutil
 
 def merge_hudengine():
     root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     candidates = [
         os.path.join(root, 'tools', 'assets', 'HUDEngine.zip'),
         os.path.join(root, 'rounds-core', 'src', 'main', 'resources', 'hudengine', 'HUDEngine.zip'),
-        os.path.join(root, 'test-servers', '26.2', 'plugins', 'HUDEngine', 'build', 'HUDEngine.zip'),
-        os.path.expandvars(r'%APPDATA%\ATLauncher\instances\FabulouslyOptimized262\resourcepacks\HUDEngine.zip')
+        os.path.join(root, 'test-servers', '26.2', 'plugins', 'HUDEngine', 'build', 'HUDEngine.zip')
     ]
     hud_zip_path = None
     for cand in candidates:
@@ -29,11 +28,11 @@ def merge_hudengine():
     hud_meta = json.loads(hud_z.read('pack.mcmeta').decode('utf-8'))
     overlays = hud_meta.get('overlays', {})
 
-    instances_dir = os.path.expandvars(r'%APPDATA%\ATLauncher\instances')
-    desktop_dir = os.path.expandvars(r'%USERPROFILE%\Desktop')
     builds_dir = os.path.join(root, 'resourcepacks_builds')
+    if not os.path.isdir(builds_dir):
+        return
 
-    for lang in ['RU', 'EN', '']:
+    for lang in ['RU', 'EN', 'For-Developers', '']:
         canonical_name = f'Rounds-ResourcePack-{lang}.zip' if lang else 'Rounds-ResourcePack.zip'
         canonical_path = os.path.join(builds_dir, canonical_name)
         if not os.path.exists(canonical_path):
@@ -50,34 +49,15 @@ def merge_hudengine():
         for k, v in hud_files.items():
             entries[k] = v
 
-        out_desktop = os.path.join(desktop_dir, canonical_name)
-        with zipfile.ZipFile(out_desktop, 'w', zipfile.ZIP_DEFLATED) as out_z:
+        tmp_fd, tmp_path = tempfile.mkstemp(suffix='.zip')
+        os.close(tmp_fd)
+        with zipfile.ZipFile(tmp_path, 'w', zipfile.ZIP_DEFLATED) as out_z:
             for k, v in entries.items():
                 out_z.writestr(k, v)
 
-        shutil.copyfile(out_desktop, canonical_path)
+        shutil.move(tmp_path, canonical_path)
 
-        cardpack_name = f'Rounds-CardPack-{lang}.zip' if lang else 'Rounds-CardPack.zip'
-        old_cardpack_desktop = os.path.join(desktop_dir, cardpack_name)
-        if os.path.exists(old_cardpack_desktop):
-            try:
-                os.remove(old_cardpack_desktop)
-            except OSError:
-                pass
-
-        if os.path.isdir(instances_dir):
-            for inst in os.listdir(instances_dir):
-                rp = os.path.join(instances_dir, inst, 'resourcepacks')
-                if os.path.isdir(rp):
-                    shutil.copyfile(out_desktop, os.path.join(rp, canonical_name))
-                    old_cp = os.path.join(rp, cardpack_name)
-                    if os.path.exists(old_cp):
-                        try:
-                            os.remove(old_cp)
-                        except OSError:
-                            pass
-
-    print("HUDEngine assets and shaders merged into all resourcepacks.")
+    print("HUDEngine assets and shaders merged into resourcepacks_builds.")
 
 if __name__ == '__main__':
     merge_hudengine()

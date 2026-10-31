@@ -379,6 +379,7 @@ public final class DebugLog {
                 double dmg = 1.0 + (data == null ? 0.0 : data.dmg);
                 double atkSpeed = 1.0 + (data == null ? 0.0 : data.atkSpeed);
                 int ammo = data == null ? 0 : (int) Math.round(data.ammo);
+                int maxAmmo = data == null ? 0 : (int) Math.round(data.maxAmmo);
                 double move = 1.0;
                 double jump = 1.0 + (data == null ? 0.0 : data.jumpHeight);
                 double blockCd = 0.0;
@@ -406,7 +407,7 @@ public final class DebugLog {
                         " MAX_HP:" + String.format(Locale.US, "%.1f", maxHp) +
                         " | DMG:" + String.format(Locale.US, "%.2f", dmg) + "x" +
                         " | ATKSPEED:" + String.format(Locale.US, "%.2f", atkSpeed) + "x" +
-                        " | AMMO:" + ammo +
+                        " | AMMO:" + ammo + "/" + maxAmmo +
                         " | MOVE:" + String.format(Locale.US, "%.2f", move) + "x" +
                         " | JUMP:" + String.format(Locale.US, "%.2f", jump) + "x" +
                         " | BLOCK_CD:" + String.format(Locale.US, "%.1f", blockCd) + "s" +

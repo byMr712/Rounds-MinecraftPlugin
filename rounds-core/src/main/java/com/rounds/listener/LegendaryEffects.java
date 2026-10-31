@@ -228,7 +228,10 @@ public class LegendaryEffects implements Listener {
         PlayerData data = plugin.getPlayerDataManager().getData(player.getUniqueId());
         if (data == null) return;
 
-        if (!isDecayTick && data.decay > 0 && event.getCause() != EntityDamageEvent.DamageCause.VOID) {
+        boolean isAutoDeath = (instance != null && instance.plugin != null && instance.plugin.getGameManager() != null)
+                && instance.plugin.getGameManager().isPendingAutoDeath(player.getUniqueId());
+
+        if (!isDecayTick && !isAutoDeath && data.decay > 0 && event.getCause() != EntityDamageEvent.DamageCause.VOID) {
             double incomingDmg = event.getDamage();
             if (incomingDmg > 0.0) {
                 event.setCancelled(true);
@@ -272,7 +275,9 @@ public class LegendaryEffects implements Listener {
             player.setInvulnerable(true);
             player.getWorld().playSound(player.getLocation(), Sound.ITEM_TOTEM_USE, SoundCategory.RECORDS, 0.7f, 1.2f);
             Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-                if (player.isOnline() && player.isValid()) {
+                // Reset unconditionally while online: avoiding isValid() guarantees the flag clears
+                // on fake players (NMS) and prevents lingering infinite invulnerability
+                if (player.isOnline()) {
                     player.setInvulnerable(false);
                 }
             }, 40L);

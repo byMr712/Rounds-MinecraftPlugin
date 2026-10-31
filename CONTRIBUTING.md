@@ -34,8 +34,8 @@
   # Сборка пакетов в resourcepacks_builds/:
   ./gradlew buildResourcePacks
 
-  # Сборка с автоматическим деплоем на рабочий стол и во все инстансы ATLauncher:
-  ./gradlew buildResourcePacks -PdeployDesktop -PdeployInstances
+  # Сборка в директорию resourcepacks_builds/:
+  ./gradlew buildResourcePacks
   ```
 
   **Стандарты структуры и генерации ресурспака:**

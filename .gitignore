@@ -49,10 +49,10 @@ com/google/protobuf/
 
 # Local tool caches and configs
 .aider*
-TAB config/
 .notion/
 launch-262.ps1
 build-resourcepack.ps1
+respack_build.txt
 
 # Python
 __pycache__/

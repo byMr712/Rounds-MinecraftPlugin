@@ -516,16 +516,16 @@ The plugin provides a self-contained, cross-platform resource pack infrastructur
 The official plugin resource pack is based on the original resource pack by **ifrit**, with subsequent modifications: restructured layout, added texture variations, adaptive localization (RU/EN), palette quantization, and optimization by **Mr712**.
 
 Card titles and ability descriptions are rendered directly onto card face textures. Separate language-specific packages are generated:
-- `Rounds-ResourcePack-RU.zip`: Card textures with baked Russian translations ([Download on Google Drive](https://drive.google.com/file/d/1iIUzIZvINLABf8wC-efULsBi0QwQq4Uk/view?usp=sharing)).
-- `Rounds-ResourcePack-EN.zip`: Card textures with baked English translations ([Download on Google Drive](https://drive.google.com/file/d/1zbkjWkx8JeeoT1vGx7mAX81mnR_lltHK/view?usp=sharing)).
-- `Rounds-ResourcePack-For-Developers.zip` (alias `Rounds-ResourcePack.zip`): Base template pack containing clean, unbaked original card art (without text), allowing other creators to add custom translations and typography ([Download developer base pack on Google Drive](https://drive.google.com/file/d/167EDDr76AEcPsOsyQsCadylcY-O1YPyQ/view?usp=sharing)).
+- `Rounds-ResourcePack-RU.zip`: Card textures with baked Russian translations ([Download from GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.0/Rounds-ResourcePack-RU.zip)).
+- `Rounds-ResourcePack-EN.zip`: Card textures with baked English translations ([Download from GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.0/Rounds-ResourcePack-EN.zip)).
+- `Rounds-ResourcePack-For-Developers.zip` (alias `Rounds-ResourcePack.zip`): Base template pack containing clean, unbaked original card art (without text), allowing other creators to add custom translations and typography ([Download developer base pack from GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.0/Rounds-ResourcePack-For-Developers.zip)).
 
 The private-use font glyph codepoints (`0xE000` + `familyId`) are identical across all language packs. Players simply activate their preferred language pack in Minecraft settings without requiring any server configuration changes.
 
 Current SHA-1 Checksums:
-- `Rounds-ResourcePack-RU.zip`: `3fd4def2be6a904b1db6160f0982ae39905511e7`
-- `Rounds-ResourcePack-EN.zip`: `d41d0776031c7d845197dfd6bf96a71023476243`
-- `Rounds-ResourcePack.zip`: `4a002a3aa773f62d7302444c0b90505bea009d36`
+- `Rounds-ResourcePack-RU.zip`: `23119aa36a822e6fa80d42c2f7af89b589790f55`
+- `Rounds-ResourcePack-EN.zip`: `68cd86b1b31c91da90b9959f77db21bcfb82a9f2`
+- `Rounds-ResourcePack-For-Developers.zip`: `e5799a9a933ab76c51c23958c7973a569b3e0bf2`
 
 ### 2. Complete Resource Pack Architecture and Standards
 

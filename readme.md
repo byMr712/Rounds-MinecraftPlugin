@@ -514,16 +514,16 @@ triggers:
 Официальный ресурспак плагина основан на оригинальном ресурспаке от автора **ifrit**, с последующими изменениями: переработкой структуры, добавлением вариаций текстур, адаптивной локализацией (RU/EN), квантованием палитры и оптимизацией от **Mr712**.
 
 Текст названия и описания наносится непосредственно на текстуры карточек. Чтобы поддерживать несколько языков, формируются отдельные ресурспаки:
-- `Rounds-ResourcePack-RU.zip` — текстуры с запеченным русским переводом ([Скачать на Google Диске](https://drive.google.com/file/d/1iIUzIZvINLABf8wC-efULsBi0QwQq4Uk/view?usp=sharing)).
-- `Rounds-ResourcePack-EN.zip` — текстуры с запеченным английским переводом ([Скачать на Google Диске](https://drive.google.com/file/d/1zbkjWkx8JeeoT1vGx7mAX81mnR_lltHK/view?usp=sharing)).
-- `Rounds-ResourcePack-For-Developers.zip` (алиас `Rounds-ResourcePack.zip`) — базовый пакет с оригинальными чистыми карточками (без текста) для добавления своих переводов и кастомного текста сторонними авторами ([Скачать версию для разработчиков на Google Диске](https://drive.google.com/file/d/167EDDr76AEcPsOsyQsCadylcY-O1YPyQ/view?usp=sharing)).
+- `Rounds-ResourcePack-RU.zip` — текстуры с запеченным русским переводом ([Скачать с GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.0/Rounds-ResourcePack-RU.zip)).
+- `Rounds-ResourcePack-EN.zip` — текстуры с запеченным английским переводом ([Скачать с GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.0/Rounds-ResourcePack-EN.zip)).
+- `Rounds-ResourcePack-For-Developers.zip` (алиас `Rounds-ResourcePack.zip`) — базовый пакет с оригинальными чистыми карточками (без текста) для добавления своих переводов и кастомного текста сторонними авторами ([Скачать версию для разработчиков с GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.0/Rounds-ResourcePack-For-Developers.zip)).
 
 Кодовые позиции растровых глифов шрифта (`0xE000` + `familyId`) идентичны во всех пакетах. Игрок просто выбирает ресурспак своего языка в настройках Minecraft без необходимости менять что-либо на сервере.
 
 Контрольные суммы SHA-1 актуальных пакетов:
-- `Rounds-ResourcePack-RU.zip`: `3fd4def2be6a904b1db6160f0982ae39905511e7`
-- `Rounds-ResourcePack-EN.zip`: `d41d0776031c7d845197dfd6bf96a71023476243`
-- `Rounds-ResourcePack.zip`: `4a002a3aa773f62d7302444c0b90505bea009d36`
+- `Rounds-ResourcePack-RU.zip`: `23119aa36a822e6fa80d42c2f7af89b589790f55`
+- `Rounds-ResourcePack-EN.zip`: `68cd86b1b31c91da90b9959f77db21bcfb82a9f2`
+- `Rounds-ResourcePack-For-Developers.zip`: `e5799a9a933ab76c51c23958c7973a569b3e0bf2`
 
 ### 2. Полная архитектура и стандарты ресурспака
 

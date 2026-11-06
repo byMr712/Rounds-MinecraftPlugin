@@ -523,9 +523,9 @@ Card titles and ability descriptions are rendered directly onto card face textur
 The private-use font glyph codepoints (`0xE000` + `familyId`) are identical across all language packs. Players simply activate their preferred language pack in Minecraft settings without requiring any server configuration changes.
 
 Current SHA-1 Checksums:
-- `Rounds-ResourcePack-RU.zip`: `23119aa36a822e6fa80d42c2f7af89b589790f55`
-- `Rounds-ResourcePack-EN.zip`: `68cd86b1b31c91da90b9959f77db21bcfb82a9f2`
-- `Rounds-ResourcePack-For-Developers.zip`: `e5799a9a933ab76c51c23958c7973a569b3e0bf2`
+- `Rounds-ResourcePack-RU.zip`: `249c91d4c9a4797440db0e0ba2e8893f414baeff`
+- `Rounds-ResourcePack-EN.zip`: `7e1f82d6f9926cdd5eab9fce3b4750b34f58d5a4`
+- `Rounds-ResourcePack-For-Developers.zip`: `748ec800690465c74e95074fa10409d70f26010c`
 
 ### 2. Complete Resource Pack Architecture and Standards
 

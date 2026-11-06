@@ -346,7 +346,7 @@ public class ResourcePackBuilder {
             Path gunTexPath = gunDir.resolve("textures").resolve("item").resolve("piton.png");
             if (Files.exists(gunModelPath) && Files.exists(gunTexPath)) {
                 writeEntry(zos, written, "assets/rounds/textures/item/piton.png", Files.readAllBytes(gunTexPath));
-                writeEntry(zos, written, "assets/rounds/models/item/gun.json", Files.readAllBytes(gunModelPath));
+                writeEntry(zos, written, "assets/rounds/models/item/gun.json", ensureParticleTexture(Files.readAllBytes(gunModelPath)));
 
                 // Legacy model override (Minecraft 1.20.4 - 1.21.3)
                 String stickModelJson = "{\n" +
@@ -403,11 +403,12 @@ public class ResourcePackBuilder {
                                 continue; // Yellow boss bar is used for the round timer and must remain visible
                             }
                             byte[] data = zis.readAllBytes();
-                            // Strip minecraft: shader imports. In experimental mode ALL remaining imports
-                            // (fog, sample_lightmap, dynamictransforms, projection) are replaced with inline
-                            // stubs; in normal mode only fog.glsl is stripped (the one known to break packs).
+                            // Strip ALL minecraft: shader imports (fog, sample_lightmap, dynamictransforms,
+                            // projection) and replace them with inline stubs in place. Every pack needs this:
+                            // clients (notably NeoForge 1.21.11+) fail to resolve these imports and reject
+                            // the whole pack with an NPE in GlslPreprocessor.
                             if (name.endsWith(".vsh") || name.endsWith(".glsl")) {
-                                data = experimental ? stripRemainingImports(data) : stripFogImport(data);
+                                data = stripAllShaderImports(data);
                             }
                             if ("assets/minecraft/textures/gui/sprites/boss_bar/pink_background.png".equals(name)) {
                                 transparentBossBarBytes = data;
@@ -510,69 +511,52 @@ public class ResourcePackBuilder {
     }
 
     /**
-     * Replaces {@code #moj_import <minecraft:fog.glsl>} / {@code #include <minecraft:fog.glsl>}
-     * with inline stub functions. Some clients mishandle shader namespace resolution and turn
-     * {@code minecraft:fog.glsl} into the invalid path {@code shaders/include/minecraft:fog.glsl}
-     * (colon is not allowed in a ResourceLocation namespace), which causes the entire pack to be
-     * rejected. The stubs make shaders self-contained; fog is irrelevant for HUD/text rendering.
+     * Ensures the weapon model declares a {@code particle} texture. Minecraft 1.21.5+ item models
+     * require it, and its absence triggers a "Missing texture references ... particle" warning.
+     * If missing, the particle is set to the same piton texture used by the model.
      */
-    private static byte[] stripFogImport(byte[] shaderData) {
-        String src = new String(shaderData, StandardCharsets.UTF_8);
-        String fogStubs = "\n// Inline fog stubs (replaces minecraft:fog.glsl import)\n"
-                + "float fog_distance(vec3 pos, int fogShape) { return 0.0; }\n"
-                + "float fog_spherical_distance(vec3 pos) { return 0.0; }\n"
-                + "float fog_cylindrical_distance(vec3 pos) { return 0.0; }\n";
-        src = src.replace("#moj_import <minecraft:fog.glsl>", fogStubs);
-        src = src.replace("#include <minecraft:fog.glsl>", fogStubs);
-        return src.getBytes(StandardCharsets.UTF_8);
+    private static byte[] ensureParticleTexture(byte[] modelBytes) {
+        String s = new String(modelBytes, StandardCharsets.UTF_8);
+        if (s.contains("\"particle\"")) {
+            return modelBytes;
+        }
+        s = s.replace(
+                "\"1\": \"rounds:item/piton\"",
+                "\"1\": \"rounds:item/piton\",\n    \"particle\": \"rounds:item/piton\""
+        );
+        return s.getBytes(StandardCharsets.UTF_8);
     }
 
     /**
-     * EXPERIMENTAL: Replaces ALL {@code minecraft:} shader imports (fog.glsl, sample_lightmap.glsl,
-     * dynamictransforms.glsl, projection.glsl) with inline stubs so the shader is fully self-contained.
-     * Used only by the {@code Rounds-ResourcePack-RU-experimental-only-test.zip} pack.
+     * Replaces ALL {@code minecraft:} shader imports in place with self-contained inline stubs.
      *
-     * <b>WARNING:</b> {@code projection.glsl} may declare {@code uniform mat4 ProjMat} and
-     * {@code uniform mat4 ModelViewMat} that the shaders reference. If those uniforms are not declared
-     * locally in the shader file, replacing this import can break shader compilation on ALL clients.
-     * Test thoroughly before shipping.
+     * Some clients (notably NeoForge 1.21.11+) fail to resolve {@code minecraft:} shader includes
+     * and abort the whole pack with an NPE inside {@code GlslPreprocessor.processImports}. To make
+     * every pack load on every client, each import is replaced inline (at its original position,
+     * before {@code main()}) with a stub that keeps the shader self-contained:
+     *   - fog.glsl           -> fog_distance / fog_spherical_distance / fog_cylindrical_distance (0.0)
+     *   - sample_lightmap    -> sample_lightmap() returning full white
+     *   - projection.glsl    -> local `uniform mat4 ProjMat; uniform mat4 ModelViewMat;`
+     *   - dynamictransforms  -> removed (the text HUD shader does not use its symbols)
      */
-    private static byte[] stripRemainingImports(byte[] shaderData) {
+    private static byte[] stripAllShaderImports(byte[] shaderData) {
         String src = new String(shaderData, StandardCharsets.UTF_8);
 
-        boolean hadFog = src.contains("minecraft:fog.glsl");
-        boolean hadLightmap = src.contains("minecraft:sample_lightmap.glsl");
-        boolean hadDynamic = src.contains("minecraft:dynamictransforms.glsl");
-        boolean hadProjection = src.contains("minecraft:projection.glsl");
+        String fogStubs = "float fog_distance(vec3 pos, int fogShape) { return 0.0; }\n"
+                + "float fog_spherical_distance(vec3 pos) { return 0.0; }\n"
+                + "float fog_cylindrical_distance(vec3 pos) { return 0.0; }\n";
+        String lightmapStub = "vec4 sample_lightmap(sampler2D sampler, ivec2 uv) { return vec4(1.0, 1.0, 1.0, 1.0); }\n";
+        String projectionStub = "uniform mat4 ProjMat;\nuniform mat4 ModelViewMat;\n";
 
-        src = src.replace("#moj_import <minecraft:fog.glsl>", "");
-        src = src.replace("#include <minecraft:fog.glsl>", "");
-        src = src.replace("#moj_import <minecraft:sample_lightmap.glsl>", "");
-        src = src.replace("#include <minecraft:sample_lightmap.glsl>", "");
+        src = src.replace("#moj_import <minecraft:fog.glsl>", fogStubs);
+        src = src.replace("#include <minecraft:fog.glsl>", fogStubs);
+        src = src.replace("#moj_import <minecraft:sample_lightmap.glsl>", lightmapStub);
+        src = src.replace("#include <minecraft:sample_lightmap.glsl>", lightmapStub);
         src = src.replace("#moj_import <minecraft:dynamictransforms.glsl>", "");
         src = src.replace("#include <minecraft:dynamictransforms.glsl>", "");
-        src = src.replace("#moj_import <minecraft:projection.glsl>", "");
-        src = src.replace("#include <minecraft:projection.glsl>", "");
+        src = src.replace("#moj_import <minecraft:projection.glsl>", projectionStub);
+        src = src.replace("#include <minecraft:projection.glsl>", projectionStub);
 
-        if (hadFog || hadLightmap || hadDynamic || hadProjection) {
-            src += "\n// EXPERIMENTAL: minecraft: shader imports replaced with inline stubs\n";
-            if (hadFog) {
-                src += "float fog_distance(vec3 pos, int fogShape) { return 0.0; }\n";
-                src += "float fog_spherical_distance(vec3 pos) { return 0.0; }\n";
-                src += "float fog_cylindrical_distance(vec3 pos) { return 0.0; }\n";
-            }
-            if (hadLightmap) {
-                src += "vec4 sample_lightmap(sampler2D sampler, ivec2 uv) { return vec4(1.0, 1.0, 1.0, 1.0); }\n";
-            }
-            if (hadDynamic) {
-                src += "// dynamictransforms.glsl stubbed\n";
-            }
-            if (hadProjection) {
-                src += "uniform mat4 ProjMat;\n";
-                src += "uniform mat4 ModelViewMat;\n";
-                src += "// projection.glsl stubbed — ProjMat/ModelViewMat declared locally above\n";
-            }
-        }
         return src.getBytes(StandardCharsets.UTF_8);
     }
 }

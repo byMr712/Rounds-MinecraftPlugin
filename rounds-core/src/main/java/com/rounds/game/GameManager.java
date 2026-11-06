@@ -641,8 +641,6 @@ public class GameManager implements Listener {
             Location spawnLoc = baseLoc.clone().add(Math.cos(angle) * 1.5, 0, Math.sin(angle) * 1.5);
 
             Phantom phantom = summoner.getWorld().spawn(spawnLoc, Phantom.class, p -> {
-                p.setCustomName(ChatColor.DARK_PURPLE + "Тёмный фантом");
-                p.setCustomNameVisible(true);
                 var attr = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
                 if (attr != null) attr.setBaseValue(10);
                 p.setHealth(10);

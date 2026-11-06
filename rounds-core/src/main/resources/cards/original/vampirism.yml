@@ -11,8 +11,6 @@ art: card_500.png
 variations:
   - rarity: RARE
     art: card_500.png
-    effects:
-      bullets: 0
 triggers:
   - on: ON_BULLET_HIT
     action: HEAL

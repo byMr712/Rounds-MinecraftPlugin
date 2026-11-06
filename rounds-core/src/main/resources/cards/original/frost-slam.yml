@@ -12,5 +12,4 @@ variations:
   - rarity: RARE
     art: card25-rare
     effects:
-      cold: 1
-      cold_lvl: 1
+      emp: 1

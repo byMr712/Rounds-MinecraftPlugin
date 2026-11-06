@@ -20,14 +20,14 @@ variations:
     art: card67-common
     values: ["100%", "30%", "50%"]
     effects:
-      bullet_speed: 0.5
+      bullet_speed: 1.0
       damage: 0.3
       attack_speed: -0.5
   - rarity: UNCOMMON
     art: card67-uncommon
     values: ["100%", "45%", "75%"]
     effects:
-      bullet_speed: 0.75
+      bullet_speed: 1.0
       damage: 0.45
       attack_speed: -0.75
   - rarity: EPIC

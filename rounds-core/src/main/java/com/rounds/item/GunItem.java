@@ -196,8 +196,8 @@ public class GunItem implements Listener {
             }
             PlayerData pData = plugin.getPlayerDataManager().getData(player);
             if (pData != null) {
-                double effectiveAtkSpeed = Math.max(1.0 + pData.atkSpeed, 0.5);
-                double cooldownTicks = Math.max(pData.atks / effectiveAtkSpeed + pData.atksReload, 1);
+                double effectiveAtkSpeed = Math.max(1.0 + pData.atkSpeed, 0.2);
+                double cooldownTicks = Math.max(pData.atks / effectiveAtkSpeed * (1.0 + pData.atksReload * 0.1), 1);
                 boolean isReload = isReloading(player.getUniqueId()) || reloadingPlayers.contains(player.getUniqueId());
                 if (!GunCooldowns.canShoot(player.getUniqueId(), cooldownTicks) || (isReload && pData.bloodCartridge <= 0)) {
                     if (!player.hasCooldown(item.getType())) {
@@ -229,8 +229,11 @@ public class GunItem implements Listener {
         UUID uuid = player.getUniqueId();
         PlayerData data = plugin.getPlayerDataManager().getData(player);
         if (data == null) return;
-        double effectiveAtkSpeed = Math.max(1.0 + data.atkSpeed, 0.5);
-        double cooldownTicks = Math.max(data.atks / effectiveAtkSpeed + data.atksReload, 1);
+        double effectiveAtkSpeed = Math.max(1.0 + data.atkSpeed, 0.2);
+        // atksReload is authored in 10% steps (1 = +10% reload time), matching the card
+        // descriptions and the cooldown display below. Adding raw ticks made every reload
+        // card give half of its advertised percentage on a 20-tick base cooldown.
+        double cooldownTicks = Math.max(data.atks / effectiveAtkSpeed * (1.0 + data.atksReload * 0.1), 1);
         boolean isReload = isReloading(uuid) || reloadingPlayers.contains(uuid);
         if (!GunCooldowns.canShoot(uuid, cooldownTicks) || (isReload && data.bloodCartridge <= 0)) {
             event.setCancelled(true);
@@ -292,8 +295,11 @@ public class GunItem implements Listener {
             }
         }
 
-        double effectiveAtkSpeed = Math.max(1.0 + data.atkSpeed, 0.5);
-        double cooldownTicks = Math.max(data.atks / effectiveAtkSpeed + data.atksReload, 1);
+        double effectiveAtkSpeed = Math.max(1.0 + data.atkSpeed, 0.2);
+        // atksReload is authored in 10% steps (1 = +10% reload time), matching the card
+        // descriptions and the cooldown display below. Adding raw ticks made every reload
+        // card give half of its advertised percentage on a 20-tick base cooldown.
+        double cooldownTicks = Math.max(data.atks / effectiveAtkSpeed * (1.0 + data.atksReload * 0.1), 1);
         if (!GunCooldowns.canShoot(uuid, cooldownTicks)) {
             return;
         }
@@ -943,8 +949,11 @@ public class GunItem implements Listener {
 
     public static double getAttackCooldownSeconds(PlayerData data) {
         if (data == null) return 1.0;
-        double effectiveAtkSpeed = Math.max(1.0 + data.atkSpeed, 0.5);
-        double cooldownTicks = Math.max(data.atks / effectiveAtkSpeed + data.atksReload, 1);
+        double effectiveAtkSpeed = Math.max(1.0 + data.atkSpeed, 0.2);
+        // atksReload is authored in 10% steps (1 = +10% reload time), matching the card
+        // descriptions and the cooldown display below. Adding raw ticks made every reload
+        // card give half of its advertised percentage on a 20-tick base cooldown.
+        double cooldownTicks = Math.max(data.atks / effectiveAtkSpeed * (1.0 + data.atksReload * 0.1), 1);
         return cooldownTicks / 20.0;
     }
 

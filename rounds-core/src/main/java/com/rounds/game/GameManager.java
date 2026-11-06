@@ -437,10 +437,6 @@ public class GameManager implements Listener {
     public void applyPlayerHP(Player player) {
         PlayerData data = plugin.getPlayerDataManager().getData(player);
         double baseMaxHP = data.getMaxHealth();
-        if (data.grow > 0) {
-            double scaleBonus = data.grow * 0.2;
-            baseMaxHP += scaleBonus * 10;
-        }
         double maxHP = baseMaxHP;
         if (data.pristinePerseverance > 0) {
             maxHP = baseMaxHP * (1.0 + data.pristinePerseverance);
@@ -458,6 +454,11 @@ public class GameManager implements Listener {
         PlayerData data = plugin.getPlayerDataManager().getData(player);
         if (data != null) {
             data.phoenixUses = (int) data.phoenix;
+            // Bullet Rain: +1 (or more) max ammo at the start of every round, permanently.
+            if (data.bulletRain > 0) {
+                data.maxAmmo += data.bulletRain;
+                data.ammo = Math.min(data.ammo + data.bulletRain, data.maxAmmo);
+            }
         }
     }
 
@@ -483,6 +484,7 @@ public class GameManager implements Listener {
             if (data.highlight > 0) maxRadius = Math.max(maxRadius, 8.0);
             if (data.lifestealAura > 0) maxRadius = Math.max(maxRadius, 2.5);
             if (data.silenceAura > 0) maxRadius = Math.max(maxRadius, 5.0);
+            if (data.coldAura > 0) maxRadius = Math.max(maxRadius, 8.0);
             if (data.speed > 0) maxRadius = Math.max(maxRadius, 5.0 + data.speed * 3.0);
             List<Entity> nearby = maxRadius > 0 ? p.getNearbyEntities(maxRadius, maxRadius, maxRadius)
                     : Collections.emptyList();
@@ -549,6 +551,21 @@ public class GameManager implements Listener {
                     }
                 }
             }
+            if (data.coldAura > 0) {
+                // Chilling Presence: passively slows enemies within 8 blocks (refreshed every second).
+                for (Entity entity : nearby) {
+                    if (!(entity instanceof Player enemy) || enemy.getUniqueId().equals(p.getUniqueId())) continue;
+                    if (enemy.getLocation().distanceSquared(p.getLocation()) > 64.0) continue; // 8^2
+                    if (enemy.getGameMode() == GameMode.SPECTATOR) continue;
+                    if (!enemy.isOnline() || !enemy.isValid() || enemy.getHealth() <= 0) continue;
+                    if (deadPlayers.contains(enemy.getUniqueId()) || pendingCardJoiners.contains(enemy.getUniqueId())) continue;
+                    GameTeam enemyTeam = plugin.getTeamManager().getPlayerTeam(enemy.getUniqueId());
+                    if (myTeam != null && enemyTeam != null && myTeam != enemyTeam) {
+                        enemy.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                            PotionEffectType.SLOW, 40, 1, true, false, false));
+                    }
+                }
+            }
             if (data.abyssal > 0) {
                 Location lastLoc = abyssalLastLocations.get(p.getUniqueId());
                 Location currentLoc = p.getLocation();
@@ -575,9 +592,6 @@ public class GameManager implements Listener {
                 if (attr == null) continue;
 
                 double baseMaxHP = data.getMaxHealth();
-                if (data.grow > 0) {
-                    baseMaxHP += data.grow * 0.2 * 10;
-                }
                 double enhancedMaxHP = com.rounds.player.PlayerData.clampMaxHealth(baseMaxHP * (1.0 + data.pristinePerseverance));
                 double currentMaxHP = attr.getValue();
                 double currentHP = p.getHealth();
@@ -613,13 +627,16 @@ public class GameManager implements Listener {
             }
             if (data.speed > 0) {
                 double speedRangeSq = Math.pow(5.0 + data.speed * 3.0, 2);
+                // Speed potions step by 20%, so map the card's authored bonus to the closest
+                // amplifier instead of always granting a flat Speed I.
+                int speedAmp = Math.max(0, Math.min(2, (int) Math.round(data.speed / 0.2) - 1));
                 for (Entity entity : nearby) {
                     if (entity instanceof LivingEntity enemy && !enemy.getUniqueId().equals(p.getUniqueId())) {
                         if (enemy.getLocation().distanceSquared(p.getLocation()) > speedRangeSq) continue;
                         GameTeam enemyTeam = plugin.getTeamManager().getPlayerTeam(enemy.getUniqueId());
                         if (myTeam != null && enemyTeam != null && myTeam != enemyTeam) {
                             p.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                                PotionEffectType.SPEED, 40, 0, true, false, false));
+                                PotionEffectType.SPEED, 40, speedAmp, true, false, false));
                             break;
                         }
                     }

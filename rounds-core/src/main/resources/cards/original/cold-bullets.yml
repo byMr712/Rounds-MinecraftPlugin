@@ -13,5 +13,5 @@ variations:
     art: card12-common
     effects:
       cold: 1
-      cold_lvl: 1
+      cold_lvl: 4
       reload: 6

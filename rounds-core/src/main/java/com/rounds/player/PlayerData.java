@@ -42,6 +42,7 @@ public class PlayerData {
     public double pistolAnim = 0;
     public double bullets;
     public double cold = 0;
+    public double coldAura = 0;
     public double poison = 0;
     public double toxicCloud = 0;
     public double leech = 0;
@@ -216,6 +217,7 @@ public class PlayerData {
         maxAmmo = d.maxAmmo;
         bullets = d.bullets;
         cold = 0;
+        coldAura = 0;
         poison = 0;
         toxicCloud = 0;
         leech = 0;

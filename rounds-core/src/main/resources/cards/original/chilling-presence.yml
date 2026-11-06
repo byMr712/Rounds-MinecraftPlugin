@@ -12,4 +12,4 @@ variations:
   - rarity: RARE
     art: card11-rare
     effects:
-      cold: 1
+      cold-aura: 1

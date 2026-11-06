@@ -3,8 +3,8 @@ name:
   ru: "&7Скрытность"
   en: "&7Sneaky"
 description:
-  ru: "Пули летят выше земли"
-  en: "Bullets avoid the ground"
+  ru: "Пули скользят по стенам"
+  en: "Bullets slide along walls"
 material: CACTUS
 enabled: true
 art: card10.png

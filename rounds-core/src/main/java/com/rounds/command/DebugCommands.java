@@ -1246,7 +1246,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             }
             case "atk_speed", "atk-speed" -> {
                 double bonus = (Math.abs(value) > 1.0) ? value / 100.0 : value;
-                data.atkSpeed = Math.max(bonus, -0.5);
+                data.atkSpeed = Math.max(bonus, -0.8);
             }
             case "atkr", "atk-range", "range" -> data.atkr = Math.max(value, 0);
             case "bounce" -> data.bouncePl = Math.max(value, 0);

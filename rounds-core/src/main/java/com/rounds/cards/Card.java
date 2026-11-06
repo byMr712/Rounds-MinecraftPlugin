@@ -109,7 +109,8 @@ public class Card {
     private void applyEffect(PlayerData data, String key, double value) {
         switch (key) {
             case "damage": data.dmg = PlayerData.round2(Math.max(data.dmg * (1.0 + value), 0.5)); break;
-            case "attack-speed": data.atkSpeed = PlayerData.round2(Math.max(data.atkSpeed + value, -0.5)); break;
+            case "atks": data.atks = PlayerData.round2(Math.max(data.atks + value, 0)); break;
+            case "attack-speed": data.atkSpeed = PlayerData.round2(Math.max(data.atkSpeed + value, -0.8)); break;
             case "attack-range": data.atkr = PlayerData.round2(Math.max(data.atkr + value, 0)); break;
             case "bullets": data.bullets = PlayerData.round2(Math.max(data.bullets + value, 1)); break;
             case "ammo": data.ammo = Math.max(data.ammo + value, 1); data.maxAmmo = Math.max(data.maxAmmo + value, 1); break;
@@ -118,6 +119,7 @@ public class Card {
             case "hp": data.hp = PlayerData.round2(Math.max(data.hp * (1.0 + value), 2)); break;
             case "hp-cost": data.hpCost = PlayerData.round2(Math.max(data.hpCost + value, 0)); break;
             case "cold": data.cold = PlayerData.round2(Math.max(data.cold + value, 0)); break;
+            case "cold-aura", "cold_aura": data.coldAura = PlayerData.round2(Math.max(data.coldAura + value, 0)); break;
             case "cold-level", "cold-lvl", "cold_level", "cold_lvl": data.coldLvl = PlayerData.round2(Math.max(data.coldLvl + value, 0)); break;
             case "poison": data.poison = PlayerData.round2(Math.max(data.poison + value, 0)); break;
             case "toxic-cloud", "toxic_cloud": data.toxicCloud = PlayerData.round2(Math.max(data.toxicCloud + value, 0)); break;
@@ -136,7 +138,7 @@ public class Card {
             case "truster", "truster-lvl", "truster_lvl": data.trusterLvl = PlayerData.round2(Math.max(data.trusterLvl + value, 0)); break;
             case "jump-height": data.jumpHeight = PlayerData.round2(Math.max(data.jumpHeight + value, 0)); break;
             case "grow": data.grow = PlayerData.round2(Math.max(data.grow + value, 0)); break;
-            case "attack-speed-reload", "reload": data.atksReload = PlayerData.round2(Math.max(data.atksReload + value, 0)); break;
+            case "attack-speed-reload", "reload": data.atksReload = PlayerData.round2(Math.max(data.atksReload + value, -0.9)); break;
             case "parazit": data.parazit = PlayerData.round2(Math.max(data.parazit + value, 0)); break;
             case "parazit-level", "parazit-lvl": data.parazitLvl = PlayerData.round2(Math.max(data.parazitLvl + value, 0)); break;
             case "speed": data.speed = PlayerData.round2(Math.max(data.speed + value, 0)); break;
@@ -146,7 +148,7 @@ public class Card {
                 data.blockCd = PlayerData.round2(data.blockCd + value);
                 data.blockCdMult = PlayerData.round2(Math.max(0.05, data.blockCdMult * (1.0 + value)));
                 break;
-            case "reload-speed": data.reloadSpeed = PlayerData.round2(Math.max(Math.min(data.reloadSpeed + value, 0.95), 0)); break;
+            case "reload-speed": data.reloadSpeed = PlayerData.round2(Math.max(Math.min(data.reloadSpeed + value, 0.95), -0.95)); break;
             case "heal": data.heal = PlayerData.round2(Math.max(data.heal + value, 0)); break;
             case "damage-per-bounce": data.damagePerBounce = PlayerData.round2(data.damagePerBounce + value); break;
             case "double-block": data.doubleBlock = PlayerData.round2(Math.max(data.doubleBlock + value, 0)); break;
@@ -192,7 +194,7 @@ public class Card {
             case "second-wind", "second_wind": data.secondWind = PlayerData.round2(Math.max(data.secondWind + value, 0)); break;
             case "spikes": data.spikes = PlayerData.round2(Math.max(data.spikes + value, 0)); break;
             case "chikibamboni": data.chikibamboni = PlayerData.round2(Math.max(data.chikibamboni + value, 0)); break;
-            case "bullet-rain", "bullet_rain": data.bulletRain = PlayerData.round2(Math.max(data.bulletRain + value, 0)); data.ammo = Math.max(data.ammo + value, 1); data.maxAmmo = Math.max(data.maxAmmo + value, 1); break;
+            case "bullet-rain", "bullet_rain": data.bulletRain = PlayerData.round2(Math.max(data.bulletRain + value, 0)); break;
             case "frost-armor", "frost_armor": data.frostArmor = PlayerData.round2(Math.max(data.frostArmor + value, 0)); break;
             case "no-party", "no_party": data.noParty = PlayerData.round2(Math.max(data.noParty + value, 0)); break;
             case "blood-cartridge", "blood_cartridge": data.bloodCartridge = PlayerData.round2(Math.max(data.bloodCartridge + value, 0)); break;

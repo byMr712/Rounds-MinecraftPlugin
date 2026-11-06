@@ -589,9 +589,6 @@ public class LegendaryEffects implements Listener {
         }
 
         double baseMaxHP = data.getMaxHealth();
-        if (data.grow > 0) {
-            baseMaxHP += data.grow * 0.2 * 10;
-        }
         double enhancedMaxHP = baseMaxHP;
         if (data.pristinePerseverance > 0) {
             enhancedMaxHP = com.rounds.player.PlayerData.clampMaxHealth(baseMaxHP * (1.0 + data.pristinePerseverance));

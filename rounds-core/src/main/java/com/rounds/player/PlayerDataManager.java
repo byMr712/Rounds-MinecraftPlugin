@@ -993,15 +993,6 @@ public class PlayerDataManager implements Listener {
             double scale = 1.0;
             double hpDelta = (data.hp - 20.0) / 20.0;
             scale += hpDelta * 0.125;
-            if (data.grow > 0) {
-                scale += data.grow * 0.075;
-            }
-            if (data.evasion > 0) {
-                scale -= data.evasion * 0.075;
-            }
-            if (data.sneaky > 0) {
-                scale -= data.sneaky * 0.05;
-            }
             scale = Math.max(0.85, Math.min(1.40, PlayerData.round2(scale)));
             inst.setBaseValue(scale);
         } catch (Throwable ignored) {}
@@ -1020,9 +1011,6 @@ public class PlayerDataManager implements Listener {
             double scale = 1.0;
             double hpDelta = (data.hp - 20.0) / 20.0;
             scale += hpDelta * 0.125;
-            if (data.grow > 0) scale += data.grow * 0.075;
-            if (data.evasion > 0) scale -= data.evasion * 0.075;
-            if (data.sneaky > 0) scale -= data.sneaky * 0.05;
             return Math.max(0.85, Math.min(1.40, PlayerData.round2(scale)));
         }
         return 1.0;

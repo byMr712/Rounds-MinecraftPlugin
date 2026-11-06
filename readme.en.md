@@ -51,7 +51,7 @@ A Minecraft plugin for the competitive mini-game [**ROUNDS**](https://store.stea
     - **Demonic Pact:** Costs 10% current HP per shot with suicide safety (guaranteed minimum 1 HP remains), zero attack delay, +9 bullets per burst, +9 ammo capacity.
     - **Scavenger:** Successful bullet hits instantly refund ammo to the shooter (`ammo-per-hit`) and immediately cancel active reload timers.
     - **Thruster:** Recoil propulsion pushing the shooter backward in the opposite direction of their aim vector on every shot.
-    - **Dynamic Player Scaling:** On Paper/Purpur 1.20.5+ / 1.21+ servers, player models and hitboxes dynamically scale via the native `Attribute.GENERIC_SCALE`: health/mass cards (Huge, Tank, Grow) increase scale (up to 1.3x-1.8x), while agility cards (Evasion, Sneaky) reduce hitbox size.
+    - **Dynamic Player Scaling:** On Paper/Purpur 1.20.5+ / 1.21+ servers, player models and hitboxes dynamically scale via the native `Attribute.GENERIC_SCALE` strictly in proportion to the health pool: health cards (Huge, Tank) increase scale, while HP-penalty cards shrink the silhouette.
   - 5 rarity tiers with configurable weights and card variability.
   - Card compensation: losing teams draft cards between rounds.
   - Configurable card draft timer (`/rdebug cardchoicetime <sec>`) with audio warnings during the final 5 seconds, anvil chime on the final second, and automatic card selection upon expiration.
@@ -356,7 +356,7 @@ variations:
 |----------|-------------------|
 | `damage` | Damage multiplier (+0.5 = +50% damage, -0.6 = -60%) |
 | `attack-speed` | Attack cooldown reduction |
-| `attack-speed-reload` / `reload` | Reload time delay modifier |
+| `attack-speed-reload` / `reload` | Reload time delay modifier in 10% steps (1 = +10%) |
 | `attack-range` | Projectile range bonus |
 | `bullets` | Extra bullets fired per shot |
 | `ammo` | Magazine capacity bonus |
@@ -366,7 +366,8 @@ variations:
 | `damage-per-bounce` | Bonus damage per bounce |
 | `hp` | Maximum health multiplier (+0.5 = +50% HP) |
 | `hp-cost` | Health consumed per shot (% max HP) |
-| `cold` / `cold-level` | Freeze chance and amplifier |
+| `cold` / `cold-level` | On-hit slow and its amplifier |
+| `cold-aura` | Persistent slow aura around the player |
 | `poison` / `poison-level` | Poison chance and amplifier |
 | `toxic-cloud` | Poison cloud spawned on hit |
 | `parazit` / `parazit-level` | Wither chance and amplifier |
@@ -389,7 +390,7 @@ variations:
 | `auto-reload` | Passive ammo regeneration over time |
 | `truster` / `truster-lvl` | Increased bullet knockback strength |
 | `jump-height` | Jump height modifier |
-| `grow` | Increased HP pool and model scale |
+| `grow` | Bullet damage grows with travel distance |
 | `speed` / `speed-boost` | Movement speed bonus |
 | `stun` | Target stun duration on hit |
 | `heal` | Periodic health regeneration |
@@ -398,7 +399,7 @@ variations:
 | `implode` | Implode: pulls nearby enemies toward player on block |
 | `silence` | Silence: prevents enemy shooting and shields |
 | `silence-aura` | Persistent silence aura |
-| `sneaky` | Stealth / invisibility |
+| `sneaky` | Bullets slide along walls on ricochet |
 | `emp` | EMP: heavy slow applied to enemies on block |
 | `overpower` | Overpower: AoE damage based on current HP on block |
 | `refresh` | Instant shield cooldown reset and ammo refill |
@@ -422,7 +423,7 @@ variations:
 | `overheat` | Overheat: shoot past empty clip at the cost of health |
 | `second-wind` | Second Wind: survive lethal blow at 1 HP with invulnerability |
 | `spikes` | Spikes: return damage to attacker |
-| `bullet-rain` | Bullet Rain: rapid projectile spray and clip expansion |
+| `bullet-rain` | Bullet Rain: +1 max ammo at the start of every round |
 | `frost-armor` | Frost Armor: slows attacking enemies |
 | `no-party` | No Party: disables shields and reloads for nearby enemies |
 | `blood-cartridge` | Blood Cartridge: emergency shooting during reload sacrificing % HP (7..15%), bonus damage and crits |

@@ -81,11 +81,11 @@ public class CardDisplayManager implements Listener {
         if (player == null || !player.isOnline()) return;
         if (player.getGameMode() == GameMode.SPECTATOR) return;
         close(player.getUniqueId());
+        hideAllCardDisplaysFrom(player);
         Scene scene = new Scene(player, cards);
         scenes.put(player.getUniqueId(), scene);
         scene.begin();
         hideOtherPlayers(player);
-        hideAllCardDisplaysFrom(player);
     }
 
     public void close(Player player) {

@@ -2224,9 +2224,12 @@ public class GameManager implements Listener {
             deadData.phoenixUses--;
             com.rounds.listener.LegendaryEffects.clearDecay(dead.getUniqueId());
             event.setCancelled(true);
+            // Paper-specific revive health: when a PlayerDeathEvent is cancelled, the player is
+            // revived at this health. Calling setHealth() directly here is ignored, which made
+            // the Phoenix card appear to do nothing (the player died again at 0 HP).
+            event.setReviveHealth(dead.getMaxHealth() / 2);
             dead.setFallDistance(0);
             dead.setFireTicks(0);
-            dead.setHealth(dead.getMaxHealth() / 2);
             dead.setNoDamageTicks(20);
             dead.addPotionEffect(new org.bukkit.potion.PotionEffect(
                 PotionEffectType.REGENERATION, 100, 2));

@@ -558,6 +558,15 @@ public class CardManager {
     }
 
     private void syncPlayerHP(Player player, PlayerData data) {
+        // Delegate to GameManager.applyPlayerHP so the grow / pristine-perseverance
+        // modifiers are included, matching the HP shown at round start. Previously the
+        // HP was set to the raw data.hp here, which silently dropped those bonuses right
+        // after picking a card and made the card look like it gave far less than its
+        // advertised percentage (e.g. Tank "+160% HP" appeared as ~+32%).
+        if (plugin.getGameManager() != null) {
+            plugin.getGameManager().applyPlayerHP(player);
+            return;
+        }
         double maxHP = data.getMaxHealth();
         var attr = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
         if (attr != null) {

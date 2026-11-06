@@ -521,9 +521,9 @@ triggers:
 Кодовые позиции растровых глифов шрифта (`0xE000` + `familyId`) идентичны во всех пакетах. Игрок просто выбирает ресурспак своего языка в настройках Minecraft без необходимости менять что-либо на сервере.
 
 Контрольные суммы SHA-1 актуальных пакетов:
-- `Rounds-ResourcePack-RU.zip`: `249c91d4c9a4797440db0e0ba2e8893f414baeff`
-- `Rounds-ResourcePack-EN.zip`: `7e1f82d6f9926cdd5eab9fce3b4750b34f58d5a4`
-- `Rounds-ResourcePack-For-Developers.zip`: `748ec800690465c74e95074fa10409d70f26010c`
+- `Rounds-ResourcePack-RU.zip`: `9b0f1f4228f47091d4f14b71ffb1ec78aedcd231`
+- `Rounds-ResourcePack-EN.zip`: `be37da7549eaea7274e225bc79bfd2f4245efbf7`
+- `Rounds-ResourcePack-For-Developers.zip`: `54fdcab6a97c6fedb1f7c75b9e38ef021f5ef5f6`
 
 ### 2. Полная архитектура и стандарты ресурспака
 

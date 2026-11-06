@@ -393,7 +393,6 @@ public class ResourcePackBuilder {
             if (hudEngineZip != null && Files.exists(hudEngineZip)) {
                 try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(hudEngineZip))) {
                     ZipEntry ze;
-                    byte[] textVshBytes = null;
                     byte[] transparentBossBarBytes = null;
                     while ((ze = zis.getNextEntry()) != null) {
                         String name = ze.getName();
@@ -402,14 +401,15 @@ public class ResourcePackBuilder {
                                     || "assets/minecraft/textures/gui/sprites/boss_bar/yellow_progress.png".equals(name)) {
                                 continue; // Yellow boss bar is used for the round timer and must remain visible
                             }
-                            byte[] data = zis.readAllBytes();
-                            // Strip ALL minecraft: shader imports (fog, sample_lightmap, dynamictransforms,
-                            // projection) and replace them with inline stubs in place. Every pack needs this:
-                            // clients (notably NeoForge 1.21.11+) fail to resolve these imports and reject
-                            // the whole pack with an NPE in GlslPreprocessor.
-                            if (name.endsWith(".vsh") || name.endsWith(".glsl")) {
-                                data = stripAllShaderImports(data);
+                            // The HUDEngine custom text shaders are incompatible with the newer Minecraft
+                            // shader systems (1.21.11+ renamed includes, moved to UBOs, and the shader is
+                            // `rendertype_text` again). Overriding the text shader with a mismatched GLSL
+                            // version / interface makes the whole pack fail to link and get rejected.
+                            // Skipping them lets vanilla render text, so the pack loads on every version.
+                            if (name.endsWith(".vsh") || name.endsWith(".fsh") || name.endsWith(".glsl")) {
+                                continue;
                             }
+                            byte[] data = zis.readAllBytes();
                             if ("assets/minecraft/textures/gui/sprites/boss_bar/pink_background.png".equals(name)) {
                                 transparentBossBarBytes = data;
                             }
@@ -417,13 +417,7 @@ public class ResourcePackBuilder {
                                 data = ensureDynamicHudGlyphs(data);
                             }
                             writeEntry(zos, written, name, data);
-                            if ("overlay_text/assets/minecraft/shaders/core/text.vsh".equals(name)) {
-                                textVshBytes = data;
-                            }
                         }
-                    }
-                    if (textVshBytes != null) {
-                        writeEntry(zos, written, "assets/minecraft/shaders/core/text.vsh", textVshBytes);
                     }
                     if (transparentBossBarBytes != null) {
                         writeEntry(zos, written, "assets/minecraft/textures/gui/sprites/boss_bar/pink_background.png", transparentBossBarBytes);
@@ -525,38 +519,5 @@ public class ResourcePackBuilder {
                 "\"1\": \"rounds:item/piton\",\n    \"particle\": \"rounds:item/piton\""
         );
         return s.getBytes(StandardCharsets.UTF_8);
-    }
-
-    /**
-     * Replaces ALL {@code minecraft:} shader imports in place with self-contained inline stubs.
-     *
-     * Some clients (notably NeoForge 1.21.11+) fail to resolve {@code minecraft:} shader includes
-     * and abort the whole pack with an NPE inside {@code GlslPreprocessor.processImports}. To make
-     * every pack load on every client, each import is replaced inline (at its original position,
-     * before {@code main()}) with a stub that keeps the shader self-contained:
-     *   - fog.glsl           -> fog_distance / fog_spherical_distance / fog_cylindrical_distance (0.0)
-     *   - sample_lightmap    -> sample_lightmap() returning full white
-     *   - projection.glsl    -> local `uniform mat4 ProjMat; uniform mat4 ModelViewMat;`
-     *   - dynamictransforms  -> removed (the text HUD shader does not use its symbols)
-     */
-    private static byte[] stripAllShaderImports(byte[] shaderData) {
-        String src = new String(shaderData, StandardCharsets.UTF_8);
-
-        String fogStubs = "float fog_distance(vec3 pos, int fogShape) { return 0.0; }\n"
-                + "float fog_spherical_distance(vec3 pos) { return 0.0; }\n"
-                + "float fog_cylindrical_distance(vec3 pos) { return 0.0; }\n";
-        String lightmapStub = "vec4 sample_lightmap(sampler2D sampler, ivec2 uv) { return vec4(1.0, 1.0, 1.0, 1.0); }\n";
-        String projectionStub = "uniform mat4 ProjMat;\nuniform mat4 ModelViewMat;\n";
-
-        src = src.replace("#moj_import <minecraft:fog.glsl>", fogStubs);
-        src = src.replace("#include <minecraft:fog.glsl>", fogStubs);
-        src = src.replace("#moj_import <minecraft:sample_lightmap.glsl>", lightmapStub);
-        src = src.replace("#include <minecraft:sample_lightmap.glsl>", lightmapStub);
-        src = src.replace("#moj_import <minecraft:dynamictransforms.glsl>", "");
-        src = src.replace("#include <minecraft:dynamictransforms.glsl>", "");
-        src = src.replace("#moj_import <minecraft:projection.glsl>", projectionStub);
-        src = src.replace("#include <minecraft:projection.glsl>", projectionStub);
-
-        return src.getBytes(StandardCharsets.UTF_8);
     }
 }

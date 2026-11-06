@@ -85,6 +85,7 @@ public class CardDisplayManager implements Listener {
         scenes.put(player.getUniqueId(), scene);
         scene.begin();
         hideOtherPlayers(player);
+        hideAllCardDisplaysFrom(player);
     }
 
     public void close(Player player) {
@@ -192,6 +193,38 @@ public class CardDisplayManager implements Listener {
         }
     }
 
+    /**
+     * Hides a single card stand from every online player except its owner, so teammates
+     * drafting at the same time never see each other's cards and cannot interfere.
+     */
+    private void hideFromOthers(TextDisplay display, UUID ownerId) {
+        if (display == null) return;
+        for (Player other : Bukkit.getOnlinePlayers()) {
+            if (other.getUniqueId().equals(ownerId)) continue;
+            try {
+                other.hideEntity(plugin, display);
+            } catch (Throwable ignored) {}
+        }
+    }
+
+    /**
+     * Hides every currently spawned card stand from the given viewer. Used when a player
+     * opens their own draft (so they don't see teammates' stands) and when a player joins
+     * mid-draft (so they don't see any ongoing selections).
+     */
+    private void hideAllCardDisplaysFrom(Player viewer) {
+        if (viewer == null) return;
+        for (World w : Bukkit.getWorlds()) {
+            for (TextDisplay td : w.getEntitiesByClass(TextDisplay.class)) {
+                if (td.getScoreboardTags().contains("rounds_card_display")) {
+                    try {
+                        viewer.hideEntity(plugin, td);
+                    } catch (Throwable ignored) {}
+                }
+            }
+        }
+    }
+
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
         lastCardPickMs.remove(event.getPlayer().getUniqueId());
@@ -207,6 +240,7 @@ public class CardDisplayManager implements Listener {
                 || plugin.getGameManager().getState() != com.rounds.game.GameManager.GameState.CARDS) {
             cleanupPlayer(player.getUniqueId());
         }
+        hideAllCardDisplaysFrom(player);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -440,6 +474,7 @@ public class CardDisplayManager implements Listener {
                 display.setSeeThrough(true);
                 display.addScoreboardTag("rounds_card_display");
                 display.addScoreboardTag("owner_" + playerId);
+                hideFromOthers(display, playerId);
                 displays[i] = display;
             }
 
@@ -455,6 +490,7 @@ public class CardDisplayManager implements Listener {
                 starDisplay.setBackgroundColor(Color.fromARGB(0, 0, 0, 0));
                 starDisplay.addScoreboardTag("rounds_card_display");
                 starDisplay.addScoreboardTag("owner_" + playerId);
+                hideFromOthers(starDisplay, playerId);
                 starDisplays[i] = starDisplay;
             }
         }

@@ -15,6 +15,9 @@ public record CardTriggerAction(
     public static CardTriggerAction fromMap(Map<?, ?> map) {
         if (map == null) return null;
         Object onObj = map.get("on");
+        // YAML 1.1 (SnakeYAML) parses the bare key `on` as a boolean true, so the
+        // trigger key ends up as Boolean.TRUE instead of the string "on". Accept both.
+        if (onObj == null) onObj = map.get(Boolean.TRUE);
         Object actionObj = map.get("action");
         if (onObj == null || actionObj == null) return null;
 

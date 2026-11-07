@@ -40,9 +40,9 @@ The project uses Gradle with a multi-module architecture.
 
   **Resource Pack Structure and Generation Standards:**
   1. *Baking Card Texts:* When adding cards or modifying descriptions, run `python tools/generate_card_textures.py`. The script renders centered typography at native 160x250 resolution into `test-servers/original_mod/cards/ru` and `cards/en`.
-  2. *HUD Overlay and Fonts:* Base HUD assets and Core Shaders reside in `tools/assets/HUDEngine.zip`. File `assets/hudengine/font/hud.json` must declare strictly 821 providers (800 static glyphs `0xF5000`..`0xF531F` + 20 dynamic row matrix $L \times C$ glyphs `0xF5400`..`0xF5413` for `HudEngineCustomRealisation` + negative spaces).
+  2. *HUD Overlay and Fonts:* Base HUD assets (frame textures, font, transparent sprites) reside in `tools/assets/HUDEngine.zip`. Shaders from that archive are no longer used. File `assets/hudengine/font/hud.json` must declare strictly 821 providers (800 static glyphs `0xF5000`..`0xF531F` + 20 dynamic row matrix $L \times C$ glyphs `0xF5400`..`0xF5413` for `HudEngineCustomRealisation` + negative spaces).
   3. *Concealing Vanilla BossBar:* Directory `assets/minecraft/textures/gui/sprites/boss_bar/` must contain transparent 1x1 PNGs (83 bytes) `pink_background.png` and `pink_progress.png` so vanilla bossbar frames are suppressed underneath the HUD overlay.
-  4. *Text Core Shaders:* All vertex text shaders `rendertype_text.vsh` and `text.vsh` must use `#define DEFAULT_OFFSET 29` (value `10` displaces HUD boxes 19 pixels upward).
+  4. *Text Core Shaders:* Self-contained vertex shaders `rendertype_text.vsh` / `text.vsh` live in `tools/assets/hud_shaders/<pack-format range>/`; every `#moj_import`/`#include` must be inlined, and `main()` must contain the HUD block with `#define DEFAULT_OFFSET 29` (value `10` displaces HUD boxes 19 pixels upward). Regenerate them with `tools/generate_hud_shaders.ps1` from the official client jars.
 
 
 ## 2. Creating New Cards

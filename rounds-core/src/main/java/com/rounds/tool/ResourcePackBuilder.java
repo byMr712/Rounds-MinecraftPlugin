@@ -52,29 +52,22 @@ public class ResourcePackBuilder {
 
             // 1. Build RU
             Path ruZip = outDir.resolve("Rounds-ResourcePack-RU.zip");
-            buildPack(projectRoot, familyArt, "RU", "[RU]", ruZip, false);
+            buildPack(projectRoot, familyArt, "RU", "[RU]", ruZip);
 
             // 2. Build EN
             Path enZip = outDir.resolve("Rounds-ResourcePack-EN.zip");
-            buildPack(projectRoot, familyArt, "EN", "[EN]", enZip, false);
+            buildPack(projectRoot, familyArt, "EN", "[EN]", enZip);
 
 
             // 3. Build Base / Clean Template Pack for developers (blank cards without text)
             Path devZip = outDir.resolve("Rounds-ResourcePack-For-Developers.zip");
-            buildPack(projectRoot, familyArt, "BASE", "[For Developers]", devZip, false);
-
-            // 4. Build EXPERIMENTAL RU pack — strips ALL minecraft: shader imports (fog, sample_lightmap,
-            // dynamictransforms, projection) and replaces them with inline stubs. ONLY Russian language.
-            // Use for testing on clients where the regular pack still fails after fog fix.
-            Path ruExperimentalZip = outDir.resolve("Rounds-ResourcePack-RU-experimental-only-test.zip");
-            buildPack(projectRoot, familyArt, "RU", "[RU Experimental - Test Only]", ruExperimentalZip, true);
+            buildPack(projectRoot, familyArt, "BASE", "[For Developers]", devZip);
 
             Path allBuildsDir = Paths.get(System.getProperty("user.home"), "Documents", "RoundsPlugin_all_builds");
             if (Files.isDirectory(allBuildsDir)) {
                 Files.copy(ruZip, allBuildsDir.resolve("Rounds-ResourcePack-RU.zip"), StandardCopyOption.REPLACE_EXISTING);
                 Files.copy(enZip, allBuildsDir.resolve("Rounds-ResourcePack-EN.zip"), StandardCopyOption.REPLACE_EXISTING);
                 Files.copy(devZip, allBuildsDir.resolve("Rounds-ResourcePack-For-Developers.zip"), StandardCopyOption.REPLACE_EXISTING);
-                Files.copy(ruExperimentalZip, allBuildsDir.resolve("Rounds-ResourcePack-RU-experimental-only-test.zip"), StandardCopyOption.REPLACE_EXISTING);
                 System.out.println("Resource packs copied to " + allBuildsDir);
             }
 
@@ -150,7 +143,7 @@ public class ResourcePackBuilder {
         };
     }
 
-    private static void buildPack(Path root, Map<Integer, FamilyCard> familyArt, String lang, String label, Path outZip, boolean experimental) throws IOException {
+    private static void buildPack(Path root, Map<Integer, FamilyCard> familyArt, String lang, String label, Path outZip) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Set<String> written = new HashSet<>();
         try (ZipOutputStream zos = new ZipOutputStream(baos)) {
@@ -170,11 +163,14 @@ public class ResourcePackBuilder {
                     "  },\n" +
                     "  \"overlays\": {\n" +
                     "    \"entries\": [\n" +
-                    "      {\"formats\": [63, 68], \"min_format\": 63, \"max_format\": 68, \"directory\": \"overlay_ubo150\"},\n" +
-                    "      {\"formats\": [69, 83], \"min_format\": 69, \"max_format\": 83, \"directory\": \"overlay_ubo330\"},\n" +
-                    "      {\"formats\": [84, 87], \"min_format\": 84, \"max_format\": 87, \"directory\": \"overlay_lightmap\"},\n" +
-                    "      {\"formats\": [88, 96], \"min_format\": 88, \"max_format\": 96, \"directory\": \"overlay_text\"},\n" +
-                    "      {\"formats\": [97, 99], \"min_format\": 97, \"max_format\": 99, \"directory\": \"overlay_sso\"}\n" +
+                    "      {\"formats\": [32, 41], \"min_format\": 32, \"max_format\": 41, \"directory\": \"overlay_32_41\"},\n" +
+                    "      {\"formats\": [42, 62], \"min_format\": 42, \"max_format\": 62, \"directory\": \"overlay_42_62\"},\n" +
+                    "      {\"formats\": [63, 68], \"min_format\": 63, \"max_format\": 68, \"directory\": \"overlay_63_68\"},\n" +
+                    "      {\"formats\": [69, 74], \"min_format\": 69, \"max_format\": 74, \"directory\": \"overlay_69_74\"},\n" +
+                    "      {\"formats\": [75, 83], \"min_format\": 75, \"max_format\": 83, \"directory\": \"overlay_75_83\"},\n" +
+                    "      {\"formats\": [84, 87], \"min_format\": 84, \"max_format\": 87, \"directory\": \"overlay_84_87\"},\n" +
+                    "      {\"formats\": [88, 96], \"min_format\": 88, \"max_format\": 96, \"directory\": \"overlay_88_96\"},\n" +
+                    "      {\"formats\": [97, 99], \"min_format\": 97, \"max_format\": 99, \"directory\": \"overlay_97_99\"}\n" +
                     "    ]\n" +
                     "  }\n" +
                     "}\n";
@@ -401,11 +397,10 @@ public class ResourcePackBuilder {
                                     || "assets/minecraft/textures/gui/sprites/boss_bar/yellow_progress.png".equals(name)) {
                                 continue; // Yellow boss bar is used for the round timer and must remain visible
                             }
-                            // The HUDEngine custom text shaders are incompatible with the newer Minecraft
-                            // shader systems (1.21.11+ renamed includes, moved to UBOs, and the shader is
-                            // `rendertype_text` again). Overriding the text shader with a mismatched GLSL
-                            // version / interface makes the whole pack fail to link and get rejected.
-                            // Skipping them lets vanilla render text, so the pack loads on every version.
+                            // The HUD text shaders are not shipped from HUDEngine.zip: they are stale and
+                            // fail to compile on newer clients, which rejects the whole pack. Instead the
+                            // builder writes self-contained, version-matched HUD shaders from
+                            // tools/assets/hud_shaders (see writeHudShaders below).
                             if (name.endsWith(".vsh") || name.endsWith(".fsh") || name.endsWith(".glsl")) {
                                 continue;
                             }
@@ -425,6 +420,9 @@ public class ResourcePackBuilder {
                     }
                 }
             }
+
+            // 7. Self-contained HUD text shaders for every pack-format family.
+            writeHudShaders(root, zos, written);
         }
 
         byte[] zipBytes = baos.toByteArray();
@@ -493,12 +491,54 @@ public class ResourcePackBuilder {
         return patched.getBytes(StandardCharsets.UTF_8);
     }
 
+    private static Path resolveHudShadersDir(Path root) {
+        Path[] candidates = new Path[]{
+                root.resolve("tools").resolve("assets").resolve("hud_shaders"),
+                root.resolve("rounds-core").resolve("src").resolve("main").resolve("resources").resolve("hudengine").resolve("hud_shaders")
+        };
+        for (Path c : candidates) {
+            if (Files.isDirectory(c)) return c;
+        }
+        return null;
+    }
+
+    /**
+     * Copies the self-contained, version-matched HUD text shaders. Every overlay directory is
+     * already named after its pack-format range in pack.mcmeta, so the client picks the right
+     * shader without any server-side version detection. The {@code base/} family is written to
+     * the pack root; all other families become overlay directories.
+     */
+    private static void writeHudShaders(Path root, ZipOutputStream zos, Set<String> written) throws IOException {
+        Path shaderRoot = resolveHudShadersDir(root);
+        if (shaderRoot == null) {
+            System.err.println("Warning: HUD shader sources not found; the HUD overlay will stay invisible.");
+            return;
+        }
+        List<Path> files;
+        try (var paths = Files.walk(shaderRoot)) {
+            files = paths.filter(Files::isRegularFile)
+                    .filter(p -> {
+                        String n = p.getFileName().toString();
+                        return n.endsWith(".vsh") || n.endsWith(".fsh");
+                    })
+                    .sorted().toList();
+        }
+        for (Path p : files) {
+            String rel = shaderRoot.relativize(p).toString().replace('\\', '/');
+            String entryName = rel.startsWith("base/") ? rel.substring("base/".length()) : rel;
+            writeEntry(zos, written, entryName, Files.readAllBytes(p));
+        }
+    }
+
     private static void writeEntry(ZipOutputStream zos, Set<String> written, String entryName, byte[] data) throws IOException {
         String normalized = entryName.replace('\\', '/');
         if (written != null && !written.add(normalized)) {
             return;
         }
         ZipEntry entry = new ZipEntry(normalized);
+        // Fixed timestamp keeps the generated archives byte-for-byte reproducible, so the
+        // SHA-1 values published in the readme stay valid across rebuilds.
+        entry.setTimeLocal(java.time.LocalDateTime.of(2020, 1, 1, 0, 0, 0));
         zos.putNextEntry(entry);
         zos.write(data);
         zos.closeEntry();

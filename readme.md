@@ -522,9 +522,9 @@ triggers:
 Кодовые позиции растровых глифов шрифта (`0xE000` + `familyId`) идентичны во всех пакетах. Игрок просто выбирает ресурспак своего языка в настройках Minecraft без необходимости менять что-либо на сервере.
 
 Контрольные суммы SHA-1 актуальных пакетов:
-- `Rounds-ResourcePack-RU.zip`: `9b0f1f4228f47091d4f14b71ffb1ec78aedcd231`
-- `Rounds-ResourcePack-EN.zip`: `be37da7549eaea7274e225bc79bfd2f4245efbf7`
-- `Rounds-ResourcePack-For-Developers.zip`: `54fdcab6a97c6fedb1f7c75b9e38ef021f5ef5f6`
+- `Rounds-ResourcePack-RU.zip`: `126c4227c98d935147ff8a71d7f9c93a2b5b1a13`
+- `Rounds-ResourcePack-EN.zip`: `07256fb2c4f26f695327621f01331954b7887d51`
+- `Rounds-ResourcePack-For-Developers.zip`: `839a6dca75a095c74676fad9ccb2fc337baa98d4`
 
 ### 2. Полная архитектура и стандарты ресурспака
 
@@ -550,10 +550,12 @@ triggers:
      - Провайдер типа `space` для отрицательного и положительного позиционирования курсора от `-8192` до `+8192` (`0xF0000`..`0xF4000`), а также `assets/hudengine/font/space.json`.
    - **Скрытие стандартной полосы BossBar:**
      - Текстуры полосы боссбара цвета `PINK` в `assets/minecraft/textures/gui/sprites/boss_bar/pink_background.png` и `pink_progress.png` (только для скрытия подложки оверлея, желтая полоса `yellow_*` таймера раунда не скрывается) обязаны быть прозрачными 1x1 PNG (83 байта). Без них ванильный клиент отрисовывает розовую полосу боссбара под оверлеем.
-   - **Вертексные Core Shaders (`DEFAULT_OFFSET 29`):**
-     - Вертексный шейдер `rendertype_text.vsh` (Minecraft до 1.21.1) и `text.vsh` (Minecraft 1.21.2+ и Purpur 26.2) в `assets/minecraft/shaders/core/` и во всех 5 оверлеях (`overlay_lightmap`, `overlay_sso`, `overlay_text`, `overlay_ubo150`, `overlay_ubo330`) ОБЯЗАНЫ использовать директиву `#define DEFAULT_OFFSET 29`. Использование значения `10` смещает интерфейс на 19 пикселей вверх к середине экрана.
+   - **Самодостаточные вертексные шейдеры HUD (без `#moj_import`/`#include`):**
+     - Для каждой группы форматов пакета поставляется собственный `rendertype_text.vsh` / `text.vsh`, собранный из ванильного шейдера соответствующей версии: инклюды (`fog.glsl`, `sample_lightmap.glsl`, `dynamictransforms.glsl`, `projection.glsl`) встроены в файл, поэтому клиенты (включая NeoForge) не падают на резолве `minecraft:`-импортов.
+     - Исходники лежат в `tools/assets/hud_shaders/<диапазон>/assets/minecraft/shaders/core/`; каталог `base` кладётся в корень пака, остальные становятся оверлеями.
+     - Внутри `main()` шейдер декодирует позицию HUD-глифа из огромного `ascent` и возвращает его на экран (`DEFAULT_OFFSET 29`).
    - **Версионные оверлеи в `pack.mcmeta`:**
-     - Поддержка форматов пакетов от 22 до 99 гарантирует работу шейдеров на современных клиентах без конфликтов версий.
+     - `32..41` (1.20.5-1.21.1), `42..62` (1.21.2-1.21.5), `63..68` (1.21.6-1.21.8), `69..74` (1.21.9-1.21.10), `75..83` (1.21.11), `84..87` (26.1.x), `88..96` (26.2, `core/text.vsh`), `97..99` (26.3, SSO `core/text.vsh`). База (`22..31`, 1.20.4) лежит в корне пака.
 
 ### 3. Инструкция по сборке ресурспака
 

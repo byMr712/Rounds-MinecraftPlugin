@@ -524,9 +524,9 @@ Card titles and ability descriptions are rendered directly onto card face textur
 The private-use font glyph codepoints (`0xE000` + `familyId`) are identical across all language packs. Players simply activate their preferred language pack in Minecraft settings without requiring any server configuration changes.
 
 Current SHA-1 Checksums:
-- `Rounds-ResourcePack-RU.zip`: `9b0f1f4228f47091d4f14b71ffb1ec78aedcd231`
-- `Rounds-ResourcePack-EN.zip`: `be37da7549eaea7274e225bc79bfd2f4245efbf7`
-- `Rounds-ResourcePack-For-Developers.zip`: `54fdcab6a97c6fedb1f7c75b9e38ef021f5ef5f6`
+- `Rounds-ResourcePack-RU.zip`: `126c4227c98d935147ff8a71d7f9c93a2b5b1a13`
+- `Rounds-ResourcePack-EN.zip`: `07256fb2c4f26f695327621f01331954b7887d51`
+- `Rounds-ResourcePack-For-Developers.zip`: `839a6dca75a095c74676fad9ccb2fc337baa98d4`
 
 ### 2. Complete Resource Pack Architecture and Standards
 
@@ -552,10 +552,12 @@ The Rounds resource pack integrates four essential subsystems that render native
      - Font advance provider of type `space` with advances from `-8192` to `+8192` (`0xF0000`..`0xF4000`), along with `assets/hudengine/font/space.json`.
    - **Vanilla BossBar Concealment:**
      - BossBar frame sprites for `PINK` color in `assets/minecraft/textures/gui/sprites/boss_bar/pink_background.png` and `pink_progress.png` (solely to conceal the HUD overlay background; `yellow_*` textures must remain intact so the round timer displays normally) must be transparent 1x1 PNGs (83 bytes). Without them, the vanilla client renders a visible pink bossbar bar below the HUD overlay.
-   - **Vertex Core Shaders (`DEFAULT_OFFSET 29`):**
-     - Vertex text shaders `rendertype_text.vsh` (Minecraft <= 1.21.1) and `text.vsh` (Minecraft 1.21.2+ and Purpur 26.2) in `assets/minecraft/shaders/core/` and across all 5 overlays (`overlay_lightmap`, `overlay_sso`, `overlay_text`, `overlay_ubo150`, `overlay_ubo330`) MUST define `#define DEFAULT_OFFSET 29`. Using `10` displaces the HUD 19 pixels upward towards screen center.
+   - **Self-contained HUD vertex shaders (no `#moj_import`/`#include`):**
+     - Each pack-format family ships its own `rendertype_text.vsh` / `text.vsh`, built from the vanilla shader of the matching Minecraft version: the includes (`fog.glsl`, `sample_lightmap.glsl`, `dynamictransforms.glsl`, `projection.glsl`) are inlined, so clients (including NeoForge) cannot fail on resolving `minecraft:` imports.
+     - Sources live in `tools/assets/hud_shaders/<range>/assets/minecraft/shaders/core/`; the `base` directory is written to the pack root, all others become overlays.
+     - Inside `main()` the shader decodes the HUD glyph position from the huge `ascent` and brings it back on screen (`DEFAULT_OFFSET 29`).
    - **Version Overlays in `pack.mcmeta`:**
-     - Multi-format support spanning formats 22 through 99 ensures shaders and font files load properly across modern and legacy clients.
+     - `32..41` (1.20.5-1.21.1), `42..62` (1.21.2-1.21.5), `63..68` (1.21.6-1.21.8), `69..74` (1.21.9-1.21.10), `75..83` (1.21.11), `84..87` (26.1.x), `88..96` (26.2, `core/text.vsh`), `97..99` (26.3, SSO `core/text.vsh`). The base family (`22..31`, 1.20.4) sits at the pack root.
 
 ### 3. Resource Pack Build Instructions
 

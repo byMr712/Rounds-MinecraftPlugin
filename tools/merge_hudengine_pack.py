@@ -19,14 +19,13 @@ def merge_hudengine():
     hud_z = zipfile.ZipFile(hud_zip_path)
     hud_files = {}
     for name in hud_z.namelist():
-        if name != 'pack.mcmeta' and not name.endswith('/'):
-            hud_files[name] = hud_z.read(name)
-
-    if 'overlay_text/assets/minecraft/shaders/core/text.vsh' in hud_files:
-        hud_files['assets/minecraft/shaders/core/text.vsh'] = hud_files['overlay_text/assets/minecraft/shaders/core/text.vsh']
-
-    hud_meta = json.loads(hud_z.read('pack.mcmeta').decode('utf-8'))
-    overlays = hud_meta.get('overlays', {})
+        if name == 'pack.mcmeta' or name.endswith('/'):
+            continue
+        # Shaders are generated separately by ResourcePackBuilder (tools/assets/hud_shaders),
+        # so never merge the stale HUDEngine shaders or its legacy overlay table.
+        if name.endswith(('.vsh', '.fsh', '.glsl')):
+            continue
+        hud_files[name] = hud_z.read(name)
 
     builds_dir = os.path.join(root, 'resourcepacks_builds')
     if not os.path.isdir(builds_dir):
@@ -43,7 +42,6 @@ def merge_hudengine():
         can_z.close()
 
         meta = json.loads(entries.get('pack.mcmeta', b'{}').decode('utf-8'))
-        meta['overlays'] = overlays
         entries['pack.mcmeta'] = json.dumps(meta, indent=2).encode('utf-8')
 
         for k, v in hud_files.items():

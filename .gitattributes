@@ -25,6 +25,11 @@ gradle.properties text
 *.sh text eol=lf
 *.bat text eol=crlf
 
+# GLSL shaders: force LF so resource pack builds stay byte-reproducible
+*.vsh text eol=lf
+*.fsh text eol=lf
+*.glsl text eol=lf
+
 # Properties
 *.properties text
 

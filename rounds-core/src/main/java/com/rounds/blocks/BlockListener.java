@@ -227,6 +227,23 @@ public class BlockListener implements Listener {
         return filled;
     }
 
+    private static List<String> loreLines(String key) {
+        String raw = Messages.get(key);
+        if (raw == null || raw.isEmpty() || raw.equals(key)) return Collections.emptyList();
+        List<String> lines = new ArrayList<>();
+        for (String line : raw.split("\\n")) {
+            lines.add(line);
+        }
+        return lines;
+    }
+
+    private static void applyLore(ItemMeta meta, String key) {
+        List<String> lore = loreLines(key);
+        if (!lore.isEmpty()) {
+            meta.setLore(lore);
+        }
+    }
+
     public static ItemStack createJoinBlock(GameTeam team) {
         Material mat = TEAM_BLOCK_COLORS.getOrDefault(team, Material.WHITE_WOOL);
         ItemStack item = new ItemStack(mat);
@@ -234,6 +251,7 @@ public class BlockListener implements Listener {
         String teamName = Messages.get("team." + team.name().toLowerCase());
         String adjGen = Messages.get("team.adj-gen-" + team.name().toLowerCase());
         meta.setDisplayName(team.getColor() + Messages.get("team.join-block", teamName, adjGen));
+        applyLore(meta, "block.join-lore");
         meta.getPersistentDataContainer().set(RoundsKeys.JOIN_BLOCK, PersistentDataType.STRING, team.name());
         item.setItemMeta(meta);
         return item;
@@ -244,6 +262,7 @@ public class BlockListener implements Listener {
         ItemMeta meta = item.getItemMeta();
         String teamName = Messages.get("team.none");
         meta.setDisplayName(ChatColor.WHITE + Messages.get("team.join-block", teamName, teamName));
+        applyLore(meta, "block.join-none-lore");
         meta.getPersistentDataContainer().set(RoundsKeys.JOIN_BLOCK, PersistentDataType.STRING, "NONE");
         item.setItemMeta(meta);
         return item;
@@ -253,6 +272,7 @@ public class BlockListener implements Listener {
         ItemStack item = new ItemStack(Material.IRON_BLOCK);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(ChatColor.GRAY + Messages.get("block.start-block"));
+        applyLore(meta, "block.start-block-lore");
         meta.getPersistentDataContainer().set(RoundsKeys.CDSHOOT_BLOCK, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);
         return item;
@@ -262,6 +282,7 @@ public class BlockListener implements Listener {
         ItemStack item = new ItemStack(Material.REDSTONE_BLOCK);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(ChatColor.RED + Messages.get("block.end-block"));
+        applyLore(meta, "block.end-block-lore");
         meta.getPersistentDataContainer().set(RoundsKeys.END_BLOCK, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);
         return item;
@@ -270,7 +291,8 @@ public class BlockListener implements Listener {
     public static ItemStack createLobbyBlock() {
         ItemStack item = new ItemStack(Material.EMERALD_BLOCK);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(ChatColor.GREEN + "Блок лобби");
+        meta.setDisplayName(ChatColor.GREEN + Messages.get("block.lobby-block"));
+        applyLore(meta, "block.lobby-block-lore");
         meta.getPersistentDataContainer().set(RoundsKeys.LOBBY_BLOCK, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);
         return item;
@@ -279,12 +301,8 @@ public class BlockListener implements Listener {
     public static ItemStack createMapCenterBlock() {
         ItemStack item = new ItemStack(Material.DIAMOND_BLOCK);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(ChatColor.AQUA + "Блок центра карты");
-        meta.setLore(Arrays.asList(
-                ChatColor.GRAY + "По умолчанию задаёт границы карты 50x50.",
-                ChatColor.DARK_GRAY + "4 блока границы карты могут переопределить их",
-                ChatColor.DARK_GRAY + "вплоть до 300x300."
-        ));
+        meta.setDisplayName(ChatColor.AQUA + Messages.get("block.map-center"));
+        applyLore(meta, "block.map-center-lore");
         meta.getPersistentDataContainer().set(RoundsKeys.MAP_BLOCK, PersistentDataType.INTEGER, BlockStorage.DEFAULT_MAP_SIZE);
         item.setItemMeta(meta);
         return item;
@@ -293,14 +311,8 @@ public class BlockListener implements Listener {
     public static ItemStack createMapBorderBlock() {
         ItemStack item = new ItemStack(Material.LAPIS_BLOCK);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(ChatColor.BLUE + "Блок границы карты");
-        meta.setLore(Arrays.asList(
-                ChatColor.GRAY + "Может переопределять границы карты для",
-                ChatColor.GRAY + "\"Блок центра карты\", вплоть до 300x300.",
-                ChatColor.GRAY + "Разместите 4 штуки \"Блок границы карты\"",
-                ChatColor.GRAY + "на карте, то есть по 1 блоку в каждом углу.",
-                ChatColor.GRAY + "Так игра будет понимать границы карты точнее."
-        ));
+        meta.setDisplayName(ChatColor.BLUE + Messages.get("block.map-border"));
+        applyLore(meta, "block.map-border-lore");
         meta.getPersistentDataContainer().set(RoundsKeys.MAP_BORDER_BLOCK, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);
         return item;
@@ -309,7 +321,8 @@ public class BlockListener implements Listener {
     public static ItemStack createSpawnBlock() {
         ItemStack item = new ItemStack(Material.OBSIDIAN);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(ChatColor.RED + "Блок спавна");
+        meta.setDisplayName(ChatColor.RED + Messages.get("block.spawn-block"));
+        applyLore(meta, "block.spawn-block-lore");
         meta.getPersistentDataContainer().set(RoundsKeys.SPAWN_BLOCK, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);
         return item;
@@ -318,7 +331,8 @@ public class BlockListener implements Listener {
     public static ItemStack createJumpBlock() {
         ItemStack item = new ItemStack(Material.COAL_BLOCK);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(ChatColor.YELLOW + "Блок прыжка");
+        meta.setDisplayName(ChatColor.YELLOW + Messages.get("block.jump-block"));
+        applyLore(meta, "block.jump-block-lore");
         meta.getPersistentDataContainer().set(RoundsKeys.JUMP_BLOCK, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);
         return item;
@@ -327,7 +341,8 @@ public class BlockListener implements Listener {
     public static ItemStack createUpBlock() {
         ItemStack item = new ItemStack(Material.PURPLE_GLAZED_TERRACOTTA);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(ChatColor.LIGHT_PURPLE + "Блок вверх");
+        meta.setDisplayName(ChatColor.LIGHT_PURPLE + Messages.get("block.up-block"));
+        applyLore(meta, "block.up-block-lore");
         meta.getPersistentDataContainer().set(RoundsKeys.UP_BLOCK, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);
         return item;

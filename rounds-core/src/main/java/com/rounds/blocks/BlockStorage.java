@@ -172,13 +172,16 @@ public class BlockStorage {
 
         if (candidates.isEmpty()) {
             // No border blocks configured for this map: the default square is the intended setup.
-            return new ZoneResolution(fallback, null, 0);
+            return new ZoneResolution(fallback, null, 0,
+                    borderDebugLines(current.center, candidates, null, null, null));
         }
         if (candidates.size() < 4) {
-            return new ZoneResolution(fallback, "block.map-border-reason.not-four", candidates.size());
+            return new ZoneResolution(fallback, "block.map-border-reason.not-four", candidates.size(),
+                    borderDebugLines(current.center, candidates, null, "block.map-border-reason.not-four", null));
         }
 
         ZoneBounds best = null;
+        Location[] bestCorners = null;
         long bestArea = Long.MAX_VALUE;
         long bestCenterOffset = Long.MAX_VALUE;
         boolean sawTooSmall = false;
@@ -231,6 +234,7 @@ public class BlockStorage {
                             bestArea = area;
                             bestCenterOffset = centerOffset;
                             best = new ZoneBounds(world, minX, maxX, minZ, maxZ);
+                            bestCorners = new Location[]{pa, pb, pc, pd};
                         }
                     }
                 }
@@ -239,14 +243,90 @@ public class BlockStorage {
 
         if (best == null) {
             if (sawTooSmall) {
-                return new ZoneResolution(fallback, "block.map-border-reason.too-small", MIN_ZONE_SIZE);
+                return new ZoneResolution(fallback, "block.map-border-reason.too-small", MIN_ZONE_SIZE,
+                        borderDebugLines(current.center, candidates, null, "block.map-border-reason.too-small", null));
             }
             if (sawTooLarge) {
-                return new ZoneResolution(fallback, "block.map-border-reason.too-large", MAX_ZONE_SIZE);
+                return new ZoneResolution(fallback, "block.map-border-reason.too-large", MAX_ZONE_SIZE,
+                        borderDebugLines(current.center, candidates, null, "block.map-border-reason.too-large", null));
             }
-            return new ZoneResolution(fallback, "block.map-border-reason.quadrants", candidates.size());
+            return new ZoneResolution(fallback, "block.map-border-reason.quadrants", candidates.size(),
+                    borderDebugLines(current.center, candidates, null, "block.map-border-reason.quadrants", null));
         }
-        return new ZoneResolution(best, null, 0);
+        return new ZoneResolution(best, null, 0,
+                borderDebugLines(current.center, candidates, best, null, bestCorners));
+    }
+
+    private static List<String> borderDebugLines(Location center, List<Location> candidates,
+                                                 ZoneBounds chosen, String warningKey, Location[] used) {
+        List<String> lines = new ArrayList<>();
+        int cx = center.getBlockX();
+        int cz = center.getBlockZ();
+        String chosenText = chosen == null
+                ? "none"
+                : "[" + chosen.minX + ".." + chosen.maxX + "; " + chosen.minZ + ".." + chosen.maxZ + "]";
+        lines.add("BORDER center=(" + cx + "," + center.getBlockY() + "," + cz + ")"
+                + " radius=" + BORDER_SEARCH_RADIUS
+                + " found=" + candidates.size()
+                + " chosen=" + chosenText
+                + " warning=" + (warningKey == null ? "none" : warningKey));
+
+        int[] quadrantCounts = new int[4];
+        for (Location b : candidates) {
+            int qx = b.getBlockX() <= cx ? 0 : 1;
+            int qz = b.getBlockZ() <= cz ? 0 : 1;
+            int qi = qz * 2 + qx;
+            quadrantCounts[qi]++;
+            double dist = Math.sqrt((double) (b.getBlockX() - cx) * (b.getBlockX() - cx)
+                    + (double) (b.getBlockZ() - cz) * (b.getBlockZ() - cz));
+            boolean isUsed = false;
+            if (used != null) {
+                for (Location u : used) {
+                    if (sameBlock(u, b)) {
+                        isUsed = true;
+                        break;
+                    }
+                }
+            }
+            lines.add("BORDER cand=(" + b.getBlockX() + "," + b.getBlockY() + "," + b.getBlockZ() + ")"
+                    + " q=" + quadrantName(qi)
+                    + " dist=" + String.format(Locale.US, "%.1f", dist)
+                    + " used=" + isUsed);
+        }
+        lines.add("BORDER quadrants NW=" + quadrantCounts[0] + " NE=" + quadrantCounts[1]
+                + " SW=" + quadrantCounts[2] + " SE=" + quadrantCounts[3]);
+
+        if (chosen == null) {
+            StringBuilder missing = new StringBuilder();
+            for (int i = 0; i < 4; i++) {
+                if (quadrantCounts[i] == 0) {
+                    if (missing.length() > 0) missing.append(',');
+                    missing.append(quadrantName(i));
+                }
+            }
+            if (missing.length() > 0) {
+                lines.add("BORDER missing=" + missing);
+            } else {
+                lines.add("BORDER no-valid-rectangle");
+            }
+        }
+        return lines;
+    }
+
+    private static boolean sameBlock(Location a, Location b) {
+        return a != null && b != null
+                && a.getBlockX() == b.getBlockX()
+                && a.getBlockY() == b.getBlockY()
+                && a.getBlockZ() == b.getBlockZ();
+    }
+
+    private static String quadrantName(int index) {
+        switch (index) {
+            case 0: return "NW";
+            case 1: return "NE";
+            case 2: return "SW";
+            default: return "SE";
+        }
     }
 
     private static int quadrantMask(Location corner, int cx, int cz) {
@@ -287,11 +367,19 @@ public class BlockStorage {
         public final ZoneBounds bounds;
         public final String warningKey;
         public final int warningNumber;
+        public final List<String> debugLines;
 
         public ZoneResolution(ZoneBounds bounds, String warningKey, int warningNumber) {
+            this(bounds, warningKey, warningNumber, java.util.Collections.emptyList());
+        }
+
+        public ZoneResolution(ZoneBounds bounds, String warningKey, int warningNumber, List<String> debugLines) {
             this.bounds = bounds;
             this.warningKey = warningKey;
             this.warningNumber = warningNumber;
+            this.debugLines = debugLines != null
+                    ? java.util.Collections.unmodifiableList(debugLines)
+                    : java.util.Collections.emptyList();
         }
     }
 

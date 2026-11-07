@@ -97,6 +97,8 @@ class BlockStorageZoneTest {
         assertEquals("block.map-border-reason.not-four", result.warningKey);
         assertEquals(3, result.warningNumber);
         assertEquals(-25, result.bounds.minX);
+        assertTrue(result.debugLines.stream().anyMatch(l -> l.startsWith("BORDER missing=")),
+                "three corners should report the missing quadrant");
     }
 
     @Test
@@ -184,6 +186,10 @@ class BlockStorageZoneTest {
             assertEquals(expected[i][1], result.bounds.maxX, "map " + i + " maxX");
             assertEquals(expected[i][2], result.bounds.minZ, "map " + i + " minZ");
             assertEquals(expected[i][3], result.bounds.maxZ, "map " + i + " maxZ");
+            assertTrue(result.debugLines.stream().anyMatch(l -> l.startsWith("BORDER center=")),
+                    "map " + i + " should log the border debug header");
+            assertEquals(4L, result.debugLines.stream().filter(l -> l.contains("used=true")).count(),
+                    "map " + i + " should mark exactly four corners as used");
         }
     }
 }

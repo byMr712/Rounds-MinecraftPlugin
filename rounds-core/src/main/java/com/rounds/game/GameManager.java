@@ -106,8 +106,8 @@ public class GameManager implements Listener {
             this.startRound = startRound;
             this.startGeneration = startGeneration;
             this.startZoneCenter = startZoneCenter != null ? startZoneCenter.clone() : null;
-            this.finishTimeMs = System.currentTimeMillis() + 5000L;
-            this.lastAnnouncedSecond = 5;
+            this.finishTimeMs = System.currentTimeMillis() + 3000L;
+            this.lastAnnouncedSecond = 3;
         }
     }
 
@@ -2452,7 +2452,7 @@ public class GameManager implements Listener {
         UUID uuid = p.getUniqueId();
         long now = System.currentTimeMillis();
         Long lastTime = lastWrongMapCheckTime.get(uuid);
-        if (lastTime != null && (now - lastTime) < 5000L) {
+        if (lastTime != null && (now - lastTime) < 3000L) {
             return lastWrongMapResult.getOrDefault(uuid, false);
         }
         lastWrongMapCheckTime.put(uuid, now);
@@ -2496,7 +2496,7 @@ public class GameManager implements Listener {
         if (team == null || p.getGameMode() == GameMode.SPECTATOR) {
             return "player-spectator";
         }
-        if (!isPlayerOnWrongMap(p)) {
+        if (isInsideCurrentMap(p.getLocation())) {
             return "player-returned";
         }
         return null;
@@ -2504,6 +2504,14 @@ public class GameManager implements Listener {
 
     private Location getWrongMapTeleportTarget(Player p) {
         if (p == null) return null;
+
+        // Primary target: a safe spot within a 10-block radius of the map center.
+        Location nearCenter = findSafeTeleportNearCenter();
+        if (nearCenter != null) {
+            return nearCenter;
+        }
+
+        // Fallback: the usual team spawn / spawn block / map center chain.
         GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
         if (team == null) return null;
 
@@ -2540,6 +2548,84 @@ public class GameManager implements Listener {
         }
 
         return null;
+    }
+
+    /**
+     * Finds a safe landing spot within a 10-block radius of the current map center.
+     * Candidates are checked for solid, non-hazardous ground, two free blocks above,
+     * no liquids, and no jump/elevator blocks. Returns null if nothing safe is found.
+     */
+    private Location findSafeTeleportNearCenter() {
+        Location center = currentZoneCenter;
+        if (center == null || center.getWorld() == null) return null;
+
+        List<int[]> offsets = new ArrayList<>();
+        int radius = 10;
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dz = -radius; dz <= radius; dz++) {
+                if (dx * dx + dz * dz <= radius * radius) {
+                    offsets.add(new int[]{dx, dz});
+                }
+            }
+        }
+        Collections.shuffle(offsets, RANDOM);
+
+        for (int[] offset : offsets) {
+            Location safe = findSafeGround(center.clone().add(offset[0], 0, offset[1]));
+            if (safe != null && isInsideCurrentMap(safe)) {
+                SpawnManager.faceLocation(safe, center);
+                return safe;
+            }
+        }
+        return null;
+    }
+
+    private Location findSafeGround(Location base) {
+        if (base == null || base.getWorld() == null) return null;
+        World world = base.getWorld();
+        int x = base.getBlockX();
+        int z = base.getBlockZ();
+        int startY = Math.min(base.getBlockY() + 4, world.getMaxHeight() - 2);
+        int minY = Math.max(world.getMinHeight() + 1, base.getBlockY() - 24);
+
+        for (int y = startY; y >= minY; y--) {
+            Material groundType = world.getBlockAt(x, y, z).getType();
+            if (!groundType.isSolid() || isUnsafeTeleportMaterial(groundType)) continue;
+
+            Block feet = world.getBlockAt(x, y + 1, z);
+            Block head = world.getBlockAt(x, y + 2, z);
+            if (!feet.isPassable() || !head.isPassable()) continue;
+            if (feet.isLiquid() || head.isLiquid()) continue;
+            if (isUnsafeTeleportMaterial(feet.getType()) || isUnsafeTeleportMaterial(head.getType())) continue;
+
+            Location groundLoc = new Location(world, x, y, z);
+            com.rounds.blocks.BlockListener bl = plugin.getBlockListener();
+            if (bl != null && (bl.isJumpBlock(groundLoc) || bl.isUpBlock(groundLoc))) continue;
+
+            return new Location(world, x + 0.5, y + 1.0, z + 0.5);
+        }
+        return null;
+    }
+
+    private boolean isUnsafeTeleportMaterial(Material type) {
+        switch (type) {
+            case LAVA:
+            case MAGMA_BLOCK:
+            case CACTUS:
+            case FIRE:
+            case SOUL_FIRE:
+            case CAMPFIRE:
+            case SOUL_CAMPFIRE:
+            case SWEET_BERRY_BUSH:
+            case POWDER_SNOW:
+            case COBWEB:
+            case WITHER_ROSE:
+            case POINTED_DRIPSTONE:
+            case BUBBLE_COLUMN:
+                return true;
+            default:
+                return false;
+        }
     }
 
     private void triggerWrongMapTask(Player p) {
@@ -2612,8 +2698,8 @@ public class GameManager implements Listener {
             }
         }
 
-        // Periodic wrong map scan: evaluated every 5 seconds (100 ticks), not earlier
-        if (musicTick % 100 == 0) {
+        // Periodic wrong map scan: evaluated every 3 seconds (60 ticks)
+        if (musicTick % 60 == 0) {
             for (Player p : plugin.getServer().getOnlinePlayers()) {
                 if (wrongMapTasks.containsKey(p.getUniqueId())) continue;
                 GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());

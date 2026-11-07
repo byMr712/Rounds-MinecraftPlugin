@@ -139,7 +139,7 @@ Players step on colored wool blocks in the lobby to select a team.
 3. **Team Spawns:** Place **Spawn Blocks** (Obsidian) inside each zone where teams will appear each round.
 4. **Interactive Blocks (Optional):** Place Jump Pads and Elevator Lifts manually or select cuboids using `/rdebug jumppos1` / `jumppos2` / `jumpset` and `/rdebug uppos1` / `uppos2` / `upset`.
 
-If 4 **Map Border Blocks** are found for the map (one per corner), their rectangle becomes the round bounds. Players who leave those bounds (including behind the map or in another world) are teleported back after 5 seconds. If the blocks are missing or the configuration is invalid, the default 50x50 zone is used and admins receive a warning that says "If everything works fine for you, ignore this warning".
+If 4 **Map Border Blocks** are found for the map (one per corner), their rectangle becomes the round bounds. Players who leave those bounds (including behind the map or in another world) are teleported back after 3 seconds to a safe spot within 10 blocks of the map center, or to a spawn point if no safe spot exists. If the blocks are missing or the configuration is invalid, the default 50x50 zone is used and admins receive a warning that says "If everything works fine for you, ignore this warning".
 
 
 ## Gameplay Flow

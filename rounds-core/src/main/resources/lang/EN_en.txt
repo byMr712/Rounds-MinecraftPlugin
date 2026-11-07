@@ -52,7 +52,7 @@ game:
   bossbar-auto-death: "Until random death"
   enemy-picking-cards: "Opponent\nis picking cards"
   auto-stop-single: "Game ended, only one player remained"
-  wrong-map-warning: "You ended up on another map, teleporting you back to your map in {0} seconds"
+  wrong-map-warning: "You went off the map, teleporting you back in {0} seconds"
   wrong-map-cancelled: "Teleportation cancelled due to: {0}"
   wrong-map-teleported: "You have been successfully returned to your map!"
   cancel-reason:

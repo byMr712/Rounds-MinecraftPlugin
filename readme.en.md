@@ -119,8 +119,8 @@ Players step on colored wool blocks in the lobby to select a team.
 | Block | Item / Material | Purpose |
 |-------|-----------------|---------|
 | **Lobby Block** | Emerald Block (`EMERALD_BLOCK`) | Lobby center point. Player return position before/after matches. Only 1 active lobby block exists per world. Can also be set via `/rdebug setlobby`. |
-| **Map Zone 50x50** | Diamond Block (`DIAMOND_BLOCK`) | Center of a 50x50 block arena zone. |
-| **Map Zone 100x100** | Emerald Block (`EMERALD_BLOCK`) | Center of a 100x100 block arena zone. |
+| **Map Center Block** | Diamond Block (`DIAMOND_BLOCK`) | Arena zone center. Defaults to a 50x50 block area on X/Z. |
+| **Map Border Block** | Lapis Block (`LAPIS_BLOCK`) | Place 4 blocks, one in each map corner. Overrides the nearest Map Center Block's bounds up to 300x300. |
 | **Spawn Block** | Obsidian (`OBSIDIAN`) | Team spawn point within the arena zone. |
 | **Jump Pad Block** | Coal Block (`COAL_BLOCK`) | Deals 20% max HP damage (can be parried with shield) and launches entities high into the air. |
 | **Elevator Lift Block** | Purple Glazed Terracotta (`PURPLE_GLAZED_TERRACOTTA`) | Slowly lifts players upward for a set duration. |
@@ -135,9 +135,11 @@ Players step on colored wool blocks in the lobby to select a team.
 ### 3. Step-by-Step Arena Setup
 
 1. **Lobby:** Place the **Lobby Block** in your waiting area and place colored wool blocks on the floor for team selection.
-2. **Map Zones:** Place one or more **Map Zone Blocks** (50x50 or 100x100) at the centers of your combat arenas. The plugin chooses a random zone each round.
+2. **Map Zones:** Place a **Map Center Block** at the center of your arena — it defines a 50x50 zone by default. Optionally place 4 **Map Border Blocks**, one in each corner, to define precise bounds up to 300x300. The plugin chooses a random zone each round.
 3. **Team Spawns:** Place **Spawn Blocks** (Obsidian) inside each zone where teams will appear each round.
 4. **Interactive Blocks (Optional):** Place Jump Pads and Elevator Lifts manually or select cuboids using `/rdebug jumppos1` / `jumppos2` / `jumpset` and `/rdebug uppos1` / `uppos2` / `upset`.
+
+If 4 **Map Border Blocks** are found for the map (one per corner), their rectangle becomes the round bounds. Players who leave those bounds (including behind the map or in another world) are teleported back after 5 seconds. If the blocks are missing or the configuration is invalid, the default 50x50 zone is used and admins receive a warning that says "If everything works fine for you, ignore this warning".
 
 
 ## Gameplay Flow

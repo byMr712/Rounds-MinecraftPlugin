@@ -91,6 +91,7 @@ public class GameManager implements Listener {
     private final Map<GameRule<?>, Object> savedGameRules = new HashMap<>();
     private final Map<GameTeam, Location> teamSpawns = new HashMap<>();
     private Location currentZoneCenter = null;
+    private BlockStorage.ZoneBounds currentZoneBounds = null;
 
     private static class WrongMapTeleportTask {
         final UUID playerId;
@@ -1323,13 +1324,23 @@ public class GameManager implements Listener {
 
         if (!zones.isEmpty()) {
             int chosen = RANDOM.nextInt(zones.size());
-            currentZoneCenter = zones.get(chosen).center.clone();
+            BlockStorage.MapBlock chosenZone = zones.get(chosen);
+            currentZoneCenter = chosenZone.center.clone();
 
-            List<Location> spawns = bs.getSpawnBlocksInZone(zones.get(chosen));
+            BlockStorage.ZoneResolution resolution = bs.resolveZoneBounds(chosenZone, zones);
+            currentZoneBounds = resolution.bounds;
+            if (resolution.warningKey != null) {
+                warnMapBorderConfig(resolution.warningKey, resolution.warningNumber, chosenZone.size);
+            }
+
+            List<Location> spawns = bs.getSpawnBlocksInZone(currentZoneBounds);
             if (!spawns.isEmpty()) {
                 teamSpawns.putAll(SpawnManager.assignSpawns(teams, spawns, currentZoneCenter));
-                return;
             }
+            // Stay on the chosen map even if it has no spawn blocks: ensureTeamSpawn will
+            // place missing teams at the map center instead of silently moving the game
+            // to the lobby.
+            return;
         }
 
         // Fallback when no map zones/spawns are configured
@@ -1340,12 +1351,28 @@ public class GameManager implements Listener {
         if (base != null) {
             Location ground = getGroundLocation(base);
             currentZoneCenter = ground.clone();
+            currentZoneBounds = BlockStorage.around(ground, BlockStorage.DEFAULT_MAP_SIZE);
             Location red = ground.clone().add(-2.0, 0, 0);
             Location blue = ground.clone().add(2.0, 0, 0);
             SpawnManager.faceLocation(red, currentZoneCenter);
             SpawnManager.faceLocation(blue, currentZoneCenter);
             teamSpawns.put(GameTeam.RED, red);
             teamSpawns.put(GameTeam.BLUE, blue);
+        }
+    }
+
+    /**
+     * Warns admins (and the console) that the border blocks could not be applied and the map
+     * fell back to its default square. Includes the explicit "ignore if everything works" note.
+     */
+    private void warnMapBorderConfig(String reasonKey, int number, int fallbackSize) {
+        String reason = Messages.get(reasonKey, number);
+        String message = Messages.get("block.map-border-warning", reason, fallbackSize);
+        plugin.getLogger().warning(ChatColor.stripColor(message));
+        for (Player online : plugin.getServer().getOnlinePlayers()) {
+            if (online.hasPermission("rounds.admin") || online.isOp()) {
+                online.sendMessage(ChatColor.YELLOW + message);
+            }
         }
     }
 
@@ -2435,47 +2462,14 @@ public class GameManager implements Listener {
         return result;
     }
 
+    public boolean isInsideCurrentMap(Location loc) {
+        return currentZoneBounds != null && currentZoneBounds.contains(loc);
+    }
+
     private boolean computeIsPlayerOnWrongMap(Player p) {
-        Location loc = p.getLocation();
-        if (loc.getWorld() == null) return false;
-
-        BlockStorage bs = plugin.getBlockListener().getBlockStorage();
-        if (bs == null) return false;
-
-        // 1. If player is inside current map zone, they are safe
-        BlockStorage.MapBlock currentZone = null;
-        for (BlockStorage.MapBlock mb : bs.getMapBlocks()) {
-            if (mb.centerEquals(currentZoneCenter)) {
-                currentZone = mb;
-                break;
-            }
-        }
-        if (currentZone != null && currentZone.center.getWorld() != null && currentZone.center.getWorld().equals(loc.getWorld())) {
-            int half = currentZone.size / 2;
-            if (Math.abs(loc.getBlockX() - currentZone.center.getBlockX()) <= half
-                    && Math.abs(loc.getBlockZ() - currentZone.center.getBlockZ()) <= half) {
-                return false;
-            }
-        } else if (currentZone == null && loc.getWorld().equals(currentZoneCenter.getWorld())) {
-            if (loc.distanceSquared(currentZoneCenter) <= 2500) return false;
-        }
-
-        // 2. Check if player is near another map's center or inside another map zone
-        for (BlockStorage.MapBlock mb : bs.getMapBlocks()) {
-            if (mb.centerEquals(currentZoneCenter)) continue;
-            if (mb.center.getWorld() == null || !mb.center.getWorld().equals(loc.getWorld())) continue;
-
-            if (mb.center.distanceSquared(loc) <= 36.0) {
-                return true;
-            }
-            int half = mb.size / 2;
-            if (Math.abs(loc.getBlockX() - mb.center.getBlockX()) <= half
-                    && Math.abs(loc.getBlockZ() - mb.center.getBlockZ()) <= half) {
-                return true;
-            }
-        }
-
-        return false;
+        // Only the current round's bounds matter. Any position outside them (including
+        // another world, behind the map or far away) is treated as "off the map".
+        return currentZoneBounds != null && !currentZoneBounds.contains(p.getLocation());
     }
 
     private String checkCancellationReason(WrongMapTeleportTask task, Player p) {
@@ -2514,30 +2508,35 @@ public class GameManager implements Listener {
         if (team == null) return null;
 
         Location teamSpawn = teamSpawns.get(team);
-        if (teamSpawn != null && teamSpawn.getWorld() != null) {
+        if (teamSpawn != null && teamSpawn.getWorld() != null && isInsideCurrentMap(teamSpawn)) {
             return teamSpawn.clone();
         }
 
         BlockStorage bs = plugin.getBlockListener().getBlockStorage();
-        if (bs != null && currentZoneCenter != null) {
-            BlockStorage.MapBlock currentZone = null;
-            for (BlockStorage.MapBlock mb : bs.getMapBlocks()) {
-                if (mb.centerEquals(currentZoneCenter)) {
-                    currentZone = mb;
-                    break;
-                }
+        if (bs != null && currentZoneBounds != null) {
+            List<Location> spawns = bs.getSpawnBlocksInZone(currentZoneBounds);
+            List<Location> inside = new ArrayList<>();
+            for (Location s : spawns) {
+                if (isInsideCurrentMap(s)) inside.add(s);
             }
-            if (currentZone != null) {
-                List<Location> spawns = bs.getSpawnBlocksInZone(currentZone);
-                if (!spawns.isEmpty()) {
-                    Location chosen = spawns.get(RANDOM.nextInt(spawns.size())).clone();
-                    return chosen.add(0.5, 1.0, 0.5);
-                }
+            if (!inside.isEmpty()) {
+                Location chosen = inside.get(RANDOM.nextInt(inside.size())).clone();
+                return chosen.add(0.5, 1.0, 0.5);
             }
         }
 
         if (currentZoneCenter != null && currentZoneCenter.getWorld() != null) {
-            return getGroundLocation(currentZoneCenter.clone().add(0.5, 0, 0.5));
+            Location fallback = getGroundLocation(currentZoneCenter.clone().add(0.5, 0, 0.5));
+            if (fallback != null && isInsideCurrentMap(fallback)) {
+                return fallback;
+            }
+        }
+        if (currentZoneBounds != null) {
+            Location boundsCenter = currentZoneBounds.center();
+            if (currentZoneCenter != null) {
+                boundsCenter.setY(currentZoneCenter.getY());
+            }
+            return getGroundLocation(boundsCenter);
         }
 
         return null;
@@ -2819,31 +2818,22 @@ public class GameManager implements Listener {
         if (teamSpawns.containsKey(team) && teamSpawns.get(team) != null) return;
         if (currentZoneCenter != null && currentZoneCenter.getWorld() != null) {
             BlockStorage bs = plugin.getBlockListener() != null ? plugin.getBlockListener().getBlockStorage() : null;
-            if (bs != null) {
-                BlockStorage.MapBlock currentZone = null;
-                for (BlockStorage.MapBlock mb : bs.getMapBlocks()) {
-                    if (mb.centerEquals(currentZoneCenter)) {
-                        currentZone = mb;
-                        break;
-                    }
-                }
-                if (currentZone != null) {
-                    List<Location> spawns = bs.getSpawnBlocksInZone(currentZone);
-                    if (!spawns.isEmpty()) {
-                        Set<Location> used = new HashSet<>(teamSpawns.values());
-                        Location best = null;
-                        for (Location s : spawns) {
-                            if (!used.contains(s)) {
-                                best = s;
-                                break;
-                            }
+            if (bs != null && currentZoneBounds != null) {
+                List<Location> spawns = bs.getSpawnBlocksInZone(currentZoneBounds);
+                if (!spawns.isEmpty()) {
+                    Set<Location> used = new HashSet<>(teamSpawns.values());
+                    Location best = null;
+                    for (Location s : spawns) {
+                        if (!used.contains(s)) {
+                            best = s;
+                            break;
                         }
-                        if (best == null) best = spawns.get(RANDOM.nextInt(spawns.size()));
-                        Location assigned = best.clone().add(0.5, 1.0, 0.5);
-                        SpawnManager.faceLocation(assigned, currentZoneCenter);
-                        teamSpawns.put(team, assigned);
-                        return;
                     }
+                    if (best == null) best = spawns.get(RANDOM.nextInt(spawns.size()));
+                    Location assigned = best.clone().add(0.5, 1.0, 0.5);
+                    SpawnManager.faceLocation(assigned, currentZoneCenter);
+                    teamSpawns.put(team, assigned);
+                    return;
                 }
             }
             teamSpawns.put(team, currentZoneCenter.clone());

@@ -276,20 +276,32 @@ public class BlockListener implements Listener {
         return item;
     }
 
-    public static ItemStack createMapBlock50() {
+    public static ItemStack createMapCenterBlock() {
         ItemStack item = new ItemStack(Material.DIAMOND_BLOCK);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(ChatColor.AQUA + "Блок карты 50x50");
-        meta.getPersistentDataContainer().set(RoundsKeys.MAP_BLOCK, PersistentDataType.INTEGER, 50);
+        meta.setDisplayName(ChatColor.AQUA + "Блок центра карты");
+        meta.setLore(Arrays.asList(
+                ChatColor.GRAY + "По умолчанию задаёт границы карты 50x50.",
+                ChatColor.DARK_GRAY + "4 блока границы карты могут переопределить их",
+                ChatColor.DARK_GRAY + "вплоть до 300x300."
+        ));
+        meta.getPersistentDataContainer().set(RoundsKeys.MAP_BLOCK, PersistentDataType.INTEGER, BlockStorage.DEFAULT_MAP_SIZE);
         item.setItemMeta(meta);
         return item;
     }
 
-    public static ItemStack createMapBlock100() {
-        ItemStack item = new ItemStack(Material.EMERALD_BLOCK);
+    public static ItemStack createMapBorderBlock() {
+        ItemStack item = new ItemStack(Material.LAPIS_BLOCK);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(ChatColor.GREEN + "Блок карты 100x100");
-        meta.getPersistentDataContainer().set(RoundsKeys.MAP_BLOCK, PersistentDataType.INTEGER, 100);
+        meta.setDisplayName(ChatColor.BLUE + "Блок границы карты");
+        meta.setLore(Arrays.asList(
+                ChatColor.GRAY + "Может переопределять границы карты для",
+                ChatColor.GRAY + "\"Блок центра карты\", вплоть до 300x300.",
+                ChatColor.GRAY + "Разместите 4 штуки \"Блок границы карты\"",
+                ChatColor.GRAY + "на карте, то есть по 1 блоку в каждом углу.",
+                ChatColor.GRAY + "Так игра будет понимать границы карты точнее."
+        ));
+        meta.getPersistentDataContainer().set(RoundsKeys.MAP_BORDER_BLOCK, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);
         return item;
     }
@@ -329,8 +341,8 @@ public class BlockListener implements Listener {
         addItem64(player, createStartBlock());
         addItem64(player, createEndBlock());
         addItem64(player, createLobbyBlock());
-        addItem64(player, createMapBlock50());
-        addItem64(player, createMapBlock100());
+        addItem64(player, createMapCenterBlock());
+        addItem64(player, createMapBorderBlock());
         addItem64(player, createSpawnBlock());
         addItem64(player, createJumpBlock());
         addItem64(player, createUpBlock());
@@ -676,6 +688,11 @@ public class BlockListener implements Listener {
             placer.sendMessage(ChatColor.GREEN + Messages.get("block.map-placed", mapSize));
             return;
         }
+        if (pdc.has(RoundsKeys.MAP_BORDER_BLOCK, PersistentDataType.BYTE)) {
+            blockStorage.addBorderBlock(loc);
+            placer.sendMessage(ChatColor.BLUE + Messages.get("block.map-border-placed"));
+            return;
+        }
         if (pdc.has(RoundsKeys.SPAWN_BLOCK, PersistentDataType.BYTE)) {
             blockStorage.addSpawnBlock(loc);
             placer.sendMessage(ChatColor.GREEN + Messages.get("block.spawn-placed"));
@@ -731,6 +748,7 @@ public class BlockListener implements Listener {
             removed = true;
         }
         removed |= blockStorage.removeMapBlock(loc);
+        removed |= blockStorage.removeBorderBlock(loc);
         removed |= blockStorage.removeSpawnBlock(loc);
         if (removed) saveBlocks();
     }

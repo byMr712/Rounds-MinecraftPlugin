@@ -906,7 +906,7 @@ Language files are located in `plugins/Rounds/lang/`:
 | `plugins/Rounds/game-state.yml` | Ongoing match state for crash recovery |
 | `plugins/Rounds/active-players.yml` | Active participant roster |
 | `<World>/rounds-blocks.yml` | Stored team, start, stop, jump, and lift blocks |
-| `<World>/rounds-map-blocks.yml` | Stored lobby, map zone, and spawn blocks |
+| `<World>/rounds-map-blocks.yml` | Stored lobby, map center, map border, and spawn block positions |
 
 
 ## Public API for Developers (Rounds Public API v1.1.0)

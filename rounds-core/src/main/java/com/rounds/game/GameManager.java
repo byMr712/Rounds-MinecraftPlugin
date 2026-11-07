@@ -92,6 +92,7 @@ public class GameManager implements Listener {
     private final Map<GameTeam, Location> teamSpawns = new HashMap<>();
     private Location currentZoneCenter = null;
     private BlockStorage.ZoneBounds currentZoneBounds = null;
+    private List<String> pendingZoneDebugLines = Collections.emptyList();
 
     private static class WrongMapTeleportTask {
         final UUID playerId;
@@ -1176,6 +1177,14 @@ public class GameManager implements Listener {
             if (com.rounds.debug.DebugSession.active) {
                 com.rounds.debug.DebugLog.log("GAME", "ROUND " + currentRound + ": " + ChatColor.stripColor(roundMsg));
             }
+            if (!pendingZoneDebugLines.isEmpty()) {
+                com.rounds.debug.DebugLog.raw("==================================================");
+                for (String line : pendingZoneDebugLines) {
+                    com.rounds.debug.DebugLog.log("MAP", line);
+                }
+                com.rounds.debug.DebugLog.raw("==================================================");
+                pendingZoneDebugLines = Collections.emptyList();
+            }
         } catch (Throwable ignored) {}
 
         if (plugin.getBotManager() != null) {
@@ -1329,11 +1338,9 @@ public class GameManager implements Listener {
 
             BlockStorage.ZoneResolution resolution = bs.resolveZoneBounds(chosenZone);
             currentZoneBounds = resolution.bounds;
-            com.rounds.debug.DebugLog.raw("==================================================");
-            for (String line : resolution.debugLines) {
-                com.rounds.debug.DebugLog.log("MAP", line);
-            }
-            com.rounds.debug.DebugLog.raw("==================================================");
+            // The debug block is logged at the beginning of the round it belongs to, not during
+            // the previous round/startGame phase (when currentRound has not been incremented yet).
+            pendingZoneDebugLines = resolution.debugLines;
             if (resolution.warningKey != null) {
                 warnMapBorderConfig(resolution.warningKey, resolution.warningNumber, chosenZone.size);
             }

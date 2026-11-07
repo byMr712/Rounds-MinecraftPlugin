@@ -54,6 +54,20 @@ public final class DebugLog {
         append(line);
     }
 
+    /** Writes a line without the timestamp/round/category prefix (used for separators). */
+    public static void raw(String msg) {
+        if (!DebugSession.active) {
+            return;
+        }
+        synchronized (BUF) {
+            if (BUF.size() >= MAX_BUF) {
+                BUF.pollFirst();
+            }
+            BUF.addLast(msg);
+        }
+        append(msg);
+    }
+
     public static void statusInfo() {
         StringBuilder sb = new StringBuilder();
         synchronized (BUF) {

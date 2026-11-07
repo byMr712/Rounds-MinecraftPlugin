@@ -155,7 +155,8 @@ public class BlockStorage {
     public ZoneResolution resolveZoneBounds(MapBlock current) {
         ZoneBounds fallback = defaultBounds(current);
         if (current.center.getWorld() == null) {
-            return new ZoneResolution(fallback, null, 0);
+            return new ZoneResolution(fallback, null, 0,
+                    borderDebugLines(current.center, Collections.emptyList(), null));
         }
 
         int cx = current.center.getBlockX();
@@ -173,11 +174,11 @@ public class BlockStorage {
         if (candidates.isEmpty()) {
             // No border blocks configured for this map: the default square is the intended setup.
             return new ZoneResolution(fallback, null, 0,
-                    borderDebugLines(current.center, candidates, null, null, null));
+                    borderDebugLines(current.center, candidates, null));
         }
         if (candidates.size() < 4) {
             return new ZoneResolution(fallback, "block.map-border-reason.not-four", candidates.size(),
-                    borderDebugLines(current.center, candidates, null, "block.map-border-reason.not-four", null));
+                    borderDebugLines(current.center, candidates, null));
         }
 
         ZoneBounds best = null;
@@ -244,89 +245,67 @@ public class BlockStorage {
         if (best == null) {
             if (sawTooSmall) {
                 return new ZoneResolution(fallback, "block.map-border-reason.too-small", MIN_ZONE_SIZE,
-                        borderDebugLines(current.center, candidates, null, "block.map-border-reason.too-small", null));
+                        borderDebugLines(current.center, candidates, null));
             }
             if (sawTooLarge) {
                 return new ZoneResolution(fallback, "block.map-border-reason.too-large", MAX_ZONE_SIZE,
-                        borderDebugLines(current.center, candidates, null, "block.map-border-reason.too-large", null));
+                        borderDebugLines(current.center, candidates, null));
             }
             return new ZoneResolution(fallback, "block.map-border-reason.quadrants", candidates.size(),
-                    borderDebugLines(current.center, candidates, null, "block.map-border-reason.quadrants", null));
+                    borderDebugLines(current.center, candidates, null));
         }
         return new ZoneResolution(best, null, 0,
-                borderDebugLines(current.center, candidates, best, null, bestCorners));
+                borderDebugLines(current.center, candidates, bestCorners));
     }
 
     private static List<String> borderDebugLines(Location center, List<Location> candidates,
-                                                 ZoneBounds chosen, String warningKey, Location[] used) {
-        List<String> lines = new ArrayList<>();
+                                                 Location[] chosenCorners) {
         int cx = center.getBlockX();
         int cz = center.getBlockZ();
-        String chosenText = chosen == null
-                ? "none"
-                : "[" + chosen.minX + ".." + chosen.maxX + "; " + chosen.minZ + ".." + chosen.maxZ + "]";
-        lines.add("BORDER center=(" + cx + "," + center.getBlockY() + "," + cz + ")"
-                + " radius=" + BORDER_SEARCH_RADIUS
-                + " found=" + candidates.size()
-                + " chosen=" + chosenText
-                + " warning=" + (warningKey == null ? "none" : warningKey));
 
-        int[] quadrantCounts = new int[4];
+        // One representative per quadrant: the chosen rectangle corner when available,
+        // otherwise the nearest candidate in that quadrant.
+        Location[] byQuadrant = new Location[4];
         for (Location b : candidates) {
-            int qx = b.getBlockX() <= cx ? 0 : 1;
-            int qz = b.getBlockZ() <= cz ? 0 : 1;
-            int qi = qz * 2 + qx;
-            quadrantCounts[qi]++;
-            double dist = Math.sqrt((double) (b.getBlockX() - cx) * (b.getBlockX() - cx)
-                    + (double) (b.getBlockZ() - cz) * (b.getBlockZ() - cz));
-            boolean isUsed = false;
-            if (used != null) {
-                for (Location u : used) {
-                    if (sameBlock(u, b)) {
-                        isUsed = true;
-                        break;
-                    }
-                }
+            int qi = quadrantIndex(b, cx, cz);
+            if (byQuadrant[qi] == null
+                    || distanceSq(b, cx, cz) < distanceSq(byQuadrant[qi], cx, cz)) {
+                byQuadrant[qi] = b;
             }
-            lines.add("BORDER cand=(" + b.getBlockX() + "," + b.getBlockY() + "," + b.getBlockZ() + ")"
-                    + " q=" + quadrantName(qi)
-                    + " dist=" + String.format(Locale.US, "%.1f", dist)
-                    + " used=" + isUsed);
         }
-        lines.add("BORDER quadrants NW=" + quadrantCounts[0] + " NE=" + quadrantCounts[1]
-                + " SW=" + quadrantCounts[2] + " SE=" + quadrantCounts[3]);
-
-        if (chosen == null) {
-            StringBuilder missing = new StringBuilder();
-            for (int i = 0; i < 4; i++) {
-                if (quadrantCounts[i] == 0) {
-                    if (missing.length() > 0) missing.append(',');
-                    missing.append(quadrantName(i));
-                }
+        if (chosenCorners != null) {
+            for (Location c : chosenCorners) {
+                if (c != null) byQuadrant[quadrantIndex(c, cx, cz)] = c;
             }
-            if (missing.length() > 0) {
-                lines.add("BORDER missing=" + missing);
+        }
+
+        // Clockwise from the north-west corner: NW -> NE -> SE -> SW.
+        int[] order = {0, 1, 3, 2};
+        List<String> lines = new ArrayList<>(4);
+        for (int i = 0; i < 4; i++) {
+            Location b = byQuadrant[order[i]];
+            if (b == null) {
+                lines.add("BORDER" + (i + 1) + " >>MISSING<<");
             } else {
-                lines.add("BORDER no-valid-rectangle");
+                double dist = Math.sqrt(distanceSq(b, cx, cz));
+                lines.add("BORDER" + (i + 1)
+                        + " coord=(" + b.getBlockX() + "," + b.getBlockY() + "," + b.getBlockZ() + ")"
+                        + " distant=" + String.format(Locale.US, "%.1f", dist));
             }
         }
         return lines;
     }
 
-    private static boolean sameBlock(Location a, Location b) {
-        return a != null && b != null
-                && a.getBlockX() == b.getBlockX()
-                && a.getBlockY() == b.getBlockY()
-                && a.getBlockZ() == b.getBlockZ();
+    private static int quadrantIndex(Location corner, int cx, int cz) {
+        int qx = corner.getBlockX() <= cx ? 0 : 1;
+        int qz = corner.getBlockZ() <= cz ? 0 : 1;
+        return qz * 2 + qx;
     }
 
-    private static String quadrantName(int index) {
-        switch (index) {
-            case 0: return "NW";
-            case 1: return "NE";
-            case 2: return "SW";
-            default: return "SE";
-        }
+    private static long distanceSq(Location corner, int cx, int cz) {
+        long dx = (long) corner.getBlockX() - cx;
+        long dz = (long) corner.getBlockZ() - cz;
+        return dx * dx + dz * dz;
     }
 
     private static int quadrantMask(Location corner, int cx, int cz) {

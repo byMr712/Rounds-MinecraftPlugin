@@ -97,8 +97,11 @@ class BlockStorageZoneTest {
         assertEquals("block.map-border-reason.not-four", result.warningKey);
         assertEquals(3, result.warningNumber);
         assertEquals(-25, result.bounds.minX);
-        assertTrue(result.debugLines.stream().anyMatch(l -> l.startsWith("BORDER missing=")),
-                "three corners should report the missing quadrant");
+        assertEquals(4, result.debugLines.size());
+        assertTrue(result.debugLines.get(0).startsWith("BORDER1 coord="));
+        assertTrue(result.debugLines.get(1).startsWith("BORDER2 coord="));
+        assertTrue(result.debugLines.get(2).startsWith("BORDER3 >>MISSING<<"));
+        assertTrue(result.debugLines.get(3).startsWith("BORDER4 coord="));
     }
 
     @Test
@@ -186,10 +189,15 @@ class BlockStorageZoneTest {
             assertEquals(expected[i][1], result.bounds.maxX, "map " + i + " maxX");
             assertEquals(expected[i][2], result.bounds.minZ, "map " + i + " minZ");
             assertEquals(expected[i][3], result.bounds.maxZ, "map " + i + " maxZ");
-            assertTrue(result.debugLines.stream().anyMatch(l -> l.startsWith("BORDER center=")),
-                    "map " + i + " should log the border debug header");
-            assertEquals(4L, result.debugLines.stream().filter(l -> l.contains("used=true")).count(),
-                    "map " + i + " should mark exactly four corners as used");
+            assertEquals(4, result.debugLines.size(), "map " + i + " should log exactly four border lines");
+            assertTrue(result.debugLines.stream().noneMatch(l -> l.contains("MISSING")),
+                    "map " + i + " should not report missing corners");
+            if (i == 0) {
+                assertEquals("BORDER1 coord=(-19,64,25) distant=24.1", result.debugLines.get(0));
+                assertEquals("BORDER2 coord=(14,64,25) distant=21.9", result.debugLines.get(1));
+                assertEquals("BORDER3 coord=(14,64,57) distant=21.9", result.debugLines.get(2));
+                assertEquals("BORDER4 coord=(-19,64,57) distant=24.1", result.debugLines.get(3));
+            }
         }
     }
 }

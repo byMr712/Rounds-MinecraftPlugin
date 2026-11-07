@@ -188,7 +188,7 @@ public class GameManager implements Listener {
                 com.rounds.debug.DebugLog.log("DEBUG", "AUTO-START triggered at round start of R#" + cur);
             }
             if (com.rounds.debug.DebugSession.active) {
-                com.rounds.debug.DebugLog.log("GAME", "START round=" + cur);
+                com.rounds.debug.DebugLog.log("GAME", "GAME-START");
             }
         } catch (Throwable ignored) {}
         List<Player> readyPlayers = getReadyPlayers();

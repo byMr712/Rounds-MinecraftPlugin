@@ -29,7 +29,7 @@ The project uses Gradle with a multi-module architecture.
   ```
 
 - **Cross-Platform Resource Pack Builder:**
-  Generates `Rounds-ResourcePack-RU.zip`, `Rounds-ResourcePack-EN.zip`, and base `Rounds-ResourcePack.zip` (clean unbaked templates, [download from GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.0/Rounds-ResourcePack-For-Developers.zip)) in `resourcepacks_builds/`:
+  Generates `Rounds-ResourcePack-RU.zip`, `Rounds-ResourcePack-EN.zip`, and base `Rounds-ResourcePack.zip` (clean unbaked templates, [download from GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.1/Rounds-ResourcePack-For-Developers.zip)) in `resourcepacks_builds/`:
   ```bash
   # Build packages into resourcepacks_builds/:
   ./gradlew buildResourcePacks

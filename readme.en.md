@@ -517,9 +517,9 @@ The plugin provides a self-contained, cross-platform resource pack infrastructur
 The official plugin resource pack is based on the original resource pack by **ifrit**, with subsequent modifications: restructured layout, added texture variations, adaptive localization (RU/EN), palette quantization, and optimization by **Mr712**.
 
 Card titles and ability descriptions are rendered directly onto card face textures. Separate language-specific packages are generated:
-- `Rounds-ResourcePack-RU.zip`: Card textures with baked Russian translations ([Download from GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.0/Rounds-ResourcePack-RU.zip)).
-- `Rounds-ResourcePack-EN.zip`: Card textures with baked English translations ([Download from GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.0/Rounds-ResourcePack-EN.zip)).
-- `Rounds-ResourcePack-For-Developers.zip` (alias `Rounds-ResourcePack.zip`): Base template pack containing clean, unbaked original card art (without text), allowing other creators to add custom translations and typography ([Download developer base pack from GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.0/Rounds-ResourcePack-For-Developers.zip)).
+- `Rounds-ResourcePack-RU.zip`: Card textures with baked Russian translations ([Download from GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.1/Rounds-ResourcePack-RU.zip)).
+- `Rounds-ResourcePack-EN.zip`: Card textures with baked English translations ([Download from GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.1/Rounds-ResourcePack-EN.zip)).
+- `Rounds-ResourcePack-For-Developers.zip` (alias `Rounds-ResourcePack.zip`): Base template pack containing clean, unbaked original card art (without text), allowing other creators to add custom translations and typography ([Download developer base pack from GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.1/Rounds-ResourcePack-For-Developers.zip)).
 
 The private-use font glyph codepoints (`0xE000` + `familyId`) are identical across all language packs. Players simply activate their preferred language pack in Minecraft settings without requiring any server configuration changes.
 
@@ -936,7 +936,7 @@ Comprehensive guide for creating cards via YAML with `cards.schema.json` and con
 Ready plugins - one per server version - are placed in `rounds-nms/*/build/libs/`:
 
 ```
-RoundsPlugin-<server-version>-v2.0-byMr712.jar
+RoundsPlugin-<server-version>-v2.1-byMr712.jar
 ```
 
 - Range: every stable release **1.20.4 - 26.3**.

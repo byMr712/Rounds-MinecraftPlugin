@@ -68,10 +68,13 @@ public final class MapAutoPatcher {
         try {
             applyPatch(plugin, world);
 
-            // Log strictly requested message
-            plugin.getLogger().info(PATCH_DONE_MSG);
-
-            if (notifySender != null) {
+            if (notifySender == null) {
+                // Startup patch: print the success line after the plugin's "enabled!" message
+                // instead of in the middle of onEnable().
+                plugin.getServer().getScheduler().runTaskLater(plugin,
+                        () -> plugin.getLogger().info(PATCH_DONE_MSG), 1L);
+            } else {
+                plugin.getLogger().info(PATCH_DONE_MSG);
                 notifySender.sendMessage(ChatColor.GREEN + PATCH_DONE_MSG);
             }
 

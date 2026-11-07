@@ -120,7 +120,7 @@ Players step on colored wool blocks in the lobby to select a team.
 |-------|-----------------|---------|
 | **Lobby Block** | Emerald Block (`EMERALD_BLOCK`) | Lobby center point. Player return position before/after matches. Only 1 active lobby block exists per world. Can also be set via `/rdebug setlobby`. |
 | **Map Center Block** | Diamond Block (`DIAMOND_BLOCK`) | Arena zone center. Defaults to a 50x50 block area on X/Z. |
-| **Map Border Block** | Lapis Block (`LAPIS_BLOCK`) | Place 4 blocks, one in each map corner. Overrides the nearest Map Center Block's bounds up to 300x300. |
+| **Map Border Block** | Lapis Block (`LAPIS_BLOCK`) | Place 4 blocks, one in each map corner. Overrides the nearest Map Center Block's bounds up to 256x256. |
 | **Spawn Block** | Obsidian (`OBSIDIAN`) | Team spawn point within the arena zone. |
 | **Jump Pad Block** | Coal Block (`COAL_BLOCK`) | Deals 20% max HP damage (can be parried with shield) and launches entities high into the air. |
 | **Elevator Lift Block** | Purple Glazed Terracotta (`PURPLE_GLAZED_TERRACOTTA`) | Slowly lifts players upward for a set duration. |
@@ -135,7 +135,7 @@ Players step on colored wool blocks in the lobby to select a team.
 ### 3. Step-by-Step Arena Setup
 
 1. **Lobby:** Place the **Lobby Block** in your waiting area and place colored wool blocks on the floor for team selection.
-2. **Map Zones:** Place a **Map Center Block** at the center of your arena — it defines a 50x50 zone by default. Optionally place 4 **Map Border Blocks**, one in each corner, to define precise bounds up to 300x300. The plugin chooses a random zone each round.
+2. **Map Zones:** Place a **Map Center Block** at the center of your arena — it defines a 50x50 zone by default. Optionally place 4 **Map Border Blocks**, one in each corner, to define precise bounds up to 256x256. The plugin chooses a random zone each round.
 3. **Team Spawns:** Place **Spawn Blocks** (Obsidian) inside each zone where teams will appear each round.
 4. **Interactive Blocks (Optional):** Place Jump Pads and Elevator Lifts manually or select cuboids using `/rdebug jumppos1` / `jumppos2` / `jumpset` and `/rdebug uppos1` / `uppos2` / `upset`.
 

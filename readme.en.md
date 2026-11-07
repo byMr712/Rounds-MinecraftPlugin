@@ -523,12 +523,14 @@ Card titles and ability descriptions are rendered directly onto card face textur
 - `Rounds-ResourcePack-EN.zip`: Card textures with baked English translations ([Download from GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.1/Rounds-ResourcePack-EN.zip)).
 - `Rounds-ResourcePack-For-Developers.zip` (alias `Rounds-ResourcePack.zip`): Base template pack containing clean, unbaked original card art (without text), allowing other creators to add custom translations and typography ([Download developer base pack from GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.1/Rounds-ResourcePack-For-Developers.zip)).
 
+Additionally, the in-hand shield model is scaled down: 80% in first person and 70% in third person. Blocking mechanics are unchanged.
+
 The private-use font glyph codepoints (`0xE000` + `familyId`) are identical across all language packs. Players simply activate their preferred language pack in Minecraft settings without requiring any server configuration changes.
 
 Current SHA-1 Checksums:
-- `Rounds-ResourcePack-RU.zip`: `126c4227c98d935147ff8a71d7f9c93a2b5b1a13`
-- `Rounds-ResourcePack-EN.zip`: `07256fb2c4f26f695327621f01331954b7887d51`
-- `Rounds-ResourcePack-For-Developers.zip`: `839a6dca75a095c74676fad9ccb2fc337baa98d4`
+- `Rounds-ResourcePack-RU.zip`: `7281fc6312e051c7b03ebca1e035a0cb25d6a311`
+- `Rounds-ResourcePack-EN.zip`: `54abc9a0c32f9f538680bb6c111fbb543ee4fe52`
+- `Rounds-ResourcePack-For-Developers.zip`: `7af5d132b62f62a0b2b358d40e5135ea72ba149f`
 
 ### 2. Complete Resource Pack Architecture and Standards
 

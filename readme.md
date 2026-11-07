@@ -521,12 +521,14 @@ triggers:
 - `Rounds-ResourcePack-EN.zip` — текстуры с запеченным английским переводом ([Скачать с GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.1/Rounds-ResourcePack-EN.zip)).
 - `Rounds-ResourcePack-For-Developers.zip` (алиас `Rounds-ResourcePack.zip`) — базовый пакет с оригинальными чистыми карточками (без текста) для добавления своих переводов и кастомного текста сторонними авторами ([Скачать версию для разработчиков с GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.1/Rounds-ResourcePack-For-Developers.zip)).
 
+Дополнительно модель щита в руке уменьшена: в первом лице до 80%, в третьем — до 70% от стандартного размера. Механика блокировки не меняется.
+
 Кодовые позиции растровых глифов шрифта (`0xE000` + `familyId`) идентичны во всех пакетах. Игрок просто выбирает ресурспак своего языка в настройках Minecraft без необходимости менять что-либо на сервере.
 
 Контрольные суммы SHA-1 актуальных пакетов:
-- `Rounds-ResourcePack-RU.zip`: `126c4227c98d935147ff8a71d7f9c93a2b5b1a13`
-- `Rounds-ResourcePack-EN.zip`: `07256fb2c4f26f695327621f01331954b7887d51`
-- `Rounds-ResourcePack-For-Developers.zip`: `839a6dca75a095c74676fad9ccb2fc337baa98d4`
+- `Rounds-ResourcePack-RU.zip`: `7281fc6312e051c7b03ebca1e035a0cb25d6a311`
+- `Rounds-ResourcePack-EN.zip`: `54abc9a0c32f9f538680bb6c111fbb543ee4fe52`
+- `Rounds-ResourcePack-For-Developers.zip`: `7af5d132b62f62a0b2b358d40e5135ea72ba149f`
 
 ### 2. Полная архитектура и стандарты ресурспака
 

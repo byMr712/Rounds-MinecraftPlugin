@@ -170,7 +170,8 @@ public class ResourcePackBuilder {
                     "      {\"formats\": [75, 83], \"min_format\": 75, \"max_format\": 83, \"directory\": \"overlay_75_83\"},\n" +
                     "      {\"formats\": [84, 87], \"min_format\": 84, \"max_format\": 87, \"directory\": \"overlay_84_87\"},\n" +
                     "      {\"formats\": [88, 96], \"min_format\": 88, \"max_format\": 96, \"directory\": \"overlay_88_96\"},\n" +
-                    "      {\"formats\": [97, 99], \"min_format\": 97, \"max_format\": 99, \"directory\": \"overlay_97_99\"}\n" +
+                    "      {\"formats\": [97, 99], \"min_format\": 97, \"max_format\": 99, \"directory\": \"overlay_97_99\"},\n" +
+                    "      {\"formats\": [46, 99], \"min_format\": 46, \"max_format\": 99, \"directory\": \"overlay_shield_modern\"}\n" +
                     "    ]\n" +
                     "  }\n" +
                     "}\n";
@@ -423,6 +424,9 @@ public class ResourcePackBuilder {
 
             // 7. Self-contained HUD text shaders for every pack-format family.
             writeHudShaders(root, zos, written);
+
+            // 8. Smaller shield models (legacy base for <=1.21.3, modern overlay for 1.21.4+).
+            writeShieldModels(zos, written);
         }
 
         byte[] zipBytes = baos.toByteArray();
@@ -528,6 +532,87 @@ public class ResourcePackBuilder {
             String entryName = rel.startsWith("base/") ? rel.substring("base/".length()) : rel;
             writeEntry(zos, written, entryName, Files.readAllBytes(p));
         }
+    }
+
+    /**
+     * Writes smaller in-hand shield models. Legacy model format (with builtin/entity parent
+     * and the blocking override) is used up to 1.21.3; 1.21.4+ uses data-driven item models
+     * and gets a separate overlay with the modern display-only model.
+     */
+    private static void writeShieldModels(ZipOutputStream zos, Set<String> written) throws IOException {
+        String legacyShield = """
+                {
+                  "parent": "builtin/entity",
+                  "gui_light": "front",
+                  "textures": { "particle": "block/dark_oak_planks" },
+                  "display": {
+                    "thirdperson_righthand": { "rotation": [0, 90, 0], "translation": [10, 6, -4], "scale": [0.7, 0.7, 0.7] },
+                    "thirdperson_lefthand": { "rotation": [0, 90, 0], "translation": [10, 6, 12], "scale": [0.7, 0.7, 0.7] },
+                    "firstperson_righthand": { "rotation": [0, 180, 5], "translation": [-10, 2, -10], "scale": [0.8, 0.8, 0.8] },
+                    "firstperson_lefthand": { "rotation": [0, 180, 5], "translation": [10, 0, -10], "scale": [0.8, 0.8, 0.8] },
+                    "gui": { "rotation": [15, -25, -5], "translation": [2, 3, 0], "scale": [0.65, 0.65, 0.65] },
+                    "fixed": { "rotation": [0, 180, 0], "translation": [-4.5, 4.5, -5], "scale": [0.55, 0.55, 0.55] },
+                    "ground": { "rotation": [0, 0, 0], "translation": [2, 4, 2], "scale": [0.25, 0.25, 0.25] }
+                  },
+                  "overrides": [
+                    { "predicate": { "blocking": 1 }, "model": "item/shield_blocking" }
+                  ]
+                }
+                """;
+
+        String legacyBlocking = """
+                {
+                  "parent": "builtin/entity",
+                  "gui_light": "front",
+                  "textures": { "particle": "block/dark_oak_planks" },
+                  "display": {
+                    "thirdperson_righthand": { "rotation": [45, 155, 0], "translation": [-3.49, 11, -2], "scale": [0.7, 0.7, 0.7] },
+                    "thirdperson_lefthand": { "rotation": [45, 155, 0], "translation": [11.51, 7, 2.5], "scale": [0.7, 0.7, 0.7] },
+                    "firstperson_righthand": { "rotation": [0, 180, -5], "translation": [-15, 5, -11], "scale": [0.8, 0.8, 0.8] },
+                    "firstperson_lefthand": { "rotation": [0, 180, -5], "translation": [5, 5, -11], "scale": [0.8, 0.8, 0.8] },
+                    "gui": { "rotation": [15, -25, -5], "translation": [2, 3, 0], "scale": [0.65, 0.65, 0.65] }
+                  }
+                }
+                """;
+
+        String modernShield = """
+                {
+                  "gui_light": "front",
+                  "textures": { "particle": "block/dark_oak_planks" },
+                  "display": {
+                    "thirdperson_righthand": { "rotation": [0, 90, 0], "translation": [10, 6, -4], "scale": [0.7, 0.7, 0.7] },
+                    "thirdperson_lefthand": { "rotation": [0, 90, 0], "translation": [10, 6, 12], "scale": [0.7, 0.7, 0.7] },
+                    "firstperson_righthand": { "rotation": [0, 180, 5], "translation": [-10, 2, -10], "scale": [0.8, 0.8, 0.8] },
+                    "firstperson_lefthand": { "rotation": [0, 180, 5], "translation": [10, 0, -10], "scale": [0.8, 0.8, 0.8] },
+                    "gui": { "rotation": [15, -25, -5], "translation": [2, 3, 0], "scale": [0.65, 0.65, 0.65] },
+                    "fixed": { "rotation": [0, 180, 0], "translation": [-4.5, 4.5, -5], "scale": [0.55, 0.55, 0.55] },
+                    "ground": { "rotation": [0, 0, 0], "translation": [2, 4, 2], "scale": [0.25, 0.25, 0.25] }
+                  }
+                }
+                """;
+
+        String modernBlocking = """
+                {
+                  "gui_light": "front",
+                  "textures": { "particle": "block/dark_oak_planks" },
+                  "display": {
+                    "thirdperson_righthand": { "rotation": [45, 155, 0], "translation": [-3.49, 11, -2], "scale": [0.7, 0.7, 0.7] },
+                    "thirdperson_lefthand": { "rotation": [45, 155, 0], "translation": [11.51, 7, 2.5], "scale": [0.7, 0.7, 0.7] },
+                    "firstperson_righthand": { "rotation": [0, 180, -5], "translation": [-15, 5, -11], "scale": [0.8, 0.8, 0.8] },
+                    "firstperson_lefthand": { "rotation": [0, 180, -5], "translation": [5, 5, -11], "scale": [0.8, 0.8, 0.8] },
+                    "gui": { "rotation": [15, -25, -5], "translation": [2, 3, 0], "scale": [0.65, 0.65, 0.65] }
+                  }
+                }
+                """;
+
+        writeEntry(zos, written, "assets/minecraft/models/item/shield.json",
+                legacyShield.getBytes(StandardCharsets.UTF_8));
+        writeEntry(zos, written, "assets/minecraft/models/item/shield_blocking.json",
+                legacyBlocking.getBytes(StandardCharsets.UTF_8));
+        writeEntry(zos, written, "overlay_shield_modern/assets/minecraft/models/item/shield.json",
+                modernShield.getBytes(StandardCharsets.UTF_8));
+        writeEntry(zos, written, "overlay_shield_modern/assets/minecraft/models/item/shield_blocking.json",
+                modernBlocking.getBytes(StandardCharsets.UTF_8));
     }
 
     private static void writeEntry(ZipOutputStream zos, Set<String> written, String entryName, byte[] data) throws IOException {

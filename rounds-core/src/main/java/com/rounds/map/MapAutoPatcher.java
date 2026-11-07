@@ -10,17 +10,23 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.CommandBlock;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.zip.GZIPInputStream;
 
 public final class MapAutoPatcher {
 
     public static final String PATCH_DONE_MSG = "Detected original Rounds map by ifrit. Applying automatic arena patch by Mr712... Done!";
+
+    /** Location of a placed Map Border Block that must survive the patch. */
+    private record BorderPos(int x, int y, int z) {}
 
     private MapAutoPatcher() {}
 
@@ -151,14 +157,63 @@ public final class MapAutoPatcher {
         return mat != null && mat.name().endsWith("_GLAZED_TERRACOTTA");
     }
 
+    private static List<BorderPos> readBorderPositions(File file) {
+        List<BorderPos> result = new ArrayList<>();
+        if (file == null || !file.exists()) return result;
+        try {
+            YamlConfiguration cfg = YamlConfiguration.loadConfiguration(file);
+            var section = cfg.getConfigurationSection("border");
+            if (section == null) return result;
+            for (String key : section.getKeys(false)) {
+                String path = "border." + key;
+                result.add(new BorderPos(
+                        cfg.getInt(path + ".x"),
+                        cfg.getInt(path + ".y"),
+                        cfg.getInt(path + ".z")));
+            }
+        } catch (Exception ignored) {
+            // A broken/old config must not abort the whole map patch.
+        }
+        return result;
+    }
+
+    private static void writeBorderPositions(File file, List<BorderPos> positions, String worldName) {
+        if (file == null || !file.exists() || positions.isEmpty()) return;
+        try {
+            YamlConfiguration cfg = YamlConfiguration.loadConfiguration(file);
+            cfg.set("border", null);
+            int i = 0;
+            for (BorderPos pos : positions) {
+                String path = "border." + i++;
+                cfg.set(path + ".world", worldName);
+                cfg.set(path + ".x", pos.x());
+                cfg.set(path + ".y", pos.y());
+                cfg.set(path + ".z", pos.z());
+            }
+            cfg.save(file);
+        } catch (IOException e) {
+            // Non-fatal: the blocks are already restored in the world.
+            e.printStackTrace();
+        }
+    }
+
     private static void applyPatch(RoundsPlugin plugin, World world) throws IOException {
         File worldDir = world.getWorldFolder();
+        File dimOverworld = new File(worldDir, "dimensions/minecraft/overworld");
+        File rootMapBlocks = new File(worldDir, "rounds-map-blocks.yml");
+        File dimMapBlocks = new File(dimOverworld, "rounds-map-blocks.yml");
+
+        // Collect placed Map Border Blocks before the bundled config overwrites the YAML file.
+        // The patcher may also overwrite their blocks, so they are restored after the block pass.
+        List<BorderPos> borderPositions = readBorderPositions(rootMapBlocks);
+        for (BorderPos pos : readBorderPositions(dimMapBlocks)) {
+            if (!borderPositions.contains(pos)) borderPositions.add(pos);
+        }
 
         // 1. Copy rounds-map-blocks.yml and rounds-blocks.yml to world directory (and dimensions subfolder if present)
         copyResourceToWorld(plugin, "maps/ifrit/rounds-map-blocks.yml", worldDir, "rounds-map-blocks.yml");
         copyResourceToWorld(plugin, "maps/ifrit/rounds-blocks.yml", worldDir, "rounds-blocks.yml");
 
-        File dimOverworld = new File(worldDir, "dimensions/minecraft/overworld");
         if (dimOverworld.exists() && dimOverworld.isDirectory()) {
             copyResourceToWorld(plugin, "maps/ifrit/rounds-map-blocks.yml", dimOverworld, "rounds-map-blocks.yml");
             copyResourceToWorld(plugin, "maps/ifrit/rounds-blocks.yml", dimOverworld, "rounds-blocks.yml");
@@ -206,6 +261,36 @@ public final class MapAutoPatcher {
                 }
                 world.getBlockAt(x, y, z).setType(mat, false);
             }
+        }
+
+        // Preserve user-placed borders over the bundled defaults, if any were recorded
+        // before the patch (for example when the map is force-patched again).
+        if (!borderPositions.isEmpty()) {
+            writeBorderPositions(rootMapBlocks, borderPositions, world.getName());
+            if (dimOverworld.exists() && dimOverworld.isDirectory()) {
+                writeBorderPositions(dimMapBlocks, borderPositions, world.getName());
+            }
+        }
+
+        // The final config is the source of truth: bundled defaults or preserved user borders.
+        List<BorderPos> finalBorders = readBorderPositions(rootMapBlocks);
+        if (finalBorders.isEmpty() && dimOverworld.exists() && dimOverworld.isDirectory()) {
+            finalBorders = readBorderPositions(dimMapBlocks);
+        }
+
+        // Restore the physical Map Border Blocks; the block patch may have overwritten them.
+        for (BorderPos pos : finalBorders) {
+            int cx = pos.x() >> 4;
+            int cz = pos.z() >> 4;
+            if (!world.isChunkLoaded(cx, cz)) {
+                world.loadChunk(cx, cz);
+            }
+            world.getBlockAt(pos.x(), pos.y(), pos.z()).setType(Material.LAPIS_BLOCK, false);
+        }
+
+        // Keep both copies of the config in sync so BlockStorage resolves the enlarged bounds.
+        if (!finalBorders.isEmpty() && dimOverworld.exists() && dimOverworld.isDirectory()) {
+            writeBorderPositions(dimMapBlocks, finalBorders, world.getName());
         }
 
         // 3. Command blocks adjustment

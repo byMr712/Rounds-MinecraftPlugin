@@ -187,3 +187,144 @@ spawn:
     x: -28
     y: -61
     z: -24
+border:
+  '0':
+    world: world
+    x: -19
+    y: 6
+    z: 25
+  '1':
+    world: world
+    x: -19
+    y: 6
+    z: 57
+  '2':
+    world: world
+    x: 14
+    y: 6
+    z: 57
+  '3':
+    world: world
+    x: 14
+    y: 6
+    z: 25
+  '4':
+    world: world
+    x: -19
+    y: 3
+    z: 63
+  '5':
+    world: world
+    x: 24
+    y: 3
+    z: 63
+  '6':
+    world: world
+    x: 24
+    y: 3
+    z: 111
+  '7':
+    world: world
+    x: -19
+    y: 3
+    z: 111
+  '8':
+    world: world
+    x: -31
+    y: 9
+    z: 75
+  '9':
+    world: world
+    x: -31
+    y: 9
+    z: 25
+  '10':
+    world: world
+    x: -81
+    y: 9
+    z: 25
+  '11':
+    world: world
+    x: -81
+    y: 9
+    z: 75
+  '12':
+    world: world
+    x: -22
+    y: 4
+    z: 2
+  '13':
+    world: world
+    x: -22
+    y: 4
+    z: -30
+  '14':
+    world: world
+    x: -55
+    y: 4
+    z: -30
+  '15':
+    world: world
+    x: -55
+    y: 4
+    z: 2
+  '16':
+    world: world
+    x: 26
+    y: 9
+    z: 1
+  '17':
+    world: world
+    x: 26
+    y: 9
+    z: 51
+  '18':
+    world: world
+    x: 76
+    y: 9
+    z: 51
+  '19':
+    world: world
+    x: 76
+    y: 9
+    z: 1
+  '20':
+    world: world
+    x: 95
+    y: 10
+    z: -38
+  '21':
+    world: world
+    x: 95
+    y: 10
+    z: -88
+  '22':
+    world: world
+    x: 45
+    y: 10
+    z: -88
+  '23':
+    world: world
+    x: 45
+    y: 10
+    z: -38
+  '24':
+    world: world
+    x: 31
+    y: 10
+    z: -38
+  '25':
+    world: world
+    x: 31
+    y: 10
+    z: -88
+  '26':
+    world: world
+    x: -19
+    y: 10
+    z: -88
+  '27':
+    world: world
+    x: -19
+    y: 10
+    z: -38

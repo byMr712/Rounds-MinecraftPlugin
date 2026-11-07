@@ -48,6 +48,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -117,6 +118,8 @@ public class GameManager implements Listener {
     private final Map<UUID, Boolean> lastWrongMapResult = new HashMap<>();
     private final Map<UUID, Location> chameleonLastLoc = new HashMap<>();
     private final Map<UUID, Integer> chameleonStillTicks = new HashMap<>();
+    /** Players whose off-hand shield is currently hidden from other clients because they are invisible. */
+    private final Set<UUID> hiddenInvisibleShields = new HashSet<>();
     private static final UUID SNOWBALL_MOD_ID = UUID.nameUUIDFromBytes("rounds_snowball".getBytes());
     private boolean gameActive = false;
     private boolean autoDeathEnabled = true;
@@ -225,6 +228,7 @@ public class GameManager implements Listener {
         teamSpawns.clear();
         chameleonLastLoc.clear();
         chameleonStillTicks.clear();
+        restoreInvisibleShields();
         com.rounds.listener.LegendaryEffects.resetAll();
         com.rounds.stats.MatchStatsManager.onGameStart();
 
@@ -831,6 +835,7 @@ public class GameManager implements Listener {
         if (autoDeathEnabled) checkAutoDeath();
         if (musicTick % 5 == 0) {
             updateSpectatorGlow();
+            tickInvisibleShields();
         }
         if (musicTick % 10 == 0) {
             checkRoundEnd();
@@ -844,6 +849,41 @@ public class GameManager implements Listener {
         if (musicTick % 40 == 0) {
             sendSpectatorActionbar();
         }
+    }
+
+    /**
+     * The vanilla invisibility effect still renders the held shield, so an invisible player
+     * (Chameleon) is betrayed by a floating shield. Send an empty off-hand slot to every
+     * viewer while the effect is active and restore the real shield once it fades.
+     */
+    private void tickInvisibleShields() {
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            UUID id = p.getUniqueId();
+            if (p.hasPotionEffect(PotionEffectType.INVISIBILITY)) {
+                hiddenInvisibleShields.add(id);
+                sendOffHand(p, new ItemStack(Material.AIR));
+            } else if (hiddenInvisibleShields.remove(id)) {
+                sendOffHand(p, p.getInventory().getItemInOffHand());
+            }
+        }
+    }
+
+    private void sendOffHand(Player owner, ItemStack offHand) {
+        for (Player viewer : owner.getWorld().getPlayers()) {
+            if (viewer.equals(owner)) continue;
+            viewer.sendEquipmentChange(owner, EquipmentSlot.OFF_HAND, offHand);
+        }
+    }
+
+    private void restoreInvisibleShields() {
+        if (hiddenInvisibleShields.isEmpty()) return;
+        for (UUID id : new ArrayList<>(hiddenInvisibleShields)) {
+            Player p = Bukkit.getPlayer(id);
+            if (p != null && p.isOnline()) {
+                sendOffHand(p, p.getInventory().getItemInOffHand());
+            }
+        }
+        hiddenInvisibleShields.clear();
     }
 
     private void tickHighlightGlowExpires() {
@@ -1781,6 +1821,7 @@ public class GameManager implements Listener {
             syncedHearts.clear();
             chameleonLastLoc.clear();
             chameleonStillTicks.clear();
+            restoreInvisibleShields();
             com.rounds.listener.LegendaryEffects.resetAll();
             for (Player p : plugin.getServer().getOnlinePlayers()) {
                 p.getInventory().clear();
@@ -2801,6 +2842,7 @@ public class GameManager implements Listener {
         syncedHearts.clear();
         chameleonLastLoc.clear();
         chameleonStillTicks.clear();
+        restoreInvisibleShields();
         com.rounds.listener.LegendaryEffects.resetAll();
         state = GameState.WAITING;
         hideAutoDeathBossBar();
@@ -3568,6 +3610,7 @@ public class GameManager implements Listener {
         lastWrongMapResult.remove(uuid);
         chameleonLastLoc.remove(uuid);
         chameleonStillTicks.remove(uuid);
+        hiddenInvisibleShields.remove(uuid);
         pendingCardJoiners.remove(uuid);
         returningJoiners.remove(uuid);
         if (autoDeathBossBar != null) {

@@ -16,6 +16,7 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Team;
 import org.bukkit.util.RayTraceResult;
@@ -572,6 +573,7 @@ public class BotAI extends BukkitRunnable {
      */
     public boolean canSee(Player botPlayer, LivingEntity target) {
         if (target == null || !target.isValid() || target.isDead()) return false;
+        if (target.isInvisible() || target.hasPotionEffect(PotionEffectType.INVISIBILITY)) return false;
         if (target instanceof Player p) {
             if (!p.isOnline() || p.getGameMode() == GameMode.SPECTATOR || p.getGameMode() == GameMode.CREATIVE) return false;
         }
@@ -693,7 +695,9 @@ public class BotAI extends BukkitRunnable {
 
         if (attackerId != null) {
             Entity attacker = Bukkit.getEntity(attackerId);
-            if (attacker instanceof LivingEntity livingAttacker && !isTeammate(player, livingAttacker)) {
+            if (attacker instanceof LivingEntity livingAttacker && !isTeammate(player, livingAttacker)
+                    && !livingAttacker.isInvisible()
+                    && !livingAttacker.hasPotionEffect(PotionEffectType.INVISIBILITY)) {
                 if (currentTarget != livingAttacker) {
                     reactionTicks = Math.max(1, (int) Math.round((3 + (1.0 - bot.getSkillFactor()) * 4.0) * 0.90));
                 }
@@ -726,6 +730,8 @@ public class BotAI extends BukkitRunnable {
                 if (!targetPlayer.isOnline()
                         || targetPlayer.getGameMode() == GameMode.SPECTATOR
                         || targetPlayer.getGameMode() == GameMode.CREATIVE
+                        || targetPlayer.isInvisible()
+                        || targetPlayer.hasPotionEffect(PotionEffectType.INVISIBILITY)
                         || isTeammate(player, targetPlayer)) {
                     currentTarget = null;
                     isPursuing = false;
@@ -2318,6 +2324,8 @@ public class BotAI extends BukkitRunnable {
             if (other.equals(player)) continue;
             if (other.isDead() || !other.isOnline()) continue;
             if (other.getGameMode() == GameMode.SPECTATOR || other.getGameMode() == GameMode.CREATIVE) continue;
+            // Chameleon / invisibility: bots cannot visually detect an invisible enemy.
+            if (other.isInvisible() || other.hasPotionEffect(PotionEffectType.INVISIBILITY)) continue;
             if (bot.getPlugin() != null && bot.getPlugin().getGameManager() != null
                     && bot.getPlugin().getGameManager().isPendingCardJoiner(other.getUniqueId())) continue;
             if (isTeammate(player, other)) continue;

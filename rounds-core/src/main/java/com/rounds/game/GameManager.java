@@ -1327,7 +1327,7 @@ public class GameManager implements Listener {
             BlockStorage.MapBlock chosenZone = zones.get(chosen);
             currentZoneCenter = chosenZone.center.clone();
 
-            BlockStorage.ZoneResolution resolution = bs.resolveZoneBounds(chosenZone, zones);
+            BlockStorage.ZoneResolution resolution = bs.resolveZoneBounds(chosenZone);
             currentZoneBounds = resolution.bounds;
             if (resolution.warningKey != null) {
                 warnMapBorderConfig(resolution.warningKey, resolution.warningNumber, chosenZone.size);

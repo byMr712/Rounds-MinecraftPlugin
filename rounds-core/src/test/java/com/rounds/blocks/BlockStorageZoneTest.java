@@ -44,7 +44,7 @@ class BlockStorageZoneTest {
         BlockStorage storage = new BlockStorage(tempDir.toFile());
         BlockStorage.MapBlock center = center(world, 0, 0);
 
-        BlockStorage.ZoneResolution result = storage.resolveZoneBounds(center, List.of(center));
+        BlockStorage.ZoneResolution result = storage.resolveZoneBounds(center);
 
         assertNull(result.warningKey);
         assertEquals(-25, result.bounds.minX);
@@ -59,7 +59,7 @@ class BlockStorageZoneTest {
         BlockStorage.MapBlock center = center(world, 0, 0);
         addCorners(storage, world, -100, 100, -100, 100);
 
-        BlockStorage.ZoneResolution result = storage.resolveZoneBounds(center, List.of(center));
+        BlockStorage.ZoneResolution result = storage.resolveZoneBounds(center);
 
         assertNull(result.warningKey);
         assertEquals(-100, result.bounds.minX);
@@ -76,7 +76,7 @@ class BlockStorageZoneTest {
         BlockStorage.MapBlock center = center(world, 0, 0);
         addCorners(storage, world, -100, 101, -100, 100);
 
-        BlockStorage.ZoneResolution result = storage.resolveZoneBounds(center, List.of(center));
+        BlockStorage.ZoneResolution result = storage.resolveZoneBounds(center);
 
         assertNull(result.warningKey);
         assertEquals(-100, result.bounds.minX);
@@ -92,7 +92,7 @@ class BlockStorageZoneTest {
         storage.addBorderBlock(loc(world, 100, -100));
         storage.addBorderBlock(loc(world, -100, 100));
 
-        BlockStorage.ZoneResolution result = storage.resolveZoneBounds(center, List.of(center));
+        BlockStorage.ZoneResolution result = storage.resolveZoneBounds(center);
 
         assertEquals("block.map-border-reason.not-four", result.warningKey);
         assertEquals(3, result.warningNumber);
@@ -109,7 +109,7 @@ class BlockStorageZoneTest {
         storage.addBorderBlock(loc(world, 100, -100));
         storage.addBorderBlock(loc(world, 100, 100));
 
-        BlockStorage.ZoneResolution result = storage.resolveZoneBounds(center, List.of(center));
+        BlockStorage.ZoneResolution result = storage.resolveZoneBounds(center);
 
         assertEquals("block.map-border-reason.quadrants", result.warningKey);
         assertEquals(-25, result.bounds.minX);
@@ -122,7 +122,7 @@ class BlockStorageZoneTest {
         BlockStorage.MapBlock center = center(world, 0, 0);
         addCorners(storage, world, -2, 2, -2, 2);
 
-        BlockStorage.ZoneResolution result = storage.resolveZoneBounds(center, List.of(center));
+        BlockStorage.ZoneResolution result = storage.resolveZoneBounds(center);
 
         assertEquals("block.map-border-reason.too-small", result.warningKey);
         assertEquals(BlockStorage.MIN_ZONE_SIZE, result.warningNumber);
@@ -135,11 +135,56 @@ class BlockStorageZoneTest {
         BlockStorage.MapBlock center = center(world, 0, 0);
         addCorners(storage, world, -10, 10, -10, 10);
 
-        BlockStorage.ZoneBounds bounds = storage.resolveZoneBounds(center, List.of(center)).bounds;
+        BlockStorage.ZoneBounds bounds = storage.resolveZoneBounds(center).bounds;
 
         assertTrue(bounds.contains(loc(world, -10, -10)));
         assertTrue(bounds.contains(loc(world, 10, 10)));
         assertFalse(bounds.contains(loc(world, 11, 0)));
         assertFalse(bounds.contains(loc(world(), 0, 0)));
     }
+
+    /**
+     * The original ifrit arena has seven tightly packed zones whose 28 border corners are closer
+     * to neighboring centers in several cases. The resolver must still pick each map's own
+     * rectangle instead of losing corners to the "nearest center" rule.
+     */
+    @Test
+    void packedOriginalMapCornersResolveToTheirOwnZones() {
+        World world = world();
+        BlockStorage storage = new BlockStorage(tempDir.toFile());
+
+        int[][] centers = {
+                {-1, 41}, {51, 26}, {2, 87}, {-56, 50}, {6, -63}, {70, -63}, {-38, -14}
+        };
+        int[][] borders = {
+                {-19, 25}, {-19, 57}, {14, 57}, {14, 25},
+                {26, 1}, {26, 51}, {76, 51}, {76, 1},
+                {-19, 63}, {24, 63}, {24, 111}, {-19, 111},
+                {-31, 75}, {-31, 25}, {-81, 25}, {-81, 75},
+                {31, -38}, {31, -88}, {-19, -88}, {-19, -38},
+                {95, -38}, {95, -88}, {45, -88}, {45, -38},
+                {-22, 2}, {-22, -30}, {-55, -30}, {-55, 2}
+        };
+        int[][] expected = {
+                {-19, 14, 25, 57},
+                {26, 76, 1, 51},
+                {-19, 24, 63, 111},
+                {-81, -31, 25, 75},
+                {-19, 31, -88, -38},
+                {45, 95, -88, -38},
+                {-55, -22, -30, 2}
+        };
+
+        for (int[] b : borders) storage.addBorderBlock(loc(world, b[0], b[1]));
+
+        for (int i = 0; i < centers.length; i++) {
+            BlockStorage.ZoneResolution result = storage.resolveZoneBounds(center(world, centers[i][0], centers[i][1]));
+            assertNull(result.warningKey, "map " + i + " should not fall back");
+            assertEquals(expected[i][0], result.bounds.minX, "map " + i + " minX");
+            assertEquals(expected[i][1], result.bounds.maxX, "map " + i + " maxX");
+            assertEquals(expected[i][2], result.bounds.minZ, "map " + i + " minZ");
+            assertEquals(expected[i][3], result.bounds.maxZ, "map " + i + " maxZ");
+        }
+    }
 }
+

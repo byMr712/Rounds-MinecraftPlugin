@@ -144,11 +144,15 @@ public class BlockStorage {
     }
 
     /**
-     * Resolves the round's playable area. If exactly four border blocks are associated with this
-     * map (one per quadrant, within +/-150 blocks of the center), their bounding rectangle wins.
-     * Otherwise the default square from the center block is used and a warning key is returned.
+     * Resolves the round's playable area from the border blocks around this map center.
+     *
+     * The maps on the original arena are packed close together, so a "nearest center" rule is
+     * unreliable: a corner of one arena can be closer to the center of a neighboring arena.
+     * Instead, all border blocks within the search radius are considered, and the smallest
+     * rectangle that contains this center with one corner per quadrant wins. Foreign corners
+     * only make a rectangle larger, so they never override the intended four corners.
      */
-    public ZoneResolution resolveZoneBounds(MapBlock current, List<MapBlock> allMaps) {
+    public ZoneResolution resolveZoneBounds(MapBlock current) {
         ZoneBounds fallback = defaultBounds(current);
         if (current.center.getWorld() == null) {
             return new ZoneResolution(fallback, null, 0);
@@ -156,16 +160,13 @@ public class BlockStorage {
 
         int cx = current.center.getBlockX();
         int cz = current.center.getBlockZ();
+        World world = current.center.getWorld();
 
         List<Location> candidates = new ArrayList<>();
         for (Location b : borderBlocks) {
-            if (b.getWorld() != current.center.getWorld()) continue;
+            if (b.getWorld() != world) continue;
             if (Math.abs(b.getBlockX() - cx) > BORDER_SEARCH_RADIUS) continue;
             if (Math.abs(b.getBlockZ() - cz) > BORDER_SEARCH_RADIUS) continue;
-            MapBlock owner = nearestMapCenter(b, allMaps);
-            if (owner == null || !owner.centerEquals(current.center)) {
-                continue; // another map owns this border block
-            }
             candidates.add(b);
         }
 
@@ -173,56 +174,85 @@ public class BlockStorage {
             // No border blocks configured for this map: the default square is the intended setup.
             return new ZoneResolution(fallback, null, 0);
         }
-        if (candidates.size() != 4) {
+        if (candidates.size() < 4) {
             return new ZoneResolution(fallback, "block.map-border-reason.not-four", candidates.size());
         }
 
-        boolean[] quadrants = new boolean[4];
-        int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE;
-        int minZ = Integer.MAX_VALUE, maxZ = Integer.MIN_VALUE;
-        for (Location b : candidates) {
-            int qx = b.getBlockX() <= cx ? 0 : 1;
-            int qz = b.getBlockZ() <= cz ? 0 : 1;
-            quadrants[qz * 2 + qx] = true;
-            minX = Math.min(minX, b.getBlockX());
-            maxX = Math.max(maxX, b.getBlockX());
-            minZ = Math.min(minZ, b.getBlockZ());
-            maxZ = Math.max(maxZ, b.getBlockZ());
-        }
-        if (!(quadrants[0] && quadrants[1] && quadrants[2] && quadrants[3])) {
-            return new ZoneResolution(fallback, "block.map-border-reason.quadrants", 0);
-        }
+        ZoneBounds best = null;
+        long bestArea = Long.MAX_VALUE;
+        long bestCenterOffset = Long.MAX_VALUE;
+        boolean sawTooSmall = false;
+        boolean sawTooLarge = false;
+        int n = candidates.size();
 
-        int width = maxX - minX + 1;
-        int depth = maxZ - minZ + 1;
-        if (width < MIN_ZONE_SIZE || depth < MIN_ZONE_SIZE) {
-            return new ZoneResolution(fallback, "block.map-border-reason.too-small", MIN_ZONE_SIZE);
-        }
-        // Bounds are inclusive, so a "300x300" setup with corners at +/-150 is 301 blocks wide.
-        if (width > MAX_ZONE_SIZE + 1 || depth > MAX_ZONE_SIZE + 1) {
-            return new ZoneResolution(fallback, "block.map-border-reason.too-large", MAX_ZONE_SIZE);
-        }
-        if (cx < minX || cx > maxX || cz < minZ || cz > maxZ) {
-            return new ZoneResolution(fallback, "block.map-border-reason.center-outside", 0);
-        }
+        for (int a = 0; a < n - 3; a++) {
+            Location pa = candidates.get(a);
+            for (int b = a + 1; b < n - 2; b++) {
+                Location pb = candidates.get(b);
+                for (int c = b + 1; c < n - 1; c++) {
+                    Location pc = candidates.get(c);
+                    for (int d = c + 1; d < n; d++) {
+                        Location pd = candidates.get(d);
 
-        return new ZoneResolution(new ZoneBounds(current.center.getWorld(), minX, maxX, minZ, maxZ), null, 0);
-    }
+                        int minX = Math.min(Math.min(pa.getBlockX(), pb.getBlockX()),
+                                Math.min(pc.getBlockX(), pd.getBlockX()));
+                        int maxX = Math.max(Math.max(pa.getBlockX(), pb.getBlockX()),
+                                Math.max(pc.getBlockX(), pd.getBlockX()));
+                        int minZ = Math.min(Math.min(pa.getBlockZ(), pb.getBlockZ()),
+                                Math.min(pc.getBlockZ(), pd.getBlockZ()));
+                        int maxZ = Math.max(Math.max(pa.getBlockZ(), pb.getBlockZ()),
+                                Math.max(pc.getBlockZ(), pd.getBlockZ()));
 
-    private static MapBlock nearestMapCenter(Location border, List<MapBlock> maps) {
-        MapBlock best = null;
-        double bestDist = Double.MAX_VALUE;
-        for (MapBlock mb : maps) {
-            if (mb.center.getWorld() != border.getWorld()) continue;
-            double dx = mb.center.getBlockX() - border.getBlockX();
-            double dz = mb.center.getBlockZ() - border.getBlockZ();
-            double dist = dx * dx + dz * dz;
-            if (dist < bestDist) {
-                bestDist = dist;
-                best = mb;
+                        int width = maxX - minX + 1;
+                        int depth = maxZ - minZ + 1;
+                        if (cx < minX || cx > maxX || cz < minZ || cz > maxZ) continue;
+
+                        int mask = quadrantMask(pa, cx, cz)
+                                | quadrantMask(pb, cx, cz)
+                                | quadrantMask(pc, cx, cz)
+                                | quadrantMask(pd, cx, cz);
+                        if (mask != 0b1111) continue;
+
+                        if (width < MIN_ZONE_SIZE || depth < MIN_ZONE_SIZE) {
+                            sawTooSmall = true;
+                            continue;
+                        }
+                        // Bounds are inclusive, so a "300x300" setup with corners at +/-150 is 301 wide.
+                        if (width > MAX_ZONE_SIZE + 1 || depth > MAX_ZONE_SIZE + 1) {
+                            sawTooLarge = true;
+                            continue;
+                        }
+
+                        long area = (long) width * depth;
+                        long ox = (long) minX + maxX - 2L * cx;
+                        long oz = (long) minZ + maxZ - 2L * cz;
+                        long centerOffset = ox * ox + oz * oz;
+                        if (area < bestArea || (area == bestArea && centerOffset < bestCenterOffset)) {
+                            bestArea = area;
+                            bestCenterOffset = centerOffset;
+                            best = new ZoneBounds(world, minX, maxX, minZ, maxZ);
+                        }
+                    }
+                }
             }
         }
-        return best;
+
+        if (best == null) {
+            if (sawTooSmall) {
+                return new ZoneResolution(fallback, "block.map-border-reason.too-small", MIN_ZONE_SIZE);
+            }
+            if (sawTooLarge) {
+                return new ZoneResolution(fallback, "block.map-border-reason.too-large", MAX_ZONE_SIZE);
+            }
+            return new ZoneResolution(fallback, "block.map-border-reason.quadrants", candidates.size());
+        }
+        return new ZoneResolution(best, null, 0);
+    }
+
+    private static int quadrantMask(Location corner, int cx, int cz) {
+        int qx = corner.getBlockX() <= cx ? 0 : 1;
+        int qz = corner.getBlockZ() <= cz ? 0 : 1;
+        return 1 << (qz * 2 + qx);
     }
 
     public static final class ZoneBounds {

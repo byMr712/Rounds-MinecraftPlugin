@@ -390,7 +390,7 @@ public final class DebugLog {
                         maxHp = p.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getBaseValue();
                     }
                 } catch (Exception ignored) {}
-                double dmg = 1.0 + (data == null ? 0.0 : data.dmg);
+                double dmg = data == null ? 1.0 : data.getEffectiveDamage(p);
                 double atkSpeed = 1.0 + (data == null ? 0.0 : data.atkSpeed);
                 int ammo = data == null ? 0 : (int) Math.round(data.ammo);
                 int maxAmmo = data == null ? 0 : (int) Math.round(data.maxAmmo);

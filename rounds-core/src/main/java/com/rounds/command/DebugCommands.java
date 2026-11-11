@@ -363,6 +363,9 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         com.rounds.hud.HudEngineCustomRealisation.refresh();
 
         if (gm.getState() == GameManager.GameState.CARDS) {
+            Location spawn = gm.getTeamSpawns().get(finalTeam);
+            if (spawn == null) spawn = gm.getCurrentZoneCenter();
+            if (spawn != null) player.teleport(spawn);
             gm.removeDeadPlayer(uuid);
             plugin.getCardManager().openCardSelection(player, finalTeam);
             player.setGameMode(GameMode.ADVENTURE);
@@ -1112,20 +1115,19 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage(B + "\u2560\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
 
             // Combat section
-            com.rounds.DefaultStats def = com.rounds.DefaultStats.get();
             String hpLabel = "HP";
             
             boxSection(sender, Messages.get("debug.combat-section"));
             boxKv(sender, Messages.get("debug.stat-hp"), String.format(Locale.US, "%.1f " + hpLabel, target.getHealth()));
-            boxKv(sender, Messages.get("debug.stat-dmg"), String.format(Locale.US, "%.1f", def.dmg + data.dmg));
-            boxKv(sender, Messages.get("debug.stat-atks"), formatSeconds((def.atks + data.atks) / 20.0));
+            boxKv(sender, Messages.get("debug.stat-dmg"), String.format(Locale.US, "%.1f", data.getEffectiveDamage(target)));
+            boxKv(sender, Messages.get("debug.stat-atks"), formatSeconds(GunItem.getAttackCooldownSeconds(data)));
             if (data.atkSpeed != 0.0) {
                 boxKv(sender, Messages.get("debug.stat-atk-speed"), String.format(Locale.US, "%+.0f%%", data.atkSpeed * 100.0));
             }
-            boxKv(sender, Messages.get("debug.stat-atkr"), String.format(Locale.US, "%.1f", def.atkr + data.atkr));
-            boxKv(sender, Messages.get("debug.stat-ammo"), String.format(Locale.US, "%.0f / %.0f", data.ammo, def.maxAmmo + data.maxAmmo));
-            boxKv(sender, Messages.get("debug.stat-bullets"), String.valueOf((int) (def.bullets + data.bullets)));
-            boxKv(sender, Messages.get("debug.stat-bullet-speed"), String.format(Locale.US, "%.1f", def.bulletSpeed + data.bulletSpeed));
+            boxKv(sender, Messages.get("debug.stat-atkr"), String.format(Locale.US, "%.1f", data.atkr));
+            boxKv(sender, Messages.get("debug.stat-ammo"), String.format(Locale.US, "%.0f / %.0f", data.ammo, data.maxAmmo));
+            boxKv(sender, Messages.get("debug.stat-bullets"), String.valueOf((int) Math.max(data.bullets, 1)));
+            boxKv(sender, Messages.get("debug.stat-bullet-speed"), String.format(Locale.US, "%.1f", data.bulletSpeed));
             boxKv(sender, Messages.get("debug.stat-reload-time"), formatSeconds(GunItem.getReloadDurationSeconds(data)));
             boxKv(sender, Messages.get("debug.stat-bounce"), String.format(Locale.US, "%.0f", data.bouncePl));
             boxKv(sender, Messages.get("debug.stat-homing"), String.format(Locale.US, "%.1f", data.homing));

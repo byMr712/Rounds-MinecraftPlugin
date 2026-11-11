@@ -2,6 +2,7 @@ package com.rounds.listener;
 
 import com.rounds.RoundsPlugin;
 import com.rounds.player.PlayerData;
+import com.rounds.util.Messages;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
@@ -10,6 +11,7 @@ import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -281,6 +283,27 @@ public class LegendaryEffects implements Listener {
                     player.setInvulnerable(false);
                 }
             }, 40L);
+            return;
+        }
+
+        // Check Phoenix revival save before death
+        if (data.phoenixUses > 0
+                && plugin.getGameManager().isParticipant(player.getUniqueId())
+                && (event.getFinalDamage() >= player.getHealth() || event.getDamage() >= player.getHealth())) {
+            data.phoenixUses--;
+            clearDecay(player.getUniqueId());
+            event.setCancelled(true);
+            player.setHealth(Math.max(player.getMaxHealth() / 2.0, 2.0));
+            player.setFallDistance(0);
+            player.setFireTicks(0);
+            player.setNoDamageTicks(40);
+            player.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                PotionEffectType.REGENERATION, 100, 2));
+            player.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                PotionEffectType.FIRE_RESISTANCE, 100, 0));
+            player.getWorld().playSound(player.getLocation(), Sound.ENTITY_BLAZE_SHOOT, SoundCategory.RECORDS, 0.7f, 1.0f);
+            player.getWorld().spawnParticle(Particle.FLAME, player.getLocation().add(0, 1, 0), 25, 0.5, 0.5, 0.5, 0.05);
+            player.sendMessage(ChatColor.RED + Messages.get("game.phoenix-revived"));
             return;
         }
 

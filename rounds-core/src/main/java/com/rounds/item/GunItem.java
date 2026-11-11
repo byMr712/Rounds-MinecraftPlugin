@@ -404,10 +404,6 @@ public class GunItem implements Listener {
             try { player.playHurtAnimation(0.0f); } catch (Throwable ignored) {}
             player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_HURT, SoundCategory.RECORDS, 0.7f, 1.2f);
         }
-        if (data.trusterLvl > 0 && player.isOnline() && player.isValid()) {
-            Vector recoil = direction.clone().multiply(-0.6 * data.trusterLvl);
-            player.setVelocity(player.getVelocity().add(recoil));
-        }
         if (!isReloading(uuid) && !reloadingPlayers.contains(uuid)) {
             player.sendActionBar(ChatColor.GRAY + Messages.get("gun.ammo-display", (int) data.ammo, (int) data.maxAmmo));
         }

@@ -471,6 +471,9 @@ public class BlockListener implements Listener {
                 gm.updateScoreboard();
 
                 if (gm.getState() == com.rounds.game.GameManager.GameState.CARDS) {
+                    Location spawn = gm.getTeamSpawns().get(team);
+                    if (spawn == null) spawn = gm.getCurrentZoneCenter();
+                    if (spawn != null) player.teleport(spawn);
                     gm.removeDeadPlayer(uuid);
                     plugin.getCardManager().openCardSelection(player, team);
                     player.setGameMode(GameMode.ADVENTURE);

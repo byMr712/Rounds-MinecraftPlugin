@@ -3,6 +3,7 @@ package com.rounds.player;
 import com.rounds.DefaultStats;
 import com.rounds.util.Messages;
 import org.bukkit.SoundCategory;
+import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -324,6 +325,24 @@ public class PlayerData {
         }
         if (empower > 0 && empowerCharge > 0) {
             base *= (1.0 + empower * 0.5);
+        }
+        return round2(Math.max(base, 0.5));
+    }
+
+    public double getEffectiveDamage(Player player) {
+        double base = getEffectiveDamage();
+        if (player != null && player.isValid()) {
+            if (bloodFurry > 0 && com.rounds.listener.LegendaryEffects.isRaging(player.getUniqueId())) {
+                base *= (1.0 + bloodFurry);
+            }
+            if (berserk > 0 && player.getHealth() > 0 && player.getMaxHealth() > 0) {
+                double ratio = player.getHealth() / player.getMaxHealth();
+                double missing = Math.max(0.0, Math.min((1.0 - ratio) / 0.8, 1.0));
+                base *= (1.0 + berserk * missing);
+            }
+        }
+        if (snowball > 0 && snowballWins > 0) {
+            base *= (1.0 + 0.1 * snowballWins * Math.max(snowball, 1.0));
         }
         return round2(Math.max(base, 0.5));
     }

@@ -217,6 +217,7 @@ public class GameManager implements Listener {
 
         resetWins();
         resetAllCards();
+        plugin.getPlayerDataManager().resetAllData();
         gameGeneration++;
         musicTick = 0;
         currentRound = 0;
@@ -237,7 +238,6 @@ public class GameManager implements Listener {
         showNameTagsInGame();
 
         plugin.getCardManager().clearPendingPicks();
-        plugin.getPlayerDataManager().clearActivePlayers();
         applyGameRules();
 
         for (Player p : readyPlayers) {
@@ -261,29 +261,7 @@ public class GameManager implements Listener {
     }
 
     private void startCountdown(List<Player> readyPlayers, Set<GameTeam> teamsWithPlayers) {
-        BlockStorage bs = plugin.getBlockListener().getBlockStorage();
-        List<Location> allSpawns = bs.getSpawnBlocks();
-
         state = GameState.WAITING;
-
-        Map<GameTeam, Location> spawnAssignment = new HashMap<>();
-        if (!allSpawns.isEmpty()) {
-            spawnAssignment = SpawnManager.assignSpawns(teamsWithPlayers, allSpawns, currentZoneCenter);
-        } else {
-            Location base = bs.getLobbyBlock();
-            if (base != null) {
-                Location ground = getGroundLocation(base);
-                Location red = ground.clone().add(-2.0, 0, 0);
-                Location blue = ground.clone().add(2.0, 0, 0);
-                SpawnManager.faceLocation(red, ground);
-                SpawnManager.faceLocation(blue, ground);
-                spawnAssignment.put(GameTeam.RED, red);
-                spawnAssignment.put(GameTeam.BLUE, blue);
-            }
-        }
-        teamSpawns.clear();
-        teamSpawns.putAll(spawnAssignment);
-
         applyDarkness();
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
@@ -375,19 +353,23 @@ public class GameManager implements Listener {
         }
 
         Map<GameTeam, Integer> startTeamMemberCount = new HashMap<>();
-        for (Player p : readyPlayers) {
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             if (team != null) {
+                ensureTeamSpawn(team);
                 Location baseSpawn = teamSpawns.get(team);
+                if (baseSpawn == null && currentZoneCenter != null) {
+                    baseSpawn = currentZoneCenter.clone().add(0.5, 1.0, 0.5);
+                }
                 if (baseSpawn == null) {
                     baseSpawn = getGroundLocation(p.getLocation());
                 }
-                if (baseSpawn.getWorld() != null) {
+                if (baseSpawn != null && baseSpawn.getWorld() != null) {
                     baseSpawn.getChunk().load();
                 }
                 int memberIdx = startTeamMemberCount.getOrDefault(team, 0);
                 startTeamMemberCount.put(team, memberIdx + 1);
-                Location spawn = getTeammateSpawnLocation(baseSpawn, memberIdx);
+                Location spawn = (baseSpawn != null) ? getTeammateSpawnLocation(baseSpawn, memberIdx) : p.getLocation();
                 p.teleport(spawn);
                 com.rounds.bot.FakeBot bot = (plugin.getBotManager() != null) ? plugin.getBotManager().getBot(p.getName()) : null;
                 if (bot != null) {
@@ -1235,7 +1217,11 @@ public class GameManager implements Listener {
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             GameTeam team = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
             if (team != null) {
+                ensureTeamSpawn(team);
                 Location baseSpawn = teamSpawns.get(team);
+                if (baseSpawn == null && currentZoneCenter != null) {
+                    baseSpawn = currentZoneCenter.clone().add(0.5, 1.0, 0.5);
+                }
                 if (baseSpawn == null) {
                     baseSpawn = getGroundLocation(p.getLocation());
                 }
@@ -1364,11 +1350,7 @@ public class GameManager implements Listener {
     private void pickRandomZoneAndAssignSpawns() {
         BlockStorage bs = plugin.getBlockListener().getBlockStorage();
         List<BlockStorage.MapBlock> zones = bs.getMapBlocks();
-        Set<GameTeam> teams = new HashSet<>();
-        for (Player p : plugin.getServer().getOnlinePlayers()) {
-            GameTeam t = plugin.getTeamManager().getPlayerTeam(p.getUniqueId());
-            if (t != null) teams.add(t);
-        }
+        Set<GameTeam> teams = getAvailableTeams();
         teamSpawns.clear();
 
         if (!zones.isEmpty()) {
@@ -1800,13 +1782,13 @@ public class GameManager implements Listener {
             saveState();
             removeScoreboard();
         RoundsEntities.clearAllDamageVignettes();
+            plugin.getCardManager().resetAllCards();
+            plugin.getPlayerDataManager().resetAllData();
             if (plugin.getBotManager() != null) {
                 plugin.getBotManager().despawnAll();
             }
             plugin.getTeamManager().clearAll();
-            plugin.getPlayerDataManager().clearActivePlayers();
             resetAllNameColors();
-            plugin.getCardManager().resetAllCards();
             GunItem.resetRoundState();
         for (Player p : Bukkit.getOnlinePlayers()) {
             PlayerDataManager.GunCooldowns.recordShot(p.getUniqueId());
@@ -2815,22 +2797,12 @@ public class GameManager implements Listener {
     }
 
     public void stopGame() {
+        plugin.getCardManager().clearPendingPicks();
+        plugin.getCardManager().resetAllCards();
+        plugin.getPlayerDataManager().resetAllData();
         if (plugin.getBotManager() != null) {
             plugin.getBotManager().despawnAll();
         }
-        if (state == GameState.WAITING) return;
-        if (com.rounds.stats.MatchStatsManager.hasActiveMatchData()) {
-            for (Player p : plugin.getServer().getOnlinePlayers()) {
-            com.rounds.stats.MatchStatsManager.registerParticipant(p.getUniqueId(), p.getName());
-        }
-        com.rounds.stats.MatchStatsManager.onGameEnd(plugin.getPlayerDataManager());
-        }
-        gameActive = false;
-        gameGeneration++;
-        stopGameTick();
-        cancelScheduledTasks();
-        plugin.getCardManager().clearPendingPicks();
-        plugin.getCardManager().resetAllCards();
         cleanupRoundCombatState();
         restoreGameRules();
         removeDarkness();
@@ -2961,10 +2933,18 @@ public class GameManager implements Listener {
             if (bs != null && currentZoneBounds != null) {
                 List<Location> spawns = bs.getSpawnBlocksInZone(currentZoneBounds);
                 if (!spawns.isEmpty()) {
-                    Set<Location> used = new HashSet<>(teamSpawns.values());
                     Location best = null;
                     for (Location s : spawns) {
-                        if (!used.contains(s)) {
+                        boolean used = false;
+                        for (Location u : teamSpawns.values()) {
+                            if (u != null && u.getBlockX() == s.getBlockX()
+                                    && u.getBlockY() == s.getBlockY()
+                                    && u.getBlockZ() == s.getBlockZ()) {
+                                used = true;
+                                break;
+                            }
+                        }
+                        if (!used) {
                             best = s;
                             break;
                         }
@@ -2976,7 +2956,8 @@ public class GameManager implements Listener {
                     return;
                 }
             }
-            teamSpawns.put(team, currentZoneCenter.clone());
+            Location fallback = currentZoneCenter.clone().add(0.5, 1.0, 0.5);
+            teamSpawns.put(team, fallback);
         }
     }
 
@@ -3452,7 +3433,7 @@ public class GameManager implements Listener {
     }
 
     public boolean isScoreboardActive() {
-        return shouldShowBuiltinScoreboard() && (isGameStarted() || isGameActive() || forceScoreboardPreview);
+        return shouldShowBuiltinScoreboard();
     }
 
     public void setForceScoreboardPreview(boolean force) {
@@ -3518,8 +3499,9 @@ public class GameManager implements Listener {
             lines.add("\u00A77\u00A7m════════");
 
             PlayerData data = plugin.getPlayerDataManager().getData(player.getUniqueId());
-            String statHp = (data != null) ? formatStat(data.hp) : "100";
-            String statDmg = (data != null) ? formatStat(data.dmg) : "1";
+            String statHp = (player.isValid() && player.getHealth() > 0)
+                    ? formatStat(player.getHealth()) : (data != null ? formatStat(data.hp) : "100");
+            String statDmg = (data != null) ? formatStat(data.getEffectiveDamage(player)) : "1";
             String statCards = (data != null && data.getOwnedCards() != null)
                     ? String.valueOf(data.getOwnedCards().size()) : "0";
             String statBullets = (data != null) ? formatStat(data.bullets) : "1";

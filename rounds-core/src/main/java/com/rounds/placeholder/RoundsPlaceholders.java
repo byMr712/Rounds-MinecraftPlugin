@@ -261,7 +261,7 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
             PlayerDataManager pdm = plugin.getPlayerDataManager();
             PlayerData data = pdm.getData(uuid);
             if (data == null) return "0";
-            double v = getStatValue(data, params.substring(5));
+            double v = getStatValue(data, params.substring(5), player);
             if (v == Math.floor(v) && !Double.isInfinite(v)) {
                 return String.valueOf((long) v);
             }
@@ -271,10 +271,10 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
         return null;
     }
 
-    private static double getStatValue(PlayerData d, String stat) {
+    private static double getStatValue(PlayerData d, String stat, OfflinePlayer player) {
         return switch (stat) {
             case "hp"             -> d.hp;
-            case "dmg"            -> d.dmg;
+            case "dmg"            -> (player instanceof Player online) ? d.getEffectiveDamage(online) : d.getEffectiveDamage();
             case "atk_speed"      -> d.atkSpeed;
             case "atkr"           -> d.atkr;
             case "ammo"           -> d.ammo;

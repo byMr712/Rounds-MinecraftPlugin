@@ -114,6 +114,23 @@ public class PlayerDataManager implements Listener {
         playerStore = null;
     }
 
+    public void resetAllData() {
+        for (PlayerData d : cache.values()) {
+            if (d != null) {
+                d.resetAllCards();
+                d.resetStats();
+            }
+        }
+        cache.clear();
+        clearActivePlayers();
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            clearPDC(p);
+        }
+        YamlConfiguration yml = store();
+        yml.set("players", null);
+        flushStore();
+    }
+
     // ==================== Full player data save/load (per-UUID) ====================
 
     public void savePlayerFullData(UUID uuid, GameTeam team, List<Integer> pendingCardIds) {

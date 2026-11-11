@@ -830,6 +830,9 @@ public class RoundsEntities implements Listener {
     private static void safeKnockback(LivingEntity target, Vector direction, double strength) {
         if (!isFinite(direction) || direction.lengthSquared() <= 0.001) return;
         Vector kb = direction.normalize().multiply(strength);
+        if (target.isOnGround() && kb.getY() < 0.2) {
+            kb.setY(0.25);
+        }
         Vector newVel = target.getVelocity().add(kb);
         if (isFinite(newVel)) {
             target.setVelocity(newVel);

@@ -133,7 +133,7 @@ repositories {
 
 dependencies {
     // Подключение API плагина Rounds в режиме compileOnly (предоставляется сервером)
-    compileOnly("com.rounds:rounds-api:1.1.0")
+    compileOnly("com.rounds:rounds-api:1.1.1")
     // Подключение Paper API
     compileOnly("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
 }

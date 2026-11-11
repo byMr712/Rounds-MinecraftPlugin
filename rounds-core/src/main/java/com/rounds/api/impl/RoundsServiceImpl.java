@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RoundsServiceImpl implements RoundsService {
 
     private final RoundsPlugin plugin;
-    private final ApiVersion version = new ApiVersion(1, 1, 0);
+    private final ApiVersion version = new ApiVersion(1, 1, 1);
     private final IdMappingRegistry idMappingRegistry;
     private final Map<NamespacedKey, CustomCard> registeredCardsByKey = new ConcurrentHashMap<>();
     private final List<CustomCard> registeredCardsOrder = Collections.synchronizedList(new ArrayList<>());

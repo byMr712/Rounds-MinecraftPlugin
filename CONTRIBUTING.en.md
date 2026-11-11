@@ -133,7 +133,7 @@ repositories {
 
 dependencies {
     // Include Rounds API in compileOnly scope (provided by the server at runtime)
-    compileOnly("com.rounds:rounds-api:1.1.0")
+    compileOnly("com.rounds:rounds-api:1.1.1")
     // Include Paper API
     compileOnly("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
 }

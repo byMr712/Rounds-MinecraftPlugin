@@ -18,10 +18,10 @@ variations:
       reload: 1
   - rarity: COMMON
     art: card9-common
-    values: ["50%", "75%", "5%"]
+    values: ["50%", "35%", "5%"]
     effects:
       damage: 0.5
-      attack_speed: -0.75
+      attack_speed: -0.35
       reload: 0.5
   - rarity: UNCOMMON
     art: card9-uncommon

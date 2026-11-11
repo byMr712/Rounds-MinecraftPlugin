@@ -49,7 +49,8 @@ public class PlayerDataManager implements Listener {
             "barage", "big_bullet", "grow", "truster_lvl", "jump_height", "dark",
             "card_select_1", "card_select_2", "card_select_3",
             "card_select_4", "card_select_5", "card_uses", "rare_card",
-            "player_use", "atks_reload", "pristine_perseverance", "block_cd", "block_cd_mult"
+            "player_use", "atks_reload", "pristine_perseverance", "block_cd", "block_cd_mult",
+            "hp_cost", "overheat", "blood_cartridge", "blood_cartridge_hp_cost", "blood_cartridge_dmg_bonus"
         };
         for (String s : stats) {
             STAT_KEYS.put(s, new NamespacedKey("rounds", s));
@@ -185,6 +186,11 @@ public class PlayerDataManager implements Listener {
         yml.set(path + ".stats.pristine-perseverance", data.pristinePerseverance);
         yml.set(path + ".stats.block-cd", data.blockCd);
         yml.set(path + ".stats.block-cd-mult", data.blockCdMult);
+        yml.set(path + ".stats.hp-cost", data.hpCost);
+        yml.set(path + ".stats.overheat", data.overheat);
+        yml.set(path + ".stats.blood-cartridge", data.bloodCartridge);
+        yml.set(path + ".stats.blood-cartridge-hp-cost", data.bloodCartridgeHpCost);
+        yml.set(path + ".stats.blood-cartridge-dmg-bonus", data.bloodCartridgeDmgBonus);
 
         yml.set(path + ".cards", new ArrayList<>(data.getOwnedCards()));
         try {
@@ -357,6 +363,11 @@ public class PlayerDataManager implements Listener {
         yml.set(path + ".stats.pristine-perseverance", data.pristinePerseverance);
         yml.set(path + ".stats.block-cd", data.blockCd);
         yml.set(path + ".stats.block-cd-mult", data.blockCdMult);
+        yml.set(path + ".stats.hp-cost", data.hpCost);
+        yml.set(path + ".stats.overheat", data.overheat);
+        yml.set(path + ".stats.blood-cartridge", data.bloodCartridge);
+        yml.set(path + ".stats.blood-cartridge-hp-cost", data.bloodCartridgeHpCost);
+        yml.set(path + ".stats.blood-cartridge-dmg-bonus", data.bloodCartridgeDmgBonus);
 
         yml.set(path + ".cards", new ArrayList<>(data.getOwnedCards()));
         try {
@@ -850,6 +861,11 @@ public class PlayerDataManager implements Listener {
         setStat(pdc, "atks_reload", data.atksReload);
         setStat(pdc, "block_cd", data.blockCd);
         setStat(pdc, "block_cd_mult", data.blockCdMult);
+        setStat(pdc, "hp_cost", data.hpCost);
+        setStat(pdc, "overheat", data.overheat);
+        setStat(pdc, "blood_cartridge", data.bloodCartridge);
+        setStat(pdc, "blood_cartridge_hp_cost", data.bloodCartridgeHpCost);
+        setStat(pdc, "blood_cartridge_dmg_bonus", data.bloodCartridgeDmgBonus);
 
         for (int id : getRegisteredCardIds()) {
             NamespacedKey cardKey = new NamespacedKey("rounds", "card_" + id);
@@ -913,6 +929,11 @@ public class PlayerDataManager implements Listener {
         data.atksReload = getStat(pdc, "atks_reload", 0);
         data.blockCd = getStat(pdc, "block_cd", 0);
         data.blockCdMult = getStat(pdc, "block_cd_mult", 1.0);
+        data.hpCost = getStat(pdc, "hp_cost", 0);
+        data.overheat = getStat(pdc, "overheat", 0);
+        data.bloodCartridge = getStat(pdc, "blood_cartridge", 0);
+        data.bloodCartridgeHpCost = getStat(pdc, "blood_cartridge_hp_cost", 0);
+        data.bloodCartridgeDmgBonus = getStat(pdc, "blood_cartridge_dmg_bonus", 0);
 
         for (int id : getRegisteredCardIds()) {
             NamespacedKey cardKey = new NamespacedKey("rounds", "card_" + id);

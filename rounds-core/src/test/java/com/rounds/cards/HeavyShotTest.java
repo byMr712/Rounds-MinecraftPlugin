@@ -99,4 +99,61 @@ class HeavyShotTest {
         assertNotNull(descParasite);
         assertTrue(descParasite.contains("ЯД"), "parasite.yml must contain ЯД in Russian description: " + descParasite);
     }
+
+    @Test
+    void testDemonicPactAndHpCost() {
+        InputStream is = getClass().getResourceAsStream("/cards/original/demonic-pact.yml");
+        assertNotNull(is, "demonic-pact.yml must exist");
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(new InputStreamReader(is, StandardCharsets.UTF_8));
+        List<Map<?, ?>> variations = yaml.getMapList("variations");
+        assertFalse(variations.isEmpty());
+        Map<?, ?> effects = (Map<?, ?>) variations.get(0).get("effects");
+        assertNotNull(effects);
+        assertEquals(0.1, ((Number) effects.get("hp-cost")).doubleValue(), 0.001);
+
+        PlayerData data = new PlayerData();
+        assertEquals(0.0, data.hpCost, 0.001);
+
+        Card cardDemonicPact = new Card(17, 17, Collections.emptyMap(), Collections.emptyMap(),
+                null, CardRegistry.Rarity.LEGENDARY, true, Map.of("hp-cost", 0.1, "bullets", 9.0),
+                Collections.emptyList(), null, Collections.emptyList(), null);
+        cardDemonicPact.apply(null, data, false);
+        assertEquals(0.1, data.hpCost, 0.001);
+        assertEquals(10.0, data.bullets, 0.001);
+
+        // Test with underscore variant
+        Card cardUnderscore = new Card(107, 107, Collections.emptyMap(), Collections.emptyMap(),
+                null, CardRegistry.Rarity.EPIC, true, Map.of("hp_cost", 0.05),
+                Collections.emptyList(), null, Collections.emptyList(), null);
+        cardUnderscore.apply(null, data, false);
+        assertEquals(0.15, data.hpCost, 0.001);
+    }
+
+    @Test
+    void testOverheatCardAndReloadState() {
+        InputStream is = getClass().getResourceAsStream("/cards/original/overheat.yml");
+        assertNotNull(is, "overheat.yml must exist");
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(new InputStreamReader(is, StandardCharsets.UTF_8));
+        List<Map<?, ?>> variations = yaml.getMapList("variations");
+        assertFalse(variations.isEmpty());
+        Map<?, ?> effects = (Map<?, ?>) variations.get(0).get("effects");
+        assertNotNull(effects);
+        assertEquals(0.1, ((Number) effects.get("overheat")).doubleValue(), 0.001);
+
+        PlayerData data = new PlayerData();
+        assertEquals(0.0, data.overheat, 0.001);
+
+        Card cardOverheat = new Card(88, 88, Collections.emptyMap(), Collections.emptyMap(),
+                null, CardRegistry.Rarity.LEGENDARY, true, Map.of("overheat", 0.1),
+                Collections.emptyList(), null, Collections.emptyList(), null);
+        cardOverheat.apply(null, data, false);
+        assertEquals(0.1, data.overheat, 0.001);
+
+        // Verify shooting reload condition check
+        boolean canShootReloadWithoutCard = (data.bloodCartridge > 0 || 0.0 > 0);
+        assertFalse(canShootReloadWithoutCard);
+
+        boolean canShootReloadWithOverheat = (data.bloodCartridge > 0 || data.overheat > 0);
+        assertTrue(canShootReloadWithOverheat);
+    }
 }

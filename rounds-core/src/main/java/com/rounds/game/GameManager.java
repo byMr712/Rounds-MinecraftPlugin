@@ -1986,6 +1986,14 @@ public class GameManager implements Listener {
         }
     }
 
+    @EventHandler
+    public void onEntityRegainHealth(org.bukkit.event.entity.EntityRegainHealthEvent event) {
+        if (!isGameStarted()) return;
+        if (event.getRegainReason() == org.bukkit.event.entity.EntityRegainHealthEvent.RegainReason.SATIATED) {
+            event.setCancelled(true);
+        }
+    }
+
     @EventHandler(priority = EventPriority.LOWEST)
     public void onEntityDamage(EntityDamageEvent event) {
         if (state == GameState.CARDS && event.getEntity() instanceof Player player) {
@@ -2789,6 +2797,7 @@ public class GameManager implements Listener {
                 try { world.setClearWeatherDuration(6000); } catch (IllegalArgumentException ignored) {}
             }
             if (config.isGrDisableMobSpawning()) saveAndSet(world, GameRule.DO_MOB_SPAWNING, false);
+            saveAndSet(world, GameRule.NATURAL_REGENERATION, false);
         }
     }
 

@@ -422,7 +422,7 @@ variations:
 | `snowball` | Snowball: stacking bonuses for consecutive wins |
 | `skyfall` | Skyfall: AoE slam upon high landing (no fall damage) |
 | `berserk` | Berserk: stats scale inversely with health |
-| `overheat` | Overheat: shoot past empty clip at the cost of health |
+| `overheat` | Overheat: shoot during reload at the cost of health (-10% HP per shot) |
 | `second-wind` | Second Wind: survive lethal blow at 1 HP with invulnerability |
 | `spikes` | Spikes: return damage to attacker |
 | `bullet-rain` | Bullet Rain: +1 max ammo at the start of every round |

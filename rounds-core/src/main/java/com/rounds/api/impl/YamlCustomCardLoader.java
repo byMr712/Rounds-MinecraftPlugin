@@ -152,6 +152,15 @@ public class YamlCustomCardLoader {
                 if (finalEffects.containsKey("reload-speed")) {
                     data.atksReload = Math.max(0, data.atksReload * (1.0 - finalEffects.get("reload-speed")));
                 }
+                if (finalEffects.containsKey("hp-cost")) {
+                    data.hpCost = PlayerData.round2(Math.max(data.hpCost + finalEffects.get("hp-cost"), 0));
+                }
+                if (finalEffects.containsKey("hp_cost")) {
+                    data.hpCost = PlayerData.round2(Math.max(data.hpCost + finalEffects.get("hp_cost"), 0));
+                }
+                if (finalEffects.containsKey("overheat")) {
+                    data.overheat = PlayerData.round2(Math.max(data.overheat + finalEffects.get("overheat"), 0));
+                }
             }
 
             @Override

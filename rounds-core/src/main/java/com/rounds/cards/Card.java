@@ -122,7 +122,7 @@ public class Card {
                 break;
             case "bounce": data.bouncePl = PlayerData.round2(Math.max(data.bouncePl + value, 0)); break;
             case "hp": data.hp = PlayerData.round2(Math.max(data.hp * (1.0 + value), 2)); break;
-            case "hp-cost": data.hpCost = PlayerData.round2(Math.max(data.hpCost + value, 0)); break;
+            case "hp-cost", "hp_cost": data.hpCost = PlayerData.round2(Math.max(data.hpCost + value, 0)); break;
             case "cold": data.cold = PlayerData.round2(Math.max(data.cold + value, 0)); break;
             case "cold-aura", "cold_aura": data.coldAura = PlayerData.round2(Math.max(data.coldAura + value, 0)); break;
             case "cold-level", "cold-lvl", "cold_level", "cold_lvl": data.coldLvl = PlayerData.round2(Math.max(data.coldLvl + value, 0)); break;

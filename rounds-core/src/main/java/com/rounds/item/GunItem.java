@@ -199,7 +199,8 @@ public class GunItem implements Listener {
                 double effectiveAtkSpeed = Math.max(1.0 + pData.atkSpeed, 0.2);
                 double cooldownTicks = Math.max(pData.atks / effectiveAtkSpeed * (1.0 + pData.atksReload * 0.1), 1);
                 boolean isReload = isReloading(player.getUniqueId()) || reloadingPlayers.contains(player.getUniqueId());
-                if (!GunCooldowns.canShoot(player.getUniqueId(), cooldownTicks) || (isReload && pData.bloodCartridge <= 0)) {
+                boolean canShootDuringReload = (pData.bloodCartridge > 0 || pData.overheat > 0);
+                if (!GunCooldowns.canShoot(player.getUniqueId(), cooldownTicks) || (isReload && !canShootDuringReload)) {
                     if (!player.hasCooldown(item.getType())) {
                         long remMs = GunCooldowns.getRemainingMs(player.getUniqueId(), cooldownTicks);
                         int remTicks = (int) Math.ceil(remMs / 50.0);
@@ -235,7 +236,8 @@ public class GunItem implements Listener {
         // card give half of its advertised percentage on a 20-tick base cooldown.
         double cooldownTicks = Math.max(data.atks / effectiveAtkSpeed * (1.0 + data.atksReload * 0.1), 1);
         boolean isReload = isReloading(uuid) || reloadingPlayers.contains(uuid);
-        if (!GunCooldowns.canShoot(uuid, cooldownTicks) || (isReload && data.bloodCartridge <= 0)) {
+        boolean canShootDuringReload = (data.bloodCartridge > 0 || data.overheat > 0);
+        if (!GunCooldowns.canShoot(uuid, cooldownTicks) || (isReload && !canShootDuringReload)) {
             event.setCancelled(true);
             if (!player.hasCooldown(item.getType())) {
                 long remMs = GunCooldowns.getRemainingMs(uuid, cooldownTicks);
@@ -262,7 +264,8 @@ public class GunItem implements Listener {
         }
 
         boolean isReload = isReloading(uuid) || reloadingPlayers.contains(uuid);
-        if (isReload && data.bloodCartridge <= 0) {
+        boolean canShootDuringReload = (data.bloodCartridge > 0 || data.overheat > 0);
+        if (isReload && !canShootDuringReload) {
             return;
         }
 
@@ -393,16 +396,32 @@ public class GunItem implements Listener {
         if (data.hpCost > 0 && player.isOnline() && player.isValid()) {
             player.setNoDamageTicks(0);
             double cost = player.getMaxHealth() * data.hpCost;
-            player.setHealth(Math.max(1.0, player.getHealth() - cost));
-            try { player.playHurtAnimation(0.0f); } catch (Throwable ignored) {}
-            player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_HURT, SoundCategory.RECORDS, 0.7f, 1.2f);
+            double newHp = player.getHealth() - cost;
+            if (newHp > 0.5) {
+                player.setHealth(newHp);
+                try { player.playHurtAnimation(0.0f); } catch (Throwable ignored) {}
+                RoundsEntities.showDamageVignette(player);
+                player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_HURT, SoundCategory.RECORDS, 0.7f, 1.2f);
+                player.getWorld().spawnParticle(Particle.CRIT, player.getEyeLocation(), 6, 0.2, 0.2, 0.2, 0.05);
+            } else {
+                player.setNoDamageTicks(0);
+                player.damage(cost);
+            }
         }
         if (overheated && player.isOnline() && player.isValid()) {
             player.setNoDamageTicks(0);
             double cost = player.getMaxHealth() * data.overheat;
-            player.setHealth(Math.max(1.0, player.getHealth() - cost));
-            try { player.playHurtAnimation(0.0f); } catch (Throwable ignored) {}
-            player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_HURT, SoundCategory.RECORDS, 0.7f, 1.2f);
+            double newHp = player.getHealth() - cost;
+            if (newHp > 0.5) {
+                player.setHealth(newHp);
+                try { player.playHurtAnimation(0.0f); } catch (Throwable ignored) {}
+                RoundsEntities.showDamageVignette(player);
+                player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_HURT, SoundCategory.RECORDS, 0.7f, 1.2f);
+                player.getWorld().spawnParticle(Particle.LAVA, player.getEyeLocation(), 4, 0.2, 0.2, 0.2, 0.05);
+            } else {
+                player.setNoDamageTicks(0);
+                player.damage(cost);
+            }
         }
         if (!isReloading(uuid) && !reloadingPlayers.contains(uuid)) {
             player.sendActionBar(ChatColor.GRAY + Messages.get("gun.ammo-display", (int) data.ammo, (int) data.maxAmmo));

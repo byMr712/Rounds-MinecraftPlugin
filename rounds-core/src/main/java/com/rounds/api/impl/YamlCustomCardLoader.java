@@ -137,14 +137,14 @@ public class YamlCustomCardLoader {
                 }
                 if (finalEffects.containsKey("ammo")) {
                     double addAmmo = finalEffects.get("ammo");
-                    data.ammo = Math.max(data.ammo + addAmmo, 1);
                     data.maxAmmo = Math.max(data.maxAmmo + addAmmo, 1);
+                    data.ammo = Math.max(Math.min(data.ammo + addAmmo, data.maxAmmo), 1);
                 }
                 if (finalEffects.containsKey("hp")) {
                     data.hp = PlayerData.round2(Math.max(data.hp + finalEffects.get("hp"), 2));
                 }
                 if (finalEffects.containsKey("bullet-speed")) {
-                    data.bulletSpeed = PlayerData.round2(Math.max(data.bulletSpeed + finalEffects.get("bullet-speed"), 0.5));
+                    data.bulletSpeed = PlayerData.round2(Math.max(data.bulletSpeed + finalEffects.get("bullet-speed"), com.rounds.DefaultStats.get().bulletSpeed * 0.3));
                 }
                 if (finalEffects.containsKey("attack-speed")) {
                     data.atkSpeed = PlayerData.round2(Math.max(data.atkSpeed + finalEffects.get("attack-speed"), -0.5));

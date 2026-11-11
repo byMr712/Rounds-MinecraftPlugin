@@ -56,7 +56,7 @@ game:
     # Delay in seconds after round start before the first death event
     delay-seconds: 240
     # Interval in seconds between subsequent warning / death events
-    interval-seconds: 60
+    interval-seconds: 30
     # Boss bar countdown at the top of the screen
     bossbar: true
 

@@ -3,7 +3,7 @@ name:
   ru: "&aЯд"
   en: "&aPoison"
 description:
-  ru: "Урон во времени 3с, +70% урона, +10% перезарядки, -1 пуля"
+  ru: "ЯД 3с, +70% урона, +10% перезарядки, -1 пуля"
   en: "DOT over 3s, +70% DMG, +10% Reload time, -1 Bullet"
 material: FERMENTED_SPIDER_EYE
 enabled: true

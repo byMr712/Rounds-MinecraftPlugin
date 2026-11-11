@@ -114,6 +114,10 @@ public class RoundsPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (com.rounds.debug.DebugSession.active) {
+            com.rounds.debug.DebugLog.flushFinal("PLUGIN-DISABLE: server stopping");
+            com.rounds.debug.DebugSession.clear();
+        }
         com.rounds.metrics.RoundsMetrics.shutdown();
         if (botManager != null) {
             botManager.despawnAll();

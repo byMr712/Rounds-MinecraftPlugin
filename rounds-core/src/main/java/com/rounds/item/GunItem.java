@@ -307,7 +307,7 @@ public class GunItem implements Listener {
         int bulletCount = (int) Math.max(data.bullets, 1);
         Vector direction = player.getLocation().getDirection();
         final Location bulletOrigin = player.getEyeLocation();
-        double speed = 3.0 * Math.max(data.bulletSpeed, 0.5);
+        double speed = 3.0 * Math.max(data.bulletSpeed, com.rounds.DefaultStats.get().bulletSpeed * 0.3);
         Vector baseVel = direction.clone().normalize().multiply(speed);
 
         double dmgMult = bloodShot ? (1.0 + data.bloodCartridgeDmgBonus) : 1.0;
@@ -1177,6 +1177,7 @@ public class GunItem implements Listener {
                 bar.append(ChatColor.RED + "] ");
 
                 if (currentTick >= totalTicks) {
+                    data.maxAmmo = Math.max(data.maxAmmo, 1);
                     data.ammo = data.maxAmmo;
                     data.executeTriggers(com.rounds.cards.CardTrigger.ON_RELOAD, player, null, 1.0);
                     reloadingPlayers.remove(uuid);

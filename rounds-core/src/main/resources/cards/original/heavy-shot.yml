@@ -1,0 +1,35 @@
+id: 128
+name:
+  ru: "&fТяжёлый выстрел"
+  en: "&fHeavy Shot"
+description:
+  ru: "-{0} скорости пули, +{1} скорости атаки"
+  en: "-{0} Bullet speed, +{1} ATKSPD"
+material: ANVIL
+enabled: true
+art: card56.png
+variations:
+  - rarity: COMMON
+    art: card128-common
+    values: ["10%", "20%"]
+    effects:
+      bullet_speed: -0.1
+      attack_speed: 0.2
+  - rarity: UNCOMMON
+    art: card128-uncommon
+    values: ["30%", "20%"]
+    effects:
+      bullet_speed: -0.3
+      attack_speed: 0.2
+  - rarity: RARE
+    art: card128-rare
+    values: ["50%", "20%"]
+    effects:
+      bullet_speed: -0.5
+      attack_speed: 0.2
+  - rarity: EPIC
+    art: card128-epic
+    values: ["70%", "20%"]
+    effects:
+      bullet_speed: -0.7
+      attack_speed: 0.2

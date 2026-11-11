@@ -131,7 +131,7 @@ public class GameManager implements Listener {
     private long cardDraftStartTime = 0L;
     private long cardDraftDurationMs = 30000L;
     private static final long AUTO_DEATH_DELAY_MS = 240_000L;
-    private static final long AUTO_DEATH_INTERVAL_MS = 60_000L;
+    private static final long AUTO_DEATH_INTERVAL_MS = 30_000L;
 
     public GameManager(RoundsPlugin plugin) {
         this.plugin = plugin;
@@ -1249,6 +1249,7 @@ public class GameManager implements Listener {
                 }
                 PlayerData roundData = plugin.getPlayerDataManager().getData(p);
                 if (roundData != null) {
+                    roundData.maxAmmo = Math.max(roundData.maxAmmo, 1);
                     roundData.ammo = roundData.maxAmmo;
                     applySnowballSpeed(p, roundData);
                 }
@@ -1491,7 +1492,7 @@ public class GameManager implements Listener {
                 com.rounds.debug.DebugLog.flushRoundEnd(cur);
                 com.rounds.debug.DebugLog.log("CLEAN", "Beginning cleanup for R#" + cur + " ...");
             }
-            if (com.rounds.debug.DebugSession.active && com.rounds.debug.DebugSession.stopAt != -1 && com.rounds.debug.DebugSession.stopAt == cur) {
+            if (com.rounds.debug.DebugSession.active && com.rounds.debug.DebugSession.stopAt != -1 && cur >= com.rounds.debug.DebugSession.stopAt) {
                 com.rounds.debug.DebugLog.flushFinal("AUTO-STOP at end of R#" + cur);
                 com.rounds.debug.DebugSession.clear();
                 // will continue cleanup but debug stopped
@@ -1727,6 +1728,12 @@ public class GameManager implements Listener {
         com.rounds.hud.HudEngineCustomRealisation.hideAll();
         com.rounds.hud.HudEngineCustomRealisation.refresh();
         cleanupRoundCombatState();
+
+        if (com.rounds.debug.DebugSession.active) {
+            com.rounds.debug.DebugLog.log("GAME", "MATCH END winner=" + (winner == null ? "NONE" : winner.name()));
+            com.rounds.debug.DebugLog.flushFinal("GAME-END: match concluded");
+            com.rounds.debug.DebugSession.clear();
+        }
 
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             com.rounds.stats.MatchStatsManager.registerParticipant(p.getUniqueId(), p.getName());
@@ -2797,6 +2804,10 @@ public class GameManager implements Listener {
     }
 
     public void stopGame() {
+        if (com.rounds.debug.DebugSession.active) {
+            com.rounds.debug.DebugLog.flushFinal("GAME-STOP: game stopped by command");
+            com.rounds.debug.DebugSession.clear();
+        }
         plugin.getCardManager().clearPendingPicks();
         plugin.getCardManager().resetAllCards();
         plugin.getPlayerDataManager().resetAllData();

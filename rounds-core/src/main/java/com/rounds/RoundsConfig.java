@@ -141,12 +141,12 @@ public final class RoundsConfig {
             roundTimeSeconds = c.getInt("game.round-time-seconds", 180);
         } else {
             int delay = c.getInt("game.auto-death.delay-seconds", 240);
-            int interval = c.getInt("game.auto-death.interval-seconds", 60);
+            int interval = c.getInt("game.auto-death.interval-seconds", 30);
             roundTimeSeconds = Math.max(10, delay > interval ? (delay - interval) : delay);
         }
         autoDeathEnabled = c.getBoolean("game.auto-death.enabled", true);
         autoDeathDelaySeconds = c.getInt("game.auto-death.delay-seconds", 240);
-        autoDeathIntervalSeconds = c.getInt("game.auto-death.interval-seconds", 60);
+        autoDeathIntervalSeconds = c.getInt("game.auto-death.interval-seconds", 30);
         autoDeathBossBar = c.getBoolean("game.auto-death.bossbar", true);
 
         botBulkLimit = c.getInt("bots.bulk-limit", 500);

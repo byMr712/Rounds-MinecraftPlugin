@@ -1276,7 +1276,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             }
             case "bomb_bullet", "bomb-bullet" -> data.bombBullet = Math.max(value, 0);
             case "bomb_on_block", "bomb-on-block" -> data.bombOnBlock = Math.max(value, 0);
-            case "bullet_speed", "bullet-speed" -> data.bulletSpeed = Math.max(value, 0.5);
+            case "bullet_speed", "bullet-speed" -> data.bulletSpeed = Math.max(value, com.rounds.DefaultStats.get().bulletSpeed * 0.3);
             case "empower" -> data.empower = Math.max(value, 0);
             case "empower_charge", "empower-charge" -> data.empowerCharge = Math.max(value, 0);
             case "dark_strength", "dark-strength" -> data.darkStrength = Math.max(value, 0);

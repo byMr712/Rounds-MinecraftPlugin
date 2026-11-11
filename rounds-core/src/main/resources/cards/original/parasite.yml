@@ -3,7 +3,7 @@ name:
   ru: "&2Паразит"
   en: "&2Parasite"
 description:
-  ru: "Урон во времени, +50% вампиризм, +25% урон"
+  ru: "ЯД, +50% вампиризм, +25% урон"
   en: "DOT, +50% Lifesteal, +25% DMG"
 material: SPIDER_EYE
 enabled: true

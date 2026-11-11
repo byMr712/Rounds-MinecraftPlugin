@@ -113,8 +113,13 @@ public class Card {
             case "attack-speed": data.atkSpeed = PlayerData.round2(Math.max(data.atkSpeed + value, -0.8)); break;
             case "attack-range": data.atkr = PlayerData.round2(Math.max(data.atkr + value, 0)); break;
             case "bullets": data.bullets = PlayerData.round2(Math.max(data.bullets + value, 1)); break;
-            case "ammo": data.ammo = Math.max(data.ammo + value, 1); data.maxAmmo = Math.max(data.maxAmmo + value, 1); break;
-            case "bullet-speed": data.bulletSpeed = PlayerData.round2(Math.max(data.bulletSpeed + value, 0.5)); break;
+            case "ammo", "max-ammo", "max_ammo":
+                data.maxAmmo = Math.max(data.maxAmmo + value, 1);
+                data.ammo = Math.max(Math.min(data.ammo + value, data.maxAmmo), 1);
+                break;
+            case "bullet-speed", "bullet_speed":
+                data.bulletSpeed = PlayerData.round2(Math.max(data.bulletSpeed + value, com.rounds.DefaultStats.get().bulletSpeed * 0.3));
+                break;
             case "bounce": data.bouncePl = PlayerData.round2(Math.max(data.bouncePl + value, 0)); break;
             case "hp": data.hp = PlayerData.round2(Math.max(data.hp * (1.0 + value), 2)); break;
             case "hp-cost": data.hpCost = PlayerData.round2(Math.max(data.hpCost + value, 0)); break;

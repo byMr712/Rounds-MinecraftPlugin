@@ -639,6 +639,19 @@ public class BotAI extends BukkitRunnable {
      * Reaction to incoming fire / damage source.
      * Turns towards the attacker with angular precision scaled by difficulty.
      */
+    private int getPingReactionDelay() {
+        Player player = (bot != null) ? bot.getBukkitPlayer() : null;
+        if (player == null) return 1;
+        int ping = player.getPing();
+        if (ping <= 0) return 1;
+        return Math.max(1, (int) Math.round(ping / 50.0));
+    }
+
+    private int calculateReactionTicks(double multiplier) {
+        int base = (int) Math.round((3 + (1.0 - bot.getSkillFactor()) * multiplier) * 0.90);
+        return Math.max(1, base + getPingReactionDelay());
+    }
+
     public void onAttacked(Location origin, UUID attackerId) {
         if (origin == null) return;
         Player player = bot.getBukkitPlayer();
@@ -682,14 +695,23 @@ public class BotAI extends BukkitRunnable {
         lastKnownTargetLoc = origin.clone();
         searchTicks = 0;
         isPursuing = true;
-        // Reaction latency scaled 10% faster relative to difficulty
-        reactionTicks = Math.max(1, (int) Math.round((3 + (1.0 - bot.getSkillFactor()) * 4.0) * 0.90));
+        // Reaction latency scaled relative to difficulty plus network ping delay
+        reactionTicks = calculateReactionTicks(4.0);
 
-        // Defensive reactive block when receiving enemy fire (10% higher success relative to individual skill)
+        // Defensive reactive block when receiving enemy fire (delayed by ping)
         if (bot.canBlock()) {
             double blockChance = Math.min(1.0, ((bot.getSkillFactor() >= 0.8) ? 0.65 : (bot.getSkillFactor() * 0.50)) * 1.10);
             if (ThreadLocalRandom.current().nextDouble() < blockChance) {
-                bot.block();
+                int delay = getPingReactionDelay();
+                if (delay <= 1) {
+                    bot.block();
+                } else {
+                    Bukkit.getScheduler().runTaskLater(bot.getPlugin(), () -> {
+                        if (bot != null && bot.canBlock()) {
+                            bot.block();
+                        }
+                    }, delay);
+                }
             }
         }
 
@@ -699,7 +721,7 @@ public class BotAI extends BukkitRunnable {
                     && !livingAttacker.isInvisible()
                     && !livingAttacker.hasPotionEffect(PotionEffectType.INVISIBILITY)) {
                 if (currentTarget != livingAttacker) {
-                    reactionTicks = Math.max(1, (int) Math.round((3 + (1.0 - bot.getSkillFactor()) * 4.0) * 0.90));
+                    reactionTicks = calculateReactionTicks(4.0);
                 }
                 currentTarget = livingAttacker;
             }
@@ -847,7 +869,7 @@ public class BotAI extends BukkitRunnable {
                 LivingEntity spotted = findVisibleTarget();
                 if (spotted != null) {
                     if (currentTarget != spotted) {
-                        reactionTicks = Math.max(1, (int) Math.round((3 + (1.0 - bot.getSkillFactor()) * 5.0) * 0.90));
+                        reactionTicks = calculateReactionTicks(5.0);
                     }
                     currentTarget = spotted;
                     lastKnownTargetLoc = spotted.getLocation().clone();

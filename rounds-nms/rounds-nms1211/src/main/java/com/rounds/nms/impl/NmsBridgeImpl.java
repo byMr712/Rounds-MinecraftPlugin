@@ -2,6 +2,7 @@ package com.rounds.nms.impl;
 
 import com.mojang.authlib.GameProfile;
 import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -51,6 +52,8 @@ public class NmsBridgeImpl implements com.rounds.nms.NmsBridge {
 
             // 2. Swap with FakeConnection to prevent timeout disconnects
             nmsPlayer.connection = new FakeConnection(nmsServer, noopConn, nmsPlayer, cookie);
+            nmsServer.getPlayerList().broadcastAll(new ClientboundPlayerInfoUpdatePacket(
+                    ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY, nmsPlayer));
 
             return new NmsPlayerHandleImpl(nmsPlayer);
         } catch (Throwable t) {

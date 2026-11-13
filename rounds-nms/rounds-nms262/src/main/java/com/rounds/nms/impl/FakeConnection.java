@@ -14,8 +14,20 @@ import org.bukkit.event.player.PlayerKickEvent;
  */
 public class FakeConnection extends ServerGamePacketListenerImpl {
 
+    private final int fakePing;
+
     public FakeConnection(MinecraftServer server, Connection connection, ServerPlayer player, CommonListenerCookie cookie) {
+        this(server, connection, player, cookie, 50 + java.util.concurrent.ThreadLocalRandom.current().nextInt(101));
+    }
+
+    public FakeConnection(MinecraftServer server, Connection connection, ServerPlayer player, CommonListenerCookie cookie, int ping) {
         super(server, connection, player, cookie);
+        this.fakePing = ping;
+    }
+
+    @Override
+    public int latency() {
+        return fakePing;
     }
 
     @Override

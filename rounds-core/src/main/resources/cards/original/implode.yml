@@ -7,7 +7,7 @@ description:
   en: "Pull enemies on block"
 material: MAGMA_CREAM
 enabled: true
-art: card31.png
+art: card45.png
 variations:
   - rarity: RARE
     art: card31-rare

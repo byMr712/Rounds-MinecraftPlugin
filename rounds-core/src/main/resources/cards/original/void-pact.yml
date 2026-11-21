@@ -7,7 +7,7 @@ description:
   en: "+150% damage, -50% HP"
 material: OBSIDIAN
 enabled: true
-art: card17.png
+art: card13.png
 variations:
   - rarity: LEGENDARY
     art: card84-legendary

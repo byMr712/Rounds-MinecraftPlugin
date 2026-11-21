@@ -7,7 +7,7 @@ description:
   en: "The less HP, the more damage (up to +100% damage below 20% HP)"
 material: GOLDEN_AXE
 enabled: true
-art: card35.png
+art: card46.png
 variations:
   - rarity: LEGENDARY
     art: card85-legendary

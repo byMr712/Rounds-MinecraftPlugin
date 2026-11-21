@@ -7,7 +7,7 @@ description:
   en: "+{0} DMG, -{1} HP"
 material: GLASS
 enabled: true
-art: card26.png
+art: card18.png
 variations:
   - rarity: RARE
     art: card26-rare

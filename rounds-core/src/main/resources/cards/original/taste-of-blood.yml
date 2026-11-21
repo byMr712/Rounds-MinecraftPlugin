@@ -7,7 +7,7 @@ description:
   en: "+{0} speed on hit, +{1} Lifesteal"
 material: BEEF
 enabled: true
-art: card32.png
+art: card23.png
 variations:
   - rarity: COMMON
     art: card61-common

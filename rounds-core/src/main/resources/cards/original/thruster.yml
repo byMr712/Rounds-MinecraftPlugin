@@ -7,7 +7,7 @@ description:
   en: "Bullets push targets, +10% Reload time"
 material: PISTON
 enabled: true
-art: card10.png
+art: card31.png
 variations:
   - rarity: COMMON
     art: card63-common

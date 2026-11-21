@@ -7,7 +7,7 @@ description:
   en: "Poison cloud on impact, -30% ATKSPD"
 material: SLIME_BALL
 enabled: true
-art: card38.png
+art: card33.png
 variations:
   - rarity: RARE
     art: card65-rare

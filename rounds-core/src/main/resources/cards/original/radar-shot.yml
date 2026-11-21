@@ -7,7 +7,7 @@ description:
   en: "On block: 5s of bullet homing"
 material: COMPASS
 enabled: true
-art: card42.png
+art: card47.png
 variations:
   - rarity: RARE
     art: card42-rare

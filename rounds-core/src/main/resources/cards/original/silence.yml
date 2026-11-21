@@ -7,7 +7,7 @@ description:
   en: "Silence enemies on block"
 material: OBSIDIAN
 enabled: true
-art: card20.png
+art: card30.png
 variations:
   - rarity: RARE
     art: card52-rare

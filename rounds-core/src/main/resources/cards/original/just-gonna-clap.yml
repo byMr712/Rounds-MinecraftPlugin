@@ -7,7 +7,7 @@ description:
   en: "Push wave when blocking"
 material: BELL
 enabled: true
-art: card20.png
+art: card49.png
 variations:
   - rarity: UNCOMMON
     art: card110-uncommon

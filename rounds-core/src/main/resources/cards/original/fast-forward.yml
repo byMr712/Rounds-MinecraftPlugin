@@ -7,7 +7,7 @@ description:
   en: "+{0} Proj speed, +{1} Reload speed"
 material: SUGAR
 enabled: true
-art: card23.png
+art: card32.png
 variations:
   - rarity: COMMON
     art: card23-common

@@ -7,7 +7,7 @@ description:
   en: "Bullets slide along walls"
 material: CACTUS
 enabled: true
-art: card10.png
+art: card36.png
 variations:
   - rarity: COMMON
     art: card53-common

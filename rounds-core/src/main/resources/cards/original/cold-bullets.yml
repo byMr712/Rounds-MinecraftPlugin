@@ -7,7 +7,7 @@ description:
   en: "+70% Bullet slow, +60% Reload time"
 material: ICE
 enabled: true
-art: card12.png
+art: card10.png
 variations:
   - rarity: COMMON
     art: card12-common

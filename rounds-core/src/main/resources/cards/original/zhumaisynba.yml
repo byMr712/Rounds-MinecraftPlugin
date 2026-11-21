@@ -7,7 +7,7 @@ description:
   en: "Bullets slow enemies"
 material: POTION
 enabled: true
-art: card44.png
+art: card10.png
 variations:
   - rarity: COMMON
     art: card117-common

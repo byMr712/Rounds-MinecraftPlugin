@@ -7,7 +7,7 @@ description:
   en: "Pull and stun enemies"
 material: END_CRYSTAL
 enabled: true
-art: card22.png
+art: card40.png
 variations:
   - rarity: LEGENDARY
     art: card57-legendary

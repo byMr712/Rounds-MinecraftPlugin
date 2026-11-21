@@ -7,7 +7,7 @@ description:
   en: "Extra bullet bounces: {0}, {1} DMG, {2} Reload time"
 material: FIREWORK_ROCKET
 enabled: true
-art: card34.png
+art: card43.png
 variations:
   - rarity: COMMON
     art: card34-common

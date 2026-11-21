@@ -7,7 +7,7 @@ description:
   en: "Enemies within 8 blocks glow for 5s when you block"
 material: LIGHT
 enabled: true
-art: card43.png
+art: card11.png
 variations:
   - rarity: RARE
     art: card43-rare

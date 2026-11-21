@@ -7,7 +7,7 @@ description:
   en: "Drains HP from nearby enemies"
 material: CAKE
 enabled: true
-art: card28.png
+art: card24.png
 variations:
   - rarity: RARE
     art: card112-rare

@@ -7,7 +7,7 @@ description:
   en: "On block, deal AoE damage equal to 15% of your HP"
 material: IRON_BARS
 enabled: true
-art: card18.png
+art: card49.png
 variations:
   - rarity: RARE
     art: card105-rare

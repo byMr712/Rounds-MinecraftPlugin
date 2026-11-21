@@ -7,7 +7,7 @@ description:
   en: "Refund per hit: {v}"
 material: YELLOW_DYE
 enabled: true
-art: card40.png
+art: card48.png
 variations:
   - rarity: UNCOMMON
     art: card113-uncommon

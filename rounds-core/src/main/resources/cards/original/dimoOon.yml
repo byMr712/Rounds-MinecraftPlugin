@@ -7,7 +7,7 @@ description:
   en: "Bullets home in on enemies"
 material: COMPASS
 enabled: true
-art: card29.png
+art: card21.png
 variations:
   - rarity: EPIC
     art: card98-epic

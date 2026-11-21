@@ -7,7 +7,7 @@ description:
   en: "Slow enemies on block"
 material: PACKED_ICE
 enabled: true
-art: card25.png
+art: card17.png
 variations:
   - rarity: RARE
     art: card25-rare

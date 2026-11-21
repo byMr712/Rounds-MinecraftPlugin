@@ -7,7 +7,7 @@ description:
   en: "+{v} damage, +10% fire rate"
 material: IRON_SWORD
 enabled: true
-art: card6.png
+art: card28.png
 variations:
   - rarity: EPIC
     art: card100-epic

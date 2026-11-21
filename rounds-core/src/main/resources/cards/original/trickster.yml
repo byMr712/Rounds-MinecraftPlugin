@@ -7,7 +7,7 @@ description:
   en: "DMG per bounce: {0}, extra bounces: {1}, {2} DMG"
 material: JIGSAW
 enabled: true
-art: card5.png
+art: card37.png
 variations:
   - rarity: RARE
     art: card66-rare

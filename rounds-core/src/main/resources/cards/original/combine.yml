@@ -7,7 +7,7 @@ description:
   en: "+{0} DMG, -{1} Ammo, +{2} Reload time"
 material: REDSTONE
 enabled: true
-art: card13.png
+art: card11.png
 variations:
   - rarity: RARE
     art: card13-rare

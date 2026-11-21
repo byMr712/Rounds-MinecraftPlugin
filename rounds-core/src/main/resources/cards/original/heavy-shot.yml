@@ -7,7 +7,7 @@ description:
   en: "-{0} Bullet speed, +{1} ATKSPD"
 material: ANVIL
 enabled: true
-art: card56.png
+art: card3.png
 variations:
   - rarity: COMMON
     art: card128-common

@@ -7,7 +7,7 @@ description:
   en: "Spinning saw on block"
 material: IRON_AXE
 enabled: true
-art: card47.png
+art: card50.png
 variations:
   - rarity: RARE
     art: card47-rare

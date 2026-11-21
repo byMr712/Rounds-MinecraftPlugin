@@ -7,7 +7,7 @@ description:
   en: "Bullets knock enemies back hard"
 material: CLAY_BALL
 enabled: true
-art: card5.png
+art: card16.png
 variations:
   - rarity: COMMON
     art: card120-common

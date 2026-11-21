@@ -7,7 +7,7 @@ description:
   en: "Ammo: +{v}"
 material: POWERED_RAIL
 enabled: true
-art: card23.png
+art: card2.png
 variations:
   - rarity: COMMON
     art: card109-common

@@ -7,7 +7,7 @@ description:
   en: "Allows continuing to shoot during weapon reload, each bullet spends the specified percent of health. If the weapon is loaded — health is not spent."
 material: MAGMA_CREAM
 enabled: true
-art: card17.png
+art: card27.png
 variations:
   - rarity: LEGENDARY
     art: card88-legendary

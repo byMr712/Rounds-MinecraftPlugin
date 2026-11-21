@@ -7,7 +7,7 @@ description:
   en: "All damage taken is spread evenly over {v}s"
 material: POISONOUS_POTATO
 enabled: true
-art: card15.png
+art: card38.png
 variations:
   - rarity: COMMON
     art: card15-common

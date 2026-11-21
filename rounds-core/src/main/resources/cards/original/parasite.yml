@@ -7,7 +7,7 @@ description:
   en: "DOT, +50% Lifesteal, +25% DMG"
 material: SPIDER_EYE
 enabled: true
-art: card36.png
+art: card24.png
 variations:
   - rarity: RARE
     art: card36-rare

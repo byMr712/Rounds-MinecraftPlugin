@@ -7,7 +7,7 @@ description:
   en: "Bullets spawn bombs, -15% DMG"
 material: CLOCK
 enabled: true
-art: card4.png
+art: card38.png
 variations:
   - rarity: RARE
     art: card64-rare

@@ -7,7 +7,7 @@ description:
   en: "Hitting an enemy with a bullet restores 2 HP and refunds 1 ammo"
 material: REDSTONE
 enabled: true
-art: card_500.png
+art: card23.png
 variations:
   - rarity: RARE
     art: card_500.png

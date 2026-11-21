@@ -7,7 +7,7 @@ description:
   en: "+{0} Life steal, +{1} HP"
 material: RED_DYE
 enabled: true
-art: card32.png
+art: card23.png
 variations:
   - rarity: COMMON
     art: card32-common

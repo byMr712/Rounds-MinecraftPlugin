@@ -7,7 +7,7 @@ description:
   en: "Receive two random common rarity cards"
 material: CHEST
 enabled: true
-art: card13.png
+art: card44.png
 variations:
   - rarity: LEGENDARY
     art: card86-legendary

@@ -7,7 +7,7 @@ description:
   en: "Block recharges {v} faster"
 material: GRASS_BLOCK
 enabled: true
-art: card27.png
+art: card41.png
 variations:
   - rarity: UNCOMMON
     art: card103-uncommon

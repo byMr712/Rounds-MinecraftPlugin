@@ -7,7 +7,7 @@ description:
   en: "Block lasts longer"
 material: GOLDEN_APPLE
 enabled: true
-art: card28.png
+art: card35.png
 variations:
   - rarity: UNCOMMON
     art: card111-uncommon

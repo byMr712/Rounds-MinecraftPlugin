@@ -7,7 +7,7 @@ description:
   en: "Bullets gain damage over distance"
 material: BONE_MEAL
 enabled: true
-art: card27.png
+art: card19.png
 variations:
   - rarity: COMMON
     art: card27-common

@@ -7,7 +7,7 @@ description:
   en: "Reload {v} faster"
 material: REDSTONE
 enabled: true
-art: card40.png
+art: card27.png
 variations:
   - rarity: COMMON
     art: card40-common

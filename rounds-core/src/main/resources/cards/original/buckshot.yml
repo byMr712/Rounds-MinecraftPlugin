@@ -7,7 +7,7 @@ description:
   en: "+4 Bullets, +5 Ammo, -60% DMG, +10% Reload time"
 material: FIREWORK_CHARGE
 enabled: true
-art: card7.png
+art: card2.png
 variations:
   - rarity: COMMON
     art: card7-common

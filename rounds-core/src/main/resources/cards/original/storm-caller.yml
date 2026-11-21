@@ -7,7 +7,7 @@ description:
   en: "25% chance to call lightning on hit"
 material: LIGHTNING_ROD
 enabled: true
-art: card20.png
+art: card38.png
 variations:
   - rarity: LEGENDARY
     art: card79-legendary

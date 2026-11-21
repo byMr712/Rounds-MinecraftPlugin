@@ -7,7 +7,7 @@ description:
   en: "Slowing ring on block"
 material: COMPARATOR
 enabled: true
-art: card20.png
+art: card9.png
 variations:
   - rarity: RARE
     art: card20-rare

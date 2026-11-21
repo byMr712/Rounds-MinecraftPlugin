@@ -7,7 +7,7 @@ description:
   en: "+{v} lifesteal, speed boost on hit"
 material: SWEET_BERRIES
 enabled: true
-art: card25.png
+art: card23.png
 variations:
   - rarity: EPIC
     art: card106-epic

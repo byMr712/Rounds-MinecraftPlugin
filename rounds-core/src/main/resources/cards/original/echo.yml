@@ -7,7 +7,7 @@ description:
   en: "Blocking triggers a second block pulse after 1s"
 material: ECHO_SHARD
 enabled: true
-art: card49.png
+art: card40.png
 variations:
   - rarity: RARE
     art: card127-rare

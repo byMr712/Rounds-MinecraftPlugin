@@ -7,7 +7,7 @@ description:
   en: "Dealing damage resets block CD"
 material: LAPIS_LAZULI
 enabled: true
-art: card44.png
+art: card41.png
 variations:
   - rarity: RARE
     art: card44-rare

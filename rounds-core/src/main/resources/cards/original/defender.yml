@@ -7,7 +7,7 @@ description:
   en: "{0} Block CD"
 material: SHIELD
 enabled: true
-art: card16.png
+art: card12.png
 variations:
   - rarity: COMMON
     art: card16-common

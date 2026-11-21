@@ -7,7 +7,7 @@ description:
   en: "Healing aura on block"
 material: GOLDEN_APPLE
 enabled: true
-art: card28.png
+art: card20.png
 variations:
   - rarity: RARE
     art: card28-rare

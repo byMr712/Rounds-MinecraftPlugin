@@ -8,6 +8,6 @@ description:
 material: NETHER_STAR
 rarity: LEGENDARY
 enabled: true
-art: card39.png
+art: card27.png
 effects:
   bullet_time: 1

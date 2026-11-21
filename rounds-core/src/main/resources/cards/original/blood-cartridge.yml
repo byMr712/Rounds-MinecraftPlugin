@@ -4,7 +4,7 @@ name:
   en: "&cBlood Cartridge"
 material: REDSTONE
 enabled: true
-art: card17.png
+art: card27.png
 variations:
   - rarity: COMMON
     art: card123-common

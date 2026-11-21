@@ -7,7 +7,7 @@ description:
   en: "Push enemies on block"
 material: BREWING_STAND
 enabled: true
-art: card16.png
+art: card49.png
 variations:
   - rarity: RARE
     art: card51-rare

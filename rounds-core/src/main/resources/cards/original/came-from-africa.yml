@@ -7,7 +7,7 @@ description:
   en: "+{v} attack range"
 material: SAND
 enabled: true
-art: card10.png
+art: card16.png
 variations:
   - rarity: COMMON
     art: card97-common

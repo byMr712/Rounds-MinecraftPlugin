@@ -7,7 +7,7 @@ description:
   en: "Slow nearby enemies"
 material: SNOWBALL
 enabled: true
-art: card11.png
+art: card9.png
 variations:
   - rarity: RARE
     art: card11-rare

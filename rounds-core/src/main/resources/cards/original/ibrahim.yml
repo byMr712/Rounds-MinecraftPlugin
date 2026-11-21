@@ -7,7 +7,7 @@ description:
   en: "Bullets explode on impact"
 material: GUNPOWDER
 enabled: true
-art: card4.png
+art: card15.png
 variations:
   - rarity: RARE
     art: card101-rare

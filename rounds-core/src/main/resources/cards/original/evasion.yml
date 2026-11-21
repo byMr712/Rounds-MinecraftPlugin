@@ -7,7 +7,7 @@ description:
   en: "30% chance to fully dodge a bullet"
 material: FEATHER
 enabled: true
-art: card10.png
+art: card42.png
 variations:
   - rarity: LEGENDARY
     art: card80-legendary

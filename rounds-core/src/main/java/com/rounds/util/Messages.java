@@ -62,6 +62,7 @@ public class Messages {
         if (!dir.exists() && !dir.mkdirs()) return;
         saveDefaultLang("lang/" + DEFAULT_LANG + ".txt");
         saveDefaultLang("lang/RU_ru.txt");
+        saveDefaultLang("lang/RU_ru_prikol_perevod.txt");
         File[] files = dir.listFiles((d, n) -> n.toLowerCase(Locale.ROOT).endsWith(".txt"));
         if (files == null) return;
         for (File f : files) {

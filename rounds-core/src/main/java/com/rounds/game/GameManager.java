@@ -2304,32 +2304,28 @@ public class GameManager implements Listener {
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
-        if (state != GameState.PLAYING) return;
         Player dead = event.getEntity();
+        PlayerData deadData = plugin.getPlayerDataManager().getData(dead);
+
+        // Last-line rescue for deaths that bypassed the damage listener
+        // (direct health writes, executioner kills, void, etc.).
+        double reviveHp = com.rounds.listener.LegendaryEffects.tryEmergencySave(dead, deadData);
+        if (reviveHp > 0.0) {
+            event.setCancelled(true);
+            event.setReviveHealth(reviveHp);
+            event.getDrops().clear();
+            event.setDroppedExp(0);
+            event.setDeathMessage(null);
+            return;
+        }
+
+        if (state != GameState.PLAYING) return;
         GameTeam deadTeam = plugin.getTeamManager().getPlayerTeam(dead.getUniqueId());
         if (deadTeam == null) return;
         event.getDrops().clear();
         event.setDroppedExp(0);
         String vanillaDeathMsg = event.getDeathMessage();
         event.setDeathMessage(null);
-
-        PlayerData deadData = plugin.getPlayerDataManager().getData(dead);
-        if (com.rounds.listener.LegendaryEffects.tryConsumePhoenix(dead.getUniqueId(), deadData)) {
-            com.rounds.listener.LegendaryEffects.clearDecay(dead.getUniqueId());
-            event.setCancelled(true);
-            // Paper-specific revive health: when a PlayerDeathEvent is cancelled, the player is
-            // revived at this health. Calling setHealth() directly here is ignored, which made
-            // the Phoenix card appear to do nothing (the player died again at 0 HP).
-            event.setReviveHealth(dead.getMaxHealth() / 2);
-            dead.setFallDistance(0);
-            dead.setFireTicks(0);
-            dead.setNoDamageTicks(20);
-            dead.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                PotionEffectType.REGENERATION, 100, 2));
-            dead.getWorld().playSound(dead.getLocation(), Sound.ENTITY_BLAZE_SHOOT, SoundCategory.RECORDS, 0.7f, 1.0f);
-            dead.sendMessage(ChatColor.RED + Messages.get("game.phoenix-revived"));
-            return;
-        }
 
         if (deadData.implode > 0) {
             Location deathLoc = dead.getLocation();

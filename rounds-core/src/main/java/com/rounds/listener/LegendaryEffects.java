@@ -62,6 +62,8 @@ public class LegendaryEffects implements Listener {
 
     private static final Map<UUID, Integer> bulletTimeUsedRound = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> phoenixUsedRound = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> recentlySaved = new ConcurrentHashMap<>();
+    private static final long SAVE_MARK_MS = 750L;
     private static long bulletTimeUntil = 0L;
     private static UUID bulletTimeOwner = null;
 
@@ -197,6 +199,17 @@ public class LegendaryEffects implements Listener {
         return recallCooldowns.get(uuid);
     }
 
+    /** True when a save card just rescued this player; cancels same-tick fallback damage writes. */
+    public static boolean wasRecentlySaved(UUID uuid) {
+        if (uuid == null) return false;
+        Long until = recentlySaved.get(uuid);
+        return until != null && System.currentTimeMillis() < until;
+    }
+
+    private static void markSaved(UUID uuid) {
+        if (uuid != null) recentlySaved.put(uuid, System.currentTimeMillis() + SAVE_MARK_MS);
+    }
+
     public static boolean isBulletTimeUsedThisRound(UUID uuid) {
         if (uuid == null) return false;
         Integer usedRound = bulletTimeUsedRound.get(uuid);
@@ -220,10 +233,74 @@ public class LegendaryEffects implements Listener {
         if (uuid == null || data == null || data.phoenix <= 0) return false;
         if (isPhoenixUsedThisRound(uuid)) return false;
         phoenixUsedRound.put(uuid, currentRoundNumber());
+        markSaved(uuid);
         if (data.phoenixUses > 0) data.phoenixUses--;
         com.rounds.debug.DebugLog.log("CARD", "PHOENIX trigger owner=" + uuid
                 + " round=" + currentRoundNumber());
         return true;
+    }
+
+    /**
+     * Last-line rescue used by PlayerDeathEvent and direct-health writes.
+     * Tries Bullet Time, Second Wind and Phoenix in the same order as the
+     * damage listener and applies their revive effects. Returns the health the
+     * player should be revived with, or 0 when no charge is available.
+     */
+    public static double tryEmergencySave(org.bukkit.entity.Player player, PlayerData data) {
+        if (player == null || data == null || !player.isOnline()) return 0.0;
+        if (instance == null || instance.plugin == null || instance.plugin.getGameManager() == null) return 0.0;
+        if (instance.plugin.getGameManager().getState() != com.rounds.game.GameManager.GameState.PLAYING) return 0.0;
+
+        UUID uuid = player.getUniqueId();
+
+        if (data.bulletTime > 0 && !isBulletTimeUsedThisRound(uuid)) {
+            double reviveHp = Math.max(data.getMaxHealth() * 0.20, 2.0);
+            player.setHealth(reviveHp);
+            triggerBulletTime(player, data);
+            return reviveHp;
+        }
+
+        int maxUses = (int) Math.round(data.secondWind);
+        int used = secondWindUses.getOrDefault(uuid, 0);
+        if (maxUses > 0 && used < maxUses) {
+            secondWindUses.put(uuid, used + 1);
+            markSaved(uuid);
+            player.setHealth(1.0);
+            player.setFallDistance(0);
+            player.setFireTicks(0);
+            player.setInvulnerable(true);
+            player.getWorld().playSound(player.getLocation(), Sound.ITEM_TOTEM_USE, SoundCategory.RECORDS, 0.7f, 1.2f);
+            if (instance != null && instance.plugin != null) {
+                org.bukkit.Bukkit.getScheduler().scheduleSyncDelayedTask(instance.plugin, () -> {
+                    if (player.isOnline()) player.setInvulnerable(false);
+                }, 40L);
+            }
+            com.rounds.debug.DebugLog.log("CARD", "SECOND-WIND trigger owner=" + player.getName()
+                    + " round=" + currentRoundNumber());
+            return 1.0;
+        }
+
+        if (tryConsumePhoenix(uuid, data)) {
+            player.setHealth(Math.max(player.getMaxHealth() / 2.0, 2.0));
+            player.setFallDistance(0);
+            player.setFireTicks(0);
+            player.setNoDamageTicks(40);
+            player.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                    PotionEffectType.REGENERATION, 100, 2));
+            player.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                    PotionEffectType.FIRE_RESISTANCE, 100, 0));
+            player.getWorld().playSound(player.getLocation(), Sound.ENTITY_BLAZE_SHOOT, SoundCategory.RECORDS, 0.7f, 1.0f);
+            player.getWorld().spawnParticle(Particle.FLAME, player.getLocation().add(0, 1, 0), 25, 0.5, 0.5, 0.5, 0.05);
+            player.sendMessage(org.bukkit.ChatColor.RED + Messages.get("game.phoenix-revived"));
+            return player.getHealth();
+        }
+
+        com.rounds.debug.DebugLog.log("CARD", "NO-SAVE owner=" + player.getName()
+                + " round=" + currentRoundNumber()
+                + " bt=" + data.bulletTime
+                + " sw=" + data.secondWind
+                + " ph=" + data.phoenix);
+        return 0.0;
     }
 
     public static void resetBulletTime(UUID uuid) {
@@ -312,6 +389,7 @@ public class LegendaryEffects implements Listener {
                 && plugin.getGameManager().isParticipant(player.getUniqueId())
                 && event.getFinalDamage() >= player.getHealth()) {
             secondWindUses.put(player.getUniqueId(), used + 1);
+            markSaved(player.getUniqueId());
             clearDecay(player.getUniqueId());
             event.setCancelled(true);
             player.setHealth(1.0);
@@ -523,9 +601,10 @@ public class LegendaryEffects implements Listener {
     }
 
     public static void triggerBulletTime(Player owner, PlayerData data) {
-        if (owner == null || !owner.isOnline() || owner.isDead()) return;
+        if (owner == null || !owner.isOnline()) return;
         if (isBulletTimeUsedThisRound(owner.getUniqueId())) return;
         bulletTimeUsedRound.put(owner.getUniqueId(), currentRoundNumber());
+        markSaved(owner.getUniqueId());
         com.rounds.debug.DebugLog.log("CARD", "BULLET-TIME trigger owner=" + owner.getName()
                 + " round=" + currentRoundNumber());
         bulletTimeOwner = owner.getUniqueId();

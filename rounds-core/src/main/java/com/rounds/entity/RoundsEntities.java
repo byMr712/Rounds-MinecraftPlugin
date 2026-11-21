@@ -80,6 +80,16 @@ public class RoundsEntities implements Listener {
     public static void safeSetHealth(LivingEntity entity, double health) {
         if (entity == null || entity.isDead()) return;
         if (entity.isInvulnerable() && health < entity.getHealth()) return;
+        // A save card already rescued this player in the current tick; never let a
+        // direct health fallback write undo that revive.
+        if (entity instanceof Player saved && health < saved.getHealth()
+                && com.rounds.listener.LegendaryEffects.wasRecentlySaved(saved.getUniqueId())) return;
+        // Direct health writes bypass EntityDamageEvent, so give the revive cards
+        // a last chance before a lethal value is applied (razorwire, TNT, executions).
+        if (entity instanceof Player p && health <= 0.0 && p.getHealth() > 0.0) {
+            PlayerData pd = plugin.getPlayerDataManager().getData(p);
+            if (com.rounds.listener.LegendaryEffects.tryEmergencySave(p, pd) > 0.0) return;
+        }
         if (entity instanceof Player p && plugin.getNmsBridge() != null) {
             plugin.getNmsBridge().ensureConnection(p);
         }
@@ -421,7 +431,10 @@ public class RoundsEntities implements Listener {
                             com.rounds.stats.MatchStatsManager.recordDamageDealt(shooter.getUniqueId(), victim.getUniqueId(), finalDamage);
                             com.rounds.stats.MatchStatsManager.recordLastDamager(victim.getUniqueId(), shooter.getUniqueId());
                         }
-                        if (!nearest.isInvulnerable() && nearest.getHealth() >= hpBefore && finalDamage > 0.0 && !nearest.isDead()) {
+                        if (!nearest.isInvulnerable()
+                                && Math.abs(nearest.getHealth() - hpBefore) < 0.01
+                                && !com.rounds.listener.LegendaryEffects.wasRecentlySaved(nearest.getUniqueId())
+                                && finalDamage > 0.0 && !nearest.isDead()) {
                             if (nearest instanceof Player p && com.rounds.listener.LegendaryEffects.hasDecay(p.getUniqueId())) {
                                 // Handled by LegendaryEffects.onDamage: damage converted to damage-over-time
                             } else {
@@ -655,7 +668,10 @@ public class RoundsEntities implements Listener {
                     com.rounds.stats.MatchStatsManager.recordDamageDealt(shooter.getUniqueId(), victim.getUniqueId(), finalDmg);
                     com.rounds.stats.MatchStatsManager.recordLastDamager(victim.getUniqueId(), shooter.getUniqueId());
                 }
-                if (!hitEnt.isInvulnerable() && hitEnt.getHealth() >= hpBefore && finalDmg > 0.0 && !hitEnt.isDead()) {
+                if (!hitEnt.isInvulnerable()
+                        && Math.abs(hitEnt.getHealth() - hpBefore) < 0.01
+                        && !com.rounds.listener.LegendaryEffects.wasRecentlySaved(hitEnt.getUniqueId())
+                        && finalDmg > 0.0 && !hitEnt.isDead()) {
                     if (hitEnt instanceof Player victim && com.rounds.listener.LegendaryEffects.hasDecay(victim.getUniqueId())) {
                         // Handled by LegendaryEffects.onDamage: damage converted to damage-over-time
                     } else {

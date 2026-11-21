@@ -2314,8 +2314,7 @@ public class GameManager implements Listener {
         event.setDeathMessage(null);
 
         PlayerData deadData = plugin.getPlayerDataManager().getData(dead);
-        if (deadData.phoenixUses > 0) {
-            deadData.phoenixUses--;
+        if (com.rounds.listener.LegendaryEffects.tryConsumePhoenix(dead.getUniqueId(), deadData)) {
             com.rounds.listener.LegendaryEffects.clearDecay(dead.getUniqueId());
             event.setCancelled(true);
             // Paper-specific revive health: when a PlayerDeathEvent is cancelled, the player is

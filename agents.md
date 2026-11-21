@@ -64,7 +64,7 @@
     - `kill @a` с консоли и «безавторные» смерти убийство никому не зачитывают.
 
 11. **Спасательные карты без стакания (Non-Stacking Saves):**
-    - Заряды спасений: Bullet Time — строго 1 раз за раунд (`bulletTimeUsedThisRound`), Second Wind — по `secondWindUses`, Phoenix — по `phoenixUses`.
+    - Заряды спасений: Bullet Time — строго 1 раз за раунд (`bulletTimeUsedRound`), Second Wind — по `secondWindUses`, Phoenix — строго 1 раз за раунд (`phoenixUsedRound`, проверка по owned-карте `data.phoenix`, а не по транзиентному `phoenixUses`).
     - Задержанный сброс неуязвимости Bullet Time выполняется для любого состояния `owner.isOnline()` (даже в момент смерти/респавна владельца), исключая «висячий» навсегда invulnerable-флаг — они не могут «стакаться».
     - Исключение в слушателе урона запрещено распространять: оно абортирует диспетчер `EntityDamageEvent` и весь вызов `hurt()` — жертвы перестают получать любой урон. Потенциально исключительные вызовы (razorwire и пр.) оборачиваются в `try/catch`.
 

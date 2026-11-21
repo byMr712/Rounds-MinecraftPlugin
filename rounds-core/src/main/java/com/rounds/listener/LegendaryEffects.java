@@ -61,6 +61,7 @@ public class LegendaryEffects implements Listener {
     private static final long RECALL_COOLDOWN_MS = 15000L;
 
     private static final Map<UUID, Integer> bulletTimeUsedRound = new ConcurrentHashMap<>();
+    private static final Map<UUID, Integer> phoenixUsedRound = new ConcurrentHashMap<>();
     private static long bulletTimeUntil = 0L;
     private static UUID bulletTimeOwner = null;
 
@@ -149,6 +150,7 @@ public class LegendaryEffects implements Listener {
         skyfallCooldowns.clear();
         fallPeakY.clear();
         bulletTimeUsedRound.clear();
+        phoenixUsedRound.clear();
         bulletTimeUntil = 0L;
         bulletTimeOwner = null;
         lastRazorwire.clear();
@@ -166,6 +168,7 @@ public class LegendaryEffects implements Listener {
         playerHistory.clear();
         recallCooldowns.clear();
         bulletTimeUsedRound.clear();
+        phoenixUsedRound.clear();
         bulletTimeUntil = 0L;
         bulletTimeOwner = null;
         lastRazorwire.clear();
@@ -184,6 +187,7 @@ public class LegendaryEffects implements Listener {
         if (instance == null || instance.plugin == null || instance.plugin.getGameManager() == null
                 || !instance.plugin.getGameManager().isGameStarted()) {
             bulletTimeUsedRound.remove(uuid);
+            phoenixUsedRound.remove(uuid);
         }
         lastRazorwire.remove(uuid);
         isExecuting.remove(uuid);
@@ -197,6 +201,29 @@ public class LegendaryEffects implements Listener {
         if (uuid == null) return false;
         Integer usedRound = bulletTimeUsedRound.get(uuid);
         return usedRound != null && usedRound == currentRoundNumber();
+    }
+
+    /** Whether the Phoenix charge was already spent in the current round. */
+    public static boolean isPhoenixUsedThisRound(UUID uuid) {
+        if (uuid == null) return false;
+        Integer usedRound = phoenixUsedRound.get(uuid);
+        return usedRound != null && usedRound == currentRoundNumber();
+    }
+
+    /**
+     * Spends the Phoenix charge for the current round. Driven by the owned card
+     * ({@code data.phoenix}) and the round number rather than the transient
+     * {@code phoenixUses} counter, so a data reset or reconnect cannot silently
+     * disable the revive.
+     */
+    public static boolean tryConsumePhoenix(UUID uuid, PlayerData data) {
+        if (uuid == null || data == null || data.phoenix <= 0) return false;
+        if (isPhoenixUsedThisRound(uuid)) return false;
+        phoenixUsedRound.put(uuid, currentRoundNumber());
+        if (data.phoenixUses > 0) data.phoenixUses--;
+        com.rounds.debug.DebugLog.log("CARD", "PHOENIX trigger owner=" + uuid
+                + " round=" + currentRoundNumber());
+        return true;
     }
 
     public static void resetBulletTime(UUID uuid) {
@@ -303,10 +330,10 @@ public class LegendaryEffects implements Listener {
         }
 
         // Check Phoenix revival save before death
-        if (data.phoenixUses > 0
+        if (data.phoenix > 0
                 && plugin.getGameManager().isParticipant(player.getUniqueId())
-                && (event.getFinalDamage() >= player.getHealth() || event.getDamage() >= player.getHealth())) {
-            data.phoenixUses--;
+                && (event.getFinalDamage() >= player.getHealth() || event.getDamage() >= player.getHealth())
+                && tryConsumePhoenix(player.getUniqueId(), data)) {
             clearDecay(player.getUniqueId());
             event.setCancelled(true);
             player.setHealth(Math.max(player.getMaxHealth() / 2.0, 2.0));

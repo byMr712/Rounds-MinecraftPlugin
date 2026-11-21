@@ -385,6 +385,20 @@ public final class MapAutoPatcher {
         }
     }
 
+    /**
+     * Re-applies the localized lobby labels in every patched world.
+     * A server may keep the lobby in a non-primary world, so applying only
+     * {@code Bukkit.getWorlds().get(0)} leaves Russian labels behind after
+     * switching the plugin language.
+     */
+    public static void applyMapTextDisplaysAllWorlds() {
+        for (World w : org.bukkit.Bukkit.getWorlds()) {
+            try {
+                if (isAlreadyPatched(w)) applyMapTextDisplays(w);
+            } catch (Throwable ignored) {}
+        }
+    }
+
     private static boolean nearPos(org.bukkit.entity.Entity e, double x, double y, double z) {
         Location l = e.getLocation();
         return Math.abs(l.getX() - x) < 0.25 && Math.abs(l.getY() - y) < 0.12 && Math.abs(l.getZ() - z) < 0.25;

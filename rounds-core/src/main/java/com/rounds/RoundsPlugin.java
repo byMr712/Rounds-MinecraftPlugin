@@ -62,6 +62,10 @@ public class RoundsPlugin extends JavaPlugin {
         cardManager = new CardManager(this);
         gameManager = new GameManager(this);
         com.rounds.map.MapAutoPatcher.checkAndPatch(this, null, false, null);
+        // Entities of the lobby chunk may not be registered yet during onEnable,
+        // so refresh the localized map labels one tick later as well.
+        getServer().getScheduler().runTaskLater(this,
+                com.rounds.map.MapAutoPatcher::applyMapTextDisplaysAllWorlds, 20L);
         blockListener = new BlockListener(this);
         cardGUIListener = new CardGUIListener(this);
         cardDisplayManager = new CardDisplayManager(this);

@@ -1425,7 +1425,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         plugin.saveConfig();
         Messages.reload(lang);
         plugin.getGameManager().updateScoreboard();
-        com.rounds.map.MapAutoPatcher.applyMapTextDisplays(org.bukkit.Bukkit.getWorlds().isEmpty() ? null : org.bukkit.Bukkit.getWorlds().get(0));
+        com.rounds.map.MapAutoPatcher.applyMapTextDisplaysAllWorlds();
         sender.sendMessage(ChatColor.GREEN + Messages.get("debug.language-set", lang));
     }
 
@@ -1503,6 +1503,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
         plugin.getRoundsConfig().reload();
         Messages.reload();
         plugin.getCardManager().reload();
+        com.rounds.map.MapAutoPatcher.applyMapTextDisplaysAllWorlds();
         sender.sendMessage(ChatColor.GREEN + Messages.get("command.cards-reloaded", plugin.getCardManager().getRegistry().getAllCards().size()));
     }
 

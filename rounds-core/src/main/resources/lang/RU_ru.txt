@@ -11,12 +11,12 @@ gun:
   no-ammo: "Нет патронов! Перезарядка..."
   ammo-display: "Патроны: {0}/{1}"
   already-loaded: "Уже заряжено!"
-  reloading: "Перезарядка..."
+  reloading: "Перезаряжка..."
   reloaded: "Заряжено! Патроны: {0}"
   shield-activated: "Блок активирован!"
   shield-active: "Блок уже активен!"
   shield-cooldown: "Перезарядка блока: {0}s"
-  party-locked: "Блок и перезарядка недоступны!"
+  party-locked: "Никакого праздника! Блок и перезарядка недоступны!"
 
 # Game / Игра
   silenced: "Вы обезмолвлены!"
@@ -276,7 +276,7 @@ debug:
   yes: "Да"
   no: "Нет"
 
-  help-stats-show: "Характеристики игрока: /rdebug stats show <игрок>"
+  help-stats-show: "Статы игрока: /rdebug stats show <игрок>"
   help-stats-add: "Установить характеристику: /rdebug stats add <игрок> <характеристика> <значение>"
   help-givegun: "Выдать оружие"
   help-setteam: "Установить команду"
@@ -413,7 +413,7 @@ debug:
   help-placeholders: "Список всех плейсдолдеров"
   placeholders-title: "Плейсдолдеры"
   ph-game-section: "--- Игра ---"
-  ph-stats-section: "--- Характеристики игрока ---"
+  ph-stats-section: "--- Статы игрока ---"
   ph-desc.round: "Текущий раунд"
   ph-desc.rounds-to-win: "Побед для выигрыша"
   ph-desc.round-display: "Раунд (3/5)"

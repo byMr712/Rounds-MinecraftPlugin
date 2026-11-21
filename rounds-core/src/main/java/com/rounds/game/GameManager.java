@@ -2837,6 +2837,10 @@ public class GameManager implements Listener {
         restoreInvisibleShields();
         com.rounds.listener.LegendaryEffects.resetAll();
         state = GameState.WAITING;
+        // stopGame() can be reached without endGame() (auto-stop on too few players,
+        // /rounds stop, /rdebug stop). Leaving gameActive true makes the next player
+        // who picks a team look like a mid-game joiner and get forced into spectator.
+        gameActive = false;
         hideAutoDeathBossBar();
         com.rounds.hud.HudEngineCustomRealisation.hideAll();
         clearAllSpectatorGlow();

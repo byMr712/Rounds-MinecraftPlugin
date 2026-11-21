@@ -517,9 +517,9 @@ triggers:
 Официальный ресурспак плагина основан на оригинальном ресурспаке от автора **ifrit**, с последующими изменениями: переработкой структуры, добавлением вариаций текстур, адаптивной локализацией (RU/EN), квантованием палитры и оптимизацией от **Mr712**.
 
 Текст названия и описания наносится непосредственно на текстуры карточек. Чтобы поддерживать несколько языков, формируются отдельные ресурспаки:
-- `Rounds-ResourcePack-RU.zip` — текстуры с запеченным русским переводом ([Скачать с GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.1/Rounds-ResourcePack-RU.zip)).
-- `Rounds-ResourcePack-EN.zip` — текстуры с запеченным английским переводом ([Скачать с GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.1/Rounds-ResourcePack-EN.zip)).
-- `Rounds-ResourcePack-For-Developers.zip` (алиас `Rounds-ResourcePack.zip`) — базовый пакет с оригинальными чистыми карточками (без текста) для добавления своих переводов и кастомного текста сторонними авторами ([Скачать версию для разработчиков с GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.1/Rounds-ResourcePack-For-Developers.zip)).
+- `Rounds-ResourcePack-RU.zip` — текстуры с запеченным русским переводом ([Скачать с GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.2/Rounds-ResourcePack-RU.zip)).
+- `Rounds-ResourcePack-EN.zip` — текстуры с запеченным английским переводом ([Скачать с GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.2/Rounds-ResourcePack-EN.zip)).
+- `Rounds-ResourcePack-For-Developers.zip` (алиас `Rounds-ResourcePack.zip`) — базовый пакет с оригинальными чистыми карточками (без текста) для добавления своих переводов и кастомного текста сторонними авторами ([Скачать версию для разработчиков с GitHub Releases](https://github.com/byMr712/Rounds-MinecraftPlugin/releases/download/v2.2/Rounds-ResourcePack-For-Developers.zip)).
 
 Дополнительно модель щита в руке уменьшена: в первом лице до 80%, в третьем — до 70% от стандартного размера. Механика блокировки не меняется.
 
@@ -936,7 +936,7 @@ playerlist-objective:
 Готовые плагины — по одному на каждую серверную версию — лежат в `rounds-nms/*/build/libs/`:
 
 ```
-RoundsPlugin-<версия сервера>-v2.1-byMr712.jar
+RoundsPlugin-<версия сервера>-v2.2-byMr712.jar
 ```
 
 - Диапазон: все релизные версии **1.20.4 - 26.3**.

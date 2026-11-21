@@ -528,7 +528,7 @@ Additionally, the in-hand shield model is scaled down: 80% in first person and 7
 The private-use font glyph codepoints (`0xE000` + `familyId`) are identical across all language packs. Players simply activate their preferred language pack in Minecraft settings without requiring any server configuration changes.
 
 Current SHA-1 Checksums:
-- `Rounds-ResourcePack-RU.zip`: `3ba9ab47e6414e75a92ad1e4e4c465c4081659f1`
+- `Rounds-ResourcePack-RU.zip`: `f9ebd1c8c3c83069a7db8b76127d36de2d6548bf`
 - `Rounds-ResourcePack-EN.zip`: `b012c6d8302f31ffde7ed3d0ef39b71a96a1a2f3`
 - `Rounds-ResourcePack-For-Developers.zip`: `279dc1dd996b200e795a893277848cec89fb2c4a`
 

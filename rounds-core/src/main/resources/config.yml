@@ -3,7 +3,7 @@
 # ==============================================================================
 
 # Language configuration:
-# File name from plugins/Rounds/lang/ without the .txt extension (e.g. EN_en, RU_ru, RU_ru_prikol_perevod).
+# File name from plugins/Rounds/lang/ without the .txt extension (e.g. EN_en, RU_ru).
 # Legacy short codes ("ru", "en") are also accepted.
 language: EN_en
 

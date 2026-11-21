@@ -643,7 +643,7 @@ The `freeplay.enabled` setting in `config.yml` or the `/rdebug freeplay on|off` 
 | `/rdebug stats add <player> <stat> <value>` | `<player> <stat> <val>` | Set combat stat value in human units (admin only) |
 | `/rdebug statsend [player]` | `[player]` | Previous match combat statistics (available to all players) |
 | `/rdebug setteam <COLOR> [player]` | `<BLUE\|RED\|YELLOW\|GREEN>` | Force player into team |
-| `/rdebug setlanguage <lang>` | `<EN_en\|RU_ru\|RU_ru_prikol_perevod...>` | Switch plugin language on the fly |
+| `/rdebug setlanguage <lang>` | `<EN_en\|RU_ru...>` | Switch plugin language on the fly |
 | `/rdebug effect <type> <amp> <dur>` | `<type> <amp> <dur>` | Apply potion effect to self |
 | `/rdebug heal [amount]` | `[HP]` | Heal player |
 | `/rdebug resetstats [player]` | `[player]` | Reset stats, cards, and inventory |
@@ -883,7 +883,6 @@ playerlist-objective:
 
 Language files are located in `plugins/Rounds/lang/`:
 - Each `<LanguageName>.txt` file represents a language (e.g. `EN_en.txt`, `RU_ru.txt`).
-- `RU_ru.txt` is the professional Russian interface translation, while `RU_ru_prikol_perevod.txt` keeps the previous humorous Russian translation; both are selectable via `/rdebug setlanguage`.
 - The filename without `.txt` is used as the language identifier.
 
 ### Changing Language

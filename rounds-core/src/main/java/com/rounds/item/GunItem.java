@@ -59,6 +59,9 @@ public class GunItem implements Listener {
     private static final long NO_PARTY_LOCK_TICKS = 140;
     private static final double NO_PARTY_RADIUS = 5.0;
 
+    /** Base reload duration in ticks. 70 ticks (3.5 s) is 30% faster than the previous 100 ticks. */
+    public static final double BASE_RELOAD_TICKS = 70.0;
+
     public static void register(RoundsPlugin pl) {
         plugin = pl;
     }
@@ -876,7 +879,7 @@ public class GunItem implements Listener {
         // Крупная пуля замедляет перезарядку: +30% за каждую выбранную карту.
         double bigPenalty = data.bigBullet > 0 ? 1.0 + 0.3 * data.bigBullet : 1.0;
         double reloadDurationTicks = Math.max(
-                100 * (1.0 - Math.min(data.reloadSpeed, 0.95)) * (1.0 + data.atksReload * 0.1) * bigPenalty, 4);
+                BASE_RELOAD_TICKS * (1.0 - Math.min(data.reloadSpeed, 0.95)) * (1.0 + data.atksReload * 0.1) * bigPenalty, 4);
 
         ReloadTask task = new ReloadTask(player, data, (int) reloadDurationTicks);
         reloadTasks.put(uuid, task);
@@ -964,10 +967,10 @@ public class GunItem implements Listener {
     }
 
     public static double getReloadDurationSeconds(PlayerData data) {
-        if (data == null) return 5.0;
+        if (data == null) return BASE_RELOAD_TICKS / 20.0;
         double bigPenalty = data.bigBullet > 0 ? 1.0 + 0.3 * data.bigBullet : 1.0;
         double reloadDurationTicks = Math.max(
-                100 * (1.0 - Math.min(data.reloadSpeed, 0.95)) * (1.0 + data.atksReload * 0.1) * bigPenalty, 4);
+                BASE_RELOAD_TICKS * (1.0 - Math.min(data.reloadSpeed, 0.95)) * (1.0 + data.atksReload * 0.1) * bigPenalty, 4);
         return reloadDurationTicks / 20.0;
     }
 

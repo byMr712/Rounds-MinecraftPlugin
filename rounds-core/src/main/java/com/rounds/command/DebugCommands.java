@@ -1287,7 +1287,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             case "dark" -> data.dark = Math.max(value, 0);
             case "atks_reload", "atks-reload" -> data.atksReload = Math.max(value, 0);
             case "reload", "reload_time", "reload-time" -> {
-                double baseReloadSec = 5.0;
+                double baseReloadSec = GunItem.BASE_RELOAD_TICKS / 20.0;
                 double targetSec = Math.max(0.2, value);
                 data.reloadSpeed = Math.max(-1.0, Math.min(0.95, 1.0 - (targetSec / baseReloadSec)));
             }

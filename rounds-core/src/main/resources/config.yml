@@ -30,7 +30,7 @@ defaults:
   hp: 20
   # Projectile flight velocity multiplier (1.0 = standard speed)
   bullet-speed: 1.0
-  # Reload speed modifier (0.0 = base ~3.0s, 0.95 = near instant)
+  # Reload speed modifier (0.0 = base 3.5s, 0.95 = near instant)
   reload-speed: 0
 
 # ==============================================================================

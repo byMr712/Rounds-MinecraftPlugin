@@ -281,7 +281,7 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
             case "max_ammo"       -> d.maxAmmo;
             case "bullets"        -> d.bullets;
             case "bullet_speed"   -> d.bulletSpeed;
-            case "reload_time"    -> Math.max(100 * (1.0 - Math.min(d.reloadSpeed, 0.95)) * (1.0 + d.atksReload * 0.1), 4) / 20.0;
+            case "reload_time"    -> com.rounds.item.GunItem.getReloadDurationSeconds(d);
             case "bounce"         -> d.bouncePl;
             case "homing"         -> d.homing;
             case "big_bullet"     -> d.bigBullet;

@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -61,9 +60,19 @@ public class LegendaryEffects implements Listener {
     private static final Map<UUID, Long> recallCooldowns = new ConcurrentHashMap<>();
     private static final long RECALL_COOLDOWN_MS = 15000L;
 
-    private static final Set<UUID> bulletTimeUsedThisRound = new HashSet<>();
+    private static final Map<UUID, Integer> bulletTimeUsedRound = new ConcurrentHashMap<>();
     private static long bulletTimeUntil = 0L;
     private static UUID bulletTimeOwner = null;
+
+    /** Round number the current game is on, or 0 when no game manager is available. */
+    private static int currentRoundNumber() {
+        try {
+            if (instance != null && instance.plugin != null && instance.plugin.getGameManager() != null) {
+                return (int) instance.plugin.getGameManager().getCurrentRound();
+            }
+        } catch (Throwable ignored) {}
+        return 0;
+    }
 
     private static final Map<UUID, Long> lastRazorwire = new ConcurrentHashMap<>();
 
@@ -139,7 +148,7 @@ public class LegendaryEffects implements Listener {
         secondWindUses.clear();
         skyfallCooldowns.clear();
         fallPeakY.clear();
-        bulletTimeUsedThisRound.clear();
+        bulletTimeUsedRound.clear();
         bulletTimeUntil = 0L;
         bulletTimeOwner = null;
         lastRazorwire.clear();
@@ -156,7 +165,7 @@ public class LegendaryEffects implements Listener {
         skyfallCooldowns.clear();
         playerHistory.clear();
         recallCooldowns.clear();
-        bulletTimeUsedThisRound.clear();
+        bulletTimeUsedRound.clear();
         bulletTimeUntil = 0L;
         bulletTimeOwner = null;
         lastRazorwire.clear();
@@ -170,7 +179,12 @@ public class LegendaryEffects implements Listener {
         skyfallCooldowns.remove(uuid);
         playerHistory.remove(uuid);
         recallCooldowns.remove(uuid);
-        bulletTimeUsedThisRound.remove(uuid);
+        // Keep the used charge when the player reconnects mid-round; otherwise
+        // quitting and rejoining would rearm Bullet Time for the same round.
+        if (instance == null || instance.plugin == null || instance.plugin.getGameManager() == null
+                || !instance.plugin.getGameManager().isGameStarted()) {
+            bulletTimeUsedRound.remove(uuid);
+        }
         lastRazorwire.remove(uuid);
         isExecuting.remove(uuid);
     }
@@ -180,11 +194,13 @@ public class LegendaryEffects implements Listener {
     }
 
     public static boolean isBulletTimeUsedThisRound(UUID uuid) {
-        return bulletTimeUsedThisRound.contains(uuid);
+        if (uuid == null) return false;
+        Integer usedRound = bulletTimeUsedRound.get(uuid);
+        return usedRound != null && usedRound == currentRoundNumber();
     }
 
     public static void resetBulletTime(UUID uuid) {
-        bulletTimeUsedThisRound.remove(uuid);
+        bulletTimeUsedRound.remove(uuid);
     }
 
     public static void onDirectDamage(Player victim, PlayerData victimData, double damageDealt, UUID attackerId) {
@@ -205,7 +221,7 @@ public class LegendaryEffects implements Listener {
         }
 
         if (victimData.bulletTime > 0
-                && !bulletTimeUsedThisRound.contains(uuid)
+                && !isBulletTimeUsedThisRound(uuid)
                 && (victim.getHealth() <= victimData.getMaxHealth() * 0.20 || victim.getHealth() <= 0.5)) {
             victim.setHealth(Math.max(victimData.getMaxHealth() * 0.20, 2.0));
             triggerBulletTime(victim, victimData);
@@ -250,7 +266,7 @@ public class LegendaryEffects implements Listener {
 
         // Check fatal or low-health Bullet Time save
         if (data.bulletTime > 0
-                && !bulletTimeUsedThisRound.contains(player.getUniqueId())
+                && !isBulletTimeUsedThisRound(player.getUniqueId())
                 && (event.getFinalDamage() >= player.getHealth()
                 || event.getDamage() >= player.getHealth()
                 || (player.getHealth() - event.getFinalDamage()) <= data.getMaxHealth() * 0.20
@@ -481,8 +497,10 @@ public class LegendaryEffects implements Listener {
 
     public static void triggerBulletTime(Player owner, PlayerData data) {
         if (owner == null || !owner.isOnline() || owner.isDead()) return;
-        if (bulletTimeUsedThisRound.contains(owner.getUniqueId())) return;
-        bulletTimeUsedThisRound.add(owner.getUniqueId());
+        if (isBulletTimeUsedThisRound(owner.getUniqueId())) return;
+        bulletTimeUsedRound.put(owner.getUniqueId(), currentRoundNumber());
+        com.rounds.debug.DebugLog.log("CARD", "BULLET-TIME trigger owner=" + owner.getName()
+                + " round=" + currentRoundNumber());
         bulletTimeOwner = owner.getUniqueId();
         bulletTimeUntil = System.currentTimeMillis() + 5000L;
 

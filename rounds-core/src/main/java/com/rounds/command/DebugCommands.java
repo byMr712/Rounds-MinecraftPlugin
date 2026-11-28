@@ -1116,7 +1116,7 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
 
             // Combat section
             boxSection(sender, Messages.get("debug.combat-section"));
-            boxKv(sender, Messages.get("debug.stat-hp"), com.rounds.game.GameManager.formatHearts(target));
+            boxKv(sender, Messages.get("debug.stat-hp"), com.rounds.game.GameManager.formatHeartCount(target));
             boxKv(sender, Messages.get("debug.stat-dmg"), String.format(Locale.US, "%.1f", data.getEffectiveDamage(target)));
             boxKv(sender, Messages.get("debug.stat-atks"), formatSeconds(GunItem.getAttackCooldownSeconds(data)));
             if (data.atkSpeed != 0.0) {

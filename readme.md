@@ -716,7 +716,7 @@ python tools/generate_card_textures.py
 
 | Плейсхолдер | Значение |
 |-------------|----------|
-| `%rounds_stat_hp%` | Текущие сердца (например, `10♥`) |
+| `%rounds_stat_hp%` | Текущее число сердец (например, `10`) |
 | `%rounds_stat_dmg%` | Урон |
 | `%rounds_stat_atk_speed%` | Скорость атаки |
 | `%rounds_stat_atkr%` | Радиус атаки |

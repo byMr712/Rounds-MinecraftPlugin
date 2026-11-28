@@ -718,7 +718,7 @@ Identifier: `%rounds_...%`
 
 | Placeholder | Description |
 |-------------|-------------|
-| `%rounds_stat_hp%` | Current hearts (e.g. `10♥`) |
+| `%rounds_stat_hp%` | Current heart count (e.g. `10`) |
 | `%rounds_stat_dmg%` | Bullet damage |
 | `%rounds_stat_atk_speed%` | Attack speed |
 | `%rounds_stat_atkr%` | Attack range bonus |

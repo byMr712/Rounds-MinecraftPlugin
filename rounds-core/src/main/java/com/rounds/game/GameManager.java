@@ -3086,9 +3086,14 @@ public class GameManager implements Listener {
         return Math.max(0, (int) Math.ceil(p.getHealth() / 2.0));
     }
 
-    /** Current health rendered as a heart count, e.g. {@code 10♥}. */
+    /** Current health rendered as a heart count, e.g. {@code 10♥} (used in TAB). */
     public static String formatHearts(Player p) {
         return getHeartCount(p) + "\u2665";
+    }
+
+    /** Current health as a plain heart count without the symbol, e.g. {@code 10}. */
+    public static String formatHeartCount(Player p) {
+        return String.valueOf(getHeartCount(p));
     }
 
     private String heartsPrefix(ChatColor color, Player p) {
@@ -3524,8 +3529,8 @@ public class GameManager implements Listener {
 
             PlayerData data = plugin.getPlayerDataManager().getData(player.getUniqueId());
             String statHp = (player.isValid() && player.getHealth() > 0)
-                    ? formatHearts(player)
-                    : (data != null ? Math.round(data.hp / 2.0) + "\u2665" : "10\u2665");
+                    ? formatHeartCount(player)
+                    : (data != null ? String.valueOf((int) Math.round(data.hp / 2.0)) : "10");
             String statDmg = (data != null) ? formatStat(data.getEffectiveDamage(player)) : "1";
             String statCards = (data != null && data.getOwnedCards() != null)
                     ? String.valueOf(data.getOwnedCards().size()) : "0";

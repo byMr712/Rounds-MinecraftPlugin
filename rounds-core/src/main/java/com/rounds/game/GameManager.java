@@ -125,6 +125,7 @@ public class GameManager implements Listener {
     private boolean afkActive = false;
     private static final UUID SNOWBALL_MOD_ID = UUID.nameUUIDFromBytes("rounds_snowball".getBytes());
     private boolean gameActive = false;
+    private boolean statsPromptSent = false;
     private boolean autoDeathEnabled = true;
     private long autoDeathNextEvent = 0;
     private boolean autoDeathNextIsKill = false;
@@ -214,6 +215,7 @@ public class GameManager implements Listener {
         }
         if (isGameActive()) return;
         gameActive = true;
+        statsPromptSent = false;
         if (plugin.getRoundMusicManager() != null) {
             plugin.getRoundMusicManager().resetPlaylist();
         }
@@ -1840,7 +1842,7 @@ public class GameManager implements Listener {
         );
 
         scheduleDelayed(() -> {
-            sendClickableStatsPrompt();
+            sendStatsPromptOnce();
             for (Player p : Bukkit.getOnlinePlayers()) {
                 if (isAdmin(p)) {
                     sendAdminPrompt(p);
@@ -2246,6 +2248,12 @@ public class GameManager implements Listener {
     public void broadcastAttachedBox(String... lines) {
         if (lines == null || lines.length == 0) return;
         broadcastAttachedBox(Arrays.asList(lines));
+    }
+
+    private void sendStatsPromptOnce() {
+        if (statsPromptSent || !com.rounds.stats.MatchStatsManager.hasLastMatchStats()) return;
+        statsPromptSent = true;
+        sendClickableStatsPrompt();
     }
 
     public void sendClickableStatsPrompt() {
@@ -2898,6 +2906,12 @@ public class GameManager implements Listener {
             com.rounds.debug.DebugLog.flushFinal("GAME-STOP: game stopped by command");
             com.rounds.debug.DebugSession.clear();
         }
+        if (com.rounds.stats.MatchStatsManager.hasActiveMatchData()) {
+            for (Player p : plugin.getServer().getOnlinePlayers()) {
+                com.rounds.stats.MatchStatsManager.registerParticipant(p.getUniqueId(), p.getName());
+            }
+            com.rounds.stats.MatchStatsManager.onGameEnd(plugin.getPlayerDataManager());
+        }
         plugin.getCardManager().clearPendingPicks();
         plugin.getCardManager().resetAllCards();
         plugin.getPlayerDataManager().resetAllData();
@@ -2959,6 +2973,7 @@ public class GameManager implements Listener {
             }
         }
         plugin.getPlayerDataManager().clearActivePlayers();
+        sendStatsPromptOnce();
     }
 
     private void stopGameTick() {

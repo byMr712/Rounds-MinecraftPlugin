@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.rounds"
-version = "2.3"
+version = "2.2"
 
 java {
     toolchain {

@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "com.rounds"
-version = "2.2"
+version = "2.3"
 
 java {
     toolchain {
@@ -47,7 +47,7 @@ tasks.named<JavaCompile>("compileJava") {
 
 // Финальный артефакт для Paper/Purpur 26.3: ядро + api + NMS-адаптер.
 tasks.jar {
-    archiveFileName.set("RoundsPlugin-26.3-v2.2-byMr712.jar")
+    archiveFileName.set("RoundsPlugin-26.3-v2.3-byMr712.jar")
     from(project(":rounds-api").sourceSets["main"].output)
     from(project(":rounds-core").sourceSets["main"].output)
 }

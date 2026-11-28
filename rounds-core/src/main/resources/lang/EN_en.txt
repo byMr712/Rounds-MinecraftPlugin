@@ -528,6 +528,13 @@ scoreboard:
   stat-max-ammo: "Ammo"
 
 
+afk:
+  title: "&c&lRotate your camera"
+  subtitle: "&eDo not stand still"
+  countdown: "&eYou will be kicked for inactivity in {0} seconds"
+  countdown-one: "&eYou will be kicked for inactivity in 1 second"
+  kick: "&cYou were kicked due to your client freezing on the server\n&cor because you were inactive.\n&aYou can rejoin the game with your progress saved!"
+
 map:
   ifrit-author: "By Mr712, Ifrit"
   ifrit-team-blue: "Blue\nteam"

@@ -120,6 +120,9 @@ public class GameManager implements Listener {
     private final Map<UUID, Integer> chameleonStillTicks = new HashMap<>();
     /** Players whose off-hand shield is currently hidden from other clients because they are invisible. */
     private final Set<UUID> hiddenInvisibleShields = new HashSet<>();
+    private final Map<UUID, Long> afkLastActivity = new HashMap<>();
+    private final Map<UUID, Integer> afkWarningSeconds = new HashMap<>();
+    private boolean afkActive = false;
     private static final UUID SNOWBALL_MOD_ID = UUID.nameUUIDFromBytes("rounds_snowball".getBytes());
     private boolean gameActive = false;
     private boolean autoDeathEnabled = true;
@@ -827,6 +830,7 @@ public class GameManager implements Listener {
         }
         if (musicTick % 20 == 0) {
             applyPeriodicEffects();
+            tickAfk();
         }
         if (musicTick % 40 == 0) {
             sendSpectatorActionbar();
@@ -838,6 +842,96 @@ public class GameManager implements Listener {
      * (Chameleon) is betrayed by a floating shield. Send an empty off-hand slot to every
      * viewer while the effect is active and restore the real shield once it fades.
      */
+    /**
+     * AFK monitoring starts only when the card-selection phase is fully over
+     * (startRound), never while players are still choosing or skipping cards.
+     */
+    private void startAfkMonitoring() {
+        afkLastActivity.clear();
+        afkWarningSeconds.clear();
+        afkActive = true;
+        long now = System.currentTimeMillis();
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (isAfkCandidate(p)) {
+                afkLastActivity.put(p.getUniqueId(), now);
+            }
+        }
+    }
+
+    private void stopAfkMonitoring() {
+        afkActive = false;
+        afkLastActivity.clear();
+        afkWarningSeconds.clear();
+    }
+
+    private boolean isAfkCandidate(Player p) {
+        if (p == null || !p.isOnline() || !p.isValid() || p.isDead()) return false;
+        if (p.getGameMode() == GameMode.SPECTATOR || p.getGameMode() == GameMode.CREATIVE) return false;
+        UUID uuid = p.getUniqueId();
+        return state == GameState.PLAYING
+                && plugin.getTeamManager().getPlayerTeam(uuid) != null
+                && !deadPlayers.contains(uuid)
+                && !pendingCardJoiners.contains(uuid);
+    }
+
+    private void tickAfk() {
+        if (!afkActive || state != GameState.PLAYING) return;
+        long now = System.currentTimeMillis();
+        for (Player p : new ArrayList<>(Bukkit.getOnlinePlayers())) {
+            UUID uuid = p.getUniqueId();
+            if (!afkLastActivity.containsKey(uuid)) continue;
+            if (!isAfkCandidate(p)) {
+                afkLastActivity.remove(uuid);
+                afkWarningSeconds.remove(uuid);
+                continue;
+            }
+
+            int warning = afkWarningSeconds.getOrDefault(uuid, 0);
+            if (warning <= 0) {
+                Long last = afkLastActivity.get(uuid);
+                if (last != null && now - last >= 60_000L) {
+                    afkWarningSeconds.put(uuid, 6);
+                    p.sendTitle(Messages.get("afk.title"), Messages.get("afk.subtitle"), 5, 70, 10);
+                }
+                continue;
+            }
+
+            int next = warning - 1;
+            if (next <= 0) {
+                afkLastActivity.remove(uuid);
+                afkWarningSeconds.remove(uuid);
+                p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_LAND, SoundCategory.PLAYERS, 1.0f, 0.8f);
+                p.kickPlayer(Messages.get("afk.kick"));
+            } else {
+                afkWarningSeconds.put(uuid, next);
+                String key = next == 1 ? "afk.countdown-one" : "afk.countdown";
+                p.sendMessage(Messages.get(key, next));
+                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 0.8f, 1.2f);
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onAfkMove(PlayerMoveEvent event) {
+        if (!afkActive) return;
+        Player p = event.getPlayer();
+        UUID uuid = p.getUniqueId();
+        if (!afkLastActivity.containsKey(uuid)) return;
+        Location from = event.getFrom();
+        Location to = event.getTo();
+        if (to == null) return;
+        boolean changed = from.getWorld() != to.getWorld()
+                || from.getX() != to.getX()
+                || from.getY() != to.getY()
+                || from.getZ() != to.getZ()
+                || from.getYaw() != to.getYaw()
+                || from.getPitch() != to.getPitch();
+        if (changed) {
+            afkLastActivity.put(uuid, System.currentTimeMillis());
+            afkWarningSeconds.remove(uuid);
+        }
+    }
+
     private void tickInvisibleShields() {
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             UUID id = p.getUniqueId();
@@ -1286,6 +1380,7 @@ public class GameManager implements Listener {
         if (plugin.getBotManager() != null) {
             plugin.getBotManager().onRoundStart();
         }
+        startAfkMonitoring();
     }
 
     public Location getTeammateSpawnLocation(Location baseSpawn, int memberIndex) {
@@ -1452,6 +1547,7 @@ public class GameManager implements Listener {
      * Вызывается при конце раунда, конце игры и /rdebug stop.
      */
     public void cleanupRoundCombatState() {
+        stopAfkMonitoring();
         cancelAllWrongMapTasks(state == GameState.WAITING || state == GameState.GAME_END ? "game-ended" : "round-ended");
         lastWrongMapCheckTime.clear();
         lastWrongMapResult.clear();

@@ -1115,10 +1115,8 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage(B + "\u2560\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
 
             // Combat section
-            String hpLabel = "HP";
-            
             boxSection(sender, Messages.get("debug.combat-section"));
-            boxKv(sender, Messages.get("debug.stat-hp"), String.format(Locale.US, "%.1f " + hpLabel, target.getHealth()));
+            boxKv(sender, Messages.get("debug.stat-hp"), com.rounds.game.GameManager.formatHearts(target));
             boxKv(sender, Messages.get("debug.stat-dmg"), String.format(Locale.US, "%.1f", data.getEffectiveDamage(target)));
             boxKv(sender, Messages.get("debug.stat-atks"), formatSeconds(GunItem.getAttackCooldownSeconds(data)));
             if (data.atkSpeed != 0.0) {

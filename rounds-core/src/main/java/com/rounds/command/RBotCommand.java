@@ -166,7 +166,7 @@ public class RBotCommand implements CommandExecutor, TabCompleter {
                 for (FakeBot b : bots) {
                     Player p = b.getBukkitPlayer();
                     sender.sendMessage(ChatColor.AQUA + " - " + b.getName() +
-                            ChatColor.GRAY + " [HP: " + String.format("%.1f", p.getHealth()) +
+                            ChatColor.GRAY + " [HP: " + com.rounds.game.GameManager.formatHearts(p) +
                             ", Lvl: " + b.getLevel() + " (" + (b.getLevel() * 10) + "%)]");
                 }
                 return true;

@@ -75,12 +75,12 @@ A Minecraft plugin for the competitive mini-game [**ROUNDS**](https://store.stea
   - Hitting an enemy flashes their 3D model bright red with a hurt animation (`playHurtAnimation`) and directional tilt away from the damage vector.
   - Taking damage tilts the player camera toward the attack origin and triggers a smooth red screen border vignette (`WorldBorder` warning).
 - **Team-Only Nametags & Heart Count Display:**
-  - Nametag and TAB format: `<hearts> HP <Name>` for players and `<hearts> HP <Name> [L<level>]` for bots.
+  - Nametag and TAB format: `<hearts>♥ <Name>` for players and `<hearts>♥ <Name> [L<level>]` for bots.
   - Enemy nametags are completely hidden during active rounds (only teammates can see each other's nametags). Spectators can see everyone's nametags.
   - Player ping in TAB is colored according to their team color (`%rounds_ping%` for fancy formatted text, `%rounds_ping_raw%` for numeric slots). Objective values in TAB remain protected from color code parsing errors.
 - **Integration & Built-in Scoreboard:**
   - Built-in scoreboard is enabled by default when TAB is not present, and automatically disables itself if TAB plugin is detected to avoid conflicts. Can be permanently disabled via `config.yml`.
-  - Automatically alternates every 5 seconds between Match Score (team wins) and Player Stats (HP, DMG, Cards, Bullets, Max Ammo).
+  - Automatically alternates every 5 seconds between Match Score (team wins) and Player Stats (Hearts, DMG, Cards, Bullets, Max Ammo).
   - Operates completely autonomously without requiring PlaceholderAPI thanks to native stat calculation, utilizing double objective buffering for zero flicker.
   - Full optional support for [**TAB**](https://www.curseforge.com/minecraft/mc-mods/tab) and [**PlaceholderAPI**](https://modrinth.com/mod/placeholderapi).
 - **Built-in Match Score HUD Overlay (Round Boxes):**
@@ -673,7 +673,7 @@ The `freeplay.enabled` setting in `config.yml` or the `/rdebug freeplay on|off` 
 | `/rbot despawn <name>` | Despawn bot by name |
 | `/rbot despawn count <N>` | Despawn N bots from largest teams |
 | `/rbot despawn all` | Despawn all active bots |
-| `/rbot list` | List active bots with health and difficulty level (Lvl: 1..10) |
+| `/rbot list` | List active bots with hearts and difficulty level (Lvl: 1..10) |
 | `/rbot <name> level [1..10]` | Inspect or configure bot difficulty level (1 = 10%, 10 = 100%) |
 | `/rbot <name> strategy <flanker\|sniper\|turtle\|brawler>` | Set bot playstyle (`AGGRESSIVE_FLANKER`, `TACTICAL_SNIPER`, `DEFENSIVE_TURTLE`, `ERRATIC_BRAWLER`) |
 
@@ -718,7 +718,7 @@ Identifier: `%rounds_...%`
 
 | Placeholder | Description |
 |-------------|-------------|
-| `%rounds_stat_hp%` | Maximum health |
+| `%rounds_stat_hp%` | Current hearts (e.g. `10♥`) |
 | `%rounds_stat_dmg%` | Bullet damage |
 | `%rounds_stat_atk_speed%` | Attack speed |
 | `%rounds_stat_atkr%` | Attack range bonus |
@@ -857,7 +857,7 @@ scoreboard:
       display-condition: "%animation:scoreboard-switcher%=2"
       lines:
         - "&7&m════════"
-        - " &fHP:      || &a%rounds_stat_hp%"
+        - " &fHearts: || &a%rounds_stat_hp%"
         - " &fDamage:  || &c%rounds_stat_dmg%"
         - " &fCards:   || &d%rounds_stat_cards%"
         - " &fBullets: || &6%rounds_stat_bullets%"

@@ -257,6 +257,15 @@ public class RoundsPlaceholders extends PlaceholderExpansion {
             return String.valueOf((int) tm.getWins(team));
         }
 
+        if (params.equalsIgnoreCase("stat_hp")) {
+            PlayerData hpData = plugin.getPlayerDataManager().getData(uuid);
+            if (hpData == null) return "0\u2665";
+            if (player instanceof Player online) {
+                return com.rounds.game.GameManager.formatHearts(online);
+            }
+            return Math.round(hpData.hp / 2.0) + "\u2665";
+        }
+
         if (params.startsWith("stat_")) {
             PlayerDataManager pdm = plugin.getPlayerDataManager();
             PlayerData data = pdm.getData(uuid);

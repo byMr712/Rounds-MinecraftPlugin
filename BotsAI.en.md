@@ -301,7 +301,7 @@ Bots inspect active card modifiers in `PlayerData` to adjust combat behavior:
 - `/rbot spawn`: spawns a single bot with an auto-generated name, balanced team, and random level (1..10).
 - `/rbot spawn <N>` or `/rbot spawn count <N>`: bulk spawns up to 500 bots with balanced team distribution.
 - `/rbot spawn <name> [team] [1..10]`: spawns a bot with explicit name, team, and level.
-- `/rbot despawn [name]`: removes a specific bot or all bots if no name is provided.
+- `/rbot despawn`: removes one bot (same as `/rbot despawn count 1`); `/rbot despawn <name>` removes a specific bot, `/rbot despawn all` removes all.
 - `/rbot list`: displays all active bots with health, team, difficulty level, and archetype.
 - `/rbot level <name> <1..10>`: sets the difficulty level for a specific bot.
 - `/rbot level all <1..10>`: sets the difficulty level for all active bots.

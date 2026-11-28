@@ -139,11 +139,14 @@ public class RBotCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
 
-                // 4. /rbot despawn <name>
+                // 4. /rbot despawn (no args) = despawn count 1
                 if (args.length < 2) {
-                    sender.sendMessage(ChatColor.RED + "Usage: /rbot despawn <name|all|count <int>>");
+                    int removed = botManager.despawnBots(1);
+                    sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned " + removed + " bots (prioritizing largest teams).");
                     return true;
                 }
+
+                // 5. /rbot despawn <name>
                 String name = args[1];
                 boolean ok = botManager.despawnBot(name);
                 if (ok) {
@@ -263,6 +266,7 @@ public class RBotCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.YELLOW + "/rbot spawn [name] [team] [1..10] " + ChatColor.GRAY + "- Spawn bot (auto name/team if omitted)");
         sender.sendMessage(ChatColor.YELLOW + "/rbot spawn count <int> " + ChatColor.GRAY + "- Spawn multiple bots with balanced teams");
         sender.sendMessage(ChatColor.YELLOW + "/rbot despawn <name> " + ChatColor.GRAY + "- Remove a fake player");
+        sender.sendMessage(ChatColor.YELLOW + "/rbot despawn " + ChatColor.GRAY + "- Remove 1 bot (same as count 1)");
         sender.sendMessage(ChatColor.YELLOW + "/rbot despawn count <int> " + ChatColor.GRAY + "- Remove bots (prioritizing largest teams)");
         sender.sendMessage(ChatColor.YELLOW + "/rbot despawn all " + ChatColor.GRAY + "- Remove all fake players");
         sender.sendMessage(ChatColor.YELLOW + "/rbot list " + ChatColor.GRAY + "- List active bots & difficulty levels");

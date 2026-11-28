@@ -663,11 +663,13 @@ The `freeplay.enabled` setting in `config.yml` or the `/rdebug freeplay on|off` 
 | `/rdebug bot [name] [team] [1..10]` | Spawn combat bot (auto name `rbot<1..9999>` and auto team if omitted) |
 | `/rdebug bot spawn count <N>` | Spawn N bots (up to 500) balanced across placed team blocks |
 | `/rdebug bot level <name> [1..10]` | Check or set bot difficulty level (1..10) |
+| `/rdebug bot despawn` | Despawn 1 bot (same as `count 1`) |
 | `/rdebug bot despawn <name>` | Despawn specific bot |
 | `/rdebug bot despawn count <N>` | Despawn N bots prioritizing largest teams |
 | `/rdebug bot despawn all` | Remove all active bots from server |
 | `/rbot spawn [name] [team] [1..10]` | Spawn bot (auto name `rbot<1..9999>` and auto team) |
 | `/rbot spawn count <N>` | Spawn N bots (up to 500) balanced across placed team blocks |
+| `/rbot despawn` | Despawn 1 bot (same as `count 1`) |
 | `/rbot despawn <name>` | Despawn bot by name |
 | `/rbot despawn count <N>` | Despawn N bots from largest teams |
 | `/rbot despawn all` | Despawn all active bots |

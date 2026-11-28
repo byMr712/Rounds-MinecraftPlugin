@@ -1687,7 +1687,8 @@ public class DebugCommands implements CommandExecutor, TabCompleter {
                 return;
             }
             if (args.length < 3) {
-                sender.sendMessage(ChatColor.RED + "Usage: /rdebug bot despawn <bot_name|all|count <int>>");
+                int removed = bm.despawnBots(1);
+                sender.sendMessage(ChatColor.GREEN + "[RoundsBot] Despawned " + removed + " bots (prioritizing largest teams).");
                 return;
             }
             String name = args[2];

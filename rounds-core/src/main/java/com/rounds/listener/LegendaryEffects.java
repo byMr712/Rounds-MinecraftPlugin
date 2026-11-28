@@ -61,6 +61,7 @@ public class LegendaryEffects implements Listener {
     private static final long RECALL_COOLDOWN_MS = 15000L;
 
     private static final Map<UUID, Integer> bulletTimeUsedRound = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> bulletTimeLastTrigger = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> phoenixUsedRound = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> recentlySaved = new ConcurrentHashMap<>();
     private static final long SAVE_MARK_MS = 750L;
@@ -170,6 +171,7 @@ public class LegendaryEffects implements Listener {
         playerHistory.clear();
         recallCooldowns.clear();
         bulletTimeUsedRound.clear();
+        bulletTimeLastTrigger.clear();
         phoenixUsedRound.clear();
         bulletTimeUntil = 0L;
         bulletTimeOwner = null;
@@ -189,6 +191,7 @@ public class LegendaryEffects implements Listener {
         if (instance == null || instance.plugin == null || instance.plugin.getGameManager() == null
                 || !instance.plugin.getGameManager().isGameStarted()) {
             bulletTimeUsedRound.remove(uuid);
+            bulletTimeLastTrigger.remove(uuid);
             phoenixUsedRound.remove(uuid);
         }
         lastRazorwire.remove(uuid);
@@ -219,6 +222,16 @@ public class LegendaryEffects implements Listener {
         if (uuid == null) return false;
         Integer usedRound = bulletTimeUsedRound.get(uuid);
         return usedRound != null && usedRound == currentRoundNumber();
+    }
+
+    /** All conditions that allow a Bullet Time activation: playing state, one charge per round, no recent activation. */
+    public static boolean canTriggerBulletTime(UUID uuid) {
+        if (uuid == null || isPendingAutoDeath(uuid)) return false;
+        if (isBulletTimeUsedThisRound(uuid)) return false;
+        Long last = bulletTimeLastTrigger.get(uuid);
+        if (last != null && System.currentTimeMillis() - last < 5000L) return false;
+        return instance != null && instance.plugin != null && instance.plugin.getGameManager() != null
+                && instance.plugin.getGameManager().getState() == com.rounds.game.GameManager.GameState.PLAYING;
     }
 
     /** Whether the Phoenix charge was already spent in the current round. */
@@ -260,7 +273,7 @@ public class LegendaryEffects implements Listener {
 
         UUID uuid = player.getUniqueId();
 
-        if (data.bulletTime > 0 && !isBulletTimeUsedThisRound(uuid)) {
+        if (data.bulletTime > 0 && canTriggerBulletTime(uuid)) {
             double reviveHp = Math.max(data.getMaxHealth() * 0.20, 2.0);
             player.setHealth(reviveHp);
             triggerBulletTime(player, data);
@@ -272,6 +285,7 @@ public class LegendaryEffects implements Listener {
         if (maxUses > 0 && used < maxUses) {
             secondWindUses.put(uuid, used + 1);
             markSaved(uuid);
+            player.sendMessage(ChatColor.GREEN + Messages.get("game.second-wind-saved"));
             player.setHealth(1.0);
             player.setFallDistance(0);
             player.setFireTicks(0);
@@ -332,8 +346,7 @@ public class LegendaryEffects implements Listener {
         }
 
         if (victimData.bulletTime > 0
-                && !isPendingAutoDeath(uuid)
-                && !isBulletTimeUsedThisRound(uuid)
+                && canTriggerBulletTime(uuid)
                 && (victim.getHealth() <= victimData.getMaxHealth() * 0.20 || victim.getHealth() <= 0.5)) {
             victim.setHealth(Math.max(victimData.getMaxHealth() * 0.20, 2.0));
             triggerBulletTime(victim, victimData);
@@ -382,7 +395,7 @@ public class LegendaryEffects implements Listener {
         // Check fatal or low-health Bullet Time save
         if (data.bulletTime > 0
                 && !isAutoDeath
-                && !isBulletTimeUsedThisRound(player.getUniqueId())
+                && canTriggerBulletTime(player.getUniqueId())
                 && (event.getFinalDamage() >= player.getHealth()
                 || event.getDamage() >= player.getHealth()
                 || (player.getHealth() - event.getFinalDamage()) <= data.getMaxHealth() * 0.20
@@ -403,6 +416,7 @@ public class LegendaryEffects implements Listener {
                 && event.getFinalDamage() >= player.getHealth()) {
             secondWindUses.put(player.getUniqueId(), used + 1);
             markSaved(player.getUniqueId());
+            player.sendMessage(ChatColor.GREEN + Messages.get("game.second-wind-saved"));
             clearDecay(player.getUniqueId());
             event.setCancelled(true);
             player.setHealth(1.0);
@@ -616,14 +630,15 @@ public class LegendaryEffects implements Listener {
 
     public static void triggerBulletTime(Player owner, PlayerData data) {
         if (owner == null || !owner.isOnline()) return;
-        if (isPendingAutoDeath(owner.getUniqueId())) return;
-        if (isBulletTimeUsedThisRound(owner.getUniqueId())) return;
+        if (!canTriggerBulletTime(owner.getUniqueId())) return;
+        long now = System.currentTimeMillis();
         bulletTimeUsedRound.put(owner.getUniqueId(), currentRoundNumber());
+        bulletTimeLastTrigger.put(owner.getUniqueId(), now);
         markSaved(owner.getUniqueId());
         com.rounds.debug.DebugLog.log("CARD", "BULLET-TIME trigger owner=" + owner.getName()
                 + " round=" + currentRoundNumber());
         bulletTimeOwner = owner.getUniqueId();
-        bulletTimeUntil = System.currentTimeMillis() + 5000L;
+        bulletTimeUntil = now + 5000L;
 
         // Invulnerability for 1.0s (20 ticks)
         owner.setInvulnerable(true);

@@ -65,6 +65,7 @@ game:
     player-returned: "You have already returned to your map"
     no-spawns: "No spawn point found on current map"
   phoenix-revived: "Phoenix revived you!"
+  second-wind-saved: "&aSecond Wind saved you from death!"
   refresh-ammo: "Refresh! Ammo refilled!"
 
 # Teams

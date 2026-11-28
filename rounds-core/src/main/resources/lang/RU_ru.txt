@@ -67,6 +67,7 @@ game:
 
 # Teams / Команды
   phoenix-revived: "Феникс возродил вас!"
+  second-wind-saved: "&a«Чекай как могу» спас вас от смерти!"
   refresh-ammo: "Обновление! Патроны восполнены!"
 team:
   blue: "Синие"

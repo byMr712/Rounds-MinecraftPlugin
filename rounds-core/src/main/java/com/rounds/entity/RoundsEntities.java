@@ -415,7 +415,7 @@ public class RoundsEntities implements Listener {
                         if (nearest instanceof Player victim) {
                             PlayerData victimData = plugin.getPlayerDataManager().getData(victim.getUniqueId());
                             if (victimData != null && victimData.bulletTime > 0
-                                    && !com.rounds.listener.LegendaryEffects.isBulletTimeUsedThisRound(victim.getUniqueId())
+                                    && com.rounds.listener.LegendaryEffects.canTriggerBulletTime(victim.getUniqueId())
                                     && (nearest.getHealth() <= finalDamage || (nearest.getHealth() - finalDamage) <= victimData.getMaxHealth() * 0.20)) {
                                 victim.setHealth(Math.max(victimData.getMaxHealth() * 0.20, 2.0));
                                 com.rounds.listener.LegendaryEffects.triggerBulletTime(victim, victimData);
@@ -652,7 +652,7 @@ public class RoundsEntities implements Listener {
                 if (hitEnt instanceof Player victim) {
                     PlayerData victimData = plugin.getPlayerDataManager().getData(victim.getUniqueId());
                     if (victimData != null && victimData.bulletTime > 0
-                            && !com.rounds.listener.LegendaryEffects.isBulletTimeUsedThisRound(victim.getUniqueId())
+                            && com.rounds.listener.LegendaryEffects.canTriggerBulletTime(victim.getUniqueId())
                             && (hitEnt.getHealth() <= finalDmg || (hitEnt.getHealth() - finalDmg) <= victimData.getMaxHealth() * 0.20)) {
                         victim.setHealth(Math.max(victimData.getMaxHealth() * 0.20, 2.0));
                         com.rounds.listener.LegendaryEffects.triggerBulletTime(victim, victimData);

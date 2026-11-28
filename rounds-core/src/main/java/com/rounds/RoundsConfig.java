@@ -88,7 +88,7 @@ public final class RoundsConfig {
             enabledTeams.addAll(Arrays.asList(GameTeam.values()));
         }
 
-        defaultRounds = c.getInt("game.default-rounds", 5);
+        defaultRounds = c.getInt("game.default-rounds", 7);
         maxRounds = c.getInt("game.max-rounds", 20);
         cardChoiceTimeSeconds = c.getInt("game.card-choice-time", 30);
         if (cardChoiceTimeSeconds < 10) cardChoiceTimeSeconds = 30;

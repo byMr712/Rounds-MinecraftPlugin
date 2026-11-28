@@ -38,7 +38,7 @@ defaults:
 # ==============================================================================
 game:
   # Default number of rounds required to win the match
-  default-rounds: 5
+  default-rounds: 7
   # Countdown before a round officially starts in seconds
   countdown-seconds: 3
   # Main round time in seconds for the boss bar timer before sudden death (default: 180s = 3 minutes)

@@ -169,7 +169,7 @@ flowchart TD
 5. **Combat:** Players receive guns, switch to survival, and fight on the selected arena.
 6. **Round End:** The team of the last surviving player receives a round point.
 7. **Upgrade Phase:** Losing teams open a card selection GUI to power up before the next round (all participants remain immobile and invulnerable during selection).
-8. **Match Victory:** The first team reaching the required round wins (default 5) wins the match and everyone returns to the lobby.
+8. **Match Victory:** The first team reaching the required round wins (default 7) wins the match and everyone returns to the lobby.
 
 
 ## Configuration (`config.yml`)
@@ -197,7 +197,7 @@ defaults:
 
 # Match and round settings
 game:
-  default-rounds: 5      # Default rounds required to win the match
+  default-rounds: 7      # Default rounds required to win the match
   countdown-seconds: 3   # Round start countdown in seconds
   round-time-seconds: 180 # Main round time in seconds before sudden death (default: 180s = 3 min)
   card-choice-time: 30   # Card selection timer in seconds (min 10)
@@ -695,7 +695,7 @@ Identifier: `%rounds_...%`
 |-------------|-------------|
 | `%rounds_round%` | Current round number |
 | `%rounds_rounds_to_win%` | Rounds needed to win match |
-| `%rounds_round_display%` | Formatted match progress (e.g. `3/5`) |
+| `%rounds_round_display%` | Formatted match progress (e.g. `3/7`) |
 | `%rounds_state%` | Match state (`WAITING`, `CARDS`, `PLAYING`, `ROUND_END`, `GAME_END`) |
 | `%rounds_team%` | Player team name (Blue, Red, Yellow, Green, None) |
 | `%rounds_team_color%` | Team chat color code (`§9`, `§c`, `§e`, `§a`) |

@@ -80,7 +80,7 @@ public class GameStateManager {
         if (state == GameState.WAITING) return null;
 
         int currentRound = (int) yml.getDouble("current-round", 0);
-        int roundsToWin = (int) yml.getDouble("rounds-to-win", 5);
+        int roundsToWin = (int) yml.getDouble("rounds-to-win", 7);
 
         Set<GameTeam> lastLosers = new HashSet<>();
         List<String> losersStrs = yml.getStringList("last-losers");

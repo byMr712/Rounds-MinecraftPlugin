@@ -210,6 +210,11 @@ public class LegendaryEffects implements Listener {
         if (uuid != null) recentlySaved.put(uuid, System.currentTimeMillis() + SAVE_MARK_MS);
     }
 
+    private static boolean isPendingAutoDeath(UUID uuid) {
+        return instance != null && instance.plugin != null && instance.plugin.getGameManager() != null
+                && instance.plugin.getGameManager().isPendingAutoDeath(uuid);
+    }
+
     public static boolean isBulletTimeUsedThisRound(UUID uuid) {
         if (uuid == null) return false;
         Integer usedRound = bulletTimeUsedRound.get(uuid);
@@ -231,6 +236,7 @@ public class LegendaryEffects implements Listener {
      */
     public static boolean tryConsumePhoenix(UUID uuid, PlayerData data) {
         if (uuid == null || data == null || data.phoenix <= 0) return false;
+        if (isPendingAutoDeath(uuid)) return false;
         if (isPhoenixUsedThisRound(uuid)) return false;
         phoenixUsedRound.put(uuid, currentRoundNumber());
         markSaved(uuid);
@@ -250,6 +256,7 @@ public class LegendaryEffects implements Listener {
         if (player == null || data == null || !player.isOnline()) return 0.0;
         if (instance == null || instance.plugin == null || instance.plugin.getGameManager() == null) return 0.0;
         if (instance.plugin.getGameManager().getState() != com.rounds.game.GameManager.GameState.PLAYING) return 0.0;
+        if (isPendingAutoDeath(player.getUniqueId())) return 0.0;
 
         UUID uuid = player.getUniqueId();
 
@@ -325,6 +332,7 @@ public class LegendaryEffects implements Listener {
         }
 
         if (victimData.bulletTime > 0
+                && !isPendingAutoDeath(uuid)
                 && !isBulletTimeUsedThisRound(uuid)
                 && (victim.getHealth() <= victimData.getMaxHealth() * 0.20 || victim.getHealth() <= 0.5)) {
             victim.setHealth(Math.max(victimData.getMaxHealth() * 0.20, 2.0));
@@ -342,16 +350,19 @@ public class LegendaryEffects implements Listener {
 
         boolean isDecayTick = isApplyingDecay.contains(player.getUniqueId());
 
-        if (player.isInvulnerable()) {
+        boolean isAutoDeath = (instance != null && instance.plugin != null && instance.plugin.getGameManager() != null)
+                && instance.plugin.getGameManager().isPendingAutoDeath(player.getUniqueId());
+
+        if (isAutoDeath) {
+            // The reaper's kill is absolute: no invulnerability, no save cards.
+            event.setCancelled(false);
+        } else if (player.isInvulnerable()) {
             event.setCancelled(true);
             return;
         }
 
         PlayerData data = plugin.getPlayerDataManager().getData(player.getUniqueId());
         if (data == null) return;
-
-        boolean isAutoDeath = (instance != null && instance.plugin != null && instance.plugin.getGameManager() != null)
-                && instance.plugin.getGameManager().isPendingAutoDeath(player.getUniqueId());
 
         if (!isDecayTick && !isAutoDeath && data.decay > 0 && event.getCause() != EntityDamageEvent.DamageCause.VOID) {
             double incomingDmg = event.getDamage();
@@ -370,6 +381,7 @@ public class LegendaryEffects implements Listener {
 
         // Check fatal or low-health Bullet Time save
         if (data.bulletTime > 0
+                && !isAutoDeath
                 && !isBulletTimeUsedThisRound(player.getUniqueId())
                 && (event.getFinalDamage() >= player.getHealth()
                 || event.getDamage() >= player.getHealth()
@@ -385,6 +397,7 @@ public class LegendaryEffects implements Listener {
         int maxUses = (int) Math.round(data.secondWind);
         int used = secondWindUses.getOrDefault(player.getUniqueId(), 0);
         if (maxUses > 0
+                && !isAutoDeath
                 && used < maxUses
                 && plugin.getGameManager().isParticipant(player.getUniqueId())
                 && event.getFinalDamage() >= player.getHealth()) {
@@ -409,6 +422,7 @@ public class LegendaryEffects implements Listener {
 
         // Check Phoenix revival save before death
         if (data.phoenix > 0
+                && !isAutoDeath
                 && plugin.getGameManager().isParticipant(player.getUniqueId())
                 && (event.getFinalDamage() >= player.getHealth() || event.getDamage() >= player.getHealth())
                 && tryConsumePhoenix(player.getUniqueId(), data)) {
@@ -602,6 +616,7 @@ public class LegendaryEffects implements Listener {
 
     public static void triggerBulletTime(Player owner, PlayerData data) {
         if (owner == null || !owner.isOnline()) return;
+        if (isPendingAutoDeath(owner.getUniqueId())) return;
         if (isBulletTimeUsedThisRound(owner.getUniqueId())) return;
         bulletTimeUsedRound.put(owner.getUniqueId(), currentRoundNumber());
         markSaved(owner.getUniqueId());
